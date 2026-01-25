@@ -1,36 +1,55 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Stethoscope, 
   FileText, 
   ArrowRight, 
-  CheckCircle2, 
   AlertTriangle,
   Copy,
   Loader2,
   Table as TableIcon,
   BrainCircuit
 } from "lucide-react";
-import { mockTranscript, mockStructuredData } from "@/lib/mockData";
-import { cn } from "@/lib/utils";
+import { mockTranscript } from "@/lib/mockData";
 
 export default function ERmate() {
   const [transcript, setTranscript] = useState(mockTranscript.trim());
   const [isProcessing, setIsProcessing] = useState(false);
   const [data, setData] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleProcess = () => {
+  const handleProcess = async () => {
     setIsProcessing(true);
-    // Simulate processing delay
-    setTimeout(() => {
-      setData(mockStructuredData);
+    setError(null);
+    
+    try {
+      const response = await fetch('/api/ermate/auto_fill', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tenant_id: 'varah',
+          transcript: transcript,
+          language: 'en'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      setData(result);
+    } catch (err: any) {
+      setError(err.message);
+      console.error('ERmate processing error:', err);
+    } finally {
       setIsProcessing(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -44,11 +63,11 @@ export default function ERmate() {
           <p className="text-muted-foreground">Automated Clinical Documentation & Triage Support</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="text-xs font-mono">
+          <Button variant="outline" className="text-xs font-mono" onClick={() => setTranscript(mockTranscript.trim())}>
             <FileText className="w-3 h-3 mr-2" />
             Load Sample
           </Button>
-          <Button variant="default" className="bg-cyan-500 text-black hover:bg-cyan-400">
+          <Button variant="default" className="bg-cyan-500 text-black hover:bg-cyan-400" disabled={!data}>
             Export to EHR
           </Button>
         </div>
@@ -74,12 +93,14 @@ export default function ERmate() {
               onChange={(e) => setTranscript(e.target.value)}
               className="flex-1 font-mono text-sm leading-relaxed bg-black/20 border-white/10 resize-none p-4 focus:ring-cyan-500/50"
               placeholder="Paste patient interaction transcript here..."
+              data-testid="input-transcript"
             />
             <div className="pt-4">
               <Button 
                 onClick={handleProcess} 
-                disabled={isProcessing}
+                disabled={isProcessing || !transcript.trim()}
                 className="w-full h-12 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold shadow-[0_0_20px_-5px_rgba(6,182,212,0.4)]"
+                data-testid="button-process"
               >
                 {isProcessing ? (
                   <>
@@ -94,6 +115,11 @@ export default function ERmate() {
                 )}
               </Button>
             </div>
+            {error && (
+              <div className="mt-2 p-3 bg-red-500/10 border border-red-500/20 rounded text-red-400 text-sm">
+                Error: {error}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -105,7 +131,7 @@ export default function ERmate() {
               Structured Clinical Data
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 overflow-y-auto p-0 bg-black/20">
+          <CardContent className="flex-1 overflow-y-auto p-0 bg-black/20" data-testid="output-structured-data">
             {!data ? (
               <div className="h-full flex flex-col items-center justify-center text-muted-foreground p-8 text-center">
                 <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
@@ -119,7 +145,7 @@ export default function ERmate() {
             ) : (
               <div className="divide-y divide-white/5">
                 {/* Safety Flags */}
-                {data.safety_flags.length > 0 && (
+                {data.safety_flags && data.safety_flags.length > 0 && (
                   <div className="p-4 bg-red-500/10 border-l-2 border-red-500">
                     <h4 className="text-xs font-bold text-red-400 uppercase mb-2 flex items-center gap-2">
                       <AlertTriangle className="w-3 h-3" />
@@ -141,7 +167,7 @@ export default function ERmate() {
                   <div className="p-4">
                     <h4 className="text-xs font-mono text-muted-foreground mb-2 uppercase">Medications</h4>
                     <ul className="space-y-1">
-                      {data.medications.map((m: string, i: number) => (
+                      {data.medications?.map((m: string, i: number) => (
                         <li key={i} className="text-sm bg-white/5 rounded px-2 py-1 inline-block w-full">{m}</li>
                       ))}
                     </ul>
@@ -149,12 +175,14 @@ export default function ERmate() {
                   <div className="p-4">
                     <h4 className="text-xs font-mono text-muted-foreground mb-2 uppercase">Allergies</h4>
                     <ul className="space-y-1">
-                      {data.allergies.map((a: string, i: number) => (
+                      {data.allergies?.map((a: string, i: number) => (
                         <li key={i} className="text-sm text-red-300">{a}</li>
                       ))}
                     </ul>
                   </div>
                 </div>
+
+                {data.exam && <DataSection title="Physical Exam" content={data.exam} />}
 
                 <div className="p-4 bg-cyan-950/20">
                   <h4 className="text-xs font-bold text-cyan-400 uppercase mb-3 flex items-center gap-2">
@@ -162,7 +190,7 @@ export default function ERmate() {
                     AI Differential Diagnosis
                   </h4>
                   <div className="flex flex-wrap gap-2">
-                    {data.ddx.map((d: string, i: number) => (
+                    {data.ddx?.map((d: string, i: number) => (
                       <Badge key={i} variant="secondary" className="bg-cyan-900/40 text-cyan-100 hover:bg-cyan-900/60 border-cyan-700/50">
                         {d}
                       </Badge>
@@ -175,11 +203,11 @@ export default function ERmate() {
                   <div className="space-y-3">
                     <div>
                       <span className="text-xs opacity-50 block mb-1">Investigations</span>
-                      <div className="text-sm text-foreground/90">{data.plan_investigations.join(", ")}</div>
+                      <div className="text-sm text-foreground/90">{data.plan_investigations?.join(", ")}</div>
                     </div>
                     <div>
                       <span className="text-xs opacity-50 block mb-1">Treatment</span>
-                      <div className="text-sm text-foreground/90">{data.plan_treatment.join(", ")}</div>
+                      <div className="text-sm text-foreground/90">{data.plan_treatment?.join(", ")}</div>
                     </div>
                   </div>
                 </div>
@@ -188,7 +216,12 @@ export default function ERmate() {
           </CardContent>
           {data && (
             <div className="p-3 border-t border-white/10 bg-card flex justify-end">
-              <Button size="sm" variant="ghost" className="text-xs text-muted-foreground hover:text-white">
+              <Button 
+                size="sm" 
+                variant="ghost" 
+                className="text-xs text-muted-foreground hover:text-white"
+                onClick={() => navigator.clipboard.writeText(JSON.stringify(data, null, 2))}
+              >
                 <Copy className="w-3 h-3 mr-2" />
                 Copy JSON
               </Button>

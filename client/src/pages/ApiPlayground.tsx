@@ -3,13 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   Network, 
   Server, 
   Play, 
-  Copy, 
-  Check, 
   ChevronRight, 
   ChevronDown 
 } from "lucide-react";
@@ -17,59 +15,42 @@ import { cn } from "@/lib/utils";
 
 const endpoints = [
   {
-    method: "POST",
-    path: "/v1/knowledge/query",
-    description: "Query the multi-domain knowledge engine.",
-    params: [
-      { name: "tenant_id", type: "string", required: true },
-      { name: "domain", type: "string", required: false },
-      { name: "query", type: "string", required: true },
-    ],
-    response: {
-      answer: "The protocol suggests...",
-      sources: ["KB-001"],
-      confidence: 0.92
-    }
+    method: "GET",
+    path: "/api/health",
+    description: "System health check and node status.",
+    params: [],
   },
   {
     method: "POST",
-    path: "/v1/ermate/auto_fill",
+    path: "/api/knowledge/query",
+    description: "Query the multi-domain knowledge engine.",
+    params: [
+      { name: "tenant_id", type: "string", required: true, default: "varah" },
+      { name: "domain", type: "string", required: false },
+      { name: "query", type: "string", required: true },
+      { name: "top_k", type: "number", required: false, default: "5" },
+    ],
+  },
+  {
+    method: "POST",
+    path: "/api/ermate/auto_fill",
     description: "Parse raw transcript into structured clinical JSON.",
     params: [
+      { name: "tenant_id", type: "string", required: true, default: "varah" },
       { name: "transcript", type: "string", required: true },
       { name: "language", type: "string", required: false, default: "en" },
     ],
-    response: {
-      chief_complaint: "Chest pain",
-      medications: ["Aspirin"],
-      safety_flags: []
-    }
   },
   {
     method: "POST",
-    path: "/v1/erprana/risk_assess",
+    path: "/api/erprana/risk_assess",
     description: "Calculate patient risk score from vitals.",
     params: [
-      { name: "symptoms", type: "string", required: true },
-      { name: "vitals", type: "object", required: true },
+      { name: "tenant_id", type: "string", required: true, default: "varah" },
+      { name: "symptoms_text", type: "string", required: true },
+      { name: "wearable", type: "object", required: false },
     ],
-    response: {
-      risk_level: "high",
-      red_flags: ["Hypotension"],
-      next_steps: ["IV Fluids"]
-    }
   },
-  {
-    method: "GET",
-    path: "/v1/health",
-    description: "System health check and node status.",
-    params: [],
-    response: {
-      status: "ok",
-      uptime: 3600,
-      nodes: 4
-    }
-  }
 ];
 
 export default function ApiPlayground() {
@@ -86,9 +67,8 @@ export default function ApiPlayground() {
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="font-mono text-emerald-500 border-emerald-500/20 bg-emerald-500/10">
             <Server className="w-3 h-3 mr-1" />
-            Environment: Production
+            Environment: Development
           </Badge>
-          <Button variant="outline" size="sm">Download OpenAPI Spec</Button>
         </div>
       </div>
 
@@ -105,14 +85,64 @@ function EndpointCard({ endpoint }: { endpoint: any }) {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<any>(null);
+  const [statusCode, setStatusCode] = useState<number | null>(null);
+  const [params, setParams] = useState<Record<string, string>>(() => {
+    const initial: Record<string, string> = {};
+    endpoint.params.forEach((p: any) => {
+      if (p.default) {
+        initial[p.name] = p.default;
+      }
+    });
+    return initial;
+  });
 
-  const handleRun = () => {
+  const handleRun = async () => {
     setLoading(true);
     setResponse(null);
-    setTimeout(() => {
-      setResponse(endpoint.response);
+    setStatusCode(null);
+    
+    try {
+      let fetchOptions: RequestInit = {
+        method: endpoint.method,
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      };
+
+      let url = endpoint.path;
+      
+      if (endpoint.method === 'POST') {
+        const body: Record<string, any> = {};
+        
+        endpoint.params.forEach((p: any) => {
+          if (params[p.name]) {
+            if (p.type === 'number') {
+              body[p.name] = Number(params[p.name]);
+            } else if (p.type === 'object') {
+              try {
+                body[p.name] = JSON.parse(params[p.name]);
+              } catch {
+                body[p.name] = params[p.name];
+              }
+            } else {
+              body[p.name] = params[p.name];
+            }
+          }
+        });
+        
+        fetchOptions.body = JSON.stringify(body);
+      }
+      
+      const res = await fetch(url, fetchOptions);
+      const data = await res.json();
+      setStatusCode(res.status);
+      setResponse(data);
+    } catch (error: any) {
+      setResponse({ error: error.message });
+      setStatusCode(500);
+    } finally {
       setLoading(false);
-    }, 800);
+    }
   };
 
   return (
@@ -120,6 +150,7 @@ function EndpointCard({ endpoint }: { endpoint: any }) {
       <div 
         className="p-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors"
         onClick={() => setIsOpen(!isOpen)}
+        data-testid={`endpoint-${endpoint.path.replace(/\//g, '-')}`}
       >
         <div className="flex items-center gap-4">
           <Badge 
@@ -151,21 +182,42 @@ function EndpointCard({ endpoint }: { endpoint: any }) {
                 ) : (
                   <div className="space-y-3">
                     {endpoint.params.map((p: any, i: number) => (
-                      <div key={i} className="flex items-center gap-4">
-                        <div className="w-32 text-sm font-mono text-foreground/80">
-                          {p.name}
-                          {p.required && <span className="text-red-500 ml-1">*</span>}
+                      <div key={i} className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <div className="w-32 text-sm font-mono text-foreground/80">
+                            {p.name}
+                            {p.required && <span className="text-red-500 ml-1">*</span>}
+                          </div>
+                          <span className="text-xs text-muted-foreground">{p.type}</span>
                         </div>
-                        <Input 
-                          placeholder={p.type} 
-                          className="h-8 bg-white/5 border-white/10 font-mono text-xs"
-                        />
+                        {p.type === 'object' ? (
+                          <Textarea 
+                            placeholder='{"hr": 110, "spo2": 92}' 
+                            value={params[p.name] || ''}
+                            onChange={(e) => setParams({...params, [p.name]: e.target.value})}
+                            className="h-20 bg-white/5 border-white/10 font-mono text-xs"
+                            data-testid={`input-${p.name}`}
+                          />
+                        ) : (
+                          <Input 
+                            placeholder={p.default || p.type} 
+                            value={params[p.name] || ''}
+                            onChange={(e) => setParams({...params, [p.name]: e.target.value})}
+                            className="h-8 bg-white/5 border-white/10 font-mono text-xs"
+                            data-testid={`input-${p.name}`}
+                          />
+                        )}
                       </div>
                     ))}
                   </div>
                 )}
               </div>
-              <Button onClick={handleRun} disabled={loading} className="w-full">
+              <Button 
+                onClick={handleRun} 
+                disabled={loading} 
+                className="w-full"
+                data-testid="button-send-request"
+              >
                 {loading ? "Sending Request..." : "Send Request"}
                 {!loading && <Play className="w-4 h-4 ml-2 fill-current" />}
               </Button>
@@ -174,11 +226,21 @@ function EndpointCard({ endpoint }: { endpoint: any }) {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <h4 className="text-xs font-bold uppercase text-muted-foreground">Response</h4>
-                {response && <span className="text-xs text-emerald-500 font-mono">200 OK</span>}
+                {statusCode && (
+                  <span className={cn(
+                    "text-xs font-mono",
+                    statusCode >= 200 && statusCode < 300 ? "text-emerald-500" : "text-red-500"
+                  )}>
+                    {statusCode} {statusCode >= 200 && statusCode < 300 ? 'OK' : 'ERROR'}
+                  </span>
+                )}
               </div>
-              <div className="relative rounded-md border border-border bg-black/50 p-4 font-mono text-xs text-muted-foreground h-64 overflow-auto">
+              <div 
+                className="relative rounded-md border border-border bg-black/50 p-4 font-mono text-xs text-muted-foreground h-64 overflow-auto"
+                data-testid="response-output"
+              >
                 {response ? (
-                  <pre className="text-emerald-300">
+                  <pre className={statusCode && statusCode >= 200 && statusCode < 300 ? "text-emerald-300" : "text-red-300"}>
                     {JSON.stringify(response, null, 2)}
                   </pre>
                 ) : (
