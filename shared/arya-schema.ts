@@ -1,23 +1,6 @@
-import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, uuid, timestamp, integer, jsonb, decimal } from "drizzle-orm/pg-core";
+import { pgTable, text, uuid, timestamp, integer, jsonb, varchar, decimal } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-});
-
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-});
-
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
-
-// ARYA Core Tables
 
 // Domain enum
 export const DomainSchema = z.enum(['medical', 'business', 'sanskrit', 'chanakya']);
@@ -25,12 +8,12 @@ export type Domain = z.infer<typeof DomainSchema>;
 
 // Knowledge Base Table (published knowledge)
 export const aryaKnowledge = pgTable("arya_knowledge", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: uuid("id").defaultRandom().primaryKey(),
   tenantId: varchar("tenant_id", { length: 100 }).notNull(),
   domain: varchar("domain", { length: 50 }).notNull().$type<Domain>(),
   topic: varchar("topic", { length: 500 }).notNull(),
   content: text("content").notNull(),
-  tags: text("tags").array().default(sql`ARRAY[]::text[]`),
+  tags: text("tags").array().default([]),
   language: varchar("language", { length: 10 }).default("en"),
   sourceType: varchar("source_type", { length: 100 }).notNull(),
   sourceTitle: varchar("source_title", { length: 500 }).notNull(),
@@ -43,12 +26,12 @@ export const aryaKnowledge = pgTable("arya_knowledge", {
 
 // Knowledge Drafts Table (self-learning AI drafts)
 export const aryaKnowledgeDrafts = pgTable("arya_knowledge_drafts", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: uuid("id").defaultRandom().primaryKey(),
   tenantId: varchar("tenant_id", { length: 100 }).notNull(),
   domain: varchar("domain", { length: 50 }).notNull().$type<Domain>(),
   topic: varchar("topic", { length: 500 }).notNull(),
   content: text("content").notNull(),
-  tags: text("tags").array().default(sql`ARRAY[]::text[]`),
+  tags: text("tags").array().default([]),
   language: varchar("language", { length: 10 }).default("en"),
   sourceType: varchar("source_type", { length: 100 }).notNull(),
   sourceTitle: varchar("source_title", { length: 500 }).notNull(),
@@ -62,7 +45,7 @@ export const aryaKnowledgeDrafts = pgTable("arya_knowledge_drafts", {
 
 // Audit Logs Table
 export const aryaAuditLogs = pgTable("arya_audit_logs", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: uuid("id").defaultRandom().primaryKey(),
   tenantId: varchar("tenant_id", { length: 100 }),
   appId: varchar("app_id", { length: 50 }),
   userRole: varchar("user_role", { length: 50 }),
