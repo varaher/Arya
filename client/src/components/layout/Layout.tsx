@@ -8,7 +8,9 @@ import {
   Activity, 
   Settings, 
   Search,
-  Database
+  Database,
+  Brain,
+  Zap
 } from "lucide-react";
 
 export function Sidebar() {
@@ -18,6 +20,8 @@ export function Sidebar() {
     { label: "Overview", icon: LayoutDashboard, href: "/" },
     { label: "Orchestrator", icon: BrainCircuit, href: "/orchestrator" },
     { label: "Knowledge Base", icon: Database, href: "/knowledge" },
+    { label: "Self-Learning", icon: Brain, href: "/learning" },
+    { label: "Neural Link", icon: Zap, href: "/neural-link" },
     { label: "ERmate Copilot", icon: Stethoscope, href: "/ermate" },
     { label: "ErPrana Monitor", icon: Activity, href: "/erprana" },
     { label: "API Playground", icon: Network, href: "/api" },

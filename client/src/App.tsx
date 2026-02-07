@@ -12,6 +12,8 @@ import Knowledge from "@/pages/Knowledge";
 import ERmate from "@/pages/ERmate";
 import ErPrana from "@/pages/ErPrana";
 import ApiPlayground from "@/pages/ApiPlayground";
+import SelfLearning from "@/pages/SelfLearning";
+import NeuralLink from "@/pages/NeuralLink";
 
 function Router() {
   return (
@@ -22,6 +24,8 @@ function Router() {
         <Route path="/knowledge" component={Knowledge} />
         <Route path="/ermate" component={ERmate} />
         <Route path="/erprana" component={ErPrana} />
+        <Route path="/learning" component={SelfLearning} />
+        <Route path="/neural-link" component={NeuralLink} />
         <Route path="/api" component={ApiPlayground} />
         <Route component={NotFound} />
       </Switch>

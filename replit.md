@@ -45,6 +45,8 @@ The project is organized as a monorepo with three main areas:
 - `/` — Dashboard with system metrics
 - `/orchestrator` — Interactive query routing visualization with weight sliders
 - `/knowledge` — Knowledge base browser with domain filtering
+- `/learning` — Self-Learning engine: query patterns, knowledge gap detection, draft review/approval
+- `/neural-link` — Neural Link: cross-domain knowledge graph, synthesis, connection explorer
 - `/ermate` — Clinical transcript processor
 - `/erprana` — Patient vitals monitor with risk assessment
 - `/api` — API playground for testing endpoints
@@ -60,9 +62,18 @@ The project is organized as a monorepo with three main areas:
 
 **API Routes (prefixed with `/api`):**
 - `GET /api/health` — Health check
-- `POST /api/knowledge/query` — Multi-domain knowledge query with orchestrated routing
+- `POST /api/knowledge/query` — Multi-domain knowledge query with orchestrated routing (auto-triggers self-learning)
 - `POST /api/ermate/auto_fill` — Clinical transcript → structured medical JSON
 - `POST /api/erprana/risk_assess` — Symptom + vitals → risk assessment
+- `GET /api/learning/stats` — Self-learning statistics (total queries, gaps, drafts)
+- `GET /api/learning/drafts` — List auto-generated knowledge drafts
+- `POST /api/learning/drafts/:id/approve` — Approve draft → promote to published knowledge
+- `POST /api/learning/drafts/:id/reject` — Reject a draft
+- `GET /api/learning/patterns` — Query pattern tracking (frequency, gaps)
+- `POST /api/neural-link/compute` — Compute cross-domain neural links
+- `GET /api/neural-link/graph` — Full network graph (nodes + edges)
+- `GET /api/neural-link/unit/:unitId` — Get connections for a specific knowledge unit
+- `POST /api/neural-link/synthesize` — Cross-domain synthesis from multiple domains
 
 ### Knowledge Engine Architecture
 
@@ -73,6 +84,10 @@ The four-domain knowledge engine works as follows:
 2. **Knowledge Retriever** (`server/arya/knowledge-retriever.ts`) — Fetches published knowledge units from PostgreSQL. Currently uses keyword-based scoring (topic match, content match, tag overlap). Designed to be upgraded to pgvector semantic search later.
 
 3. **Medical Engine** (`server/arya/medical-engine.ts`) — Deterministic NLP parser for clinical transcripts (chief complaint extraction, medication parsing, differential diagnosis). Has hooks for future LLM integration.
+
+4. **Self-Learning Engine** (`server/arya/learning-engine.ts`) — Tracks every query, detects knowledge gaps (low-confidence or zero results), and auto-generates knowledge drafts when repeated gaps are detected. Supports admin review workflow to approve/reject drafts and promote them to published knowledge.
+
+5. **Neural Link Engine** (`server/arya/neural-link-engine.ts`) — Discovers cross-domain connections between knowledge units using tag overlap, keyword similarity, conceptual bridges (e.g., Ayurveda ↔ Modern Medicine), and complementary patterns. Stores weighted links in database. Supports cross-domain synthesis queries that combine insights from multiple domains.
 
 ### Database
 
@@ -85,7 +100,9 @@ The four-domain knowledge engine works as follows:
 **Key Tables:**
 - `users` — Basic user auth (username/password)
 - `arya_knowledge` — Published knowledge units (id, tenant_id, domain, topic, content, tags, language, source_type, source_title, status, version, rules)
-- `arya_knowledge_drafts` — AI-generated knowledge drafts awaiting review (includes confidence_score, learned_from_query)
+- `arya_knowledge_drafts` — AI-generated knowledge drafts awaiting review (includes confidence_score, learned_from_query, status: pending/approved/rejected)
+- `arya_query_patterns` — Self-learning query tracking (normalized_query, query_count, avg_confidence, is_gap, draft_generated)
+- `arya_neural_links` — Cross-domain knowledge connections (from_unit_id, to_unit_id, link_score, link_type, evidence)
 - `arya_audit_logs` — API interaction audit trail
 
 **Storage Layer:** There's an in-memory storage implementation (`MemStorage`) in `server/storage.ts` for users. The knowledge base uses direct Drizzle queries against PostgreSQL.

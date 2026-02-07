@@ -6,10 +6,14 @@ import { v4 as uuidv4 } from "uuid";
 import { KnowledgeRetriever } from "./arya/knowledge-retriever";
 import { Orchestrator } from "./arya/orchestrator";
 import { MedicalEngine } from "./arya/medical-engine";
-import { QueryRequestSchema } from "@shared/schema";
+import { LearningEngine } from "./arya/learning-engine";
+import { NeuralLinkEngine } from "./arya/neural-link-engine";
+import { QueryRequestSchema, DomainSchema } from "@shared/schema";
 
 const retriever = new KnowledgeRetriever();
 const medicalEngine = new MedicalEngine();
+const learningEngine = new LearningEngine();
+const neuralLinkEngine = new NeuralLinkEngine();
 
 export async function registerRoutes(
   httpServer: Server,
@@ -21,11 +25,12 @@ export async function registerRoutes(
     res.json({
       status: "ok",
       timestamp: new Date().toISOString(),
-      version: "1.0.0-alpha"
+      version: "1.0.0-alpha",
+      features: ["knowledge", "ermate", "erprana", "self_learning", "neural_link"]
     });
   });
 
-  // ARYA Knowledge Query
+  // ARYA Knowledge Query (now with self-learning integration)
   app.post("/api/knowledge/query", async (req: Request, res: Response) => {
     try {
       const validated = QueryRequestSchema.parse(req.body);
@@ -49,11 +54,23 @@ export async function registerRoutes(
       );
       
       let answer = '';
+      let confidence = 0;
       if (results.units.length > 0) {
         answer = results.units[0].content;
+        confidence = 0.85;
       } else {
         answer = 'No relevant knowledge found for this query. Please refine your search.';
+        confidence = 0;
       }
+
+      learningEngine.ingestQuery({
+        tenantId: validated.tenant_id,
+        query: validated.query,
+        domain: routing.primaryDomain,
+        resultCount: results.total,
+        confidence,
+        language: validated.language
+      }).catch(err => console.error('[Learning] Ingest error:', err));
       
       res.json({
         answer,
@@ -62,8 +79,13 @@ export async function registerRoutes(
           title: unit.topic,
           relevance: 0.9
         })),
-        confidence: results.units.length > 0 ? 0.85 : 0.0,
+        confidence,
         domain_used: routing.primaryDomain,
+        routing: {
+          mode: routing.mode,
+          weights: routing.weights,
+          reasoning: routing.reasoning
+        },
         trace_id: traceId
       });
       
@@ -139,7 +161,7 @@ export async function registerRoutes(
     }
   });
 
-  // Get all knowledge by domain (for frontend Knowledge page)
+  // Get all knowledge by domain
   app.get("/api/knowledge/domain/:domain", async (req: Request, res: Response) => {
     try {
       const domain = req.params.domain as any;
@@ -159,6 +181,156 @@ export async function registerRoutes(
         error: 'Internal server error',
         message: error.message
       });
+    }
+  });
+
+  // =============================================
+  // SELF-LEARNING API ROUTES
+  // =============================================
+
+  // Get learning stats
+  app.get("/api/learning/stats", async (req: Request, res: Response) => {
+    try {
+      const tenantId = req.query.tenant_id as string || 'varah';
+      const stats = await learningEngine.getLearningStats(tenantId);
+      res.json(stats);
+    } catch (error: any) {
+      console.error('Learning stats error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get knowledge drafts
+  app.get("/api/learning/drafts", async (req: Request, res: Response) => {
+    try {
+      const tenantId = req.query.tenant_id as string || 'varah';
+      const status = req.query.status as string | undefined;
+      const drafts = await learningEngine.getDrafts(tenantId, status);
+      res.json({ drafts, total: drafts.length });
+    } catch (error: any) {
+      console.error('Get drafts error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Approve a draft (promote to published knowledge)
+  app.post("/api/learning/drafts/:id/approve", async (req: Request, res: Response) => {
+    try {
+      const draftId = req.params.id as string;
+      const reviewedBy = (req.body.reviewed_by as string) || 'admin';
+      const success = await learningEngine.approveDraft(draftId, reviewedBy);
+      
+      if (success) {
+        res.json({ message: 'Draft approved and promoted to knowledge base', id: draftId });
+      } else {
+        res.status(404).json({ error: 'Draft not found' });
+      }
+    } catch (error: any) {
+      console.error('Approve draft error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Reject a draft
+  app.post("/api/learning/drafts/:id/reject", async (req: Request, res: Response) => {
+    try {
+      const draftId = req.params.id as string;
+      const reviewedBy = (req.body.reviewed_by as string) || 'admin';
+      await learningEngine.rejectDraft(draftId, reviewedBy);
+      res.json({ message: 'Draft rejected', id: draftId });
+    } catch (error: any) {
+      console.error('Reject draft error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get query patterns (what users are asking)
+  app.get("/api/learning/patterns", async (req: Request, res: Response) => {
+    try {
+      const tenantId = req.query.tenant_id as string || 'varah';
+      const gapsOnly = req.query.gaps_only === 'true';
+      const patterns = await learningEngine.getQueryPatterns(tenantId, gapsOnly);
+      res.json({ patterns, total: patterns.length });
+    } catch (error: any) {
+      console.error('Get patterns error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // =============================================
+  // NEURAL LINK API ROUTES
+  // =============================================
+
+  // Compute neural links (admin action)
+  app.post("/api/neural-link/compute", async (req: Request, res: Response) => {
+    try {
+      const tenantId = req.body.tenant_id || 'varah';
+      console.log(`[NeuralLink] Computing cross-domain links for tenant: ${tenantId}`);
+      const count = await neuralLinkEngine.computeLinks(tenantId);
+      res.json({ message: `Neural links computed successfully`, links_created: count });
+    } catch (error: any) {
+      console.error('Compute links error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get network graph data
+  app.get("/api/neural-link/graph", async (req: Request, res: Response) => {
+    try {
+      const tenantId = req.query.tenant_id as string || 'varah';
+      const graph = await neuralLinkEngine.getNetworkGraph(tenantId);
+      res.json(graph);
+    } catch (error: any) {
+      console.error('Get graph error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get links for a specific knowledge unit
+  app.get("/api/neural-link/unit/:unitId", async (req: Request, res: Response) => {
+    try {
+      const tenantId = req.query.tenant_id as string || 'varah';
+      const links = await neuralLinkEngine.getLinksForUnit(tenantId, req.params.unitId as string);
+      res.json({
+        unitId: req.params.unitId,
+        connections: links.map(l => ({
+          linkId: l.link.id,
+          connectedUnit: {
+            id: l.connectedUnit.id,
+            topic: l.connectedUnit.topic,
+            domain: l.connectedUnit.domain
+          },
+          score: l.link.linkScore,
+          type: l.link.linkType,
+          evidence: l.link.evidence
+        })),
+        total: links.length
+      });
+    } catch (error: any) {
+      console.error('Get unit links error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Synthesize cross-domain response
+  app.post("/api/neural-link/synthesize", async (req: Request, res: Response) => {
+    try {
+      const schema = z.object({
+        tenant_id: z.string(),
+        query: z.string().min(1),
+        domains: z.array(DomainSchema).min(2)
+      });
+      const validated = schema.parse(req.body);
+      
+      const result = await neuralLinkEngine.synthesize(
+        validated.tenant_id,
+        validated.query,
+        validated.domains
+      );
+      res.json(result);
+    } catch (error: any) {
+      console.error('Synthesize error:', error);
+      res.status(400).json({ error: error.message });
     }
   });
 

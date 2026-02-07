@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, uuid, timestamp, integer, jsonb, decimal } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, uuid, timestamp, integer, jsonb, decimal, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -54,10 +54,40 @@ export const aryaKnowledgeDrafts = pgTable("arya_knowledge_drafts", {
   sourceTitle: varchar("source_title", { length: 500 }).notNull(),
   confidenceScore: decimal("confidence_score", { precision: 3, scale: 2 }).default("0.00"),
   learnedFromQuery: text("learned_from_query"),
+  status: varchar("status", { length: 20 }).default("pending").$type<'pending' | 'approved' | 'rejected'>(),
   rules: jsonb("rules"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   reviewedAt: timestamp("reviewed_at"),
   reviewedBy: varchar("reviewed_by", { length: 100 })
+});
+
+// Query Patterns Table (self-learning: tracks query frequency and gaps)
+export const aryaQueryPatterns = pgTable("arya_query_patterns", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id", { length: 100 }).notNull(),
+  normalizedQuery: text("normalized_query").notNull(),
+  domain: varchar("domain", { length: 50 }).$type<Domain>(),
+  queryCount: integer("query_count").default(1).notNull(),
+  lastResultCount: integer("last_result_count").default(0),
+  avgConfidence: decimal("avg_confidence", { precision: 3, scale: 2 }).default("0.00"),
+  isGap: boolean("is_gap").default(false),
+  draftGenerated: boolean("draft_generated").default(false),
+  firstSeen: timestamp("first_seen").defaultNow().notNull(),
+  lastSeen: timestamp("last_seen").defaultNow().notNull()
+});
+
+// Neural Links Table (cross-domain knowledge connections)
+export const aryaNeuralLinks = pgTable("arya_neural_links", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id", { length: 100 }).notNull(),
+  fromUnitId: varchar("from_unit_id", { length: 255 }).notNull(),
+  toUnitId: varchar("to_unit_id", { length: 255 }).notNull(),
+  fromDomain: varchar("from_domain", { length: 50 }).notNull().$type<Domain>(),
+  toDomain: varchar("to_domain", { length: 50 }).notNull().$type<Domain>(),
+  linkScore: decimal("link_score", { precision: 4, scale: 3 }).default("0.000").notNull(),
+  linkType: varchar("link_type", { length: 50 }).notNull().$type<'tag_overlap' | 'keyword_similarity' | 'conceptual' | 'complementary'>(),
+  evidence: text("evidence").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
 // Audit Logs Table
@@ -87,6 +117,30 @@ export const insertAryaKnowledgeSchema = createInsertSchema(aryaKnowledge).omit(
 
 export type InsertAryaKnowledge = z.infer<typeof insertAryaKnowledgeSchema>;
 export type AryaKnowledge = typeof aryaKnowledge.$inferSelect;
+
+export const insertAryaKnowledgeDraftSchema = createInsertSchema(aryaKnowledgeDrafts).omit({
+  id: true,
+  createdAt: true,
+  reviewedAt: true,
+  reviewedBy: true
+});
+export type InsertAryaKnowledgeDraft = z.infer<typeof insertAryaKnowledgeDraftSchema>;
+export type AryaKnowledgeDraft = typeof aryaKnowledgeDrafts.$inferSelect;
+
+export const insertAryaQueryPatternSchema = createInsertSchema(aryaQueryPatterns).omit({
+  id: true,
+  firstSeen: true,
+  lastSeen: true
+});
+export type InsertAryaQueryPattern = z.infer<typeof insertAryaQueryPatternSchema>;
+export type AryaQueryPattern = typeof aryaQueryPatterns.$inferSelect;
+
+export const insertAryaNeuralLinkSchema = createInsertSchema(aryaNeuralLinks).omit({
+  id: true,
+  createdAt: true
+});
+export type InsertAryaNeuralLink = z.infer<typeof insertAryaNeuralLinkSchema>;
+export type AryaNeuralLink = typeof aryaNeuralLinks.$inferSelect;
 
 // Query schemas
 export const QueryRequestSchema = z.object({
