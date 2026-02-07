@@ -42,7 +42,8 @@ The project is organized as a monorepo with three main areas:
 - **Animations:** Framer Motion for page transitions
 
 **Key Pages:**
-- `/` — Dashboard with system metrics
+- `/` — Conversational chat with ARYA (primary page) — text and voice input, streaming AI responses with RAG knowledge context
+- `/dashboard` — Dashboard with system metrics
 - `/orchestrator` — Interactive query routing visualization with weight sliders
 - `/knowledge` — Knowledge base browser with domain filtering
 - `/learning` — Self-Learning engine: query patterns, knowledge gap detection, draft review/approval
@@ -74,6 +75,12 @@ The project is organized as a monorepo with three main areas:
 - `GET /api/neural-link/graph` — Full network graph (nodes + edges)
 - `GET /api/neural-link/unit/:unitId` — Get connections for a specific knowledge unit
 - `POST /api/neural-link/synthesize` — Cross-domain synthesis from multiple domains
+- `GET /api/arya/conversations` — List all chat conversations
+- `POST /api/arya/conversations` — Create a new chat conversation
+- `GET /api/arya/conversations/:id` — Get conversation with messages
+- `DELETE /api/arya/conversations/:id` — Delete a conversation
+- `POST /api/arya/conversations/:id/messages` — Send text message, get streaming AI response (RAG + OpenAI)
+- `POST /api/arya/conversations/:id/voice` — Send voice audio, transcribe → AI response (STT + RAG + OpenAI)
 
 ### Knowledge Engine Architecture
 
@@ -140,7 +147,7 @@ The four-domain knowledge engine works as follows:
 | Service | Purpose | Status |
 |---------|---------|--------|
 | **Sarvam.ai** | Voice transcription for Indian languages (WebSocket streaming) | Stub implemented in `arya-core/src/api/voice.ts`, needs `SARVAM_API_KEY` |
-| **OpenAI** | LLM integration for knowledge processing | Listed in build allowlist, not yet integrated |
+| **OpenAI (via Replit AI Integrations)** | LLM for conversational responses (gpt-5.2), voice transcription (gpt-4o-mini-transcribe) | Active — `AI_INTEGRATIONS_OPENAI_API_KEY`, `AI_INTEGRATIONS_OPENAI_BASE_URL` |
 | **Google Generative AI** | Alternative LLM provider | Listed in build allowlist, not yet integrated |
 | **Stripe** | Payment processing | Listed in build deps, not yet integrated |
 | **Nodemailer** | Email sending | Listed in build deps, not yet integrated |

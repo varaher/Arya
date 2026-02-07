@@ -8,6 +8,9 @@ import { Orchestrator } from "./arya/orchestrator";
 import { MedicalEngine } from "./arya/medical-engine";
 import { LearningEngine } from "./arya/learning-engine";
 import { NeuralLinkEngine } from "./arya/neural-link-engine";
+import { generateAryaResponse, type ChatMessage } from "./arya/chat-engine";
+import { chatStorage } from "./replit_integrations/chat/storage";
+import { ensureCompatibleFormat, speechToText } from "./replit_integrations/audio/client";
 import { QueryRequestSchema, DomainSchema } from "@shared/schema";
 
 const retriever = new KnowledgeRetriever();
@@ -331,6 +334,149 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error('Synthesize error:', error);
       res.status(400).json({ error: error.message });
+    }
+  });
+
+  // =============================================
+  // ARYA CHAT API ROUTES (Conversational AI)
+  // =============================================
+
+  app.get("/api/arya/conversations", async (_req: Request, res: Response) => {
+    try {
+      const conversations = await chatStorage.getAllConversations();
+      res.json(conversations);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/arya/conversations", async (req: Request, res: Response) => {
+    try {
+      const { title } = req.body;
+      const conversation = await chatStorage.createConversation(title || "New Chat");
+      res.status(201).json(conversation);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/arya/conversations/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const conversation = await chatStorage.getConversation(id);
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+      const messages = await chatStorage.getMessagesByConversation(id);
+      res.json({ ...conversation, messages });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/arya/conversations/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      await chatStorage.deleteConversation(id);
+      res.status(204).send();
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Text chat: send message, get streaming AI response with knowledge context
+  app.post("/api/arya/conversations/:id/messages", async (req: Request, res: Response) => {
+    try {
+      const conversationId = parseInt(req.params.id);
+      const { content, tenant_id } = req.body;
+
+      if (!content || !content.trim()) {
+        return res.status(400).json({ error: "Message content is required" });
+      }
+
+      await chatStorage.createMessage(conversationId, "user", content);
+
+      const existingMessages = await chatStorage.getMessagesByConversation(conversationId);
+      const history: ChatMessage[] = existingMessages.slice(0, -1).map(m => ({
+        role: m.role as "user" | "assistant",
+        content: m.content,
+      }));
+
+      res.setHeader("Content-Type", "text/event-stream");
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Connection", "keep-alive");
+
+      const stream = await generateAryaResponse(content, history, tenant_id || "varah");
+      let fullResponse = "";
+
+      for await (const chunk of stream) {
+        fullResponse += chunk;
+        res.write(`data: ${JSON.stringify({ content: chunk })}\n\n`);
+      }
+
+      await chatStorage.createMessage(conversationId, "assistant", fullResponse);
+
+      res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+      res.end();
+    } catch (error: any) {
+      console.error("ARYA chat error:", error);
+      if (res.headersSent) {
+        res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
+        res.end();
+      } else {
+        res.status(500).json({ error: error.message });
+      }
+    }
+  });
+
+  // Voice chat: send audio, get text response (transcribe → ARYA → stream text)
+  app.post("/api/arya/conversations/:id/voice", async (req: Request, res: Response) => {
+    try {
+      const conversationId = parseInt(req.params.id);
+      const { audio, tenant_id } = req.body;
+
+      if (!audio) {
+        return res.status(400).json({ error: "Audio data (base64) is required" });
+      }
+
+      const rawBuffer = Buffer.from(audio, "base64");
+      const { buffer: audioBuffer, format: inputFormat } = await ensureCompatibleFormat(rawBuffer);
+      const userTranscript = await speechToText(audioBuffer, inputFormat);
+
+      await chatStorage.createMessage(conversationId, "user", userTranscript);
+
+      const existingMessages = await chatStorage.getMessagesByConversation(conversationId);
+      const history: ChatMessage[] = existingMessages.slice(0, -1).map(m => ({
+        role: m.role as "user" | "assistant",
+        content: m.content,
+      }));
+
+      res.setHeader("Content-Type", "text/event-stream");
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Connection", "keep-alive");
+
+      res.write(`data: ${JSON.stringify({ type: "user_transcript", content: userTranscript })}\n\n`);
+
+      const stream = await generateAryaResponse(userTranscript, history, tenant_id || "varah");
+      let fullResponse = "";
+
+      for await (const chunk of stream) {
+        fullResponse += chunk;
+        res.write(`data: ${JSON.stringify({ type: "assistant", content: chunk })}\n\n`);
+      }
+
+      await chatStorage.createMessage(conversationId, "assistant", fullResponse);
+
+      res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
+      res.end();
+    } catch (error: any) {
+      console.error("ARYA voice error:", error);
+      if (res.headersSent) {
+        res.write(`data: ${JSON.stringify({ type: "error", error: error.message })}\n\n`);
+        res.end();
+      } else {
+        res.status(500).json({ error: error.message });
+      }
     }
   });
 

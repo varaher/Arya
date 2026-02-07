@@ -10,14 +10,16 @@ import {
   Search,
   Database,
   Brain,
-  Zap
+  Zap,
+  MessageCircle
 } from "lucide-react";
 
 export function Sidebar() {
   const [location] = useLocation();
 
   const navItems = [
-    { label: "Overview", icon: LayoutDashboard, href: "/" },
+    { label: "Chat with ARYA", icon: MessageCircle, href: "/" },
+    { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
     { label: "Orchestrator", icon: BrainCircuit, href: "/orchestrator" },
     { label: "Knowledge Base", icon: Database, href: "/knowledge" },
     { label: "Self-Learning", icon: Brain, href: "/learning" },

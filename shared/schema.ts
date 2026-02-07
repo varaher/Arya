@@ -154,3 +154,6 @@ export const QueryRequestSchema = z.object({
 });
 
 export type QueryRequest = z.infer<typeof QueryRequestSchema>;
+
+// Re-export chat models
+export * from "./models/chat";

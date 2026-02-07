@@ -4,6 +4,7 @@ hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
 [nix]
 channel = "stable-24_05"
+packages = ["ffmpeg"]
 
 [[ports]]
 localPort = 5000
@@ -45,3 +46,4 @@ waitForPort = 5000
 
 [agent]
 mockupState = "FULLSTACK"
+integrations = ["javascript_openai_ai_integrations:2.0.0"]

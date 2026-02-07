@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/layout/Layout";
 import NotFound from "@/pages/not-found";
 
+import AryaChat from "@/pages/AryaChat";
 import Dashboard from "@/pages/Dashboard";
 import Orchestrator from "@/pages/Orchestrator";
 import Knowledge from "@/pages/Knowledge";
@@ -19,7 +20,8 @@ function Router() {
   return (
     <Layout>
       <Switch>
-        <Route path="/" component={Dashboard} />
+        <Route path="/" component={AryaChat} />
+        <Route path="/dashboard" component={Dashboard} />
         <Route path="/orchestrator" component={Orchestrator} />
         <Route path="/knowledge" component={Knowledge} />
         <Route path="/ermate" component={ERmate} />
