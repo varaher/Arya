@@ -409,15 +409,14 @@ export default function AryaChat() {
                 Hey, I'm ARYA
               </h2>
               <p className="text-muted-foreground max-w-md mb-6 md:mb-8 text-sm md:text-base">
-                Ask me anything — from health and wellness to business strategy,
-                ancient wisdom, or leadership insights. Type or tap the mic to talk.
+                Your personal AI assistant. Ask me anything, explore ideas, solve problems, or just have a conversation. Type or tap the mic to talk.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3 max-w-lg w-full">
                 {[
-                  "What's a good morning routine for energy?",
-                  "How can I reduce stress at work?",
-                  "Tell me about the concept of Dharma",
-                  "Best leadership advice for a new manager",
+                  "Help me plan my day effectively",
+                  "What are some ways to grow my business?",
+                  "Explain a complex topic in simple terms",
+                  "Give me advice on making a tough decision",
                 ].map((suggestion, i) => (
                   <button
                     key={i}
@@ -574,7 +573,7 @@ export default function AryaChat() {
             </div>
           </Card>
           <p className="text-[10px] md:text-xs text-muted-foreground text-center mt-1.5 md:mt-2">
-            ARYA draws from medical, business, Vedic, and governance knowledge to help you.
+            ARYA is here to help you with anything you need.
           </p>
         </div>
       </div>
