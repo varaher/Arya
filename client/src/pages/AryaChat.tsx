@@ -5,12 +5,13 @@ import { Card } from "@/components/ui/card";
 import {
   Send,
   Mic,
-  MicOff,
   Plus,
   Trash2,
   MessageSquare,
   Loader2,
   Square,
+  PanelLeftOpen,
+  PanelLeftClose,
 } from "lucide-react";
 
 interface Conversation {
@@ -34,6 +35,7 @@ export default function AryaChat() {
   const [streamingContent, setStreamingContent] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [showSidebar, setShowSidebar] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -106,6 +108,7 @@ export default function AryaChat() {
     setInput("");
     setIsStreaming(true);
     setStreamingContent("");
+    setShowSidebar(false);
 
     queryClient.setQueryData(
       ["/api/arya/conversations", convId],
@@ -209,6 +212,7 @@ export default function AryaChat() {
 
     setIsRecording(false);
     setRecordingTime(0);
+    setShowSidebar(false);
 
     if (blob.size === 0) return;
 
@@ -311,23 +315,42 @@ export default function AryaChat() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-2rem)] gap-4" data-testid="page-arya-chat">
-      {/* Sidebar: Conversations */}
-      <div className="w-72 flex-shrink-0 flex flex-col">
-        <Button
-          data-testid="button-new-chat"
-          onClick={() => createConversation.mutate("New Chat")}
-          className="w-full mb-3 bg-primary text-primary-foreground hover:bg-primary/90"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          New Chat
-        </Button>
-        <div className="flex-1 overflow-y-auto space-y-1" data-testid="list-conversations">
+    <div className="flex h-[calc(100vh-5rem)] md:h-[calc(100vh-6rem)] gap-0 md:gap-4 relative" data-testid="page-arya-chat">
+      {showSidebar && (
+        <div
+          className="fixed inset-0 bg-black/50 z-20 md:hidden"
+          onClick={() => setShowSidebar(false)}
+        />
+      )}
+
+      <div
+        className={`${
+          showSidebar ? "translate-x-0" : "-translate-x-full"
+        } md:translate-x-0 fixed md:relative z-30 md:z-auto top-0 left-0 h-full w-72 md:w-64 lg:w-72 flex-shrink-0 flex flex-col bg-card/95 md:bg-transparent backdrop-blur-xl md:backdrop-blur-none border-r md:border-r-0 border-border/50 transition-transform duration-300 pt-14 md:pt-0`}
+      >
+        <div className="p-3">
+          <Button
+            data-testid="button-new-chat"
+            onClick={() => {
+              createConversation.mutate("New Chat");
+              setShowSidebar(false);
+            }}
+            className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+            size="sm"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            New Chat
+          </Button>
+        </div>
+        <div className="flex-1 overflow-y-auto space-y-1 px-2 pb-3" data-testid="list-conversations">
           {conversations.map((conv) => (
             <div
               key={conv.id}
               data-testid={`card-conversation-${conv.id}`}
-              onClick={() => setActiveConversation(conv.id)}
+              onClick={() => {
+                setActiveConversation(conv.id);
+                setShowSidebar(false);
+              }}
               className={`group flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-all ${
                 activeConversation === conv.id
                   ? "bg-primary/10 border border-primary/30 text-white"
@@ -358,25 +381,38 @@ export default function AryaChat() {
         </div>
       </div>
 
-      {/* Main Chat Area */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-2 py-4 space-y-4" data-testid="list-messages">
+        <div className="flex items-center gap-2 px-2 py-1.5 md:hidden">
+          <button
+            data-testid="button-toggle-conversations"
+            onClick={() => setShowSidebar(!showSidebar)}
+            className="p-2 rounded-md hover:bg-white/10 text-muted-foreground"
+          >
+            {showSidebar ? <PanelLeftClose className="w-5 h-5" /> : <PanelLeftOpen className="w-5 h-5" />}
+          </button>
+          <span className="text-sm text-muted-foreground truncate">
+            {activeConversation
+              ? conversations.find((c) => c.id === activeConversation)?.title || "Chat"
+              : "New Chat"}
+          </span>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-2 sm:px-4 py-3 md:py-4 space-y-3 md:space-y-4" data-testid="list-messages">
           {!activeConversation && messages.length === 0 && !streamingContent && (
-            <div className="flex flex-col items-center justify-center h-full text-center">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-cyan-500/20 to-amber-500/20 flex items-center justify-center mb-6">
-                <span className="text-4xl font-display font-bold bg-gradient-to-r from-cyan-400 to-amber-400 bg-clip-text text-transparent">
+            <div className="flex flex-col items-center justify-center h-full text-center px-4">
+              <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-br from-cyan-500/20 to-amber-500/20 flex items-center justify-center mb-4 md:mb-6">
+                <span className="text-3xl md:text-4xl font-display font-bold bg-gradient-to-r from-cyan-400 to-amber-400 bg-clip-text text-transparent">
                   A
                 </span>
               </div>
-              <h2 className="text-2xl font-display font-bold text-white mb-2" data-testid="text-welcome-title">
+              <h2 className="text-xl md:text-2xl font-display font-bold text-white mb-2" data-testid="text-welcome-title">
                 Hey, I'm ARYA
               </h2>
-              <p className="text-muted-foreground max-w-md mb-8">
+              <p className="text-muted-foreground max-w-md mb-6 md:mb-8 text-sm md:text-base">
                 Ask me anything — from health and wellness to business strategy,
                 ancient wisdom, or leadership insights. Type or tap the mic to talk.
               </p>
-              <div className="grid grid-cols-2 gap-3 max-w-lg w-full">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3 max-w-lg w-full">
                 {[
                   "What's a good morning routine for energy?",
                   "How can I reduce stress at work?",
@@ -387,7 +423,7 @@ export default function AryaChat() {
                     key={i}
                     data-testid={`button-suggestion-${i}`}
                     onClick={() => sendMessage(suggestion)}
-                    className="text-left px-4 py-3 rounded-xl border border-border/50 bg-card/30 text-sm text-muted-foreground hover:text-white hover:border-primary/40 hover:bg-card/60 transition-all"
+                    className="text-left px-3 md:px-4 py-2.5 md:py-3 rounded-xl border border-border/50 bg-card/30 text-sm text-muted-foreground hover:text-white hover:border-primary/40 hover:bg-card/60 transition-all"
                   >
                     {suggestion}
                   </button>
@@ -403,7 +439,7 @@ export default function AryaChat() {
               className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
               <div
-                className={`max-w-[75%] rounded-2xl px-4 py-3 ${
+                className={`max-w-[90%] sm:max-w-[80%] md:max-w-[75%] rounded-2xl px-3 md:px-4 py-2.5 md:py-3 ${
                   msg.role === "user"
                     ? "bg-primary/20 border border-primary/30 text-white"
                     : "bg-card/60 border border-border/30 text-white/90"
@@ -423,10 +459,9 @@ export default function AryaChat() {
             </div>
           ))}
 
-          {/* Streaming response */}
           {streamingContent && (
             <div className="flex justify-start" data-testid="message-streaming">
-              <div className="max-w-[75%] rounded-2xl px-4 py-3 bg-card/60 border border-border/30 text-white/90">
+              <div className="max-w-[90%] sm:max-w-[80%] md:max-w-[75%] rounded-2xl px-3 md:px-4 py-2.5 md:py-3 bg-card/60 border border-border/30 text-white/90">
                 <div className="flex items-center gap-1.5 mb-1">
                   <span className="text-xs font-semibold bg-gradient-to-r from-cyan-400 to-amber-400 bg-clip-text text-transparent">
                     ARYA
@@ -442,7 +477,7 @@ export default function AryaChat() {
 
           {isStreaming && !streamingContent && (
             <div className="flex justify-start" data-testid="message-thinking">
-              <div className="rounded-2xl px-4 py-3 bg-card/60 border border-border/30">
+              <div className="rounded-2xl px-3 md:px-4 py-2.5 md:py-3 bg-card/60 border border-border/30">
                 <div className="flex items-center gap-1.5 mb-1">
                   <span className="text-xs font-semibold bg-gradient-to-r from-cyan-400 to-amber-400 bg-clip-text text-transparent">
                     ARYA
@@ -459,18 +494,16 @@ export default function AryaChat() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input Area */}
-        <div className="px-2 pb-4 pt-2">
+        <div className="px-2 sm:px-4 pb-3 md:pb-4 pt-1 md:pt-2">
           <Card className="bg-card/50 border-border/50 backdrop-blur-sm">
-            <div className="flex items-end gap-2 p-3">
-              {/* Voice button */}
+            <div className="flex items-end gap-1.5 md:gap-2 p-2 md:p-3">
               <Button
                 data-testid="button-voice"
                 variant="ghost"
                 size="icon"
                 onClick={isRecording ? stopRecording : startRecording}
                 disabled={isStreaming}
-                className={`flex-shrink-0 rounded-full h-10 w-10 ${
+                className={`flex-shrink-0 rounded-full h-9 w-9 md:h-10 md:w-10 ${
                   isRecording
                     ? "bg-red-500/20 text-red-400 hover:bg-red-500/30 animate-pulse"
                     : "text-muted-foreground hover:text-white hover:bg-card"
@@ -480,7 +513,7 @@ export default function AryaChat() {
               </Button>
 
               {isRecording ? (
-                <div className="flex-1 flex items-center justify-center gap-3 py-2">
+                <div className="flex-1 flex items-center justify-center gap-2 md:gap-3 py-2">
                   <div className="flex gap-1">
                     {[...Array(5)].map((_, i) => (
                       <div
@@ -496,7 +529,7 @@ export default function AryaChat() {
                   <span className="text-sm text-red-400 font-mono">
                     {formatTime(recordingTime)}
                   </span>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs text-muted-foreground hidden sm:inline">
                     Recording... tap stop when done
                   </span>
                 </div>
@@ -524,14 +557,13 @@ export default function AryaChat() {
                 />
               )}
 
-              {/* Send button */}
               <Button
                 data-testid="button-send"
                 variant="ghost"
                 size="icon"
                 onClick={() => sendMessage(input)}
                 disabled={!input.trim() || isStreaming || isRecording}
-                className="flex-shrink-0 rounded-full h-10 w-10 text-primary hover:bg-primary/10 disabled:opacity-30"
+                className="flex-shrink-0 rounded-full h-9 w-9 md:h-10 md:w-10 text-primary hover:bg-primary/10 disabled:opacity-30"
               >
                 {isStreaming ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
@@ -541,7 +573,7 @@ export default function AryaChat() {
               </Button>
             </div>
           </Card>
-          <p className="text-xs text-muted-foreground text-center mt-2">
+          <p className="text-[10px] md:text-xs text-muted-foreground text-center mt-1.5 md:mt-2">
             ARYA draws from medical, business, Vedic, and governance knowledge to help you.
           </p>
         </div>
