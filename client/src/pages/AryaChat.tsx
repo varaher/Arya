@@ -12,6 +12,9 @@ import {
   Square,
   PanelLeftOpen,
   PanelLeftClose,
+  Globe,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 
 interface Conversation {
@@ -28,6 +31,26 @@ interface Message {
   createdAt: string;
 }
 
+interface LanguageOption {
+  code: string;
+  name: string;
+  native: string;
+}
+
+const DEFAULT_LANGUAGES: LanguageOption[] = [
+  { code: "en-IN", name: "English", native: "English" },
+  { code: "hi-IN", name: "Hindi", native: "हिन्दी" },
+  { code: "bn-IN", name: "Bengali", native: "বাংলা" },
+  { code: "ta-IN", name: "Tamil", native: "தமிழ்" },
+  { code: "te-IN", name: "Telugu", native: "తెలుగు" },
+  { code: "mr-IN", name: "Marathi", native: "मराठी" },
+  { code: "kn-IN", name: "Kannada", native: "ಕನ್ನಡ" },
+  { code: "ml-IN", name: "Malayalam", native: "മലയാളം" },
+  { code: "gu-IN", name: "Gujarati", native: "ગુજરાતી" },
+  { code: "pa-IN", name: "Punjabi", native: "ਪੰਜਾਬੀ" },
+  { code: "od-IN", name: "Odia", native: "ଓଡ଼ିଆ" },
+];
+
 export default function AryaChat() {
   const [activeConversation, setActiveConversation] = useState<number | null>(null);
   const [input, setInput] = useState("");
@@ -36,11 +59,17 @@ export default function AryaChat() {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [showSidebar, setShowSidebar] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState("en-IN");
+  const [showLanguageMenu, setShowLanguageMenu] = useState(false);
+  const [translatedContent, setTranslatedContent] = useState<string | null>(null);
+  const [playingAudio, setPlayingAudio] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const langMenuRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
 
   const { data: conversations = [] } = useQuery<Conversation[]>({
@@ -94,6 +123,55 @@ export default function AryaChat() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, streamingContent]);
 
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (langMenuRef.current && !langMenuRef.current.contains(e.target as Node)) {
+        setShowLanguageMenu(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const playAudioBase64 = useCallback((base64Audio: string) => {
+    try {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+      const byteChars = atob(base64Audio);
+      const byteArray = new Uint8Array(byteChars.length);
+      for (let i = 0; i < byteChars.length; i++) {
+        byteArray[i] = byteChars.charCodeAt(i);
+      }
+      const blob = new Blob([byteArray], { type: "audio/wav" });
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      setPlayingAudio(true);
+      audio.onended = () => {
+        setPlayingAudio(false);
+        URL.revokeObjectURL(url);
+      };
+      audio.onerror = () => {
+        setPlayingAudio(false);
+        URL.revokeObjectURL(url);
+      };
+      audio.play();
+    } catch (err) {
+      console.error("Audio playback error:", err);
+      setPlayingAudio(false);
+    }
+  }, []);
+
+  const stopAudio = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+      setPlayingAudio(false);
+    }
+  }, []);
+
   const sendMessage = useCallback(async (text: string) => {
     if (!text.trim() || isStreaming) return;
 
@@ -108,6 +186,7 @@ export default function AryaChat() {
     setInput("");
     setIsStreaming(true);
     setStreamingContent("");
+    setTranslatedContent(null);
     setShowSidebar(false);
 
     queryClient.setQueryData(
@@ -224,6 +303,7 @@ export default function AryaChat() {
 
     setIsStreaming(true);
     setStreamingContent("");
+    setTranslatedContent(null);
 
     try {
       const base64Audio = await new Promise<string>((resolve) => {
@@ -238,7 +318,7 @@ export default function AryaChat() {
       const response = await fetch(`/api/arya/conversations/${convId}/voice`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ audio: base64Audio, tenant_id: "varah" }),
+        body: JSON.stringify({ audio: base64Audio, tenant_id: "varah", language: selectedLanguage }),
       });
 
       const streamReader = response.body?.getReader();
@@ -282,6 +362,12 @@ export default function AryaChat() {
               fullContent += event.content;
               setStreamingContent(fullContent);
             }
+            if (event.type === "translated_response") {
+              setTranslatedContent(event.content);
+            }
+            if (event.type === "audio_response" && event.audio) {
+              playAudioBase64(event.audio);
+            }
             if (event.type === "done") {
               queryClient.invalidateQueries({
                 queryKey: ["/api/arya/conversations", convId],
@@ -299,7 +385,7 @@ export default function AryaChat() {
         queryKey: ["/api/arya/conversations", convId],
       });
     }
-  }, [activeConversation, queryClient, createConversation]);
+  }, [activeConversation, queryClient, createConversation, selectedLanguage, playAudioBase64]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -313,6 +399,8 @@ export default function AryaChat() {
     const s = seconds % 60;
     return `${m}:${s.toString().padStart(2, "0")}`;
   };
+
+  const currentLang = DEFAULT_LANGUAGES.find(l => l.code === selectedLanguage);
 
   return (
     <div className="flex h-[calc(100vh-5rem)] md:h-[calc(100vh-6rem)] gap-0 md:gap-4 relative" data-testid="page-arya-chat">
@@ -470,6 +558,17 @@ export default function AryaChat() {
                   {streamingContent}
                   <span className="inline-block w-1.5 h-4 bg-primary/60 animate-pulse ml-0.5" />
                 </div>
+                {translatedContent && (
+                  <div className="mt-3 pt-3 border-t border-border/30">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <Globe className="w-3 h-3 text-amber-400" />
+                      <span className="text-xs text-amber-400">{currentLang?.native || selectedLanguage}</span>
+                    </div>
+                    <div className="text-sm leading-relaxed whitespace-pre-wrap text-white/80">
+                      {translatedContent}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -484,7 +583,7 @@ export default function AryaChat() {
                 </div>
                 <div className="flex items-center gap-2 text-muted-foreground text-sm">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Thinking...
+                  {selectedLanguage !== "en-IN" ? "Listening & translating..." : "Thinking..."}
                 </div>
               </div>
             </div>
@@ -494,8 +593,73 @@ export default function AryaChat() {
         </div>
 
         <div className="px-2 sm:px-4 pb-3 md:pb-4 pt-1 md:pt-2">
+          {playingAudio && (
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30">
+                <div className="flex gap-0.5">
+                  {[...Array(4)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="w-0.5 bg-amber-400 rounded-full animate-pulse"
+                      style={{ height: `${8 + Math.random() * 10}px`, animationDelay: `${i * 0.1}s` }}
+                    />
+                  ))}
+                </div>
+                <span className="text-xs text-amber-400">ARYA is speaking...</span>
+                <button
+                  data-testid="button-stop-audio"
+                  onClick={stopAudio}
+                  className="p-0.5 rounded-full hover:bg-amber-500/20"
+                >
+                  <VolumeX className="w-3.5 h-3.5 text-amber-400" />
+                </button>
+              </div>
+            </div>
+          )}
           <Card className="bg-card/50 border-border/50 backdrop-blur-sm">
             <div className="flex items-end gap-1.5 md:gap-2 p-2 md:p-3">
+              <div className="relative" ref={langMenuRef}>
+                <Button
+                  data-testid="button-language-select"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowLanguageMenu(!showLanguageMenu)}
+                  className={`flex-shrink-0 rounded-full h-9 w-9 md:h-10 md:w-10 ${
+                    selectedLanguage !== "en-IN"
+                      ? "text-amber-400 bg-amber-500/10 hover:bg-amber-500/20"
+                      : "text-muted-foreground hover:text-white hover:bg-card"
+                  }`}
+                  title={`Voice language: ${currentLang?.name || "English"}`}
+                >
+                  <Globe className="w-4 h-4" />
+                </Button>
+                {showLanguageMenu && (
+                  <div className="absolute bottom-full left-0 mb-2 w-52 bg-card border border-border/50 rounded-xl shadow-xl overflow-hidden z-50">
+                    <div className="px-3 py-2 border-b border-border/30">
+                      <p className="text-xs font-medium text-muted-foreground">Voice Language</p>
+                    </div>
+                    <div className="max-h-64 overflow-y-auto py-1">
+                      {DEFAULT_LANGUAGES.map((lang) => (
+                        <button
+                          key={lang.code}
+                          data-testid={`button-lang-${lang.code}`}
+                          onClick={() => {
+                            setSelectedLanguage(lang.code);
+                            setShowLanguageMenu(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-white/5 transition-colors ${
+                            selectedLanguage === lang.code ? "text-primary bg-primary/10" : "text-white/80"
+                          }`}
+                        >
+                          <span>{lang.name}</span>
+                          <span className="text-xs text-muted-foreground">{lang.native}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <Button
                 data-testid="button-voice"
                 variant="ghost"
@@ -529,7 +693,7 @@ export default function AryaChat() {
                     {formatTime(recordingTime)}
                   </span>
                   <span className="text-xs text-muted-foreground hidden sm:inline">
-                    Recording... tap stop when done
+                    Recording{selectedLanguage !== "en-IN" ? ` in ${currentLang?.name}` : ""}... tap stop when done
                   </span>
                 </div>
               ) : (
@@ -572,9 +736,17 @@ export default function AryaChat() {
               </Button>
             </div>
           </Card>
-          <p className="text-[10px] md:text-xs text-muted-foreground text-center mt-1.5 md:mt-2">
-            ARYA is here to help you with anything you need.
-          </p>
+          <div className="flex items-center justify-center gap-2 mt-1.5 md:mt-2">
+            {selectedLanguage !== "en-IN" && (
+              <span className="text-[10px] md:text-xs text-amber-400/80 flex items-center gap-1">
+                <Volume2 className="w-3 h-3" />
+                Voice: {currentLang?.native}
+              </span>
+            )}
+            <p className="text-[10px] md:text-xs text-muted-foreground text-center">
+              ARYA is here to help you with anything you need.
+            </p>
+          </div>
         </div>
       </div>
     </div>

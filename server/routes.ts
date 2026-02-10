@@ -11,6 +11,16 @@ import { NeuralLinkEngine } from "./arya/neural-link-engine";
 import { generateAryaResponse, type ChatMessage } from "./arya/chat-engine";
 import { chatStorage } from "./replit_integrations/chat/storage";
 import { ensureCompatibleFormat, speechToText } from "./replit_integrations/audio/client";
+import {
+  sarvamSpeechToText,
+  sarvamTranslate,
+  sarvamTextToSpeech,
+  sarvamSpeechToTextTranslate,
+  isIndianLanguage,
+  getSpeakerForLanguage,
+  SUPPORTED_LANGUAGES,
+  type SarvamLanguageCode,
+} from "./arya/sarvam-service";
 import { QueryRequestSchema, DomainSchema } from "@shared/schema";
 import {
   createApiKey,
@@ -439,10 +449,11 @@ export async function registerRoutes(
   });
 
   // Voice chat: send audio, get text response (transcribe → ARYA → stream text)
+  // Supports multilingual via Sarvam AI: Indian language audio → transcribe → translate to English → ARYA → translate back → TTS
   app.post("/api/arya/conversations/:id/voice", async (req: Request, res: Response) => {
     try {
       const conversationId = parseInt(req.params.id);
-      const { audio, tenant_id } = req.body;
+      const { audio, tenant_id, language } = req.body;
 
       if (!audio) {
         return res.status(400).json({ error: "Audio data (base64) is required" });
@@ -450,7 +461,31 @@ export async function registerRoutes(
 
       const rawBuffer = Buffer.from(audio, "base64");
       const { buffer: audioBuffer, format: inputFormat } = await ensureCompatibleFormat(rawBuffer);
-      const userTranscript = await speechToText(audioBuffer, inputFormat);
+
+      let userTranscript = "";
+      let detectedLanguage = language || "en-IN";
+      let queryForArya = "";
+
+      const useSarvam = language && language !== "en-IN" && process.env.SARVAM_API_KEY;
+
+      if (useSarvam) {
+        console.log(`[Voice] Using Sarvam AI for language: ${language}`);
+        const sttResult = await sarvamSpeechToText(audioBuffer, language as SarvamLanguageCode);
+        userTranscript = sttResult.transcript;
+        detectedLanguage = sttResult.languageCode || language;
+
+        if (isIndianLanguage(detectedLanguage)) {
+          const translation = await sarvamTranslate(userTranscript, detectedLanguage, "en-IN");
+          queryForArya = translation.translatedText;
+          console.log(`[Voice] Translated "${userTranscript}" → "${queryForArya}"`);
+        } else {
+          queryForArya = userTranscript;
+        }
+      } else {
+        userTranscript = await speechToText(audioBuffer, inputFormat);
+        queryForArya = userTranscript;
+        detectedLanguage = "en-IN";
+      }
 
       await chatStorage.createMessage(conversationId, "user", userTranscript);
 
@@ -464,9 +499,9 @@ export async function registerRoutes(
       res.setHeader("Cache-Control", "no-cache");
       res.setHeader("Connection", "keep-alive");
 
-      res.write(`data: ${JSON.stringify({ type: "user_transcript", content: userTranscript })}\n\n`);
+      res.write(`data: ${JSON.stringify({ type: "user_transcript", content: userTranscript, language: detectedLanguage })}\n\n`);
 
-      const stream = await generateAryaResponse(userTranscript, history, tenant_id || "varah");
+      const stream = await generateAryaResponse(queryForArya, history, tenant_id || "varah");
       let fullResponse = "";
 
       for await (const chunk of stream) {
@@ -475,6 +510,30 @@ export async function registerRoutes(
       }
 
       await chatStorage.createMessage(conversationId, "assistant", fullResponse);
+
+      if (isIndianLanguage(detectedLanguage) && process.env.SARVAM_API_KEY) {
+        try {
+          const translatedResponse = await sarvamTranslate(fullResponse, "en-IN", detectedLanguage);
+          const ttsResult = await sarvamTextToSpeech(
+            translatedResponse.translatedText,
+            detectedLanguage as SarvamLanguageCode,
+            getSpeakerForLanguage(detectedLanguage)
+          );
+          res.write(`data: ${JSON.stringify({
+            type: "translated_response",
+            content: translatedResponse.translatedText,
+            language: detectedLanguage,
+          })}\n\n`);
+          res.write(`data: ${JSON.stringify({
+            type: "audio_response",
+            audio: ttsResult.audioBase64,
+            format: ttsResult.format,
+            language: detectedLanguage,
+          })}\n\n`);
+        } catch (ttsError: any) {
+          console.error("[Voice] TTS/translation error:", ttsError.message);
+        }
+      }
 
       res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
       res.end();
@@ -486,6 +545,43 @@ export async function registerRoutes(
       } else {
         res.status(500).json({ error: error.message });
       }
+    }
+  });
+
+  app.get("/api/arya/languages", (_req: Request, res: Response) => {
+    res.json({ languages: SUPPORTED_LANGUAGES });
+  });
+
+  app.post("/api/arya/tts", async (req: Request, res: Response) => {
+    try {
+      const { text, language, speaker } = req.body;
+      if (!text) return res.status(400).json({ error: "Text is required" });
+      const langCode = (language || "hi-IN") as SarvamLanguageCode;
+      const ttsResult = await sarvamTextToSpeech(
+        text,
+        langCode,
+        speaker || getSpeakerForLanguage(langCode)
+      );
+      res.json(ttsResult);
+    } catch (error: any) {
+      console.error("TTS error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/arya/translate", async (req: Request, res: Response) => {
+    try {
+      const { text, source_language, target_language } = req.body;
+      if (!text) return res.status(400).json({ error: "Text is required" });
+      const result = await sarvamTranslate(
+        text,
+        source_language || "en-IN",
+        target_language || "hi-IN"
+      );
+      res.json(result);
+    } catch (error: any) {
+      console.error("Translate error:", error);
+      res.status(500).json({ error: error.message });
     }
   });
 

@@ -157,7 +157,7 @@ The four-domain knowledge engine works as follows:
 
 | Service | Purpose | Status |
 |---------|---------|--------|
-| **Sarvam.ai** | Voice transcription for Indian languages (WebSocket streaming) | Stub implemented in `arya-core/src/api/voice.ts`, needs `SARVAM_API_KEY` |
+| **Sarvam.ai** | Indian language STT (saarika:v2.5), TTS (bulbul:v2), Translation (mayura:v1) for 11 Indian languages | Active — `SARVAM_API_KEY`, service at `server/arya/sarvam-service.ts` |
 | **OpenAI (via Replit AI Integrations)** | LLM for conversational responses (gpt-5.2), voice transcription (gpt-4o-mini-transcribe) | Active — `AI_INTEGRATIONS_OPENAI_API_KEY`, `AI_INTEGRATIONS_OPENAI_BASE_URL` |
 | **Google Generative AI** | Alternative LLM provider | Listed in build allowlist, not yet integrated |
 | **Stripe** | Payment processing | Listed in build deps, not yet integrated |
