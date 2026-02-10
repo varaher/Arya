@@ -15,6 +15,7 @@ import ErPrana from "@/pages/ErPrana";
 import ApiPlayground from "@/pages/ApiPlayground";
 import SelfLearning from "@/pages/SelfLearning";
 import NeuralLink from "@/pages/NeuralLink";
+import DeveloperPortal from "@/pages/DeveloperPortal";
 
 function Router() {
   return (
@@ -29,6 +30,7 @@ function Router() {
         <Route path="/learning" component={SelfLearning} />
         <Route path="/neural-link" component={NeuralLink} />
         <Route path="/api" component={ApiPlayground} />
+        <Route path="/developers" component={DeveloperPortal} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

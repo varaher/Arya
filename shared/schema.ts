@@ -155,5 +155,49 @@ export const QueryRequestSchema = z.object({
 
 export type QueryRequest = z.infer<typeof QueryRequestSchema>;
 
+// API Keys Table (for external apps like ERmate, ErPrana to connect)
+export const aryaApiKeys = pgTable("arya_api_keys", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id", { length: 100 }).notNull(),
+  name: varchar("name", { length: 200 }).notNull(),
+  appId: varchar("app_id", { length: 50 }).notNull(),
+  keyHash: varchar("key_hash", { length: 128 }).notNull(),
+  keyPrefix: varchar("key_prefix", { length: 12 }).notNull(),
+  permissions: text("permissions").array().default(sql`ARRAY['knowledge:read','chat:write']::text[]`),
+  rateLimit: integer("rate_limit").default(100),
+  isActive: boolean("is_active").default(true).notNull(),
+  lastUsedAt: timestamp("last_used_at"),
+  totalRequests: integer("total_requests").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at"),
+});
+
+export const aryaApiUsage = pgTable("arya_api_usage", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  apiKeyId: varchar("api_key_id", { length: 255 }).notNull(),
+  tenantId: varchar("tenant_id", { length: 100 }).notNull(),
+  endpoint: varchar("endpoint", { length: 200 }).notNull(),
+  method: varchar("method", { length: 10 }).notNull(),
+  statusCode: integer("status_code"),
+  responseTimeMs: integer("response_time_ms"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAryaApiKeySchema = createInsertSchema(aryaApiKeys).omit({
+  id: true,
+  createdAt: true,
+  lastUsedAt: true,
+  totalRequests: true,
+});
+export type InsertAryaApiKey = z.infer<typeof insertAryaApiKeySchema>;
+export type AryaApiKey = typeof aryaApiKeys.$inferSelect;
+
+export const insertAryaApiUsageSchema = createInsertSchema(aryaApiUsage).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertAryaApiUsage = z.infer<typeof insertAryaApiUsageSchema>;
+export type AryaApiUsage = typeof aryaApiUsage.$inferSelect;
+
 // Re-export chat models
 export * from "./models/chat";

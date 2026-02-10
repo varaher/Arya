@@ -51,6 +51,7 @@ The project is organized as a monorepo with three main areas:
 - `/ermate` — Clinical transcript processor
 - `/erprana` — Patient vitals monitor with risk assessment
 - `/api` — API playground for testing endpoints
+- `/developers` — Developer Portal: API key management, usage stats, integration docs for connecting ERmate/ErPrana/custom apps
 
 ### Backend
 
@@ -81,6 +82,16 @@ The project is organized as a monorepo with three main areas:
 - `DELETE /api/arya/conversations/:id` — Delete a conversation
 - `POST /api/arya/conversations/:id/messages` — Send text message, get streaming AI response (RAG + OpenAI)
 - `POST /api/arya/conversations/:id/voice` — Send voice audio, transcribe → AI response (STT + RAG + OpenAI)
+- `POST /api/keys` — Create a new API key for an app
+- `GET /api/keys` — List all API keys for a tenant
+- `POST /api/keys/:id/revoke` — Revoke an API key
+- `DELETE /api/keys/:id` — Delete an API key
+- `GET /api/keys/:id/usage` — Get usage logs for a key
+- `GET /api/keys/stats/overview` — Get overall usage stats
+- `POST /api/v1/knowledge/query` — [Secured] External knowledge query (requires API key)
+- `POST /api/v1/chat` — [Secured] External chat with ARYA (requires API key)
+- `POST /api/v1/ermate/auto_fill` — [Secured] External ERmate clinical processing (requires API key)
+- `POST /api/v1/erprana/risk_assess` — [Secured] External ErPrana risk assessment (requires API key)
 
 ### Knowledge Engine Architecture
 

@@ -12,6 +12,15 @@ import { generateAryaResponse, type ChatMessage } from "./arya/chat-engine";
 import { chatStorage } from "./replit_integrations/chat/storage";
 import { ensureCompatibleFormat, speechToText } from "./replit_integrations/audio/client";
 import { QueryRequestSchema, DomainSchema } from "@shared/schema";
+import {
+  createApiKey,
+  listApiKeys,
+  revokeApiKey,
+  deleteApiKey,
+  getApiKeyUsage,
+  getUsageStats,
+  apiKeyAuth,
+} from "./arya/api-key-service";
 
 const retriever = new KnowledgeRetriever();
 const medicalEngine = new MedicalEngine();
@@ -477,6 +486,212 @@ export async function registerRoutes(
       } else {
         res.status(500).json({ error: error.message });
       }
+    }
+  });
+
+  // =============================================
+  // API KEY MANAGEMENT ROUTES (Developer Portal)
+  // =============================================
+
+  app.post("/api/keys", async (req: Request, res: Response) => {
+    try {
+      const schema = z.object({
+        tenant_id: z.string().default("varah"),
+        name: z.string().min(1).max(200),
+        app_id: z.string().min(1).max(50),
+        permissions: z.array(z.string()).optional(),
+        rate_limit: z.number().int().min(1).max(10000).optional(),
+        expires_in_days: z.number().int().min(1).max(365).optional(),
+      });
+      const validated = schema.parse(req.body);
+      const result = await createApiKey({
+        tenantId: validated.tenant_id,
+        name: validated.name,
+        appId: validated.app_id,
+        permissions: validated.permissions,
+        rateLimit: validated.rate_limit,
+        expiresInDays: validated.expires_in_days,
+      });
+      res.status(201).json(result);
+    } catch (error: any) {
+      console.error("Create API key error:", error);
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/keys", async (req: Request, res: Response) => {
+    try {
+      const tenantId = (req.query.tenant_id as string) || "varah";
+      const keys = await listApiKeys(tenantId);
+      res.json({ keys, total: keys.length });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/keys/:id/revoke", async (req: Request, res: Response) => {
+    try {
+      const tenantId = (req.body.tenant_id as string) || "varah";
+      const success = await revokeApiKey(req.params.id, tenantId);
+      if (success) {
+        res.json({ message: "API key revoked" });
+      } else {
+        res.status(404).json({ error: "Key not found" });
+      }
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/keys/:id", async (req: Request, res: Response) => {
+    try {
+      const tenantId = (req.query.tenant_id as string) || "varah";
+      const success = await deleteApiKey(req.params.id, tenantId);
+      if (success) {
+        res.status(204).send();
+      } else {
+        res.status(404).json({ error: "Key not found" });
+      }
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/keys/:id/usage", async (req: Request, res: Response) => {
+    try {
+      const days = parseInt((req.query.days as string) || "7");
+      const usage = await getApiKeyUsage(req.params.id, days);
+      res.json({ usage, total: usage.length });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/keys/stats/overview", async (req: Request, res: Response) => {
+    try {
+      const tenantId = (req.query.tenant_id as string) || "varah";
+      const stats = await getUsageStats(tenantId);
+      res.json(stats);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // =============================================
+  // EXTERNAL API (Secured with API Key auth)
+  // These are the endpoints ERmate, ErPrana, etc. use
+  // =============================================
+
+  app.post("/api/v1/knowledge/query", apiKeyAuth("knowledge:read"), async (req: Request, res: Response) => {
+    try {
+      const tenantId = (req as any).tenantId;
+      const appId = (req as any).appId;
+
+      const validated = QueryRequestSchema.parse({
+        ...req.body,
+        tenant_id: tenantId,
+        app_id: appId,
+      });
+      const traceId = uuidv4();
+
+      const orchestrator = new Orchestrator({ appId: validated.app_id, language: validated.language });
+      const routing = orchestrator.route(validated.query, validated.language);
+
+      const results = await retriever.retrieve(tenantId, validated.query, routing.primaryDomain, validated.language, validated.top_k);
+
+      let answer = "";
+      let confidence = 0;
+      if (results.units.length > 0) {
+        answer = results.units[0].content;
+        confidence = 0.85;
+      } else {
+        answer = "No relevant knowledge found for this query.";
+        confidence = 0;
+      }
+
+      learningEngine.ingestQuery({
+        tenantId,
+        query: validated.query,
+        domain: routing.primaryDomain,
+        resultCount: results.total,
+        confidence,
+        language: validated.language,
+      }).catch((err) => console.error("[Learning] Ingest error:", err));
+
+      res.json({
+        answer,
+        sources: results.units.map((unit) => ({ id: unit.id, title: unit.topic, relevance: 0.9 })),
+        confidence,
+        domain_used: routing.primaryDomain,
+        routing: { mode: routing.mode, weights: routing.weights },
+        trace_id: traceId,
+      });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/v1/chat", apiKeyAuth("chat:write"), async (req: Request, res: Response) => {
+    try {
+      const tenantId = (req as any).tenantId;
+      const { message, history } = req.body;
+
+      if (!message || !message.trim()) {
+        return res.status(400).json({ error: "Message is required" });
+      }
+
+      const chatHistory: ChatMessage[] = (history || []).map((m: any) => ({
+        role: m.role,
+        content: m.content,
+      }));
+
+      res.setHeader("Content-Type", "text/event-stream");
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Connection", "keep-alive");
+
+      const stream = await generateAryaResponse(message, chatHistory, tenantId);
+      let fullResponse = "";
+
+      for await (const chunk of stream) {
+        fullResponse += chunk;
+        res.write(`data: ${JSON.stringify({ content: chunk })}\n\n`);
+      }
+
+      res.write(`data: ${JSON.stringify({ done: true, full_response: fullResponse })}\n\n`);
+      res.end();
+    } catch (error: any) {
+      if (res.headersSent) {
+        res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
+        res.end();
+      } else {
+        res.status(500).json({ error: error.message });
+      }
+    }
+  });
+
+  app.post("/api/v1/ermate/auto_fill", apiKeyAuth("ermate:write"), async (req: Request, res: Response) => {
+    try {
+      const { transcript, language } = req.body;
+      if (!transcript || transcript.length < 10) {
+        return res.status(400).json({ error: "Transcript must be at least 10 characters" });
+      }
+      const result = await medicalEngine.autoFill({ transcript, language: language || "en" });
+      res.json(result);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/v1/erprana/risk_assess", apiKeyAuth("erprana:write"), async (req: Request, res: Response) => {
+    try {
+      const { symptoms_text, wearable } = req.body;
+      if (!symptoms_text) {
+        return res.status(400).json({ error: "symptoms_text is required" });
+      }
+      const result = await medicalEngine.assessRisk({ symptoms_text, wearable });
+      res.json(result);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
     }
   });
 

@@ -13,7 +13,8 @@ import {
   Zap,
   MessageCircle,
   Menu,
-  X
+  X,
+  KeyRound,
 } from "lucide-react";
 
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -29,6 +30,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
     { label: "ERmate Copilot", icon: Stethoscope, href: "/ermate" },
     { label: "ErPrana Monitor", icon: Activity, href: "/erprana" },
     { label: "API Playground", icon: Network, href: "/api" },
+    { label: "Developer Portal", icon: KeyRound, href: "/developers" },
   ];
 
   return (
