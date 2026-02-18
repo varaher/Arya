@@ -199,5 +199,34 @@ export const insertAryaApiUsageSchema = createInsertSchema(aryaApiUsage).omit({
 export type InsertAryaApiUsage = z.infer<typeof insertAryaApiUsageSchema>;
 export type AryaApiUsage = typeof aryaApiUsage.$inferSelect;
 
+// Clinical Records Table (ERmate processed data → feeds ARYA knowledge)
+export const aryaClinicalRecords = pgTable("arya_clinical_records", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id", { length: 100 }).notNull(),
+  sourceApp: varchar("source_app", { length: 50 }).default("ermate").notNull(),
+  chiefComplaint: varchar("chief_complaint", { length: 500 }).notNull(),
+  hpi: text("hpi"),
+  pmh: text("pmh").array().default(sql`ARRAY[]::text[]`),
+  medications: text("medications").array().default(sql`ARRAY[]::text[]`),
+  allergies: text("allergies").array().default(sql`ARRAY[]::text[]`),
+  exam: text("exam"),
+  ddx: text("ddx").array().default(sql`ARRAY[]::text[]`),
+  investigations: text("investigations").array().default(sql`ARRAY[]::text[]`),
+  treatment: text("treatment").array().default(sql`ARRAY[]::text[]`),
+  safetyFlags: text("safety_flags").array().default(sql`ARRAY[]::text[]`),
+  riskLevel: varchar("risk_level", { length: 20 }),
+  originalTranscript: text("original_transcript"),
+  language: varchar("language", { length: 10 }).default("en"),
+  knowledgeUnitId: varchar("knowledge_unit_id", { length: 255 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAryaClinicalRecordSchema = createInsertSchema(aryaClinicalRecords).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertAryaClinicalRecord = z.infer<typeof insertAryaClinicalRecordSchema>;
+export type AryaClinicalRecord = typeof aryaClinicalRecords.$inferSelect;
+
 // Re-export chat models
 export * from "./models/chat";

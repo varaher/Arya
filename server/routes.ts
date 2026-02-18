@@ -21,7 +21,9 @@ import {
   SUPPORTED_LANGUAGES,
   type SarvamLanguageCode,
 } from "./arya/sarvam-service";
-import { QueryRequestSchema, DomainSchema } from "@shared/schema";
+import { QueryRequestSchema, DomainSchema, aryaKnowledge, aryaClinicalRecords } from "@shared/schema";
+import { eq, and, desc, sql } from "drizzle-orm";
+import { db } from "./db";
 import {
   createApiKey,
   listApiKeys,
@@ -137,8 +139,70 @@ export async function registerRoutes(
         transcript: validated.transcript,
         language: validated.language
       });
-      
-      res.json(result);
+
+      const knowledgeContent = [
+        `Chief Complaint: ${result.chief_complaint}`,
+        `HPI: ${result.hpi}`,
+        result.pmh.length > 0 ? `PMH: ${result.pmh.join(', ')}` : null,
+        result.medications.length > 0 ? `Medications: ${result.medications.join(', ')}` : null,
+        result.ddx.length > 0 ? `Differential Diagnoses: ${result.ddx.join(', ')}` : null,
+        result.plan_investigations.length > 0 ? `Investigations: ${result.plan_investigations.join(', ')}` : null,
+        result.plan_treatment.length > 0 ? `Treatment: ${result.plan_treatment.join(', ')}` : null,
+        result.safety_flags.length > 0 ? `Safety Flags: ${result.safety_flags.join(', ')}` : null,
+      ].filter(Boolean).join('\n');
+
+      const tags = [
+        result.chief_complaint.toLowerCase(),
+        ...result.ddx.map(d => d.toLowerCase()),
+        ...result.medications.filter(m => m !== 'None reported').map(m => m.toLowerCase()),
+        'clinical-record', 'ermate',
+      ];
+
+      try {
+        const [knowledgeUnit] = await db.insert(aryaKnowledge).values({
+          tenantId: validated.tenant_id,
+          domain: 'medical' as const,
+          topic: `Clinical Record: ${result.chief_complaint}`,
+          content: knowledgeContent,
+          tags,
+          language: validated.language || 'en',
+          sourceType: 'ermate_clinical',
+          sourceTitle: `ERmate Auto-fill: ${result.chief_complaint}`,
+          status: 'published',
+          version: 1,
+        }).returning();
+
+        await db.insert(aryaClinicalRecords).values({
+          tenantId: validated.tenant_id,
+          sourceApp: 'ermate',
+          chiefComplaint: result.chief_complaint,
+          hpi: result.hpi,
+          pmh: result.pmh,
+          medications: result.medications,
+          allergies: result.allergies,
+          exam: result.exam,
+          ddx: result.ddx,
+          investigations: result.plan_investigations,
+          treatment: result.plan_treatment,
+          safetyFlags: result.safety_flags,
+          originalTranscript: validated.transcript,
+          language: validated.language || 'en',
+          knowledgeUnitId: knowledgeUnit.id,
+        });
+
+        console.log(`[ERmate→ARYA] Saved clinical record & knowledge unit: ${knowledgeUnit.id}`);
+        
+        res.json({
+          ...result,
+          _arya: {
+            knowledge_unit_id: knowledgeUnit.id,
+            synced: true,
+          }
+        });
+      } catch (dbError: any) {
+        console.error('[ERmate→ARYA] Failed to sync to knowledge base:', dbError.message);
+        res.json(result);
+      }
       
     } catch (error: any) {
       console.error('ERmate auto-fill error:', error);
@@ -146,6 +210,57 @@ export async function registerRoutes(
         error: 'Invalid request',
         message: error.message
       });
+    }
+  });
+
+  // Clinical Records API (ERmate data synced to ARYA)
+  app.get("/api/clinical-records", async (req: Request, res: Response) => {
+    try {
+      const tenantId = (req.query.tenant_id as string) || "varah";
+      const limit = parseInt((req.query.limit as string) || "50");
+      const records = await db
+        .select()
+        .from(aryaClinicalRecords)
+        .where(eq(aryaClinicalRecords.tenantId, tenantId))
+        .orderBy(desc(aryaClinicalRecords.createdAt))
+        .limit(limit);
+
+      const totalResult = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(aryaClinicalRecords)
+        .where(eq(aryaClinicalRecords.tenantId, tenantId));
+
+      res.json({
+        records,
+        total: Number(totalResult[0]?.count || 0),
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/clinical-records/stats", async (req: Request, res: Response) => {
+    try {
+      const tenantId = (req.query.tenant_id as string) || "varah";
+      const totalResult = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(aryaClinicalRecords)
+        .where(eq(aryaClinicalRecords.tenantId, tenantId));
+
+      const ermateSynced = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(aryaKnowledge)
+        .where(and(
+          eq(aryaKnowledge.tenantId, tenantId),
+          eq(aryaKnowledge.sourceType, 'ermate_clinical')
+        ));
+
+      res.json({
+        totalRecords: Number(totalResult[0]?.count || 0),
+        knowledgeUnitsSynced: Number(ermateSynced[0]?.count || 0),
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
     }
   });
 
@@ -767,12 +882,66 @@ export async function registerRoutes(
 
   app.post("/api/v1/ermate/auto_fill", apiKeyAuth("ermate:write"), async (req: Request, res: Response) => {
     try {
+      const tenantId = (req as any).tenantId;
       const { transcript, language } = req.body;
       if (!transcript || transcript.length < 10) {
         return res.status(400).json({ error: "Transcript must be at least 10 characters" });
       }
       const result = await medicalEngine.autoFill({ transcript, language: language || "en" });
-      res.json(result);
+
+      const knowledgeContent = [
+        `Chief Complaint: ${result.chief_complaint}`,
+        `HPI: ${result.hpi}`,
+        result.pmh.length > 0 ? `PMH: ${result.pmh.join(', ')}` : null,
+        result.medications.length > 0 ? `Medications: ${result.medications.join(', ')}` : null,
+        result.ddx.length > 0 ? `Differential Diagnoses: ${result.ddx.join(', ')}` : null,
+        result.plan_treatment.length > 0 ? `Treatment: ${result.plan_treatment.join(', ')}` : null,
+      ].filter(Boolean).join('\n');
+
+      const tags = [
+        result.chief_complaint.toLowerCase(),
+        ...result.ddx.map((d: string) => d.toLowerCase()),
+        'clinical-record', 'ermate',
+      ];
+
+      try {
+        const [knowledgeUnit] = await db.insert(aryaKnowledge).values({
+          tenantId,
+          domain: 'medical' as const,
+          topic: `Clinical Record: ${result.chief_complaint}`,
+          content: knowledgeContent,
+          tags,
+          language: language || 'en',
+          sourceType: 'ermate_clinical',
+          sourceTitle: `ERmate Auto-fill: ${result.chief_complaint}`,
+          status: 'published',
+          version: 1,
+        }).returning();
+
+        await db.insert(aryaClinicalRecords).values({
+          tenantId,
+          sourceApp: 'ermate',
+          chiefComplaint: result.chief_complaint,
+          hpi: result.hpi,
+          pmh: result.pmh,
+          medications: result.medications,
+          allergies: result.allergies,
+          exam: result.exam,
+          ddx: result.ddx,
+          investigations: result.plan_investigations,
+          treatment: result.plan_treatment,
+          safetyFlags: result.safety_flags,
+          originalTranscript: transcript,
+          language: language || 'en',
+          knowledgeUnitId: knowledgeUnit.id,
+        });
+
+        console.log(`[ERmate→ARYA v1] Synced clinical record: ${knowledgeUnit.id}`);
+        res.json({ ...result, _arya: { knowledge_unit_id: knowledgeUnit.id, synced: true } });
+      } catch (dbError: any) {
+        console.error('[ERmate→ARYA v1] Sync failed:', dbError.message);
+        res.json(result);
+      }
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }
