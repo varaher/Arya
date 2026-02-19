@@ -107,6 +107,17 @@ The four-domain knowledge engine works as follows:
 
 5. **Neural Link Engine** (`server/arya/neural-link-engine.ts`) — Discovers cross-domain connections between knowledge units using tag overlap, keyword similarity, conceptual bridges (e.g., Ayurveda ↔ Modern Medicine), and complementary patterns. Stores weighted links in database. Supports cross-domain synthesis queries that combine insights from multiple domains.
 
+6. **Smart Commands** (`server/arya/smart-commands.ts`) — Alexa-like instant command processor. Handles time, date, math, unit conversions, and greetings locally without AI API calls. Returns instantly with a "mode: instant" flag. Queries that don't match smart commands are routed to the full AI pipeline.
+
+### Hybrid AI Architecture (Alexa + Gemini + GPT)
+
+ARYA operates as a hybrid AI combining three paradigms:
+- **Alexa Mode (Instant)** — Quick commands (time, date, math, unit conversions, greetings) handled locally. No API calls. Instant response with "Instant" badge in UI.
+- **Gemini Mode (Deep Reasoning)** — Complex analysis, comparisons, multi-step problem solving via GPT-5.2 with RAG knowledge context from all four domains.
+- **GPT Mode (Creative)** — Creative writing, content generation, code, brainstorming via the enhanced system prompt.
+
+The chat engine (`server/arya/chat-engine.ts`) routes queries through smart commands first, then falls back to the full AI pipeline. Returns `{ stream, meta }` where meta includes `mode` ("instant" or "thinking") and optional `icon`.
+
 ### Database
 
 - **Database:** PostgreSQL (required, connected via `DATABASE_URL` environment variable)
