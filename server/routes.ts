@@ -540,8 +540,10 @@ export async function registerRoutes(
       res.setHeader("Cache-Control", "no-cache");
       res.setHeader("Connection", "keep-alive");
 
-      const stream = await generateAryaResponse(content, history, tenant_id || "varah");
+      const { stream, meta } = await generateAryaResponse(content, history, tenant_id || "varah");
       let fullResponse = "";
+
+      res.write(`data: ${JSON.stringify({ type: "meta", mode: meta.mode, icon: meta.icon })}\n\n`);
 
       for await (const chunk of stream) {
         fullResponse += chunk;
@@ -616,8 +618,10 @@ export async function registerRoutes(
 
       res.write(`data: ${JSON.stringify({ type: "user_transcript", content: userTranscript, language: detectedLanguage })}\n\n`);
 
-      const stream = await generateAryaResponse(queryForArya, history, tenant_id || "varah");
+      const { stream, meta } = await generateAryaResponse(queryForArya, history, tenant_id || "varah");
       let fullResponse = "";
+
+      res.write(`data: ${JSON.stringify({ type: "meta", mode: meta.mode, icon: meta.icon })}\n\n`);
 
       for await (const chunk of stream) {
         fullResponse += chunk;
@@ -860,7 +864,7 @@ export async function registerRoutes(
       res.setHeader("Cache-Control", "no-cache");
       res.setHeader("Connection", "keep-alive");
 
-      const stream = await generateAryaResponse(message, chatHistory, tenantId);
+      const { stream, meta } = await generateAryaResponse(message, chatHistory, tenantId);
       let fullResponse = "";
 
       for await (const chunk of stream) {

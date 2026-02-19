@@ -136,6 +136,8 @@ export default function AryaChat() {
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const [translatedContent, setTranslatedContent] = useState<string | null>(null);
   const [playingAudio, setPlayingAudio] = useState(false);
+  const [responseMode, setResponseMode] = useState<"instant" | "thinking" | null>(null);
+  const [responseModeIcon, setResponseModeIcon] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -299,6 +301,10 @@ export default function AryaChat() {
           if (!line.startsWith("data: ")) continue;
           try {
             const event = JSON.parse(line.slice(6));
+            if (event.type === "meta") {
+              setResponseMode(event.mode);
+              setResponseModeIcon(event.icon || null);
+            }
             if (event.content) {
               fullContent += event.content;
               setStreamingContent(fullContent);
@@ -316,6 +322,8 @@ export default function AryaChat() {
     } finally {
       setIsStreaming(false);
       setStreamingContent("");
+      setResponseMode(null);
+      setResponseModeIcon(null);
       queryClient.invalidateQueries({
         queryKey: ["/api/arya/conversations", convId],
       });
@@ -605,22 +613,23 @@ export default function AryaChat() {
                 Hey, I'm ARYA
               </h2>
               <p className="text-muted-foreground max-w-md mb-6 md:mb-8 text-sm md:text-base">
-                Your personal AI assistant. Ask me anything, explore ideas, solve problems, or just have a conversation. Type or tap the mic to talk.
+                Ask me anything — quick facts, deep analysis, creative writing, health advice, business strategy, or just a conversation. I'm voice-enabled too.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3 max-w-lg w-full">
                 {[
-                  "Help me plan my day effectively",
-                  "What are some ways to grow my business?",
-                  "Explain a complex topic in simple terms",
-                  "Give me advice on making a tough decision",
+                  { text: "What's the time right now?", badge: "Instant" },
+                  { text: "Write me an email to my team about our new product launch", badge: "Creative" },
+                  { text: "Compare pros and cons of starting a franchise vs independent business", badge: "Analysis" },
+                  { text: "Convert 72 kg to pounds", badge: "Utility" },
                 ].map((suggestion, i) => (
                   <button
                     key={i}
                     data-testid={`button-suggestion-${i}`}
-                    onClick={() => sendMessage(suggestion)}
-                    className="text-left px-3 md:px-4 py-2.5 md:py-3 rounded-xl border border-border/50 bg-card/30 text-sm text-muted-foreground hover:text-white hover:border-primary/40 hover:bg-card/60 transition-all"
+                    onClick={() => sendMessage(suggestion.text)}
+                    className="text-left px-3 md:px-4 py-2.5 md:py-3 rounded-xl border border-border/50 bg-card/30 text-sm text-muted-foreground hover:text-white hover:border-primary/40 hover:bg-card/60 transition-all group"
                   >
-                    {suggestion}
+                    <span className="text-[9px] uppercase tracking-wider font-semibold text-cyan-400/60 group-hover:text-cyan-400 mb-1 block">{suggestion.badge}</span>
+                    {suggestion.text}
                   </button>
                 ))}
               </div>
@@ -654,11 +663,20 @@ export default function AryaChat() {
 
           {streamingContent && (
             <div className="flex justify-start" data-testid="message-streaming">
-              <div className="max-w-[90%] sm:max-w-[80%] md:max-w-[75%] rounded-2xl px-3 md:px-4 py-2.5 md:py-3 bg-card/60 border border-border/30 text-white/90">
+              <div className={`max-w-[90%] sm:max-w-[80%] md:max-w-[75%] rounded-2xl px-3 md:px-4 py-2.5 md:py-3 ${
+                responseMode === "instant"
+                  ? "bg-gradient-to-br from-amber-500/10 to-cyan-500/10 border border-amber-500/20"
+                  : "bg-card/60 border border-border/30"
+              } text-white/90`}>
                 <div className="flex items-center gap-1.5 mb-1">
                   <span className="text-xs font-semibold bg-gradient-to-r from-cyan-400 to-amber-400 bg-clip-text text-transparent">
                     ARYA
                   </span>
+                  {responseMode === "instant" && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-medium border border-amber-500/20">
+                      Instant
+                    </span>
+                  )}
                 </div>
                 <div className="relative">
                   <FormattedMessage content={streamingContent} />
@@ -689,7 +707,7 @@ export default function AryaChat() {
                 </div>
                 <div className="flex items-center gap-2 text-muted-foreground text-sm">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  {selectedLanguage !== "en-IN" ? "Listening & translating..." : "Thinking..."}
+                  {selectedLanguage !== "en-IN" ? "Listening & translating..." : "Processing..."}
                 </div>
               </div>
             </div>
