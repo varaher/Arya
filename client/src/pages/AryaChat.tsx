@@ -489,73 +489,108 @@ export default function AryaChat() {
           showSidebar ? "translate-x-0" : "-translate-x-full"
         } md:translate-x-0 fixed md:relative z-30 md:z-auto top-0 left-0 h-full w-72 md:w-64 lg:w-72 flex-shrink-0 flex flex-col bg-card/95 md:bg-transparent backdrop-blur-xl md:backdrop-blur-none border-r md:border-r-0 border-border/50 transition-transform duration-300 pt-14 md:pt-0`}
       >
-        <div className="p-3">
+        <div className="p-3 border-b border-border/20">
+          <div className="flex items-center gap-2 mb-3 px-1">
+            <MessageSquare className="w-4 h-4 text-cyan-400" />
+            <span className="text-sm font-semibold text-white">Chat History</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/10 text-white/60 ml-auto">
+              {conversations.length}
+            </span>
+          </div>
           <Button
             data-testid="button-new-chat"
             onClick={() => {
               createConversation.mutate("New Chat");
               setShowSidebar(false);
             }}
-            className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+            className="w-full bg-gradient-to-r from-cyan-600 to-cyan-500 text-white hover:from-cyan-500 hover:to-cyan-400 shadow-lg shadow-cyan-500/20"
             size="sm"
           >
             <Plus className="w-4 h-4 mr-2" />
             New Chat
           </Button>
         </div>
-        <div className="flex-1 overflow-y-auto space-y-1 px-2 pb-3" data-testid="list-conversations">
-          {conversations.map((conv) => (
-            <div
-              key={conv.id}
-              data-testid={`card-conversation-${conv.id}`}
-              onClick={() => {
-                setActiveConversation(conv.id);
-                setShowSidebar(false);
-              }}
-              className={`group flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-all ${
-                activeConversation === conv.id
-                  ? "bg-primary/10 border border-primary/30 text-white"
-                  : "hover:bg-card/80 text-muted-foreground hover:text-white"
-              }`}
-            >
-              <MessageSquare className="w-4 h-4 flex-shrink-0" />
-              <span className="truncate text-sm flex-1">{conv.title}</span>
-              <button
-                data-testid={`button-delete-conversation-${conv.id}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  deleteConversation.mutate(conv.id);
+        <div className="flex-1 overflow-y-auto space-y-1 px-2 py-2" data-testid="list-conversations">
+          {conversations.map((conv) => {
+            const date = new Date(conv.createdAt);
+            const timeStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+            return (
+              <div
+                key={conv.id}
+                data-testid={`card-conversation-${conv.id}`}
+                onClick={() => {
+                  setActiveConversation(conv.id);
+                  setShowSidebar(false);
                 }}
-                className="opacity-0 group-hover:opacity-100 hover:text-red-400 transition-opacity"
+                className={`group flex items-start gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer transition-all ${
+                  activeConversation === conv.id
+                    ? "bg-gradient-to-r from-cyan-500/15 to-transparent border border-cyan-500/25 text-white"
+                    : "hover:bg-white/5 text-muted-foreground hover:text-white border border-transparent"
+                }`}
               >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          ))}
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                  activeConversation === conv.id
+                    ? "bg-cyan-500/20 text-cyan-400"
+                    : "bg-white/5 text-white/40"
+                }`}>
+                  <MessageSquare className="w-3.5 h-3.5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <span className="truncate text-sm block leading-tight">{conv.title}</span>
+                  <span className="text-[10px] text-white/30 mt-0.5 block">{timeStr}</span>
+                </div>
+                <button
+                  data-testid={`button-delete-conversation-${conv.id}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteConversation.mutate(conv.id);
+                  }}
+                  className="opacity-0 group-hover:opacity-100 hover:text-red-400 transition-opacity mt-1"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            );
+          })}
           {conversations.length === 0 && (
-            <p className="text-muted-foreground text-sm text-center py-8">
-              No conversations yet.
-              <br />
-              Start chatting with ARYA!
-            </p>
+            <div className="text-center py-8 px-3">
+              <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-3">
+                <MessageSquare className="w-5 h-5 text-white/20" />
+              </div>
+              <p className="text-muted-foreground text-sm">No conversations yet</p>
+              <p className="text-white/30 text-xs mt-1">Start chatting with ARYA!</p>
+            </div>
           )}
         </div>
       </div>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <div className="flex items-center gap-2 px-2 py-1.5 md:hidden">
+        <div className="flex items-center justify-between px-3 py-2 md:hidden border-b border-border/20">
           <button
             data-testid="button-toggle-conversations"
             onClick={() => setShowSidebar(!showSidebar)}
-            className="p-2 rounded-md hover:bg-white/10 text-muted-foreground"
+            className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-card/40 border border-border/30 hover:bg-card/60 transition-all"
           >
-            {showSidebar ? <PanelLeftClose className="w-5 h-5" /> : <PanelLeftOpen className="w-5 h-5" />}
+            {showSidebar ? <PanelLeftClose className="w-4 h-4 text-cyan-400" /> : <PanelLeftOpen className="w-4 h-4 text-cyan-400" />}
+            <span className="text-xs font-medium text-white/80">History</span>
+            {conversations.length > 0 && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-medium">
+                {conversations.length}
+              </span>
+            )}
           </button>
-          <span className="text-sm text-muted-foreground truncate">
+          <span className="text-sm text-muted-foreground truncate max-w-[50%]">
             {activeConversation
               ? conversations.find((c) => c.id === activeConversation)?.title || "Chat"
               : "New Chat"}
           </span>
+          <button
+            data-testid="button-new-chat-mobile"
+            onClick={() => createConversation.mutate("New Chat")}
+            className="p-1.5 rounded-lg bg-primary/20 border border-primary/30 hover:bg-primary/30 transition-all"
+          >
+            <Plus className="w-4 h-4 text-primary" />
+          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-2 sm:px-4 py-3 md:py-4 space-y-3 md:space-y-4" data-testid="list-messages">
