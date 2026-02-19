@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -16,6 +17,78 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
+
+function FormattedMessage({ content, isUser }: { content: string; isUser?: boolean }) {
+  if (isUser) {
+    return <div className="text-sm leading-relaxed whitespace-pre-wrap">{content}</div>;
+  }
+  return (
+    <div className="prose-arya text-sm leading-relaxed">
+      <ReactMarkdown
+        components={{
+          p: ({ children }) => <p className="mb-2 last:mb-0 text-white/90">{children}</p>,
+          strong: ({ children }) => <strong className="font-semibold text-cyan-300">{children}</strong>,
+          em: ({ children }) => <em className="text-amber-300/90 not-italic font-medium">{children}</em>,
+          h1: ({ children }) => <h1 className="text-base font-bold text-white mb-2 mt-1">{children}</h1>,
+          h2: ({ children }) => <h2 className="text-sm font-bold text-white mb-2 mt-3 first:mt-0 pb-1 border-b border-white/10">{children}</h2>,
+          h3: ({ children }) => <h3 className="text-sm font-semibold text-cyan-300 mb-1.5 mt-2 first:mt-0">{children}</h3>,
+          ul: ({ children }) => <ul className="space-y-1.5 my-2 pl-0">{children}</ul>,
+          ol: ({ children }) => {
+            let counter = 0;
+            const numberedChildren = Array.isArray(children)
+              ? children.map((child: any) => {
+                  if (child?.type === 'li' || (child?.props && child?.type)) {
+                    counter++;
+                    return child?.props ? { ...child, props: { ...child.props, 'data-index': counter } } : child;
+                  }
+                  return child;
+                })
+              : children;
+            return <ol className="space-y-2 my-2 pl-0">{numberedChildren}</ol>;
+          },
+          li: ({ children, ...props }: any) => {
+            const node = props.node;
+            const isOrdered = node?.parentNode?.tagName === 'ol';
+            const siblings = node?.parentNode?.children?.filter((c: any) => c.tagName === 'li') || [];
+            const num = siblings.indexOf(node) + 1;
+            return isOrdered ? (
+              <li className="flex gap-2.5 items-start text-white/90 list-none">
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-gradient-to-br from-cyan-500/30 to-cyan-600/20 border border-cyan-500/30 flex items-center justify-center text-[10px] font-bold text-cyan-300 mt-0.5">
+                  {num}
+                </span>
+                <span className="flex-1">{children}</span>
+              </li>
+            ) : (
+              <li className="flex gap-2 items-start text-white/90 list-none">
+                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-cyan-400 mt-1.5" />
+                <span className="flex-1">{children}</span>
+              </li>
+            );
+          },
+          code: ({ children, className }) => {
+            const isBlock = className?.includes("language-");
+            return isBlock ? (
+              <pre className="bg-black/40 border border-white/10 rounded-lg p-3 my-2 overflow-x-auto">
+                <code className="text-xs font-mono text-emerald-300">{children}</code>
+              </pre>
+            ) : (
+              <code className="bg-white/10 text-amber-300 px-1.5 py-0.5 rounded text-xs font-mono">{children}</code>
+            );
+          },
+          blockquote: ({ children }) => (
+            <blockquote className="border-l-2 border-cyan-500/50 pl-3 my-2 text-white/70 italic">{children}</blockquote>
+          ),
+          hr: () => <hr className="border-white/10 my-3" />,
+          a: ({ children, href }) => (
+            <a href={href} target="_blank" rel="noopener noreferrer" className="text-cyan-400 underline underline-offset-2 hover:text-cyan-300">{children}</a>
+          ),
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
+  );
+}
 
 interface Conversation {
   id: number;
@@ -539,9 +612,7 @@ export default function AryaChat() {
                     </span>
                   </div>
                 )}
-                <div className="text-sm leading-relaxed whitespace-pre-wrap">
-                  {msg.content}
-                </div>
+                <FormattedMessage content={msg.content} isUser={msg.role === "user"} />
               </div>
             </div>
           ))}
@@ -554,9 +625,9 @@ export default function AryaChat() {
                     ARYA
                   </span>
                 </div>
-                <div className="text-sm leading-relaxed whitespace-pre-wrap">
-                  {streamingContent}
-                  <span className="inline-block w-1.5 h-4 bg-primary/60 animate-pulse ml-0.5" />
+                <div className="relative">
+                  <FormattedMessage content={streamingContent} />
+                  <span className="inline-block w-1.5 h-4 bg-primary/60 animate-pulse ml-0.5 align-middle" />
                 </div>
                 {translatedContent && (
                   <div className="mt-3 pt-3 border-t border-border/30">
@@ -564,8 +635,8 @@ export default function AryaChat() {
                       <Globe className="w-3 h-3 text-amber-400" />
                       <span className="text-xs text-amber-400">{currentLang?.native || selectedLanguage}</span>
                     </div>
-                    <div className="text-sm leading-relaxed whitespace-pre-wrap text-white/80">
-                      {translatedContent}
+                    <div className="text-white/80">
+                      <FormattedMessage content={translatedContent} />
                     </div>
                   </div>
                 )}
