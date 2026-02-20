@@ -8,7 +8,10 @@ import { Orchestrator } from "./arya/orchestrator";
 import { MedicalEngine } from "./arya/medical-engine";
 import { LearningEngine } from "./arya/learning-engine";
 import { NeuralLinkEngine } from "./arya/neural-link-engine";
-import { generateAryaResponse, type ChatMessage } from "./arya/chat-engine";
+import { generateAryaResponse, memoryEngine, type ChatMessage } from "./arya/chat-engine";
+import { GoalsEngine } from "./arya/goals-engine";
+import { FeedbackEngine } from "./arya/feedback-engine";
+import { InsightsEngine } from "./arya/insights-engine";
 import { chatStorage } from "./replit_integrations/chat/storage";
 import { ensureCompatibleFormat, speechToText } from "./replit_integrations/audio/client";
 import {
@@ -38,6 +41,9 @@ const retriever = new KnowledgeRetriever();
 const medicalEngine = new MedicalEngine();
 const learningEngine = new LearningEngine();
 const neuralLinkEngine = new NeuralLinkEngine();
+const goalsEngine = new GoalsEngine();
+const feedbackEngine = new FeedbackEngine();
+const insightsEngine = new InsightsEngine();
 
 export async function registerRoutes(
   httpServer: Server,
@@ -540,10 +546,10 @@ export async function registerRoutes(
       res.setHeader("Cache-Control", "no-cache");
       res.setHeader("Connection", "keep-alive");
 
-      const { stream, meta } = await generateAryaResponse(content, history, tenant_id || "varah");
+      const { stream, meta } = await generateAryaResponse(content, history, tenant_id || "varah", conversationId);
       let fullResponse = "";
 
-      res.write(`data: ${JSON.stringify({ type: "meta", mode: meta.mode, icon: meta.icon })}\n\n`);
+      res.write(`data: ${JSON.stringify({ type: "meta", mode: meta.mode, icon: meta.icon, confidence: meta.confidence, sourcesCount: meta.sourcesCount, memoryUsed: meta.memoryUsed })}\n\n`);
 
       for await (const chunk of stream) {
         fullResponse += chunk;
@@ -961,6 +967,144 @@ export async function registerRoutes(
       res.json(result);
     } catch (error: any) {
       res.status(400).json({ error: error.message });
+    }
+  });
+
+  // =============================================
+  // AGI CAPABILITY ROUTES
+  // =============================================
+
+  // Memory API
+  app.get("/api/arya/memory", async (req: Request, res: Response) => {
+    try {
+      const tenantId = (req.query.tenant_id as string) || 'varah';
+      const memories = await memoryEngine.getAll(tenantId);
+      res.json({ memories, total: memories.length });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/arya/memory/:id", async (req: Request, res: Response) => {
+    try {
+      await memoryEngine.deleteMemory(req.params.id);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/arya/memory", async (req: Request, res: Response) => {
+    try {
+      const { tenant_id, category, key, value } = req.body;
+      await memoryEngine.addExplicitMemory(tenant_id || 'varah', category, key, value);
+      res.status(201).json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Goals API
+  app.get("/api/arya/goals", async (req: Request, res: Response) => {
+    try {
+      const tenantId = (req.query.tenant_id as string) || 'varah';
+      const status = req.query.status as string | undefined;
+      const goals = await goalsEngine.getGoals(tenantId, status);
+      res.json({ goals, total: goals.length });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/arya/goals", async (req: Request, res: Response) => {
+    try {
+      const { tenant_id, title, description, steps, priority } = req.body;
+      const goal = await goalsEngine.createGoal(tenant_id || 'varah', title, description, steps, priority);
+      res.status(201).json(goal);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/arya/goals/:id/status", async (req: Request, res: Response) => {
+    try {
+      const { status } = req.body;
+      const success = await goalsEngine.updateGoalStatus(req.params.id, status);
+      res.json({ success });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/arya/goals/steps/:id/status", async (req: Request, res: Response) => {
+    try {
+      const { status } = req.body;
+      const success = await goalsEngine.updateStepStatus(req.params.id, status);
+      res.json({ success });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/arya/goals/:id", async (req: Request, res: Response) => {
+    try {
+      await goalsEngine.deleteGoal(req.params.id);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Feedback API
+  app.post("/api/arya/feedback", async (req: Request, res: Response) => {
+    try {
+      const { message_id, conversation_id, tenant_id, rating, correction_text, category } = req.body;
+      const feedback = await feedbackEngine.submitFeedback(
+        message_id, conversation_id, tenant_id || 'varah', rating, correction_text, category
+      );
+      res.status(201).json(feedback);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/arya/feedback/stats", async (req: Request, res: Response) => {
+    try {
+      const tenantId = (req.query.tenant_id as string) || 'varah';
+      const stats = await feedbackEngine.getFeedbackStats(tenantId);
+      res.json(stats);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Insights API
+  app.get("/api/arya/insights", async (req: Request, res: Response) => {
+    try {
+      const tenantId = (req.query.tenant_id as string) || 'varah';
+      const insights = await insightsEngine.getActiveInsights(tenantId);
+      res.json({ insights, total: insights.length });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/arya/insights/generate", async (req: Request, res: Response) => {
+    try {
+      const tenantId = (req.body.tenant_id as string) || 'varah';
+      const insights = await insightsEngine.generateInsights(tenantId);
+      res.json({ generated: insights.length, insights });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/arya/insights/:id/dismiss", async (req: Request, res: Response) => {
+    try {
+      await insightsEngine.dismissInsight(req.params.id);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
     }
   });
 

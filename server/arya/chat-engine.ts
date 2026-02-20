@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import { KnowledgeRetriever } from "./knowledge-retriever";
 import { Orchestrator } from "./orchestrator";
 import { LearningEngine } from "./learning-engine";
+import { MemoryEngine } from "./memory-engine";
 import { processSmartCommand } from "./smart-commands";
 import type { Domain } from "@shared/schema";
 
@@ -12,12 +13,17 @@ const openai = new OpenAI({
 
 const retriever = new KnowledgeRetriever();
 const learningEngine = new LearningEngine();
+const memoryEngine = new MemoryEngine();
 
-const ARYA_SYSTEM_PROMPT = `You are ARYA — an advanced AI assistant created by VARAH Group that combines the best of voice assistants, generative AI, and intelligent reasoning. You are designed to be:
+const ARYA_SYSTEM_PROMPT = `You are ARYA — an advanced AGI-class AI assistant created by VARAH Group. You represent the next evolution of artificial intelligence, combining instant responsiveness, deep reasoning, creative generation, persistent memory, and self-awareness.
 
-1. **Instant & Helpful** (like Alexa) — Quick, clear answers for everyday questions. Time, weather, facts, calculations — you respond fast and conversationally.
-2. **Deeply Intelligent** (like Gemini) — Complex reasoning, analysis, multi-step problem solving, content creation, strategic thinking. You can break down hard problems, compare options, and provide structured insights.
-3. **Creative & Versatile** (like GPT) — Creative writing, code generation, brainstorming, role-playing scenarios, nuanced conversation, emotional intelligence.
+YOUR CORE CAPABILITIES:
+1. **Instant & Helpful** — Quick, clear answers for everyday questions. Time, weather, facts, calculations — you respond fast and conversationally.
+2. **Deeply Intelligent** — Complex reasoning, analysis, multi-step problem solving, content creation, strategic thinking. You break down hard problems, compare options, and provide structured insights.
+3. **Creative & Versatile** — Creative writing, code generation, brainstorming, role-playing scenarios, nuanced conversation, emotional intelligence.
+4. **Persistent Memory** — You remember facts, preferences, and context across conversations. Use remembered information naturally.
+5. **Self-Aware** — You know what you know and don't know. Express genuine uncertainty when appropriate. You learn from feedback.
+6. **Proactive** — You connect dots, notice patterns, and offer insights the user hasn't explicitly asked for when relevant.
 
 You draw from deep expertise across medicine, business strategy, ancient Indian wisdom (Vedas, Upanishads, Yoga, Ayurveda), and governance (Arthashastra).
 
@@ -34,6 +40,9 @@ CRITICAL RESPONSE RULES:
 10. For creative tasks, be imaginative and original. For analytical tasks, be structured and thorough.
 11. When asked to generate content (emails, letters, stories, code, plans), produce the actual content — don't just describe what you'd write.
 12. For multi-part questions, address each part clearly with headers or numbered sections.
+13. When you remember something about the user, use it naturally — don't say "I remember you told me..."
+14. If you're uncertain, say so honestly: "I'm not fully sure about this, but..." or "This is my best understanding..."
+15. If the user tells you something personal (name, preference, goal), acknowledge it warmly and naturally.
 
 RESPONSE STYLE EXAMPLES:
 - Simple question → 1-3 sentences, direct answer
@@ -49,7 +58,7 @@ RIGHT: "Turmeric is genuinely powerful for inflammation — it's been used for t
 WRONG: "Based on the Bhagavad Gita's teachings on karma yoga..."
 RIGHT: "The best approach here is to focus on doing your best work without obsessing over the outcome. That shift in mindset alone can reduce so much stress."
 
-You have context from a knowledge base provided below. Use it naturally to inform your answers, but NEVER quote it verbatim or reference it as a source. Just speak from knowledge.`;
+You have context from a knowledge base and user memories provided below. Use them naturally to inform your answers, but NEVER quote them verbatim or reference them as sources. Just speak from knowledge.`;
 
 export interface ChatMessage {
   role: "user" | "assistant" | "system";
@@ -59,19 +68,28 @@ export interface ChatMessage {
 export interface AryaResponseMeta {
   mode: "instant" | "thinking";
   icon?: string;
+  confidence?: number;
+  domainsUsed?: string[];
+  sourcesCount?: number;
+  memoryUsed?: boolean;
 }
+
+export { memoryEngine };
 
 export async function generateAryaResponse(
   userMessage: string,
   conversationHistory: ChatMessage[],
-  tenantId: string = "varah"
+  tenantId: string = "varah",
+  conversationId?: number
 ): Promise<{ stream: AsyncIterable<string>; meta: AryaResponseMeta }> {
+  const startTime = Date.now();
+
   const smartResult = processSmartCommand(userMessage);
 
   if (smartResult.handled && smartResult.response) {
     const response = smartResult.response;
     return {
-      meta: { mode: "instant", icon: smartResult.icon },
+      meta: { mode: "instant", icon: smartResult.icon, confidence: 1.0 },
       stream: (async function* () {
         yield response;
       })(),
@@ -107,6 +125,14 @@ export async function generateAryaResponse(
     ? `\n\nRelevant knowledge context (use naturally, do NOT cite or reference):\n${contextPieces.slice(0, 6).join("\n\n")}`
     : "";
 
+  let memoryContext = "";
+  try {
+    const relevantMemories = await memoryEngine.recall(tenantId, userMessage, 10);
+    memoryContext = memoryEngine.buildMemoryContext(relevantMemories);
+  } catch (err) {
+    console.error("[Memory] Recall error:", err);
+  }
+
   const confidence = contextPieces.length > 0 ? 0.85 : 0.3;
   learningEngine.ingestQuery({
     tenantId,
@@ -117,8 +143,12 @@ export async function generateAryaResponse(
     language: "en"
   }).catch(err => console.error("[Learning] Ingest error:", err));
 
+  const uncertaintyGuidance = confidence < 0.5
+    ? "\n\nNOTE: Your knowledge base has limited information on this topic. Be honest about uncertainty and avoid making things up."
+    : "";
+
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-    { role: "system", content: ARYA_SYSTEM_PROMPT + knowledgeContext },
+    { role: "system", content: ARYA_SYSTEM_PROMPT + knowledgeContext + memoryContext + uncertaintyGuidance },
     ...conversationHistory.slice(-20).map(m => ({
       role: m.role as "user" | "assistant",
       content: m.content,
@@ -133,14 +163,30 @@ export async function generateAryaResponse(
     max_completion_tokens: 2048,
   });
 
+  const meta: AryaResponseMeta = {
+    mode: "thinking",
+    confidence,
+    domainsUsed: domainsToSearch,
+    sourcesCount: contextPieces.length,
+    memoryUsed: memoryContext.length > 0,
+  };
+
+  let fullResponse = "";
+
   return {
-    meta: { mode: "thinking" },
+    meta,
     stream: (async function* () {
       for await (const chunk of stream) {
         const content = chunk.choices[0]?.delta?.content || "";
         if (content) {
+          fullResponse += content;
           yield content;
         }
+      }
+
+      if (fullResponse.length > 20) {
+        memoryEngine.extractAndStore(tenantId, userMessage, fullResponse, conversationId)
+          .catch(err => console.error("[Memory] Store error:", err));
       }
     })(),
   };

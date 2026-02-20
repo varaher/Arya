@@ -228,5 +228,140 @@ export const insertAryaClinicalRecordSchema = createInsertSchema(aryaClinicalRec
 export type InsertAryaClinicalRecord = z.infer<typeof insertAryaClinicalRecordSchema>;
 export type AryaClinicalRecord = typeof aryaClinicalRecords.$inferSelect;
 
+// =============================================
+// AGI CAPABILITY TABLES
+// =============================================
+
+// Persistent Memory - ARYA remembers facts, preferences, context across conversations
+export const aryaMemory = pgTable("arya_memory", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id", { length: 100 }).notNull(),
+  category: varchar("category", { length: 50 }).notNull().$type<'fact' | 'preference' | 'context' | 'identity' | 'relationship'>(),
+  key: varchar("key", { length: 500 }).notNull(),
+  value: text("value").notNull(),
+  confidence: decimal("confidence", { precision: 3, scale: 2 }).default("0.80"),
+  source: varchar("source", { length: 50 }).default("conversation").$type<'conversation' | 'explicit' | 'inferred' | 'feedback'>(),
+  conversationId: integer("conversation_id"),
+  lastConfirmed: timestamp("last_confirmed").defaultNow(),
+  accessCount: integer("access_count").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertAryaMemorySchema = createInsertSchema(aryaMemory).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  accessCount: true,
+});
+export type InsertAryaMemory = z.infer<typeof insertAryaMemorySchema>;
+export type AryaMemory = typeof aryaMemory.$inferSelect;
+
+// Goals & Plans - Break complex tasks into steps, track across sessions
+export const aryaGoals = pgTable("arya_goals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id", { length: 100 }).notNull(),
+  title: varchar("title", { length: 500 }).notNull(),
+  description: text("description"),
+  status: varchar("status", { length: 20 }).default("active").$type<'active' | 'completed' | 'paused' | 'cancelled'>(),
+  priority: varchar("priority", { length: 20 }).default("medium").$type<'low' | 'medium' | 'high' | 'critical'>(),
+  progress: integer("progress").default(0).notNull(),
+  targetDate: timestamp("target_date"),
+  completedAt: timestamp("completed_at"),
+  conversationId: integer("conversation_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const aryaGoalSteps = pgTable("arya_goal_steps", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  goalId: varchar("goal_id", { length: 255 }).notNull(),
+  description: text("description").notNull(),
+  status: varchar("status", { length: 20 }).default("pending").$type<'pending' | 'in_progress' | 'completed' | 'skipped'>(),
+  order: integer("order").notNull(),
+  notes: text("notes"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAryaGoalSchema = createInsertSchema(aryaGoals).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  completedAt: true,
+  progress: true,
+});
+export type InsertAryaGoal = z.infer<typeof insertAryaGoalSchema>;
+export type AryaGoal = typeof aryaGoals.$inferSelect;
+
+export const insertAryaGoalStepSchema = createInsertSchema(aryaGoalSteps).omit({
+  id: true,
+  createdAt: true,
+  completedAt: true,
+});
+export type InsertAryaGoalStep = z.infer<typeof insertAryaGoalStepSchema>;
+export type AryaGoalStep = typeof aryaGoalSteps.$inferSelect;
+
+// Response Meta - Reasoning summaries, confidence scores, uncertainty calibration
+export const aryaResponseMeta = pgTable("arya_response_meta", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  messageId: integer("message_id").notNull(),
+  conversationId: integer("conversation_id").notNull(),
+  reasoningSummary: text("reasoning_summary"),
+  confidence: decimal("confidence", { precision: 3, scale: 2 }).default("0.80"),
+  uncertainty: text("uncertainty"),
+  sourcesUsed: text("sources_used").array().default(sql`ARRAY[]::text[]`),
+  responseMode: varchar("response_mode", { length: 20 }).$type<'instant' | 'thinking'>(),
+  domainWeights: jsonb("domain_weights"),
+  processingTimeMs: integer("processing_time_ms"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAryaResponseMetaSchema = createInsertSchema(aryaResponseMeta).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertAryaResponseMeta = z.infer<typeof insertAryaResponseMetaSchema>;
+export type AryaResponseMeta = typeof aryaResponseMeta.$inferSelect;
+
+// Feedback - Thumbs up/down, corrections for self-improvement
+export const aryaFeedback = pgTable("arya_feedback", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  messageId: integer("message_id").notNull(),
+  conversationId: integer("conversation_id").notNull(),
+  tenantId: varchar("tenant_id", { length: 100 }).notNull(),
+  rating: varchar("rating", { length: 10 }).notNull().$type<'up' | 'down'>(),
+  correctionText: text("correction_text"),
+  category: varchar("category", { length: 50 }).$type<'accuracy' | 'helpfulness' | 'tone' | 'completeness' | 'other'>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAryaFeedbackSchema = createInsertSchema(aryaFeedback).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertAryaFeedback = z.infer<typeof insertAryaFeedbackSchema>;
+export type AryaFeedback = typeof aryaFeedback.$inferSelect;
+
+// Proactive Insights - ARYA generates suggestions connecting dots
+export const aryaInsights = pgTable("arya_insights", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id", { length: 100 }).notNull(),
+  sourceType: varchar("source_type", { length: 50 }).notNull().$type<'memory_pattern' | 'neural_link' | 'knowledge_gap' | 'query_trend' | 'cross_domain'>(),
+  title: varchar("title", { length: 500 }).notNull(),
+  insight: text("insight").notNull(),
+  relevance: decimal("relevance", { precision: 3, scale: 2 }).default("0.70"),
+  relatedMemoryIds: text("related_memory_ids").array().default(sql`ARRAY[]::text[]`),
+  status: varchar("status", { length: 20 }).default("active").$type<'active' | 'dismissed' | 'acted_on'>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAryaInsightSchema = createInsertSchema(aryaInsights).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertAryaInsight = z.infer<typeof insertAryaInsightSchema>;
+export type AryaInsight = typeof aryaInsights.$inferSelect;
+
 // Re-export chat models
 export * from "./models/chat";

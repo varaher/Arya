@@ -116,7 +116,21 @@ ARYA operates as a hybrid AI combining three paradigms:
 - **Gemini Mode (Deep Reasoning)** — Complex analysis, comparisons, multi-step problem solving via GPT-5.2 with RAG knowledge context from all four domains.
 - **GPT Mode (Creative)** — Creative writing, content generation, code, brainstorming via the enhanced system prompt.
 
-The chat engine (`server/arya/chat-engine.ts`) routes queries through smart commands first, then falls back to the full AI pipeline. Returns `{ stream, meta }` where meta includes `mode` ("instant" or "thinking") and optional `icon`.
+The chat engine (`server/arya/chat-engine.ts`) routes queries through smart commands first, then falls back to the full AI pipeline. Returns `{ stream, meta }` where meta includes `mode` ("instant" or "thinking"), `confidence`, `sourcesCount`, `memoryUsed`, and optional `icon`.
+
+### AGI Capabilities
+
+ARYA has evolved toward AGI with these core capabilities:
+
+1. **Persistent Memory** (`server/arya/memory-engine.ts`) — Automatically extracts and remembers facts, preferences, identity, relationships, and context from every conversation. Uses GPT-4.1-mini for extraction. Memories are recalled and injected into the system prompt for personalized responses. Users can view, add, and delete memories via the Memory panel.
+
+2. **Goal & Plan Manager** (`server/arya/goals-engine.ts`) — Break complex tasks into actionable steps with progress tracking. Goals have priorities (low/medium/high/critical) and step-by-step checklists. Progress auto-calculates as steps are completed.
+
+3. **Self-Reflection & Feedback** (`server/arya/feedback-engine.ts`) — Thumbs up/down on every AI response. Corrections feed back into the memory system. Tracks satisfaction rates and identifies improvement areas.
+
+4. **Proactive Insights** (`server/arya/insights-engine.ts`) — Analyzes memory patterns, knowledge gaps, query trends, and cross-domain connections to proactively generate insights and suggestions the user hasn't asked for.
+
+5. **Confidence & Uncertainty** — Every response includes a confidence score based on knowledge retrieval quality. When confidence is low, ARYA's system prompt instructs honest uncertainty expression. UI shows confidence badges and source counts.
 
 ### Database
 
@@ -133,6 +147,12 @@ The chat engine (`server/arya/chat-engine.ts`) routes queries through smart comm
 - `arya_query_patterns` — Self-learning query tracking (normalized_query, query_count, avg_confidence, is_gap, draft_generated)
 - `arya_neural_links` — Cross-domain knowledge connections (from_unit_id, to_unit_id, link_score, link_type, evidence)
 - `arya_audit_logs` — API interaction audit trail
+- `arya_memory` — Persistent user memory (category, key, value, confidence, source, access_count)
+- `arya_goals` — Goal tracking (title, description, status, priority, progress)
+- `arya_goal_steps` — Goal step checklists (goal_id, description, status, order)
+- `arya_response_meta` — Response metadata (reasoning_summary, confidence, uncertainty, sources_used)
+- `arya_feedback` — User feedback on responses (message_id, rating: up/down, correction_text)
+- `arya_insights` — Proactive insights (source_type, title, insight, relevance, status)
 
 **Storage Layer:** There's an in-memory storage implementation (`MemStorage`) in `server/storage.ts` for users. The knowledge base uses direct Drizzle queries against PostgreSQL.
 

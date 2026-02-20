@@ -16,6 +16,18 @@ import {
   Globe,
   Volume2,
   VolumeX,
+  Brain,
+  ThumbsUp,
+  ThumbsDown,
+  Target,
+  Lightbulb,
+  X,
+  Check,
+  ChevronRight,
+  Sparkles,
+  Shield,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 function FormattedMessage({ content, isUser }: { content: string; isUser?: boolean }) {
@@ -110,6 +122,36 @@ interface LanguageOption {
   native: string;
 }
 
+interface MemoryItem {
+  id: string;
+  category: string;
+  key: string;
+  value: string;
+  confidence: string;
+  source: string;
+  accessCount: number;
+  updatedAt: string;
+}
+
+interface GoalItem {
+  id: string;
+  title: string;
+  description: string | null;
+  status: string;
+  priority: string;
+  progress: number;
+  steps: { id: string; description: string; status: string; order: number }[];
+}
+
+interface InsightItem {
+  id: string;
+  sourceType: string;
+  title: string;
+  insight: string;
+  relevance: string;
+  createdAt: string;
+}
+
 const DEFAULT_LANGUAGES: LanguageOption[] = [
   { code: "en-IN", name: "English", native: "English" },
   { code: "hi-IN", name: "Hindi", native: "हिन्दी" },
@@ -123,6 +165,407 @@ const DEFAULT_LANGUAGES: LanguageOption[] = [
   { code: "pa-IN", name: "Punjabi", native: "ਪੰਜਾਬੀ" },
   { code: "od-IN", name: "Odia", native: "ଓଡ଼ିଆ" },
 ];
+
+function ConfidenceBadge({ confidence, sourcesCount, memoryUsed }: { confidence?: number; sourcesCount?: number; memoryUsed?: boolean }) {
+  if (!confidence && confidence !== 0) return null;
+  const pct = Math.round(confidence * 100);
+  const colorClasses = pct >= 80
+    ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/20"
+    : pct >= 50
+    ? "bg-amber-500/20 text-amber-300 border-amber-500/20"
+    : "bg-red-500/20 text-red-300 border-red-500/20";
+  return (
+    <div className="flex items-center gap-1.5">
+      {memoryUsed && (
+        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-medium border border-purple-500/20 flex items-center gap-0.5">
+          <Brain className="w-2.5 h-2.5" />
+          Memory
+        </span>
+      )}
+      <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium border ${colorClasses}`}>
+        {pct}% sure
+      </span>
+      {sourcesCount !== undefined && sourcesCount > 0 && (
+        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300/70 font-medium">
+          {sourcesCount} sources
+        </span>
+      )}
+    </div>
+  );
+}
+
+function FeedbackButtons({ messageId, conversationId }: { messageId: number; conversationId: number }) {
+  const [submitted, setSubmitted] = useState<'up' | 'down' | null>(null);
+  const [showCorrection, setShowCorrection] = useState(false);
+  const [correction, setCorrection] = useState("");
+
+  const feedbackMutation = useMutation({
+    mutationFn: async (data: { rating: 'up' | 'down'; correction_text?: string }) => {
+      const res = await fetch("/api/arya/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message_id: messageId,
+          conversation_id: conversationId,
+          tenant_id: "varah",
+          rating: data.rating,
+          correction_text: data.correction_text,
+        }),
+      });
+      return res.json();
+    },
+  });
+
+  const handleFeedback = (rating: 'up' | 'down') => {
+    setSubmitted(rating);
+    if (rating === 'down') {
+      setShowCorrection(true);
+    } else {
+      feedbackMutation.mutate({ rating });
+    }
+  };
+
+  const submitCorrection = () => {
+    feedbackMutation.mutate({ rating: 'down', correction_text: correction });
+    setShowCorrection(false);
+  };
+
+  if (submitted === 'up') {
+    return (
+      <div className="flex items-center gap-1 mt-1">
+        <ThumbsUp className="w-3 h-3 text-emerald-400" />
+        <span className="text-[10px] text-emerald-400">Thanks!</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-1.5">
+      {!submitted && (
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            data-testid={`button-thumbsup-${messageId}`}
+            onClick={() => handleFeedback('up')}
+            className="p-1 rounded hover:bg-white/10 text-white/30 hover:text-emerald-400 transition-colors"
+          >
+            <ThumbsUp className="w-3 h-3" />
+          </button>
+          <button
+            data-testid={`button-thumbsdown-${messageId}`}
+            onClick={() => handleFeedback('down')}
+            className="p-1 rounded hover:bg-white/10 text-white/30 hover:text-red-400 transition-colors"
+          >
+            <ThumbsDown className="w-3 h-3" />
+          </button>
+        </div>
+      )}
+      {showCorrection && (
+        <div className="flex items-center gap-1.5 mt-1">
+          <input
+            data-testid={`input-correction-${messageId}`}
+            value={correction}
+            onChange={(e) => setCorrection(e.target.value)}
+            placeholder="What should I have said?"
+            className="flex-1 text-xs bg-white/5 border border-white/10 rounded px-2 py-1 text-white placeholder:text-white/30 focus:outline-none focus:border-cyan-500/30"
+            onKeyDown={(e) => e.key === 'Enter' && submitCorrection()}
+          />
+          <button onClick={submitCorrection} className="p-1 rounded hover:bg-white/10 text-cyan-400">
+            <Send className="w-3 h-3" />
+          </button>
+          <button onClick={() => { setShowCorrection(false); setSubmitted(null); }} className="p-1 rounded hover:bg-white/10 text-white/30">
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MemoryPanel({ onClose }: { onClose: () => void }) {
+  const queryClient = useQueryClient();
+  const { data, isLoading } = useQuery<{ memories: MemoryItem[]; total: number }>({
+    queryKey: ["/api/arya/memory"],
+    queryFn: async () => {
+      const res = await fetch("/api/arya/memory?tenant_id=varah");
+      return res.json();
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await fetch(`/api/arya/memory/${id}`, { method: "DELETE" });
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/arya/memory"] }),
+  });
+
+  const memories = data?.memories || [];
+  const grouped: Record<string, MemoryItem[]> = {};
+  for (const m of memories) {
+    if (!grouped[m.category]) grouped[m.category] = [];
+    grouped[m.category].push(m);
+  }
+
+  const categoryIcons: Record<string, string> = {
+    identity: "👤",
+    preference: "⭐",
+    fact: "📌",
+    context: "🔄",
+    relationship: "🤝",
+  };
+
+  return (
+    <div className="absolute right-0 top-0 bottom-0 w-80 bg-card/95 backdrop-blur-xl border-l border-border/50 z-40 flex flex-col" data-testid="panel-memory">
+      <div className="p-3 border-b border-border/30 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Brain className="w-4 h-4 text-purple-400" />
+          <span className="text-sm font-semibold text-white">ARYA's Memory</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300">{memories.length}</span>
+        </div>
+        <button onClick={onClose} className="p-1 rounded hover:bg-white/10 text-white/50">
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+      <div className="flex-1 overflow-y-auto p-3 space-y-4">
+        {isLoading && <div className="flex items-center justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-purple-400" /></div>}
+        {!isLoading && memories.length === 0 && (
+          <div className="text-center py-8">
+            <Brain className="w-8 h-8 text-white/10 mx-auto mb-2" />
+            <p className="text-sm text-white/40">No memories yet</p>
+            <p className="text-xs text-white/20 mt-1">Chat with ARYA to build memory</p>
+          </div>
+        )}
+        {Object.entries(grouped).map(([category, items]) => (
+          <div key={category}>
+            <div className="flex items-center gap-1.5 mb-2">
+              <span className="text-sm">{categoryIcons[category] || "📝"}</span>
+              <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">{category}</span>
+            </div>
+            <div className="space-y-1.5">
+              {items.map((mem) => (
+                <div key={mem.id} className="group flex items-start gap-2 px-2.5 py-2 rounded-lg bg-white/5 border border-white/5 hover:border-purple-500/20 transition-colors">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-medium text-white/80 truncate">{mem.key}</div>
+                    <div className="text-[11px] text-white/50 mt-0.5">{mem.value}</div>
+                  </div>
+                  <button
+                    onClick={() => deleteMutation.mutate(mem.id)}
+                    className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-white/10 text-white/30 hover:text-red-400 transition-all flex-shrink-0"
+                    data-testid={`button-delete-memory-${mem.id}`}
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function GoalsPanel({ onClose }: { onClose: () => void }) {
+  const queryClient = useQueryClient();
+  const [newGoalTitle, setNewGoalTitle] = useState("");
+  const [newGoalSteps, setNewGoalSteps] = useState("");
+
+  const { data, isLoading } = useQuery<{ goals: GoalItem[] }>({
+    queryKey: ["/api/arya/goals"],
+    queryFn: async () => {
+      const res = await fetch("/api/arya/goals?tenant_id=varah");
+      return res.json();
+    },
+  });
+
+  const createGoalMutation = useMutation({
+    mutationFn: async () => {
+      const steps = newGoalSteps.split("\n").map(s => s.trim()).filter(Boolean);
+      const res = await fetch("/api/arya/goals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tenant_id: "varah", title: newGoalTitle, steps }),
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/arya/goals"] });
+      setNewGoalTitle("");
+      setNewGoalSteps("");
+    },
+  });
+
+  const toggleStepMutation = useMutation({
+    mutationFn: async ({ stepId, status }: { stepId: string; status: string }) => {
+      const newStatus = status === 'completed' ? 'pending' : 'completed';
+      await fetch(`/api/arya/goals/steps/${stepId}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/arya/goals"] }),
+  });
+
+  const deleteGoalMutation = useMutation({
+    mutationFn: async (goalId: string) => {
+      await fetch(`/api/arya/goals/${goalId}`, { method: "DELETE" });
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/arya/goals"] }),
+  });
+
+  const goals = data?.goals || [];
+  const priorityColors: Record<string, string> = {
+    low: "text-white/40", medium: "text-blue-400", high: "text-amber-400", critical: "text-red-400"
+  };
+
+  return (
+    <div className="absolute right-0 top-0 bottom-0 w-80 bg-card/95 backdrop-blur-xl border-l border-border/50 z-40 flex flex-col" data-testid="panel-goals">
+      <div className="p-3 border-b border-border/30 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Target className="w-4 h-4 text-amber-400" />
+          <span className="text-sm font-semibold text-white">Goals & Plans</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300">{goals.filter(g => g.status === 'active').length}</span>
+        </div>
+        <button onClick={onClose} className="p-1 rounded hover:bg-white/10 text-white/50">
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div className="p-3 border-b border-border/20">
+        <input
+          data-testid="input-goal-title"
+          value={newGoalTitle}
+          onChange={(e) => setNewGoalTitle(e.target.value)}
+          placeholder="What's your goal?"
+          className="w-full text-xs bg-white/5 border border-white/10 rounded-lg px-2.5 py-2 text-white placeholder:text-white/30 focus:outline-none focus:border-amber-500/30 mb-1.5"
+        />
+        <textarea
+          data-testid="input-goal-steps"
+          value={newGoalSteps}
+          onChange={(e) => setNewGoalSteps(e.target.value)}
+          placeholder="Steps (one per line, optional)"
+          rows={2}
+          className="w-full text-xs bg-white/5 border border-white/10 rounded-lg px-2.5 py-2 text-white placeholder:text-white/30 focus:outline-none focus:border-amber-500/30 resize-none mb-1.5"
+        />
+        <Button
+          data-testid="button-create-goal"
+          onClick={() => newGoalTitle.trim() && createGoalMutation.mutate()}
+          disabled={!newGoalTitle.trim()}
+          size="sm"
+          className="w-full bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-500/20 text-xs"
+        >
+          <Plus className="w-3 h-3 mr-1" /> Add Goal
+        </Button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-3 space-y-3">
+        {isLoading && <div className="flex items-center justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-amber-400" /></div>}
+        {goals.map((goal) => (
+          <div key={goal.id} className="rounded-xl bg-white/5 border border-white/10 p-3 group" data-testid={`card-goal-${goal.id}`}>
+            <div className="flex items-start justify-between mb-2">
+              <div className="flex-1">
+                <div className="flex items-center gap-1.5">
+                  <span className={`text-[9px] uppercase font-bold ${priorityColors[goal.priority]}`}>{goal.priority}</span>
+                  {goal.status === 'completed' && <Check className="w-3 h-3 text-emerald-400" />}
+                </div>
+                <h4 className="text-xs font-medium text-white mt-0.5">{goal.title}</h4>
+              </div>
+              <button
+                onClick={() => deleteGoalMutation.mutate(goal.id)}
+                className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-white/10 text-white/30 hover:text-red-400 transition-all"
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
+            </div>
+
+            {goal.steps.length > 0 && (
+              <div className="mb-2">
+                <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-amber-500 to-emerald-500 rounded-full transition-all" style={{ width: `${goal.progress}%` }} />
+                </div>
+                <span className="text-[10px] text-white/30 mt-0.5 block">{goal.progress}%</span>
+              </div>
+            )}
+
+            <div className="space-y-1">
+              {goal.steps.map((step) => (
+                <button
+                  key={step.id}
+                  onClick={() => toggleStepMutation.mutate({ stepId: step.id, status: step.status })}
+                  className="w-full flex items-start gap-2 text-left px-1.5 py-1 rounded hover:bg-white/5 transition-colors"
+                  data-testid={`button-step-${step.id}`}
+                >
+                  <div className={`w-3.5 h-3.5 mt-0.5 rounded border flex-shrink-0 flex items-center justify-center ${
+                    step.status === 'completed' ? 'bg-emerald-500/30 border-emerald-500/50' : 'border-white/20'
+                  }`}>
+                    {step.status === 'completed' && <Check className="w-2.5 h-2.5 text-emerald-400" />}
+                  </div>
+                  <span className={`text-[11px] ${step.status === 'completed' ? 'text-white/30 line-through' : 'text-white/70'}`}>
+                    {step.description}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+        {!isLoading && goals.length === 0 && (
+          <div className="text-center py-8">
+            <Target className="w-8 h-8 text-white/10 mx-auto mb-2" />
+            <p className="text-sm text-white/40">No goals yet</p>
+            <p className="text-xs text-white/20 mt-1">Set goals and track progress</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function InsightsCard({ insights, onDismiss }: { insights: InsightItem[]; onDismiss: (id: string) => void }) {
+  if (insights.length === 0) return null;
+
+  const sourceIcons: Record<string, any> = {
+    memory_pattern: Brain,
+    neural_link: Sparkles,
+    knowledge_gap: Lightbulb,
+    query_trend: Target,
+    cross_domain: Globe,
+  };
+
+  return (
+    <div className="px-2 sm:px-4 py-2">
+      <div className="max-w-2xl mx-auto space-y-2">
+        {insights.slice(0, 2).map((insight) => {
+          const Icon = sourceIcons[insight.sourceType] || Lightbulb;
+          return (
+            <div
+              key={insight.id}
+              className="flex items-start gap-3 px-3 py-2.5 rounded-xl bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border border-purple-500/20"
+              data-testid={`card-insight-${insight.id}`}
+            >
+              <div className="w-7 h-7 rounded-lg bg-purple-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Icon className="w-3.5 h-3.5 text-purple-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] uppercase font-bold text-purple-400 tracking-wider">Insight</span>
+                  <span className="text-[10px] text-white/30">{insight.title}</span>
+                </div>
+                <p className="text-xs text-white/70 mt-0.5 leading-relaxed">{insight.insight.slice(0, 150)}{insight.insight.length > 150 ? '...' : ''}</p>
+              </div>
+              <button
+                onClick={() => onDismiss(insight.id)}
+                className="p-1 rounded hover:bg-white/10 text-white/30 hover:text-white/60 flex-shrink-0"
+                data-testid={`button-dismiss-insight-${insight.id}`}
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export default function AryaChat() {
   const [activeConversation, setActiveConversation] = useState<number | null>(null);
@@ -138,6 +581,12 @@ export default function AryaChat() {
   const [playingAudio, setPlayingAudio] = useState(false);
   const [responseMode, setResponseMode] = useState<"instant" | "thinking" | null>(null);
   const [responseModeIcon, setResponseModeIcon] = useState<string | null>(null);
+  const [responseConfidence, setResponseConfidence] = useState<number | undefined>();
+  const [responseSourcesCount, setResponseSourcesCount] = useState<number | undefined>();
+  const [responseMemoryUsed, setResponseMemoryUsed] = useState(false);
+  const [showMemory, setShowMemory] = useState(false);
+  const [showGoals, setShowGoals] = useState(false);
+  const [showConfidence, setShowConfidence] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -165,7 +614,24 @@ export default function AryaChat() {
     enabled: !!activeConversation,
   });
 
+  const { data: insightsData } = useQuery<{ insights: InsightItem[] }>({
+    queryKey: ["/api/arya/insights"],
+    queryFn: async () => {
+      const res = await fetch("/api/arya/insights?tenant_id=varah");
+      return res.json();
+    },
+    refetchInterval: 60000,
+  });
+
+  const dismissInsightMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await fetch(`/api/arya/insights/${id}/dismiss`, { method: "PATCH" });
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/arya/insights"] }),
+  });
+
   const messages = conversationData?.messages || [];
+  const insights = insightsData?.insights || [];
 
   const createConversation = useMutation({
     mutationFn: async (title: string) => {
@@ -263,6 +729,9 @@ export default function AryaChat() {
     setStreamingContent("");
     setTranslatedContent(null);
     setShowSidebar(false);
+    setResponseConfidence(undefined);
+    setResponseSourcesCount(undefined);
+    setResponseMemoryUsed(false);
 
     queryClient.setQueryData(
       ["/api/arya/conversations", convId],
@@ -304,6 +773,9 @@ export default function AryaChat() {
             if (event.type === "meta") {
               setResponseMode(event.mode);
               setResponseModeIcon(event.icon || null);
+              if (event.confidence !== undefined) setResponseConfidence(event.confidence);
+              if (event.sourcesCount !== undefined) setResponseSourcesCount(event.sourcesCount);
+              if (event.memoryUsed) setResponseMemoryUsed(true);
             }
             if (event.content) {
               fullContent += event.content;
@@ -313,6 +785,7 @@ export default function AryaChat() {
               queryClient.invalidateQueries({
                 queryKey: ["/api/arya/conversations", convId],
               });
+              queryClient.invalidateQueries({ queryKey: ["/api/arya/memory"] });
             }
           } catch {}
         }
@@ -324,6 +797,9 @@ export default function AryaChat() {
       setStreamingContent("");
       setResponseMode(null);
       setResponseModeIcon(null);
+      setResponseConfidence(undefined);
+      setResponseSourcesCount(undefined);
+      setResponseMemoryUsed(false);
       queryClient.invalidateQueries({
         queryKey: ["/api/arya/conversations", convId],
       });
@@ -518,6 +994,30 @@ export default function AryaChat() {
             New Chat
           </Button>
         </div>
+
+        <div className="px-2 py-2 border-b border-border/10 flex gap-1">
+          <button
+            data-testid="button-toggle-memory"
+            onClick={() => { setShowMemory(!showMemory); setShowGoals(false); }}
+            className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-medium transition-colors ${
+              showMemory ? 'bg-purple-500/20 text-purple-300 border border-purple-500/20' : 'text-white/40 hover:text-white/60 hover:bg-white/5'
+            }`}
+          >
+            <Brain className="w-3 h-3" />
+            Memory
+          </button>
+          <button
+            data-testid="button-toggle-goals"
+            onClick={() => { setShowGoals(!showGoals); setShowMemory(false); }}
+            className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-medium transition-colors ${
+              showGoals ? 'bg-amber-500/20 text-amber-300 border border-amber-500/20' : 'text-white/40 hover:text-white/60 hover:bg-white/5'
+            }`}
+          >
+            <Target className="w-3 h-3" />
+            Goals
+          </button>
+        </div>
+
         <div className="flex-1 overflow-y-auto space-y-1 px-2 py-2" data-testid="list-conversations">
           {conversations.map((conv) => {
             const date = new Date(conv.createdAt);
@@ -572,7 +1072,7 @@ export default function AryaChat() {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 relative">
         <div className="flex items-center justify-between px-3 py-2 md:hidden border-b border-border/20">
           <button
             data-testid="button-toggle-conversations"
@@ -592,35 +1092,64 @@ export default function AryaChat() {
               ? conversations.find((c) => c.id === activeConversation)?.title || "Chat"
               : "New Chat"}
           </span>
-          <button
-            data-testid="button-new-chat-mobile"
-            onClick={() => createConversation.mutate("New Chat")}
-            className="p-1.5 rounded-lg bg-primary/20 border border-primary/30 hover:bg-primary/30 transition-all"
-          >
-            <Plus className="w-4 h-4 text-primary" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              data-testid="button-toggle-memory-mobile"
+              onClick={() => { setShowMemory(!showMemory); setShowGoals(false); }}
+              className={`p-1.5 rounded-lg transition-all ${showMemory ? 'bg-purple-500/20 text-purple-400' : 'text-white/40 hover:text-white/60'}`}
+            >
+              <Brain className="w-4 h-4" />
+            </button>
+            <button
+              data-testid="button-toggle-goals-mobile"
+              onClick={() => { setShowGoals(!showGoals); setShowMemory(false); }}
+              className={`p-1.5 rounded-lg transition-all ${showGoals ? 'bg-amber-500/20 text-amber-400' : 'text-white/40 hover:text-white/60'}`}
+            >
+              <Target className="w-4 h-4" />
+            </button>
+            <button
+              data-testid="button-new-chat-mobile"
+              onClick={() => createConversation.mutate("New Chat")}
+              className="p-1.5 rounded-lg bg-primary/20 border border-primary/30 hover:bg-primary/30 transition-all"
+            >
+              <Plus className="w-4 h-4 text-primary" />
+            </button>
+          </div>
         </div>
+
+        {showMemory && <MemoryPanel onClose={() => setShowMemory(false)} />}
+        {showGoals && <GoalsPanel onClose={() => setShowGoals(false)} />}
+
+        {insights.length > 0 && !activeConversation && (
+          <InsightsCard insights={insights} onDismiss={(id) => dismissInsightMutation.mutate(id)} />
+        )}
 
         <div className="flex-1 overflow-y-auto px-2 sm:px-4 py-3 md:py-4 space-y-3 md:space-y-4" data-testid="list-messages">
           {!activeConversation && messages.length === 0 && !streamingContent && (
             <div className="flex flex-col items-center justify-center h-full text-center px-4">
-              <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-br from-cyan-500/20 to-amber-500/20 flex items-center justify-center mb-4 md:mb-6">
+              <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-br from-cyan-500/20 to-amber-500/20 flex items-center justify-center mb-4 md:mb-6 relative">
                 <span className="text-3xl md:text-4xl font-display font-bold bg-gradient-to-r from-cyan-400 to-amber-400 bg-clip-text text-transparent">
                   A
                 </span>
+                <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gradient-to-br from-purple-500/40 to-cyan-500/40 flex items-center justify-center border border-purple-500/30">
+                  <Sparkles className="w-2.5 h-2.5 text-purple-300" />
+                </div>
               </div>
-              <h2 className="text-xl md:text-2xl font-display font-bold text-white mb-2" data-testid="text-welcome-title">
+              <h2 className="text-xl md:text-2xl font-display font-bold text-white mb-1" data-testid="text-welcome-title">
                 Hey, I'm ARYA
               </h2>
+              <p className="text-[10px] uppercase tracking-widest font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent mb-3">
+                AGI-Class AI Assistant
+              </p>
               <p className="text-muted-foreground max-w-md mb-6 md:mb-8 text-sm md:text-base">
-                Ask me anything — quick facts, deep analysis, creative writing, health advice, business strategy, or just a conversation. I'm voice-enabled too.
+                I remember our conversations, learn from your feedback, track your goals, and connect insights across domains. Ask me anything.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3 max-w-lg w-full">
                 {[
-                  { text: "What's the time right now?", badge: "Instant" },
-                  { text: "Write me an email to my team about our new product launch", badge: "Creative" },
-                  { text: "Compare pros and cons of starting a franchise vs independent business", badge: "Analysis" },
-                  { text: "Convert 72 kg to pounds", badge: "Utility" },
+                  { text: "What's the time right now?", badge: "Instant", icon: "⚡" },
+                  { text: "Write me an email to my team about our new product launch", badge: "Creative", icon: "✨" },
+                  { text: "Compare pros and cons of starting a franchise vs independent business", badge: "Analysis", icon: "🧠" },
+                  { text: "Help me plan my fitness goals for next month", badge: "Goals", icon: "🎯" },
                 ].map((suggestion, i) => (
                   <button
                     key={i}
@@ -628,8 +1157,10 @@ export default function AryaChat() {
                     onClick={() => sendMessage(suggestion.text)}
                     className="text-left px-3 md:px-4 py-2.5 md:py-3 rounded-xl border border-border/50 bg-card/30 text-sm text-muted-foreground hover:text-white hover:border-primary/40 hover:bg-card/60 transition-all group"
                   >
-                    <span className="text-[9px] uppercase tracking-wider font-semibold text-cyan-400/60 group-hover:text-cyan-400 mb-1 block">{suggestion.badge}</span>
-                    {suggestion.text}
+                    <span className="text-[9px] uppercase tracking-wider font-semibold text-cyan-400/60 group-hover:text-cyan-400 mb-1 flex items-center gap-1">
+                      <span>{suggestion.icon}</span> {suggestion.badge}
+                    </span>
+                    <span className="block text-xs mt-0.5">{suggestion.text}</span>
                   </button>
                 ))}
               </div>
@@ -643,7 +1174,7 @@ export default function AryaChat() {
               className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
               <div
-                className={`max-w-[90%] sm:max-w-[80%] md:max-w-[75%] rounded-2xl px-3 md:px-4 py-2.5 md:py-3 ${
+                className={`group max-w-[90%] sm:max-w-[80%] md:max-w-[75%] rounded-2xl px-3 md:px-4 py-2.5 md:py-3 ${
                   msg.role === "user"
                     ? "bg-primary/20 border border-primary/30 text-white"
                     : "bg-card/60 border border-border/30 text-white/90"
@@ -657,6 +1188,9 @@ export default function AryaChat() {
                   </div>
                 )}
                 <FormattedMessage content={msg.content} isUser={msg.role === "user"} />
+                {msg.role === "assistant" && activeConversation && (
+                  <FeedbackButtons messageId={msg.id} conversationId={activeConversation} />
+                )}
               </div>
             </div>
           ))}
@@ -676,6 +1210,9 @@ export default function AryaChat() {
                     <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-medium border border-amber-500/20">
                       Instant
                     </span>
+                  )}
+                  {showConfidence && responseMode === "thinking" && (
+                    <ConfidenceBadge confidence={responseConfidence} sourcesCount={responseSourcesCount} memoryUsed={responseMemoryUsed} />
                   )}
                 </div>
                 <div className="relative">
@@ -707,7 +1244,7 @@ export default function AryaChat() {
                 </div>
                 <div className="flex items-center gap-2 text-muted-foreground text-sm">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  {selectedLanguage !== "en-IN" ? "Listening & translating..." : "Processing..."}
+                  {selectedLanguage !== "en-IN" ? "Listening & translating..." : "Thinking..."}
                 </div>
               </div>
             </div>
@@ -867,8 +1404,9 @@ export default function AryaChat() {
                 Voice: {currentLang?.native}
               </span>
             )}
-            <p className="text-[10px] md:text-xs text-muted-foreground text-center">
-              ARYA is here to help you with anything you need.
+            <p className="text-[10px] md:text-xs text-muted-foreground text-center flex items-center gap-1.5">
+              <Sparkles className="w-3 h-3 text-purple-400/50" />
+              ARYA AGI — Remembers, learns, and evolves with every conversation.
             </p>
           </div>
         </div>
