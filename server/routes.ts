@@ -45,10 +45,63 @@ const goalsEngine = new GoalsEngine();
 const feedbackEngine = new FeedbackEngine();
 const insightsEngine = new InsightsEngine();
 
+const adminSessions = new Map<string, { createdAt: number }>();
+const ADMIN_SESSION_TTL = 24 * 60 * 60 * 1000;
+
+function cleanExpiredSessions() {
+  const now = Date.now();
+  for (const [token, session] of adminSessions) {
+    if (now - session.createdAt > ADMIN_SESSION_TTL) {
+      adminSessions.delete(token);
+    }
+  }
+}
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+
+  app.post("/api/admin/login", async (req: Request, res: Response) => {
+    try {
+      const { password } = req.body;
+      const adminPassword = process.env.ADMIN_PASSWORD;
+      if (!adminPassword) {
+        return res.status(500).json({ error: "Admin password not configured" });
+      }
+      if (password !== adminPassword) {
+        return res.status(401).json({ error: "Invalid password" });
+      }
+      cleanExpiredSessions();
+      const token = uuidv4();
+      adminSessions.set(token, { createdAt: Date.now() });
+      res.json({ token, expiresIn: ADMIN_SESSION_TTL });
+    } catch (error) {
+      res.status(500).json({ error: "Login failed" });
+    }
+  });
+
+  app.get("/api/admin/verify", async (req: Request, res: Response) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith("Bearer ")) {
+      return res.status(401).json({ valid: false });
+    }
+    const token = authHeader.slice(7);
+    cleanExpiredSessions();
+    const session = adminSessions.get(token);
+    if (!session) {
+      return res.status(401).json({ valid: false });
+    }
+    res.json({ valid: true });
+  });
+
+  app.post("/api/admin/logout", async (req: Request, res: Response) => {
+    const authHeader = req.headers.authorization;
+    if (authHeader?.startsWith("Bearer ")) {
+      adminSessions.delete(authHeader.slice(7));
+    }
+    res.json({ success: true });
+  });
   
   // Health check
   app.get("/api/health", async (req: Request, res: Response) => {

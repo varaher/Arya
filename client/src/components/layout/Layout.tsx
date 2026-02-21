@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
+import { useAdminAuth } from "@/lib/admin-auth";
 import { 
   LayoutDashboard, 
   BrainCircuit, 
@@ -15,10 +16,13 @@ import {
   Menu,
   X,
   KeyRound,
+  LogOut,
+  Shield,
 } from "lucide-react";
 
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [location] = useLocation();
+  const { logout } = useAdminAuth();
 
   const navItems = [
     { label: "Chat with ARYA", icon: MessageCircle, href: "/" },
@@ -54,7 +58,10 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
             </div>
             <div>
               <h1 className="font-display font-bold text-lg tracking-tight leading-none">ARYA Core</h1>
-              <p className="text-xs text-muted-foreground font-mono mt-1">v1.0.0-alpha</p>
+              <div className="flex items-center gap-1 mt-1">
+                <Shield className="w-3 h-3 text-amber-400" />
+                <p className="text-xs text-amber-400 font-mono">ADMIN</p>
+              </div>
             </div>
           </div>
           <button
@@ -85,8 +92,8 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
           ))}
         </nav>
 
-        <div className="p-3 md:p-4 border-t border-border/50 hidden md:block">
-          <div className="bg-black/20 rounded-lg p-3 border border-border/50">
+        <div className="p-3 md:p-4 border-t border-border/50 space-y-3">
+          <div className="bg-black/20 rounded-lg p-3 border border-border/50 hidden md:block">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-mono text-muted-foreground">SYSTEM STATUS</span>
               <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_0_rgba(16,185,129,0.5)]"></span>
@@ -102,6 +109,14 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
               </div>
             </div>
           </div>
+          <button
+            onClick={logout}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors"
+            data-testid="button-admin-logout"
+          >
+            <LogOut className="w-4 h-4" />
+            Sign Out
+          </button>
         </div>
       </aside>
     </>
@@ -141,7 +156,7 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
   );
 }
 
-export function Layout({ children }: { children: React.ReactNode }) {
+export function AdminLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
@@ -154,6 +169,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
           {children}
         </div>
       </main>
+    </div>
+  );
+}
+
+export function PublicLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      {children}
     </div>
   );
 }

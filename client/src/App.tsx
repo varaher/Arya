@@ -1,9 +1,10 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, Redirect } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Layout } from "@/components/layout/Layout";
+import { AdminLayout, PublicLayout } from "@/components/layout/Layout";
+import { AdminAuthProvider, useAdminAuth } from "@/lib/admin-auth";
 import NotFound from "@/pages/not-found";
 
 import AryaChat from "@/pages/AryaChat";
@@ -16,24 +17,78 @@ import ApiPlayground from "@/pages/ApiPlayground";
 import SelfLearning from "@/pages/SelfLearning";
 import NeuralLink from "@/pages/NeuralLink";
 import DeveloperPortal from "@/pages/DeveloperPortal";
+import AdminLogin from "@/pages/AdminLogin";
+
+function AdminRoute({ component: Component }: { component: React.ComponentType }) {
+  const { isAdmin, isLoading } = useAdminAuth();
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-muted-foreground text-sm">Loading...</div>
+      </div>
+    );
+  }
+  if (!isAdmin) {
+    return <Redirect to="/admin/login" />;
+  }
+  return <Component />;
+}
 
 function Router() {
+  const { isAdmin, isLoading } = useAdminAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-muted-foreground text-sm">Loading...</div>
+      </div>
+    );
+  }
+
   return (
-    <Layout>
-      <Switch>
-        <Route path="/" component={AryaChat} />
-        <Route path="/dashboard" component={Dashboard} />
-        <Route path="/orchestrator" component={Orchestrator} />
-        <Route path="/knowledge" component={Knowledge} />
-        <Route path="/ermate" component={ERmate} />
-        <Route path="/erprana" component={ErPrana} />
-        <Route path="/learning" component={SelfLearning} />
-        <Route path="/neural-link" component={NeuralLink} />
-        <Route path="/api" component={ApiPlayground} />
-        <Route path="/developers" component={DeveloperPortal} />
-        <Route component={NotFound} />
-      </Switch>
-    </Layout>
+    <Switch>
+      <Route path="/admin/login">
+        {isAdmin ? <Redirect to="/dashboard" /> : <AdminLogin />}
+      </Route>
+
+      <Route path="/">
+        {isAdmin ? (
+          <AdminLayout><AryaChat /></AdminLayout>
+        ) : (
+          <PublicLayout><AryaChat /></PublicLayout>
+        )}
+      </Route>
+
+      <Route path="/dashboard">
+        <AdminLayout><AdminRoute component={Dashboard} /></AdminLayout>
+      </Route>
+      <Route path="/orchestrator">
+        <AdminLayout><AdminRoute component={Orchestrator} /></AdminLayout>
+      </Route>
+      <Route path="/knowledge">
+        <AdminLayout><AdminRoute component={Knowledge} /></AdminLayout>
+      </Route>
+      <Route path="/ermate">
+        <AdminLayout><AdminRoute component={ERmate} /></AdminLayout>
+      </Route>
+      <Route path="/erprana">
+        <AdminLayout><AdminRoute component={ErPrana} /></AdminLayout>
+      </Route>
+      <Route path="/learning">
+        <AdminLayout><AdminRoute component={SelfLearning} /></AdminLayout>
+      </Route>
+      <Route path="/neural-link">
+        <AdminLayout><AdminRoute component={NeuralLink} /></AdminLayout>
+      </Route>
+      <Route path="/api">
+        <AdminLayout><AdminRoute component={ApiPlayground} /></AdminLayout>
+      </Route>
+      <Route path="/developers">
+        <AdminLayout><AdminRoute component={DeveloperPortal} /></AdminLayout>
+      </Route>
+
+      <Route component={NotFound} />
+    </Switch>
   );
 }
 
@@ -41,8 +96,10 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        <Router />
+        <AdminAuthProvider>
+          <Toaster />
+          <Router />
+        </AdminAuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );
