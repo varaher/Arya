@@ -50,11 +50,26 @@ const ADMIN_SESSION_TTL = 24 * 60 * 60 * 1000;
 
 function cleanExpiredSessions() {
   const now = Date.now();
-  for (const [token, session] of adminSessions) {
+  const entries = Array.from(adminSessions.entries());
+  for (const [token, session] of entries) {
     if (now - session.createdAt > ADMIN_SESSION_TTL) {
       adminSessions.delete(token);
     }
   }
+}
+
+function requireAdmin(req: Request, res: Response, next: Function) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Admin authentication required" });
+  }
+  const token = authHeader.slice(7);
+  cleanExpiredSessions();
+  const session = adminSessions.get(token);
+  if (!session) {
+    return res.status(401).json({ error: "Invalid or expired admin session" });
+  }
+  next();
 }
 
 export async function registerRoutes(
@@ -114,7 +129,7 @@ export async function registerRoutes(
   });
 
   // ARYA Knowledge Query (now with self-learning integration)
-  app.post("/api/knowledge/query", async (req: Request, res: Response) => {
+  app.post("/api/knowledge/query", requireAdmin, async (req: Request, res: Response) => {
     try {
       const validated = QueryRequestSchema.parse(req.body);
       const traceId = uuidv4();
@@ -188,7 +203,7 @@ export async function registerRoutes(
     language: z.string().default('en')
   });
 
-  app.post("/api/ermate/auto_fill", async (req: Request, res: Response) => {
+  app.post("/api/ermate/auto_fill", requireAdmin, async (req: Request, res: Response) => {
     try {
       const validated = ERmateRequestSchema.parse(req.body);
       
@@ -273,7 +288,7 @@ export async function registerRoutes(
   });
 
   // Clinical Records API (ERmate data synced to ARYA)
-  app.get("/api/clinical-records", async (req: Request, res: Response) => {
+  app.get("/api/clinical-records", requireAdmin, async (req: Request, res: Response) => {
     try {
       const tenantId = (req.query.tenant_id as string) || "varah";
       const limit = parseInt((req.query.limit as string) || "50");
@@ -298,7 +313,7 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/clinical-records/stats", async (req: Request, res: Response) => {
+  app.get("/api/clinical-records/stats", requireAdmin, async (req: Request, res: Response) => {
     try {
       const tenantId = (req.query.tenant_id as string) || "varah";
       const totalResult = await db
@@ -335,7 +350,7 @@ export async function registerRoutes(
     }).optional()
   });
 
-  app.post("/api/erprana/risk_assess", async (req: Request, res: Response) => {
+  app.post("/api/erprana/risk_assess", requireAdmin, async (req: Request, res: Response) => {
     try {
       const validated = ErPranaRequestSchema.parse(req.body);
       
@@ -358,7 +373,7 @@ export async function registerRoutes(
   });
 
   // Get all knowledge by domain
-  app.get("/api/knowledge/domain/:domain", async (req: Request, res: Response) => {
+  app.get("/api/knowledge/domain/:domain", requireAdmin, async (req: Request, res: Response) => {
     try {
       const domain = req.params.domain as any;
       const tenantId = req.query.tenant_id as string || 'varah';
@@ -385,7 +400,7 @@ export async function registerRoutes(
   // =============================================
 
   // Get learning stats
-  app.get("/api/learning/stats", async (req: Request, res: Response) => {
+  app.get("/api/learning/stats", requireAdmin, async (req: Request, res: Response) => {
     try {
       const tenantId = req.query.tenant_id as string || 'varah';
       const stats = await learningEngine.getLearningStats(tenantId);
@@ -397,7 +412,7 @@ export async function registerRoutes(
   });
 
   // Get knowledge drafts
-  app.get("/api/learning/drafts", async (req: Request, res: Response) => {
+  app.get("/api/learning/drafts", requireAdmin, async (req: Request, res: Response) => {
     try {
       const tenantId = req.query.tenant_id as string || 'varah';
       const status = req.query.status as string | undefined;
@@ -410,7 +425,7 @@ export async function registerRoutes(
   });
 
   // Approve a draft (promote to published knowledge)
-  app.post("/api/learning/drafts/:id/approve", async (req: Request, res: Response) => {
+  app.post("/api/learning/drafts/:id/approve", requireAdmin, async (req: Request, res: Response) => {
     try {
       const draftId = req.params.id as string;
       const reviewedBy = (req.body.reviewed_by as string) || 'admin';
@@ -428,7 +443,7 @@ export async function registerRoutes(
   });
 
   // Reject a draft
-  app.post("/api/learning/drafts/:id/reject", async (req: Request, res: Response) => {
+  app.post("/api/learning/drafts/:id/reject", requireAdmin, async (req: Request, res: Response) => {
     try {
       const draftId = req.params.id as string;
       const reviewedBy = (req.body.reviewed_by as string) || 'admin';
@@ -441,7 +456,7 @@ export async function registerRoutes(
   });
 
   // Get query patterns (what users are asking)
-  app.get("/api/learning/patterns", async (req: Request, res: Response) => {
+  app.get("/api/learning/patterns", requireAdmin, async (req: Request, res: Response) => {
     try {
       const tenantId = req.query.tenant_id as string || 'varah';
       const gapsOnly = req.query.gaps_only === 'true';
@@ -458,7 +473,7 @@ export async function registerRoutes(
   // =============================================
 
   // Compute neural links (admin action)
-  app.post("/api/neural-link/compute", async (req: Request, res: Response) => {
+  app.post("/api/neural-link/compute", requireAdmin, async (req: Request, res: Response) => {
     try {
       const tenantId = req.body.tenant_id || 'varah';
       console.log(`[NeuralLink] Computing cross-domain links for tenant: ${tenantId}`);
@@ -471,7 +486,7 @@ export async function registerRoutes(
   });
 
   // Get network graph data
-  app.get("/api/neural-link/graph", async (req: Request, res: Response) => {
+  app.get("/api/neural-link/graph", requireAdmin, async (req: Request, res: Response) => {
     try {
       const tenantId = req.query.tenant_id as string || 'varah';
       const graph = await neuralLinkEngine.getNetworkGraph(tenantId);
@@ -483,7 +498,7 @@ export async function registerRoutes(
   });
 
   // Get links for a specific knowledge unit
-  app.get("/api/neural-link/unit/:unitId", async (req: Request, res: Response) => {
+  app.get("/api/neural-link/unit/:unitId", requireAdmin, async (req: Request, res: Response) => {
     try {
       const tenantId = req.query.tenant_id as string || 'varah';
       const links = await neuralLinkEngine.getLinksForUnit(tenantId, req.params.unitId as string);
@@ -509,7 +524,7 @@ export async function registerRoutes(
   });
 
   // Synthesize cross-domain response
-  app.post("/api/neural-link/synthesize", async (req: Request, res: Response) => {
+  app.post("/api/neural-link/synthesize", requireAdmin, async (req: Request, res: Response) => {
     try {
       const schema = z.object({
         tenant_id: z.string(),
@@ -767,7 +782,7 @@ export async function registerRoutes(
   // API KEY MANAGEMENT ROUTES (Developer Portal)
   // =============================================
 
-  app.post("/api/keys", async (req: Request, res: Response) => {
+  app.post("/api/keys", requireAdmin, async (req: Request, res: Response) => {
     try {
       const schema = z.object({
         tenant_id: z.string().default("varah"),
@@ -793,7 +808,7 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/keys", async (req: Request, res: Response) => {
+  app.get("/api/keys", requireAdmin, async (req: Request, res: Response) => {
     try {
       const tenantId = (req.query.tenant_id as string) || "varah";
       const keys = await listApiKeys(tenantId);
@@ -803,7 +818,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/keys/:id/revoke", async (req: Request, res: Response) => {
+  app.post("/api/keys/:id/revoke", requireAdmin, async (req: Request, res: Response) => {
     try {
       const tenantId = (req.body.tenant_id as string) || "varah";
       const success = await revokeApiKey(req.params.id, tenantId);
@@ -817,7 +832,7 @@ export async function registerRoutes(
     }
   });
 
-  app.delete("/api/keys/:id", async (req: Request, res: Response) => {
+  app.delete("/api/keys/:id", requireAdmin, async (req: Request, res: Response) => {
     try {
       const tenantId = (req.query.tenant_id as string) || "varah";
       const success = await deleteApiKey(req.params.id, tenantId);
@@ -831,7 +846,7 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/keys/:id/usage", async (req: Request, res: Response) => {
+  app.get("/api/keys/:id/usage", requireAdmin, async (req: Request, res: Response) => {
     try {
       const days = parseInt((req.query.days as string) || "7");
       const usage = await getApiKeyUsage(req.params.id, days);
@@ -841,7 +856,7 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/keys/stats/overview", async (req: Request, res: Response) => {
+  app.get("/api/keys/stats/overview", requireAdmin, async (req: Request, res: Response) => {
     try {
       const tenantId = (req.query.tenant_id as string) || "varah";
       const stats = await getUsageStats(tenantId);
