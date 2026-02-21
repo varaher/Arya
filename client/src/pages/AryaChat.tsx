@@ -579,6 +579,9 @@ export default function AryaChat() {
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const [translatedContent, setTranslatedContent] = useState<string | null>(null);
   const [playingAudio, setPlayingAudio] = useState(false);
+  const [speakerOn, setSpeakerOn] = useState(() => {
+    try { return localStorage.getItem("arya_speaker") === "true"; } catch { return false; }
+  });
   const [responseMode, setResponseMode] = useState<"instant" | "thinking" | null>(null);
   const [responseModeIcon, setResponseModeIcon] = useState<string | null>(null);
   const [responseConfidence, setResponseConfidence] = useState<number | undefined>();
@@ -713,6 +716,38 @@ export default function AryaChat() {
     }
   }, []);
 
+  const toggleSpeaker = useCallback(() => {
+    setSpeakerOn(prev => {
+      const next = !prev;
+      try { localStorage.setItem("arya_speaker", String(next)); } catch {}
+      if (!next) stopAudio();
+      return next;
+    });
+  }, [stopAudio]);
+
+  const speakText = useCallback(async (text: string) => {
+    try {
+      const cleanText = text.replace(/[#*_`~>\[\]()!|]/g, "").replace(/\n{2,}/g, ". ").replace(/\n/g, " ").trim();
+      if (!cleanText || cleanText.length < 2) return;
+      const speakChunk = cleanText.length > 500 ? cleanText.slice(0, 500) : cleanText;
+      const res = await fetch("/api/arya/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: speakChunk, language: selectedLanguage }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.audio) {
+        playAudioBase64(data.audio);
+      }
+    } catch (err) {
+      console.error("Auto-speak error:", err);
+    }
+  }, [selectedLanguage, playAudioBase64]);
+
+  const speakerOnRef = useRef(speakerOn);
+  useEffect(() => { speakerOnRef.current = speakerOn; }, [speakerOn]);
+
   const sendMessage = useCallback(async (text: string) => {
     if (!text.trim() || isStreaming) return;
 
@@ -786,6 +821,9 @@ export default function AryaChat() {
                 queryKey: ["/api/arya/conversations", convId],
               });
               queryClient.invalidateQueries({ queryKey: ["/api/arya/memory"] });
+              if (speakerOnRef.current && fullContent) {
+                speakText(fullContent);
+              }
             }
           } catch {}
         }
@@ -804,7 +842,7 @@ export default function AryaChat() {
         queryKey: ["/api/arya/conversations", convId],
       });
     }
-  }, [activeConversation, isStreaming, queryClient, createConversation]);
+  }, [activeConversation, isStreaming, queryClient, createConversation, speakText]);
 
   const startRecording = useCallback(async () => {
     try {
@@ -1188,8 +1226,20 @@ export default function AryaChat() {
                   </div>
                 )}
                 <FormattedMessage content={msg.content} isUser={msg.role === "user"} />
-                {msg.role === "assistant" && activeConversation && (
-                  <FeedbackButtons messageId={msg.id} conversationId={activeConversation} />
+                {msg.role === "assistant" && (
+                  <div className="flex items-center gap-1 mt-1.5">
+                    <button
+                      data-testid={`button-speak-msg-${msg.id}`}
+                      onClick={() => speakText(msg.content)}
+                      className="p-1 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                      title="Listen to this response"
+                    >
+                      <Volume2 className="w-3.5 h-3.5" />
+                    </button>
+                    {activeConversation && (
+                      <FeedbackButtons messageId={msg.id} conversationId={activeConversation} />
+                    )}
+                  </div>
                 )}
               </div>
             </div>
@@ -1320,6 +1370,21 @@ export default function AryaChat() {
                   </div>
                 )}
               </div>
+
+              <Button
+                data-testid="button-speaker-toggle"
+                variant="ghost"
+                size="icon"
+                onClick={toggleSpeaker}
+                className={`flex-shrink-0 rounded-full h-9 w-9 md:h-10 md:w-10 ${
+                  speakerOn
+                    ? "text-primary bg-primary/10 hover:bg-primary/20"
+                    : "text-muted-foreground hover:text-white hover:bg-card"
+                }`}
+                title={speakerOn ? "ARYA will speak responses (tap to mute)" : "Tap to make ARYA speak responses"}
+              >
+                {speakerOn ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+              </Button>
 
               <Button
                 data-testid="button-voice"
