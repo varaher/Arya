@@ -5,6 +5,8 @@ import { LearningEngine } from "./learning-engine";
 import { MemoryEngine } from "./memory-engine";
 import { processSmartCommand } from "./smart-commands";
 import type { Domain } from "@shared/schema";
+import { db } from "../db";
+import { aryaGoals, aryaGoalSteps, aryaNotifications } from "@shared/schema";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -123,7 +125,8 @@ export async function generateAryaResponse(
   userMessage: string,
   conversationHistory: ChatMessage[],
   tenantId: string = "varah",
-  conversationId?: number
+  conversationId?: number,
+  userId?: string | null
 ): Promise<{ stream: AsyncIterable<string>; meta: AryaResponseMeta }> {
   const startTime = Date.now();
 
@@ -231,8 +234,110 @@ export async function generateAryaResponse(
         memoryEngine.extractAndStore(tenantId, userMessage, fullResponse, conversationId)
           .catch(err => console.error("[Memory] Store error:", err));
       }
+
+      if (userId && fullResponse.length > 20) {
+        detectAndCreateGoal(userMessage, fullResponse, userId, tenantId, conversationId)
+          .catch(err => console.error("[Goals] Detection error:", err));
+      }
     })(),
   };
+}
+
+async function detectAndCreateGoal(
+  userMessage: string,
+  aryaResponse: string,
+  userId: string,
+  tenantId: string,
+  conversationId?: number
+) {
+  const goalPatterns = [
+    /i want to (improve|learn|practice|master|develop|build|start|achieve|become|get better at|work on)\s+(.+)/i,
+    /my goal is (to\s+)?(.+)/i,
+    /i('m| am) trying to (.+)/i,
+    /help me (improve|learn|practice|master|develop|build|start|achieve|work on)\s+(.+)/i,
+    /i need to (improve|learn|practice|develop|work on)\s+(.+)/i,
+    /set a goal.*(to|for)\s+(.+)/i,
+  ];
+
+  let goalMatch: string | null = null;
+  for (const pattern of goalPatterns) {
+    const match = userMessage.match(pattern);
+    if (match) {
+      goalMatch = match[2] || match[1];
+      break;
+    }
+  }
+
+  if (!goalMatch) return;
+
+  const goalTitle = goalMatch.charAt(0).toUpperCase() + goalMatch.slice(1);
+  if (goalTitle.length < 5 || goalTitle.length > 200) return;
+
+  try {
+    const miniOpenai = new OpenAI({
+      apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+      baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+    });
+
+    const completion = await miniOpenai.chat.completions.create({
+      model: "gpt-4.1-mini",
+      messages: [
+        {
+          role: "system",
+          content: `You are a goal planning assistant. Given a user's goal, create a structured plan. Return a JSON object with:
+- "title": A clear, concise goal title (max 100 chars)
+- "description": Brief description of the goal
+- "steps": Array of 3-5 actionable steps (strings)
+- "dailyMinutes": Suggested daily practice time in minutes (number, 15-60)
+- "isValidGoal": boolean - true if this is a genuine personal development/learning goal, false if it's just a question or casual conversation
+
+Respond ONLY with valid JSON, no markdown.`
+        },
+        { role: "user", content: `User said: "${userMessage}"\n\nGoal detected: "${goalTitle}"` }
+      ],
+      max_completion_tokens: 500,
+    });
+
+    const text = completion.choices[0]?.message?.content?.trim();
+    if (!text) return;
+
+    const parsed = JSON.parse(text);
+    if (!parsed.isValidGoal) return;
+
+    const [goal] = await db.insert(aryaGoals).values({
+      tenantId,
+      userId,
+      title: parsed.title || goalTitle,
+      description: parsed.description || null,
+      status: "active",
+      priority: "medium",
+      dailyTargetMinutes: parsed.dailyMinutes || 30,
+      conversationId: conversationId || null,
+    }).returning();
+
+    if (parsed.steps && Array.isArray(parsed.steps)) {
+      for (let i = 0; i < parsed.steps.length; i++) {
+        await db.insert(aryaGoalSteps).values({
+          goalId: goal.id,
+          description: parsed.steps[i],
+          status: "pending",
+          order: i + 1,
+        });
+      }
+    }
+
+    await db.insert(aryaNotifications).values({
+      userId,
+      type: "goal_progress",
+      title: "New Goal Created!",
+      message: `ARYA detected your goal: "${parsed.title || goalTitle}". Check your Goals page to track your progress and set daily reminders!`,
+      goalId: goal.id,
+    });
+
+    console.log(`[Goals] Auto-created goal "${parsed.title}" for user ${userId}`);
+  } catch (err) {
+    console.error("[Goals] Auto-create error:", err);
+  }
 }
 
 export async function generateAryaResponseFull(

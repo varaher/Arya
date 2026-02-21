@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useUserAuth } from "@/lib/user-auth";
+import { useLocation } from "wouter";
 import {
   Send,
   Mic,
@@ -28,6 +30,10 @@ import {
   Shield,
   Eye,
   EyeOff,
+  User,
+  LogIn,
+  LogOut,
+  Bell,
 } from "lucide-react";
 
 function FormattedMessage({ content, isUser }: { content: string; isUser?: boolean }) {
@@ -567,7 +573,73 @@ function InsightsCard({ insights, onDismiss }: { insights: InsightItem[]; onDism
   );
 }
 
+function NotificationBell({ token }: { token: string }) {
+  const [showDropdown, setShowDropdown] = useState(false);
+  const { data } = useQuery({
+    queryKey: ["/api/user/notifications"],
+    queryFn: async () => {
+      const res = await fetch("/api/user/notifications", { headers: { "x-user-token": token } });
+      if (!res.ok) return { notifications: [], unreadCount: 0 };
+      return res.json();
+    },
+    refetchInterval: 30000,
+  });
+  const notifications = data?.notifications || [];
+  const unreadCount = data?.unreadCount || 0;
+
+  const markRead = async (id: number) => {
+    await fetch(`/api/user/notifications/${id}/read`, { method: "POST", headers: { "x-user-token": token } });
+  };
+
+  return (
+    <div className="relative">
+      <button
+        data-testid="button-notifications"
+        onClick={() => setShowDropdown(!showDropdown)}
+        className="p-1.5 rounded-lg text-white/40 hover:text-white/60 hover:bg-white/5 transition-all relative"
+      >
+        <Bell className="w-4 h-4" />
+        {unreadCount > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-amber-500 rounded-full text-[8px] font-bold flex items-center justify-center text-black">
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </span>
+        )}
+      </button>
+      {showDropdown && (
+        <div className="absolute right-0 top-full mt-1 z-50 bg-card border border-white/10 rounded-xl shadow-xl py-1 w-72 max-h-80 overflow-y-auto">
+          <div className="px-3 py-2 border-b border-white/5 flex items-center justify-between">
+            <span className="text-xs font-semibold text-white/70">Notifications</span>
+            {unreadCount > 0 && <span className="text-[10px] text-amber-400">{unreadCount} new</span>}
+          </div>
+          {notifications.length === 0 ? (
+            <div className="px-3 py-4 text-xs text-white/30 text-center">No notifications yet</div>
+          ) : (
+            notifications.slice(0, 20).map((n: any) => (
+              <div
+                key={n.id}
+                data-testid={`notification-item-${n.id}`}
+                className={`px-3 py-2 text-xs border-b border-white/5 last:border-0 cursor-pointer hover:bg-white/5 ${!n.isRead ? 'bg-cyan-500/5' : ''}`}
+                onClick={() => { if (!n.isRead) markRead(n.id); }}
+              >
+                <div className="font-medium text-white/80">{n.title}</div>
+                <div className="text-white/40 mt-0.5">{n.message}</div>
+                <div className="text-white/20 mt-1 text-[10px]">
+                  {new Date(n.createdAt).toLocaleDateString()}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AryaChat() {
+  const { user, isLoggedIn, token, logout: userLogout } = useUserAuth();
+  const [, setLocation] = useLocation();
+  const [showUserAuth, setShowUserAuth] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const [activeConversation, setActiveConversation] = useState<number | null>(null);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
@@ -780,9 +852,11 @@ export default function AryaChat() {
     );
 
     try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["x-user-token"] = token;
       const response = await fetch(`/api/arya/conversations/${convId}/messages`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ content: text, tenant_id: "varah" }),
       });
 
@@ -910,9 +984,11 @@ export default function AryaChat() {
         reader.readAsDataURL(blob);
       });
 
+      const voiceHeaders: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) voiceHeaders["x-user-token"] = token;
       const response = await fetch(`/api/arya/conversations/${convId}/voice`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: voiceHeaders,
         body: JSON.stringify({ audio: base64Audio, tenant_id: "varah", language: selectedLanguage }),
       });
 
@@ -1152,6 +1228,51 @@ export default function AryaChat() {
             >
               <Plus className="w-4 h-4 text-primary" />
             </button>
+            {isLoggedIn ? (
+              <>
+              <NotificationBell token={token!} />
+              <div className="relative">
+                <button
+                  data-testid="button-user-menu"
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="p-1.5 rounded-lg bg-gradient-to-br from-cyan-500/20 to-amber-500/20 border border-cyan-500/30 hover:border-cyan-500/50 transition-all"
+                >
+                  <User className="w-4 h-4 text-cyan-400" />
+                </button>
+                {showUserMenu && (
+                  <div className="absolute right-0 top-full mt-1 z-50 bg-card border border-white/10 rounded-xl shadow-xl py-2 min-w-[180px]">
+                    <div className="px-3 py-2 border-b border-white/5">
+                      <div className="text-xs font-medium text-white">{user?.name}</div>
+                      <div className="text-[10px] text-muted-foreground">{user?.phone}</div>
+                    </div>
+                    <button
+                      data-testid="button-my-goals"
+                      onClick={() => { setShowUserMenu(false); setLocation("/my-goals"); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white/80 hover:bg-white/5"
+                    >
+                      <Target className="w-3.5 h-3.5 text-amber-400" /> My Goals
+                    </button>
+                    <button
+                      data-testid="button-user-logout"
+                      onClick={() => { setShowUserMenu(false); userLogout(); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-400 hover:bg-white/5"
+                    >
+                      <LogOut className="w-3.5 h-3.5" /> Sign Out
+                    </button>
+                  </div>
+                )}
+              </div>
+              </>
+            ) : (
+              <button
+                data-testid="button-user-login"
+                onClick={() => setShowUserAuth(true)}
+                className="p-1.5 rounded-lg text-white/40 hover:text-white/60 hover:bg-white/5 transition-all"
+                title="Sign in"
+              >
+                <LogIn className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
 
@@ -1182,6 +1303,16 @@ export default function AryaChat() {
               <p className="text-muted-foreground max-w-md mb-6 md:mb-8 text-sm md:text-base">
                 I remember our conversations, learn from your feedback, track your goals, and connect insights across domains. Ask me anything.
               </p>
+              {!isLoggedIn && (
+                <button
+                  data-testid="button-welcome-signin"
+                  onClick={() => setShowUserAuth(true)}
+                  className="mb-4 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600/20 to-amber-600/20 border border-cyan-500/30 text-sm text-white/80 hover:text-white hover:border-cyan-500/50 transition-all flex items-center gap-2"
+                >
+                  <User className="w-4 h-4 text-cyan-400" />
+                  Sign in to set goals & track your voice practice
+                </button>
+              )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3 max-w-lg w-full">
                 {[
                   { text: "What's the time right now?", badge: "Instant", icon: "⚡" },
@@ -1474,6 +1605,109 @@ export default function AryaChat() {
               ARYA AGI — Remembers, learns, and evolves with every conversation.
             </p>
           </div>
+        </div>
+      </div>
+
+      {showUserAuth && (
+        <div className="fixed inset-0 z-50">
+          <UserAuthModal onClose={() => setShowUserAuth(false)} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function UserAuthModal({ onClose }: { onClose: () => void }) {
+  const { login, signup } = useUserAuth();
+  const [mode, setMode] = useState<"login" | "signup">("signup");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showPw, setShowPw] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      if (mode === "login") {
+        const r = await login(phone, password);
+        if (!r.success) setError(r.error || "Login failed");
+        else onClose();
+      } else {
+        if (!name.trim()) { setError("Please enter your name"); setLoading(false); return; }
+        const r = await signup({ name: name.trim(), phone, password });
+        if (!r.success) setError(r.error || "Signup failed");
+        else onClose();
+      }
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#0a0e1a]/95 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+      <div className="w-full max-w-sm bg-card/90 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl p-6" onClick={e => e.stopPropagation()}>
+        <div className="text-center mb-5">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500/20 to-amber-500/20 border border-cyan-500/30 mb-3">
+            <span className="text-lg font-bold bg-gradient-to-r from-cyan-400 to-amber-400 bg-clip-text text-transparent">A</span>
+          </div>
+          <h2 className="text-lg font-bold text-white">{mode === "login" ? "Welcome Back" : "Join ARYA"}</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {mode === "login" ? "Sign in to track your goals" : "Create account to set goals & track progress"}
+          </p>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          {mode === "signup" && (
+            <input
+              data-testid="modal-input-name"
+              type="text"
+              placeholder="Your Name"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              className="w-full bg-background/50 border border-white/10 rounded-xl text-white text-sm px-3 py-2.5 placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
+              autoFocus
+            />
+          )}
+          <input
+            data-testid="modal-input-phone"
+            type="tel"
+            placeholder="+91 98765 43210"
+            value={phone}
+            onChange={e => setPhone(e.target.value)}
+            className="w-full bg-background/50 border border-white/10 rounded-xl text-white text-sm px-3 py-2.5 placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
+            autoFocus={mode === "login"}
+          />
+          <div className="relative">
+            <input
+              data-testid="modal-input-password"
+              type={showPw ? "text" : "password"}
+              placeholder={mode === "signup" ? "Create password (min 6 chars)" : "Password"}
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              className="w-full bg-background/50 border border-white/10 rounded-xl text-white text-sm px-3 py-2.5 pr-10 placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
+            />
+            <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+              {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+          {error && <div className="text-xs text-red-400 bg-red-500/10 rounded-lg px-3 py-2" data-testid="modal-text-error">{error}</div>}
+          <Button
+            data-testid="modal-button-submit"
+            type="submit"
+            disabled={loading || !phone || !password}
+            className="w-full bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-medium py-2.5 rounded-xl"
+          >
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : mode === "login" ? "Sign In" : "Create Account"}
+          </Button>
+        </form>
+        <div className="text-center mt-3">
+          <button onClick={() => { setMode(mode === "login" ? "signup" : "login"); setError(""); }} className="text-xs text-muted-foreground hover:text-white">
+            {mode === "login" ? <>New here? <span className="text-cyan-400">Create account</span></> : <>Have an account? <span className="text-cyan-400">Sign in</span></>}
+          </button>
+        </div>
+        <div className="text-center mt-3">
+          <button onClick={onClose} className="text-[10px] text-muted-foreground/50 hover:text-muted-foreground">Skip for now</button>
         </div>
       </div>
     </div>

@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AdminLayout, PublicLayout } from "@/components/layout/Layout";
 import { AdminAuthProvider, useAdminAuth } from "@/lib/admin-auth";
+import { UserAuthProvider } from "@/lib/user-auth";
 import NotFound from "@/pages/not-found";
 
 import AryaChat from "@/pages/AryaChat";
@@ -18,6 +19,7 @@ import SelfLearning from "@/pages/SelfLearning";
 import NeuralLink from "@/pages/NeuralLink";
 import DeveloperPortal from "@/pages/DeveloperPortal";
 import AdminLogin from "@/pages/AdminLogin";
+import UserGoals from "@/pages/UserGoals";
 
 function AdminRoute({ component: Component }: { component: React.ComponentType }) {
   const { isAdmin, isLoading } = useAdminAuth();
@@ -59,6 +61,10 @@ function Router() {
         )}
       </Route>
 
+      <Route path="/my-goals">
+        <PublicLayout><UserGoals /></PublicLayout>
+      </Route>
+
       <Route path="/dashboard">
         <AdminLayout><AdminRoute component={Dashboard} /></AdminLayout>
       </Route>
@@ -97,8 +103,10 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <AdminAuthProvider>
-          <Toaster />
-          <Router />
+          <UserAuthProvider>
+            <Toaster />
+            <Router />
+          </UserAuthProvider>
         </AdminAuthProvider>
       </TooltipProvider>
     </QueryClientProvider>

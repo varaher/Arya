@@ -36,6 +36,19 @@ import {
   getUsageStats,
   apiKeyAuth,
 } from "./arya/api-key-service";
+import {
+  signupUser,
+  loginUser,
+  verifySession,
+  logoutUser,
+  getUserById,
+} from "./arya/user-auth-service";
+import {
+  aryaGoals,
+  aryaGoalSteps,
+  aryaVoiceSessions,
+  aryaNotifications,
+} from "@shared/schema";
 
 const retriever = new KnowledgeRetriever();
 const medicalEngine = new MedicalEngine();
@@ -118,6 +131,347 @@ export async function registerRoutes(
     res.json({ success: true });
   });
   
+  // =============================================
+  // USER AUTHENTICATION ROUTES
+  // =============================================
+
+  app.post("/api/user/signup", async (req: Request, res: Response) => {
+    try {
+      const { name, phone, password, email, preferredLanguage } = req.body;
+      if (!name || !phone || !password) {
+        return res.status(400).json({ error: "Name, phone, and password are required" });
+      }
+      if (password.length < 6) {
+        return res.status(400).json({ error: "Password must be at least 6 characters" });
+      }
+      const result = await signupUser(name, phone, password, email, preferredLanguage);
+      res.json(result);
+    } catch (error: any) {
+      if (error.message === "Phone number already registered") {
+        return res.status(409).json({ error: error.message });
+      }
+      console.error("Signup error:", error);
+      res.status(500).json({ error: "Signup failed" });
+    }
+  });
+
+  app.post("/api/user/login", async (req: Request, res: Response) => {
+    try {
+      const { phone, password } = req.body;
+      if (!phone || !password) {
+        return res.status(400).json({ error: "Phone and password are required" });
+      }
+      const result = await loginUser(phone, password);
+      res.json(result);
+    } catch (error: any) {
+      if (error.message === "Invalid phone number or password" || error.message === "Account is deactivated") {
+        return res.status(401).json({ error: error.message });
+      }
+      console.error("Login error:", error);
+      res.status(500).json({ error: "Login failed" });
+    }
+  });
+
+  app.get("/api/user/verify", async (req: Request, res: Response) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith("Bearer ")) {
+      return res.status(401).json({ valid: false });
+    }
+    const token = authHeader.slice(7);
+    const user = await verifySession(token);
+    if (!user) {
+      return res.status(401).json({ valid: false });
+    }
+    res.json({ valid: true, user });
+  });
+
+  app.post("/api/user/logout", async (req: Request, res: Response) => {
+    const authHeader = req.headers.authorization;
+    if (authHeader?.startsWith("Bearer ")) {
+      await logoutUser(authHeader.slice(7));
+    }
+    res.json({ success: true });
+  });
+
+  // User auth middleware - extracts user from token, attaches to req
+  function optionalUser(req: Request, res: Response, next: Function) {
+    const authHeader = req.headers["x-user-token"] as string;
+    if (!authHeader) {
+      (req as any).userId = null;
+      return next();
+    }
+    verifySession(authHeader).then((user) => {
+      (req as any).userId = user?.id || null;
+      (req as any).userName = user?.name || null;
+      next();
+    }).catch(() => {
+      (req as any).userId = null;
+      next();
+    });
+  }
+
+  function requireUser(req: Request, res: Response, next: Function) {
+    const authHeader = req.headers["x-user-token"] as string;
+    if (!authHeader) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    verifySession(authHeader).then((user) => {
+      if (!user) {
+        return res.status(401).json({ error: "Invalid or expired session" });
+      }
+      (req as any).userId = user.id;
+      (req as any).userName = user.name;
+      next();
+    }).catch(() => {
+      res.status(401).json({ error: "Authentication failed" });
+    });
+  }
+
+  // =============================================
+  // USER GOALS ROUTES (for logged-in users)
+  // =============================================
+
+  app.get("/api/user/goals", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const status = req.query.status as string | undefined;
+      let conditions: any[] = [eq(aryaGoals.userId, userId)];
+      if (status) conditions.push(eq(aryaGoals.status, status as any));
+
+      const goals = await db.select().from(aryaGoals)
+        .where(and(...conditions))
+        .orderBy(desc(aryaGoals.createdAt));
+
+      const result = [];
+      for (const goal of goals) {
+        const steps = await db.select().from(aryaGoalSteps)
+          .where(eq(aryaGoalSteps.goalId, goal.id))
+          .orderBy(aryaGoalSteps.order);
+
+        const voiceSessions = await db.select().from(aryaVoiceSessions)
+          .where(eq(aryaVoiceSessions.goalId, goal.id))
+          .orderBy(desc(aryaVoiceSessions.startedAt));
+
+        const totalMinutes = voiceSessions.reduce((sum, s) => sum + Math.round(s.durationSeconds / 60), 0);
+        const todaySessions = voiceSessions.filter(s => {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          return s.startedAt >= today;
+        });
+        const todayMinutes = todaySessions.reduce((sum, s) => sum + Math.round(s.durationSeconds / 60), 0);
+
+        result.push({
+          ...goal,
+          steps,
+          stats: {
+            totalMinutes,
+            todayMinutes,
+            totalSessions: voiceSessions.length,
+            todaySessions: todaySessions.length,
+          },
+        });
+      }
+      res.json(result);
+    } catch (error) {
+      console.error("Get user goals error:", error);
+      res.status(500).json({ error: "Failed to fetch goals" });
+    }
+  });
+
+  app.post("/api/user/goals", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const { title, description, steps, priority, dailyTargetMinutes, reminderTime } = req.body;
+      if (!title) return res.status(400).json({ error: "Title is required" });
+
+      const [goal] = await db.insert(aryaGoals).values({
+        tenantId: "default",
+        userId,
+        title,
+        description: description || null,
+        status: "active",
+        priority: priority || "medium",
+        dailyTargetMinutes: dailyTargetMinutes || null,
+        reminderTime: reminderTime || null,
+      }).returning();
+
+      const createdSteps = [];
+      if (steps && steps.length > 0) {
+        for (let i = 0; i < steps.length; i++) {
+          const [step] = await db.insert(aryaGoalSteps).values({
+            goalId: goal.id,
+            description: steps[i],
+            status: "pending",
+            order: i + 1,
+          }).returning();
+          createdSteps.push(step);
+        }
+      }
+
+      res.json({ ...goal, steps: createdSteps });
+    } catch (error) {
+      console.error("Create user goal error:", error);
+      res.status(500).json({ error: "Failed to create goal" });
+    }
+  });
+
+  app.patch("/api/user/goals/:goalId", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const { goalId } = req.params;
+      const { status, title, description, dailyTargetMinutes, reminderTime } = req.body;
+
+      const [goal] = await db.select().from(aryaGoals)
+        .where(and(eq(aryaGoals.id, goalId), eq(aryaGoals.userId, userId)))
+        .limit(1);
+      if (!goal) return res.status(404).json({ error: "Goal not found" });
+
+      const update: any = { updatedAt: new Date() };
+      if (status) update.status = status;
+      if (title) update.title = title;
+      if (description !== undefined) update.description = description;
+      if (dailyTargetMinutes !== undefined) update.dailyTargetMinutes = dailyTargetMinutes;
+      if (reminderTime !== undefined) update.reminderTime = reminderTime;
+      if (status === "completed") update.completedAt = new Date();
+
+      await db.update(aryaGoals).set(update).where(eq(aryaGoals.id, goalId));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Update goal error:", error);
+      res.status(500).json({ error: "Failed to update goal" });
+    }
+  });
+
+  // =============================================
+  // VOICE SESSION TRACKING ROUTES
+  // =============================================
+
+  app.post("/api/user/voice-session/start", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const { goalId, conversationId, language } = req.body;
+
+      const [session] = await db.insert(aryaVoiceSessions).values({
+        userId,
+        goalId: goalId || null,
+        conversationId: conversationId || null,
+        language: language || "en",
+        durationSeconds: 0,
+        messageCount: 0,
+      }).returning();
+
+      res.json(session);
+    } catch (error) {
+      console.error("Start voice session error:", error);
+      res.status(500).json({ error: "Failed to start voice session" });
+    }
+  });
+
+  app.post("/api/user/voice-session/:sessionId/end", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const { sessionId } = req.params;
+      const { durationSeconds, messageCount } = req.body;
+
+      const [session] = await db.select().from(aryaVoiceSessions)
+        .where(and(eq(aryaVoiceSessions.id, sessionId), eq(aryaVoiceSessions.userId, userId)))
+        .limit(1);
+      if (!session) return res.status(404).json({ error: "Session not found" });
+
+      await db.update(aryaVoiceSessions).set({
+        durationSeconds: durationSeconds || 0,
+        messageCount: messageCount || 0,
+        endedAt: new Date(),
+      }).where(eq(aryaVoiceSessions.id, sessionId));
+
+      if (session.goalId) {
+        await db.update(aryaGoals).set({
+          lastActivityAt: new Date(),
+          updatedAt: new Date(),
+        }).where(eq(aryaGoals.id, session.goalId));
+
+        const dur = durationSeconds || 0;
+        if (dur >= 60) {
+          const [goal] = await db.select().from(aryaGoals)
+            .where(eq(aryaGoals.id, session.goalId)).limit(1);
+          if (goal && goal.dailyTargetMinutes) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const todaySessions = await db.select().from(aryaVoiceSessions)
+              .where(and(
+                eq(aryaVoiceSessions.userId, userId),
+                eq(aryaVoiceSessions.goalId, session.goalId),
+              ));
+            const todayTotal = todaySessions
+              .filter(s => s.startedAt >= today)
+              .reduce((sum, s) => sum + s.durationSeconds, 0) + dur;
+
+            if (Math.round(todayTotal / 60) >= goal.dailyTargetMinutes) {
+              const newStreak = (goal.streakCount || 0) + 1;
+              await db.update(aryaGoals).set({ streakCount: newStreak }).where(eq(aryaGoals.id, goal.id));
+
+              await db.insert(aryaNotifications).values({
+                userId,
+                type: "streak",
+                title: `${newStreak} Day Streak!`,
+                message: `Amazing! You've completed your daily goal for "${goal.title}" ${newStreak} days in a row. Keep it up!`,
+                goalId: goal.id,
+              });
+            }
+          }
+        }
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("End voice session error:", error);
+      res.status(500).json({ error: "Failed to end voice session" });
+    }
+  });
+
+  // =============================================
+  // NOTIFICATION ROUTES
+  // =============================================
+
+  app.get("/api/user/notifications", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const notifications = await db.select().from(aryaNotifications)
+        .where(eq(aryaNotifications.userId, userId))
+        .orderBy(desc(aryaNotifications.createdAt))
+        .limit(50);
+      const unreadCount = notifications.filter(n => !n.isRead).length;
+      res.json({ notifications, unreadCount });
+    } catch (error) {
+      console.error("Get notifications error:", error);
+      res.status(500).json({ error: "Failed to fetch notifications" });
+    }
+  });
+
+  app.post("/api/user/notifications/:id/read", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      await db.update(aryaNotifications)
+        .set({ isRead: true })
+        .where(and(eq(aryaNotifications.id, req.params.id), eq(aryaNotifications.userId, userId)));
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to mark notification as read" });
+    }
+  });
+
+  app.post("/api/user/notifications/read-all", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      await db.update(aryaNotifications)
+        .set({ isRead: true })
+        .where(and(eq(aryaNotifications.userId, userId), eq(aryaNotifications.isRead, false)));
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to mark all as read" });
+    }
+  });
+
   // Health check
   app.get("/api/health", async (req: Request, res: Response) => {
     res.json({
@@ -593,7 +947,7 @@ export async function registerRoutes(
   });
 
   // Text chat: send message, get streaming AI response with knowledge context
-  app.post("/api/arya/conversations/:id/messages", async (req: Request, res: Response) => {
+  app.post("/api/arya/conversations/:id/messages", optionalUser, async (req: Request, res: Response) => {
     try {
       const conversationId = parseInt(req.params.id);
       const { content, tenant_id } = req.body;
@@ -614,7 +968,8 @@ export async function registerRoutes(
       res.setHeader("Cache-Control", "no-cache");
       res.setHeader("Connection", "keep-alive");
 
-      const { stream, meta } = await generateAryaResponse(content, history, tenant_id || "varah", conversationId);
+      const userId = (req as any).userId || null;
+      const { stream, meta } = await generateAryaResponse(content, history, tenant_id || "varah", conversationId, userId);
       let fullResponse = "";
 
       res.write(`data: ${JSON.stringify({ type: "meta", mode: meta.mode, icon: meta.icon, confidence: meta.confidence, sourcesCount: meta.sourcesCount, memoryUsed: meta.memoryUsed })}\n\n`);
@@ -641,7 +996,7 @@ export async function registerRoutes(
 
   // Voice chat: send audio, get text response (transcribe → ARYA → stream text)
   // Supports multilingual via Sarvam AI: Indian language audio → transcribe → translate to English → ARYA → translate back → TTS
-  app.post("/api/arya/conversations/:id/voice", async (req: Request, res: Response) => {
+  app.post("/api/arya/conversations/:id/voice", optionalUser, async (req: Request, res: Response) => {
     try {
       const conversationId = parseInt(req.params.id);
       const { audio, tenant_id, language } = req.body;
@@ -692,7 +1047,8 @@ export async function registerRoutes(
 
       res.write(`data: ${JSON.stringify({ type: "user_transcript", content: userTranscript, language: detectedLanguage })}\n\n`);
 
-      const { stream, meta } = await generateAryaResponse(queryForArya, history, tenant_id || "varah");
+      const voiceUserId = (req as any).userId || null;
+      const { stream, meta } = await generateAryaResponse(queryForArya, history, tenant_id || "varah", conversationId, voiceUserId);
       let fullResponse = "";
 
       res.write(`data: ${JSON.stringify({ type: "meta", mode: meta.mode, icon: meta.icon })}\n\n`);

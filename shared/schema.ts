@@ -261,6 +261,7 @@ export type AryaMemory = typeof aryaMemory.$inferSelect;
 export const aryaGoals = pgTable("arya_goals", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tenantId: varchar("tenant_id", { length: 100 }).notNull(),
+  userId: varchar("user_id", { length: 255 }),
   title: varchar("title", { length: 500 }).notNull(),
   description: text("description"),
   status: varchar("status", { length: 20 }).default("active").$type<'active' | 'completed' | 'paused' | 'cancelled'>(),
@@ -269,6 +270,10 @@ export const aryaGoals = pgTable("arya_goals", {
   targetDate: timestamp("target_date"),
   completedAt: timestamp("completed_at"),
   conversationId: integer("conversation_id"),
+  dailyTargetMinutes: integer("daily_target_minutes"),
+  reminderTime: varchar("reminder_time", { length: 10 }),
+  streakCount: integer("streak_count").default(0).notNull(),
+  lastActivityAt: timestamp("last_activity_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -362,6 +367,79 @@ export const insertAryaInsightSchema = createInsertSchema(aryaInsights).omit({
 });
 export type InsertAryaInsight = z.infer<typeof insertAryaInsightSchema>;
 export type AryaInsight = typeof aryaInsights.$inferSelect;
+
+// =============================================
+// USER AUTHENTICATION & PROFILE
+// =============================================
+
+export const aryaUsers = pgTable("arya_users", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 200 }).notNull(),
+  phone: varchar("phone", { length: 20 }).notNull().unique(),
+  email: varchar("email", { length: 255 }),
+  passwordHash: varchar("password_hash", { length: 255 }).notNull(),
+  preferredLanguage: varchar("preferred_language", { length: 10 }).default("en"),
+  isActive: boolean("is_active").default(true).notNull(),
+  lastLoginAt: timestamp("last_login_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAryaUserSchema = createInsertSchema(aryaUsers).omit({
+  id: true,
+  createdAt: true,
+  lastLoginAt: true,
+  isActive: true,
+});
+export type InsertAryaUser = z.infer<typeof insertAryaUserSchema>;
+export type AryaUser = typeof aryaUsers.$inferSelect;
+
+export const aryaUserSessions = pgTable("arya_user_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull(),
+  token: varchar("token", { length: 255 }).notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// =============================================
+// VOICE SESSION TRACKING
+// =============================================
+
+export const aryaVoiceSessions = pgTable("arya_voice_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull(),
+  goalId: varchar("goal_id", { length: 255 }),
+  conversationId: integer("conversation_id"),
+  durationSeconds: integer("duration_seconds").default(0).notNull(),
+  language: varchar("language", { length: 10 }).default("en"),
+  messageCount: integer("message_count").default(0).notNull(),
+  startedAt: timestamp("started_at").defaultNow().notNull(),
+  endedAt: timestamp("ended_at"),
+});
+
+// =============================================
+// NOTIFICATIONS
+// =============================================
+
+export const aryaNotifications = pgTable("arya_notifications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull(),
+  type: varchar("type", { length: 50 }).notNull().$type<'goal_reminder' | 'goal_progress' | 'streak' | 'insight' | 'welcome'>(),
+  title: varchar("title", { length: 300 }).notNull(),
+  message: text("message").notNull(),
+  goalId: varchar("goal_id", { length: 255 }),
+  isRead: boolean("is_read").default(false).notNull(),
+  scheduledFor: timestamp("scheduled_for"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAryaNotificationSchema = createInsertSchema(aryaNotifications).omit({
+  id: true,
+  createdAt: true,
+  isRead: true,
+});
+export type InsertAryaNotification = z.infer<typeof insertAryaNotificationSchema>;
+export type AryaNotification = typeof aryaNotifications.$inferSelect;
 
 // Re-export chat models
 export * from "./models/chat";
