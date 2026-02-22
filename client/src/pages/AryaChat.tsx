@@ -1710,6 +1710,9 @@ function VoiceConversationMode({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const convIdRef = useRef<number | null>(activeConversation);
   const activeRef = useRef(true);
+  const processingRef = useRef(false);
+  const abortRef = useRef<AbortController | null>(null);
+  const autoListenTimerRef = useRef<NodeJS.Timeout | null>(null);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -1719,6 +1722,8 @@ function VoiceConversationMode({
   const stopAllMedia = useCallback(() => {
     if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; }
     if (animFrameRef.current) { cancelAnimationFrame(animFrameRef.current); animFrameRef.current = null; }
+    if (autoListenTimerRef.current) { clearTimeout(autoListenTimerRef.current); autoListenTimerRef.current = null; }
+    if (abortRef.current) { try { abortRef.current.abort(); } catch {} abortRef.current = null; }
     if (audioRef.current) {
       audioRef.current.pause();
       if (audioRef.current.src) try { URL.revokeObjectURL(audioRef.current.src); } catch {}
@@ -1738,6 +1743,7 @@ function VoiceConversationMode({
       audioContextRef.current = null;
     }
     analyserRef.current = null;
+    processingRef.current = false;
   }, []);
 
   useEffect(() => {
@@ -1749,6 +1755,17 @@ function VoiceConversationMode({
 
   const startListening = useCallback(async () => {
     if (!activeRef.current) return;
+    if (abortRef.current) { try { abortRef.current.abort(); } catch {} abortRef.current = null; }
+    if (autoListenTimerRef.current) { clearTimeout(autoListenTimerRef.current); autoListenTimerRef.current = null; }
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+    if (animFrameRef.current) { cancelAnimationFrame(animFrameRef.current); animFrameRef.current = null; }
+    if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; }
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      try { mediaRecorderRef.current.stop(); } catch {}
+    }
+    if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null; }
+    if (audioContextRef.current) { try { audioContextRef.current.close(); } catch {} audioContextRef.current = null; }
+    processingRef.current = false;
     setPhase("listening");
     setTranscript("");
     setResponse("");
@@ -1826,12 +1843,17 @@ function VoiceConversationMode({
 
   const processRecording = useCallback(async () => {
     if (!activeRef.current) return;
+    if (processingRef.current) return;
+    processingRef.current = true;
+
     setPhase("processing");
-    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+    if (animFrameRef.current) { cancelAnimationFrame(animFrameRef.current); animFrameRef.current = null; }
+    if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; }
+    if (autoListenTimerRef.current) { clearTimeout(autoListenTimerRef.current); autoListenTimerRef.current = null; }
 
     const recorder = mediaRecorderRef.current;
     if (!recorder || recorder.state === "inactive") {
+      processingRef.current = false;
       if (activeRef.current) startListening();
       return;
     }
@@ -1854,9 +1876,13 @@ function VoiceConversationMode({
     }
 
     if (blob.size < 1000) {
+      processingRef.current = false;
       if (activeRef.current) startListening();
       return;
     }
+
+    const abortController = new AbortController();
+    abortRef.current = abortController;
 
     try {
       const base64Audio = await new Promise<string>((resolve) => {
@@ -1865,12 +1891,15 @@ function VoiceConversationMode({
         reader.readAsDataURL(blob);
       });
 
+      if (abortController.signal.aborted) { processingRef.current = false; return; }
+
       let convId = convIdRef.current;
       if (!convId) {
         const res = await fetch("/api/arya/conversations", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ title: "Voice Chat" }),
+          signal: abortController.signal,
         });
         if (!res.ok) throw new Error("Could not create conversation");
         const conv = await res.json();
@@ -1880,13 +1909,14 @@ function VoiceConversationMode({
         onConversationCreated(convId);
       }
 
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
-      if (token) headers["x-user-token"] = token;
+      const fetchHeaders: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) fetchHeaders["x-user-token"] = token;
 
       const fetchRes = await fetch(`/api/arya/conversations/${convId}/voice`, {
         method: "POST",
-        headers,
+        headers: fetchHeaders,
         body: JSON.stringify({ audio: base64Audio, tenant_id: "varah", language: selectedLanguage }),
+        signal: abortController.signal,
       });
 
       const streamReader = fetchRes.body?.getReader();
@@ -1895,9 +1925,10 @@ function VoiceConversationMode({
       const decoder = new TextDecoder();
       let buffer = "";
       let fullContent = "";
-      let audioBase64 = "";
+      let responseAudioBase64 = "";
 
       while (true) {
+        if (abortController.signal.aborted) { try { streamReader.cancel(); } catch {} processingRef.current = false; return; }
         const { done, value } = await streamReader.read();
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
@@ -1917,7 +1948,7 @@ function VoiceConversationMode({
               setResponse(fullContent);
             }
             if (event.type === "audio_response" && event.audio) {
-              audioBase64 = event.audio;
+              responseAudioBase64 = event.audio;
             }
             if (event.type === "done") {
               setConversationLog(prev => [...prev, { role: "assistant", text: fullContent }]);
@@ -1930,33 +1961,39 @@ function VoiceConversationMode({
         }
       }
 
-      if (!activeRef.current) return;
+      if (!activeRef.current || abortController.signal.aborted) { processingRef.current = false; return; }
       setPhase("speaking");
 
-      if (audioBase64) {
-        await playAudioAndWait(audioBase64);
+      if (responseAudioBase64) {
+        await playAudioAndWait(responseAudioBase64);
       } else {
         const cleanText = fullContent.replace(/[#*_`~>\[\]()!|]/g, "").replace(/\n{2,}/g, ". ").replace(/\n/g, " ").trim();
-        if (cleanText.length > 2) {
+        if (cleanText.length > 2 && !abortController.signal.aborted) {
           const ttsRes = await fetch("/api/arya/tts", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ text: cleanText.slice(0, 500), language: selectedLanguage }),
+            signal: abortController.signal,
           });
           if (ttsRes.ok) {
             const ttsData = await ttsRes.json();
-            if (ttsData.audioBase64) {
+            if (ttsData.audioBase64 && !abortController.signal.aborted) {
               await playAudioAndWait(ttsData.audioBase64);
             }
           }
         }
       }
 
-      if (activeRef.current) {
-        setTimeout(() => { if (activeRef.current) startListening(); }, 800);
+      processingRef.current = false;
+      if (activeRef.current && !abortController.signal.aborted) {
+        autoListenTimerRef.current = setTimeout(() => {
+          if (activeRef.current) startListening();
+        }, 800);
       }
 
     } catch (err: any) {
+      processingRef.current = false;
+      if (err?.name === "AbortError") return;
       console.error("Voice conversation error:", err);
       setError("Something went wrong. Tap the mic to try again.");
       setPhase("idle");
@@ -1992,7 +2029,14 @@ function VoiceConversationMode({
     } else if (phase === "idle") {
       startListening();
     } else if (phase === "speaking") {
-      if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+      if (abortRef.current) { try { abortRef.current.abort(); } catch {} abortRef.current = null; }
+      if (audioRef.current) { audioRef.current.pause(); if (audioRef.current.src) try { URL.revokeObjectURL(audioRef.current.src); } catch {} audioRef.current = null; }
+      if (autoListenTimerRef.current) { clearTimeout(autoListenTimerRef.current); autoListenTimerRef.current = null; }
+      processingRef.current = false;
+      startListening();
+    } else if (phase === "processing") {
+      if (abortRef.current) { try { abortRef.current.abort(); } catch {} abortRef.current = null; }
+      processingRef.current = false;
       startListening();
     }
   };
