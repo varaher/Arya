@@ -1288,7 +1288,7 @@ export default function AryaChat() {
             <div className="flex flex-col items-center justify-center h-full text-center px-4">
               <img src="/arya-logo-transparent.png" alt="ARYA" className="w-48 md:w-64 mb-4 md:mb-6" data-testid="img-arya-logo" />
               <p className="text-[10px] uppercase tracking-widest font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent mb-3">
-                AGI-Class AI Assistant
+                Your Personal Assistant
               </p>
               <p className="text-muted-foreground max-w-md mb-6 md:mb-8 text-sm md:text-base">
                 I remember our conversations, learn from your feedback, track your goals, and connect insights across domains. Ask me anything.
@@ -1592,7 +1592,7 @@ export default function AryaChat() {
             )}
             <p className="text-[10px] md:text-xs text-muted-foreground text-center flex items-center gap-1.5">
               <Sparkles className="w-3 h-3 text-purple-400/50" />
-              ARYA AGI — Remembers, learns, and evolves with every conversation.
+              ARYA — Your personal assistant that remembers, learns, and grows with you.
             </p>
           </div>
         </div>
