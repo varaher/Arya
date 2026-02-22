@@ -1286,19 +1286,9 @@ export default function AryaChat() {
         <div className="flex-1 overflow-y-auto px-2 sm:px-4 py-3 md:py-4 space-y-3 md:space-y-4" data-testid="list-messages">
           {!activeConversation && messages.length === 0 && !streamingContent && (
             <div className="flex flex-col items-center justify-center h-full text-center px-4">
-              <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-br from-cyan-500/20 to-amber-500/20 flex items-center justify-center mb-4 md:mb-6 relative">
-                <span className="text-3xl md:text-4xl font-display font-bold bg-gradient-to-r from-cyan-400 to-amber-400 bg-clip-text text-transparent">
-                  A
-                </span>
-                <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gradient-to-br from-purple-500/40 to-cyan-500/40 flex items-center justify-center border border-purple-500/30">
-                  <Sparkles className="w-2.5 h-2.5 text-purple-300" />
-                </div>
-              </div>
-              <h2 className="text-xl md:text-2xl font-display font-bold text-white mb-1" data-testid="text-welcome-title">
-                Hey, I'm ARYA
-              </h2>
+              <img src="/arya-logo-transparent.png" alt="ARYA" className="w-48 md:w-64 mb-4 md:mb-6" data-testid="img-arya-logo" />
               <p className="text-[10px] uppercase tracking-widest font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent mb-3">
-                AGI-Class AI Assistant
+                Your Personal Assistant
               </p>
               <p className="text-muted-foreground max-w-md mb-6 md:mb-8 text-sm md:text-base">
                 I remember our conversations, learn from your feedback, track your goals, and connect insights across domains. Ask me anything.
@@ -1602,7 +1592,7 @@ export default function AryaChat() {
             )}
             <p className="text-[10px] md:text-xs text-muted-foreground text-center flex items-center gap-1.5">
               <Sparkles className="w-3 h-3 text-purple-400/50" />
-              ARYA AGI — Remembers, learns, and evolves with every conversation.
+              ARYA — Your personal assistant that remembers, learns, and grows with you.
             </p>
           </div>
         </div>
@@ -1649,9 +1639,7 @@ function UserAuthModal({ onClose }: { onClose: () => void }) {
     <div className="min-h-screen bg-[#0a0e1a]/95 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
       <div className="w-full max-w-sm bg-card/90 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl p-6" onClick={e => e.stopPropagation()}>
         <div className="text-center mb-5">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500/20 to-amber-500/20 border border-cyan-500/30 mb-3">
-            <span className="text-lg font-bold bg-gradient-to-r from-cyan-400 to-amber-400 bg-clip-text text-transparent">A</span>
-          </div>
+          <img src="/arya-logo-transparent.png" alt="ARYA" className="w-32 mx-auto mb-3" />
           <h2 className="text-lg font-bold text-white">{mode === "login" ? "Welcome Back" : "Join ARYA"}</h2>
           <p className="text-xs text-muted-foreground mt-0.5">
             {mode === "login" ? "Sign in to track your goals" : "Create account to set goals & track progress"}
