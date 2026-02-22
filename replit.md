@@ -83,3 +83,4 @@ The project is structured as a monorepo with a React frontend, an Express backen
 -   **Feb 2026:** Added user goals system with daily targets, streak tracking, voice session duration tracking, and auto-goal detection in chat via GPT-4.1-mini.
 -   **Feb 2026:** Built notification system with bell icon in chat header, unread count, and mark-as-read functionality.
 -   **Feb 2026:** Integrated user token passing in text and voice chat routes for personalized goal detection.
+-   **Feb 2026:** Built Gemini-style voice conversation mode — full-screen overlay with auto-listen, silence detection, voice response (OpenAI TTS for English, Sarvam TTS for Indian languages), and continuous conversation loop. Fixed MediaRecorder compatibility for Safari/iOS.

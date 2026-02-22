@@ -640,6 +640,7 @@ export default function AryaChat() {
   const [, setLocation] = useLocation();
   const [showUserAuth, setShowUserAuth] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showVoiceMode, setShowVoiceMode] = useState(false);
   const [activeConversation, setActiveConversation] = useState<number | null>(null);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
@@ -1560,15 +1561,12 @@ export default function AryaChat() {
                 data-testid="button-voice"
                 variant="ghost"
                 size="icon"
-                onClick={isRecording ? stopRecording : startRecording}
+                onClick={() => setShowVoiceMode(true)}
                 disabled={isStreaming}
-                className={`flex-shrink-0 rounded-full h-9 w-9 md:h-10 md:w-10 ${
-                  isRecording
-                    ? "bg-red-500/20 text-red-400 hover:bg-red-500/30 animate-pulse"
-                    : "text-muted-foreground hover:text-white hover:bg-card"
-                }`}
+                className="flex-shrink-0 rounded-full h-9 w-9 md:h-10 md:w-10 bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 text-cyan-400 hover:from-cyan-500/30 hover:to-cyan-600/20 border border-cyan-500/20"
+                title="Start voice conversation"
               >
-                {isRecording ? <Square className="w-4 h-4" /> : <Mic className="w-5 h-5" />}
+                <Mic className="w-5 h-5" />
               </Button>
 
               {isRecording ? (
@@ -1653,11 +1651,463 @@ export default function AryaChat() {
         </div>
       </div>
 
+      {showVoiceMode && (
+        <VoiceConversationMode
+          onClose={() => {
+            setShowVoiceMode(false);
+            queryClient.invalidateQueries({ queryKey: ["/api/arya/conversations"] });
+            if (activeConversation) {
+              queryClient.invalidateQueries({ queryKey: ["/api/arya/conversations", activeConversation] });
+            }
+          }}
+          selectedLanguage={selectedLanguage}
+          token={token}
+          activeConversation={activeConversation}
+          onConversationCreated={(id) => setActiveConversation(id)}
+        />
+      )}
+
       {showUserAuth && (
         <div className="fixed inset-0 z-50">
           <UserAuthModal onClose={() => setShowUserAuth(false)} />
         </div>
       )}
+    </div>
+  );
+}
+
+type VoicePhase = "idle" | "listening" | "processing" | "speaking";
+
+function VoiceConversationMode({
+  onClose,
+  selectedLanguage,
+  token,
+  activeConversation,
+  onConversationCreated,
+}: {
+  onClose: () => void;
+  selectedLanguage: string;
+  token: string | null;
+  activeConversation: number | null;
+  onConversationCreated: (id: number) => void;
+}) {
+  const [phase, setPhase] = useState<VoicePhase>("idle");
+  const [transcript, setTranscript] = useState("");
+  const [response, setResponse] = useState("");
+  const [conversationLog, setConversationLog] = useState<{role: string; text: string}[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [audioLevel, setAudioLevel] = useState(0);
+
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const animFrameRef = useRef<number | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const convIdRef = useRef<number | null>(activeConversation);
+  const activeRef = useRef(true);
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    convIdRef.current = activeConversation;
+  }, [activeConversation]);
+
+  const stopAllMedia = useCallback(() => {
+    if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; }
+    if (animFrameRef.current) { cancelAnimationFrame(animFrameRef.current); animFrameRef.current = null; }
+    if (audioRef.current) {
+      audioRef.current.pause();
+      if (audioRef.current.src) try { URL.revokeObjectURL(audioRef.current.src); } catch {}
+      audioRef.current = null;
+    }
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      try { mediaRecorderRef.current.stop(); } catch {}
+    }
+    mediaRecorderRef.current = null;
+    chunksRef.current = [];
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
+    }
+    if (audioContextRef.current) {
+      try { audioContextRef.current.close(); } catch {}
+      audioContextRef.current = null;
+    }
+    analyserRef.current = null;
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      activeRef.current = false;
+      stopAllMedia();
+    };
+  }, [stopAllMedia]);
+
+  const startListening = useCallback(async () => {
+    if (!activeRef.current) return;
+    setPhase("listening");
+    setTranscript("");
+    setResponse("");
+    setError(null);
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+
+      const audioCtx = new AudioContext();
+      audioContextRef.current = audioCtx;
+      const source = audioCtx.createMediaStreamSource(stream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 512;
+      analyser.smoothingTimeConstant = 0.8;
+      source.connect(analyser);
+      analyserRef.current = analyser;
+
+      const mimeTypes = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg;codecs=opus", ""];
+      let selectedMime = "";
+      for (const mime of mimeTypes) {
+        if (!mime || MediaRecorder.isTypeSupported(mime)) { selectedMime = mime; break; }
+      }
+      const recOpts: MediaRecorderOptions = selectedMime ? { mimeType: selectedMime } : {};
+      const recorder = new MediaRecorder(stream, recOpts);
+      mediaRecorderRef.current = recorder;
+      chunksRef.current = [];
+
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      recorder.start(100);
+
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      let hasSpoken = false;
+      let lastSpeechTime = Date.now();
+      const SILENCE_THRESHOLD = 12;
+      const SILENCE_DURATION_MS = 1500;
+
+      const checkAudio = () => {
+        if (!activeRef.current) return;
+        analyser.getByteFrequencyData(dataArray);
+        const avg = dataArray.reduce((sum, v) => sum + v, 0) / dataArray.length;
+        setAudioLevel(Math.min(avg / 60, 1));
+
+        if (avg > SILENCE_THRESHOLD) {
+          hasSpoken = true;
+          lastSpeechTime = Date.now();
+        }
+
+        if (hasSpoken && (Date.now() - lastSpeechTime) > SILENCE_DURATION_MS) {
+          processRecording();
+          return;
+        }
+
+        animFrameRef.current = requestAnimationFrame(checkAudio);
+      };
+      animFrameRef.current = requestAnimationFrame(checkAudio);
+
+      silenceTimerRef.current = setTimeout(() => {
+        if (!hasSpoken && activeRef.current) {
+          setError("No speech detected. Tap mic to try again.");
+          stopAllMedia();
+          setPhase("idle");
+        }
+      }, 12000);
+
+    } catch (err: any) {
+      if (err?.name === "NotAllowedError") {
+        setError("Microphone access denied. Please allow microphone access.");
+      } else {
+        setError("Could not access microphone.");
+      }
+      setPhase("idle");
+    }
+  }, []);
+
+  const processRecording = useCallback(async () => {
+    if (!activeRef.current) return;
+    setPhase("processing");
+    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+
+    const recorder = mediaRecorderRef.current;
+    if (!recorder || recorder.state === "inactive") {
+      if (activeRef.current) startListening();
+      return;
+    }
+
+    const blob = await new Promise<Blob>((resolve) => {
+      recorder.onstop = () => {
+        const recorderMime = recorder.mimeType || "audio/webm";
+        resolve(new Blob(chunksRef.current, { type: recorderMime }));
+      };
+      recorder.stop();
+    });
+
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
+    }
+    if (audioContextRef.current) {
+      try { audioContextRef.current.close(); } catch {}
+      audioContextRef.current = null;
+    }
+
+    if (blob.size < 1000) {
+      if (activeRef.current) startListening();
+      return;
+    }
+
+    try {
+      const base64Audio = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve((reader.result as string).split(",")[1]);
+        reader.readAsDataURL(blob);
+      });
+
+      let convId = convIdRef.current;
+      if (!convId) {
+        const res = await fetch("/api/arya/conversations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: "Voice Chat" }),
+        });
+        if (!res.ok) throw new Error("Could not create conversation");
+        const conv = await res.json();
+        if (!conv?.id) throw new Error("Invalid conversation response");
+        convId = conv.id as number;
+        convIdRef.current = convId;
+        onConversationCreated(convId);
+      }
+
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["x-user-token"] = token;
+
+      const fetchRes = await fetch(`/api/arya/conversations/${convId}/voice`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ audio: base64Audio, tenant_id: "varah", language: selectedLanguage }),
+      });
+
+      const streamReader = fetchRes.body?.getReader();
+      if (!streamReader) throw new Error("No stream");
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let fullContent = "";
+      let audioBase64 = "";
+
+      while (true) {
+        const { done, value } = await streamReader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const event = JSON.parse(line.slice(6));
+            if (event.type === "user_transcript") {
+              setTranscript(event.content);
+              setConversationLog(prev => [...prev, { role: "user", text: event.content }]);
+            }
+            if (event.type === "assistant" && event.content) {
+              fullContent += event.content;
+              setResponse(fullContent);
+            }
+            if (event.type === "audio_response" && event.audio) {
+              audioBase64 = event.audio;
+            }
+            if (event.type === "done") {
+              setConversationLog(prev => [...prev, { role: "assistant", text: fullContent }]);
+              queryClient.invalidateQueries({ queryKey: ["/api/arya/conversations"] });
+              if (convId) {
+                queryClient.invalidateQueries({ queryKey: ["/api/arya/conversations", convId] });
+              }
+            }
+          } catch {}
+        }
+      }
+
+      if (!activeRef.current) return;
+      setPhase("speaking");
+
+      if (audioBase64) {
+        await playAudioAndWait(audioBase64);
+      } else {
+        const cleanText = fullContent.replace(/[#*_`~>\[\]()!|]/g, "").replace(/\n{2,}/g, ". ").replace(/\n/g, " ").trim();
+        if (cleanText.length > 2) {
+          const ttsRes = await fetch("/api/arya/tts", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: cleanText.slice(0, 500), language: selectedLanguage }),
+          });
+          if (ttsRes.ok) {
+            const ttsData = await ttsRes.json();
+            if (ttsData.audioBase64) {
+              await playAudioAndWait(ttsData.audioBase64);
+            }
+          }
+        }
+      }
+
+      if (activeRef.current) {
+        setTimeout(() => { if (activeRef.current) startListening(); }, 800);
+      }
+
+    } catch (err: any) {
+      console.error("Voice conversation error:", err);
+      setError("Something went wrong. Tap the mic to try again.");
+      setPhase("idle");
+    }
+  }, [selectedLanguage, token, onConversationCreated, queryClient]);
+
+  const playAudioAndWait = (base64Audio: string): Promise<void> => {
+    return new Promise((resolve) => {
+      try {
+        const byteChars = atob(base64Audio);
+        const byteArray = new Uint8Array(byteChars.length);
+        for (let i = 0; i < byteChars.length; i++) byteArray[i] = byteChars.charCodeAt(i);
+        const blob = new Blob([byteArray], { type: "audio/wav" });
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        audioRef.current = audio;
+        audio.onended = () => { URL.revokeObjectURL(url); resolve(); };
+        audio.onerror = () => { URL.revokeObjectURL(url); resolve(); };
+        audio.play().catch(() => resolve());
+      } catch { resolve(); }
+    });
+  };
+
+  const handleClose = () => {
+    activeRef.current = false;
+    stopAllMedia();
+    onClose();
+  };
+
+  const handleMicTap = () => {
+    if (phase === "listening") {
+      processRecording();
+    } else if (phase === "idle") {
+      startListening();
+    } else if (phase === "speaking") {
+      if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+      startListening();
+    }
+  };
+
+  useEffect(() => {
+    startListening();
+  }, []);
+
+  const phaseText = {
+    idle: "Tap the mic to start",
+    listening: "Listening...",
+    processing: "Thinking...",
+    speaking: "Speaking...",
+  };
+
+  const ringSize = phase === "listening" ? 1 + audioLevel * 0.6 : 1;
+
+  return (
+    <div className="fixed inset-0 z-50 bg-[#0a0e1a] flex flex-col items-center justify-between" data-testid="voice-conversation-mode">
+      <div className="w-full flex items-center justify-between px-4 py-3 pt-safe">
+        <div className="flex items-center gap-2">
+          <img src="/arya-logo-transparent.png" alt="ARYA" className="w-8 h-8" />
+          <span className="text-white font-semibold text-sm">ARYA Voice</span>
+        </div>
+        <button
+          data-testid="button-close-voice-mode"
+          onClick={handleClose}
+          className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/20 transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+
+      <div className="flex-1 w-full max-w-md px-6 overflow-y-auto flex flex-col justify-end pb-4 gap-3">
+        {conversationLog.map((msg, i) => (
+          <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+            <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${
+              msg.role === "user"
+                ? "bg-cyan-600/30 text-white/90 rounded-br-sm"
+                : "bg-white/5 text-white/80 rounded-bl-sm"
+            }`}>
+              {msg.text}
+            </div>
+          </div>
+        ))}
+        {transcript && phase === "processing" && (
+          <div className="flex justify-end">
+            <div className="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm bg-cyan-600/30 text-white/90 rounded-br-sm">
+              {transcript}
+            </div>
+          </div>
+        )}
+        {response && (phase === "processing" || phase === "speaking") && (
+          <div className="flex justify-start">
+            <div className="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm bg-white/5 text-white/80 rounded-bl-sm">
+              {response}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-col items-center gap-4 pb-8 md:pb-12 pt-4">
+        <p className={`text-sm font-medium ${
+          phase === "listening" ? "text-cyan-400" :
+          phase === "processing" ? "text-amber-400" :
+          phase === "speaking" ? "text-green-400" : "text-white/50"
+        }`}>
+          {error || phaseText[phase]}
+        </p>
+
+        <div className="relative">
+          <div
+            className={`absolute inset-0 rounded-full transition-transform duration-200 ${
+              phase === "listening" ? "bg-cyan-500/20" :
+              phase === "speaking" ? "bg-green-500/20" : "bg-transparent"
+            }`}
+            style={{ transform: `scale(${ringSize + 0.3})` }}
+          />
+          <div
+            className={`absolute inset-0 rounded-full transition-transform duration-150 ${
+              phase === "listening" ? "bg-cyan-500/10" : "bg-transparent"
+            }`}
+            style={{ transform: `scale(${ringSize + 0.6})` }}
+          />
+          <button
+            data-testid="button-voice-mode-mic"
+            onClick={handleMicTap}
+            disabled={phase === "processing"}
+            className={`relative w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 ${
+              phase === "listening"
+                ? "bg-gradient-to-br from-cyan-500 to-cyan-600 shadow-lg shadow-cyan-500/40 scale-110"
+                : phase === "processing"
+                ? "bg-amber-500/30 cursor-wait"
+                : phase === "speaking"
+                ? "bg-gradient-to-br from-green-500 to-green-600 shadow-lg shadow-green-500/30"
+                : "bg-white/10 hover:bg-white/20"
+            }`}
+          >
+            {phase === "processing" ? (
+              <Loader2 className="w-8 h-8 text-amber-400 animate-spin" />
+            ) : phase === "listening" ? (
+              <Mic className="w-8 h-8 text-white" />
+            ) : phase === "speaking" ? (
+              <Volume2 className="w-8 h-8 text-white" />
+            ) : (
+              <Mic className="w-8 h-8 text-white/70" />
+            )}
+          </button>
+        </div>
+
+        <p className="text-[10px] text-white/30 text-center max-w-xs">
+          {phase === "listening" ? "Speak naturally — ARYA will respond when you pause" :
+           phase === "speaking" ? "Tap to interrupt and speak" :
+           phase === "processing" ? "Processing your message..." :
+           "Tap the mic to start a voice conversation"}
+        </p>
+      </div>
     </div>
   );
 }
