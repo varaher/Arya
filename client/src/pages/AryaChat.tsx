@@ -891,9 +891,16 @@ export default function AryaChat() {
               setStreamingContent(fullContent);
             }
             if (event.done) {
-              queryClient.invalidateQueries({
-                queryKey: ["/api/arya/conversations", convId],
-              });
+              queryClient.setQueryData(
+                ["/api/arya/conversations", convId],
+                (old: any) => ({
+                  ...old,
+                  messages: [
+                    ...(old?.messages || []),
+                    { id: Date.now() + 1, conversationId: convId, role: "assistant", content: fullContent, createdAt: new Date().toISOString() },
+                  ],
+                })
+              );
               queryClient.invalidateQueries({ queryKey: ["/api/arya/memory"] });
               if (speakerOnRef.current && fullContent) {
                 speakText(fullContent);
@@ -1040,9 +1047,16 @@ export default function AryaChat() {
               playAudioBase64(event.audio);
             }
             if (event.type === "done") {
-              queryClient.invalidateQueries({
-                queryKey: ["/api/arya/conversations", convId],
-              });
+              queryClient.setQueryData(
+                ["/api/arya/conversations", convId],
+                (old: any) => ({
+                  ...old,
+                  messages: [
+                    ...(old?.messages || []),
+                    { id: Date.now() + 1, conversationId: convId, role: "assistant", content: fullContent, createdAt: new Date().toISOString() },
+                  ],
+                })
+              );
             }
           } catch {}
         }
