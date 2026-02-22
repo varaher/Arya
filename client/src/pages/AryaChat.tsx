@@ -1286,7 +1286,7 @@ export default function AryaChat() {
         <div className="flex-1 overflow-y-auto px-2 sm:px-4 py-3 md:py-4 space-y-3 md:space-y-4" data-testid="list-messages">
           {!activeConversation && messages.length === 0 && !streamingContent && (
             <div className="flex flex-col items-center justify-center h-full text-center px-4">
-              <img src="/arya-logo.png" alt="ARYA" className="w-48 md:w-64 mb-4 md:mb-6" data-testid="img-arya-logo" />
+              <img src="/arya-logo-transparent.png" alt="ARYA" className="w-48 md:w-64 mb-4 md:mb-6" data-testid="img-arya-logo" />
               <p className="text-[10px] uppercase tracking-widest font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent mb-3">
                 AGI-Class AI Assistant
               </p>
@@ -1639,7 +1639,7 @@ function UserAuthModal({ onClose }: { onClose: () => void }) {
     <div className="min-h-screen bg-[#0a0e1a]/95 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
       <div className="w-full max-w-sm bg-card/90 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl p-6" onClick={e => e.stopPropagation()}>
         <div className="text-center mb-5">
-          <img src="/arya-logo.png" alt="ARYA" className="w-32 mx-auto mb-3" />
+          <img src="/arya-logo-transparent.png" alt="ARYA" className="w-32 mx-auto mb-3" />
           <h2 className="text-lg font-bold text-white">{mode === "login" ? "Welcome Back" : "Join ARYA"}</h2>
           <p className="text-xs text-muted-foreground mt-0.5">
             {mode === "login" ? "Sign in to track your goals" : "Create account to set goals & track progress"}
