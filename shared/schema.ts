@@ -441,5 +441,59 @@ export const insertAryaNotificationSchema = createInsertSchema(aryaNotifications
 export type InsertAryaNotification = z.infer<typeof insertAryaNotificationSchema>;
 export type AryaNotification = typeof aryaNotifications.$inferSelect;
 
+// =============================================
+// LEARNING LOOP - RESPONSE CACHE & METRICS
+// =============================================
+
+export const aryaResponseCache = pgTable("arya_response_cache", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id", { length: 100 }).notNull(),
+  normalizedQuery: text("normalized_query").notNull(),
+  originalQuery: text("original_query").notNull(),
+  responseText: text("response_text").notNull(),
+  domain: varchar("domain", { length: 50 }).$type<Domain>(),
+  keywords: text("keywords").array().default(sql`ARRAY[]::text[]`),
+  sourceMessageId: integer("source_message_id"),
+  sourceConversationId: integer("source_conversation_id"),
+  confidenceScore: decimal("confidence_score", { precision: 3, scale: 2 }).default("0.50"),
+  positiveFeedbackCount: integer("positive_feedback_count").default(1).notNull(),
+  negativeFeedbackCount: integer("negative_feedback_count").default(0).notNull(),
+  servedCount: integer("served_count").default(0).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  lastUsedAt: timestamp("last_used_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertAryaResponseCacheSchema = createInsertSchema(aryaResponseCache).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  servedCount: true,
+  lastUsedAt: true,
+});
+export type InsertAryaResponseCache = z.infer<typeof insertAryaResponseCacheSchema>;
+export type AryaResponseCache = typeof aryaResponseCache.$inferSelect;
+
+export const aryaCacheMetrics = pgTable("arya_cache_metrics", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id", { length: 100 }).notNull(),
+  queryNormalized: text("query_normalized").notNull(),
+  cacheHit: boolean("cache_hit").default(false).notNull(),
+  matchedCacheId: varchar("matched_cache_id", { length: 255 }),
+  matchScore: decimal("match_score", { precision: 4, scale: 3 }).default("0.000"),
+  responseSource: varchar("response_source", { length: 20 }).notNull().$type<'cache' | 'llm' | 'smart_command'>(),
+  llmModel: varchar("llm_model", { length: 50 }),
+  responseTimeMs: integer("response_time_ms"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAryaCacheMetricSchema = createInsertSchema(aryaCacheMetrics).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertAryaCacheMetric = z.infer<typeof insertAryaCacheMetricSchema>;
+export type AryaCacheMetric = typeof aryaCacheMetrics.$inferSelect;
+
 // Re-export chat models
 export * from "./models/chat";

@@ -12,6 +12,7 @@ import { generateAryaResponse, memoryEngine, type ChatMessage } from "./arya/cha
 import { GoalsEngine } from "./arya/goals-engine";
 import { FeedbackEngine } from "./arya/feedback-engine";
 import { InsightsEngine } from "./arya/insights-engine";
+import { ResponseCacheEngine } from "./arya/response-cache-engine";
 import { chatStorage } from "./replit_integrations/chat/storage";
 import { ensureCompatibleFormat, speechToText, textToSpeech as openaiTextToSpeech } from "./replit_integrations/audio/client";
 import {
@@ -57,6 +58,7 @@ const neuralLinkEngine = new NeuralLinkEngine();
 const goalsEngine = new GoalsEngine();
 const feedbackEngine = new FeedbackEngine();
 const insightsEngine = new InsightsEngine();
+const responseCacheEngine = new ResponseCacheEngine();
 
 const adminSessions = new Map<string, { createdAt: number }>();
 const ADMIN_SESSION_TTL = 24 * 60 * 60 * 1000;
@@ -1535,6 +1537,20 @@ export async function registerRoutes(
     try {
       await insightsEngine.dismissInsight(req.params.id);
       res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // =============================================
+  // LEARNING LOOP - RESPONSE CACHE APIS
+  // =============================================
+
+  app.get("/api/learning/cache/stats", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const tenantId = (req.query.tenant_id as string) || 'varah';
+      const stats = await responseCacheEngine.getCacheStats(tenantId);
+      res.json(stats);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }

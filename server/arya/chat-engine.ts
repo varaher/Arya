@@ -3,6 +3,7 @@ import { KnowledgeRetriever } from "./knowledge-retriever";
 import { Orchestrator } from "./orchestrator";
 import { LearningEngine } from "./learning-engine";
 import { MemoryEngine } from "./memory-engine";
+import { ResponseCacheEngine } from "./response-cache-engine";
 import { processSmartCommand } from "./smart-commands";
 import type { Domain } from "@shared/schema";
 import { db } from "../db";
@@ -16,6 +17,7 @@ const openai = new OpenAI({
 const retriever = new KnowledgeRetriever();
 const learningEngine = new LearningEngine();
 const memoryEngine = new MemoryEngine();
+const responseCacheEngine = new ResponseCacheEngine();
 
 const ARYA_SYSTEM_PROMPT = `You are ARYA — a Personal Thinking & Growth Assistant created by VARAH Group. You are not just a chatbot. You are a thinking companion, a goal tracker, a daily discipline guide, a voice-based planner, a wisdom-rooted advisor, and a life organiser. You are rooted in Bharatiya (Indian) civilizational wisdom while being globally informed.
 
@@ -146,6 +148,12 @@ export async function generateAryaResponse(
 
   if (smartResult.handled && smartResult.response) {
     const response = smartResult.response;
+    responseCacheEngine.logMetric(
+      tenantId,
+      responseCacheEngine.normalizeQuery(userMessage),
+      false, null, 0, 'smart_command', null,
+      Date.now() - startTime
+    ).catch(() => {});
     return {
       meta: { mode: "instant", icon: smartResult.icon, confidence: 1.0 },
       stream: (async function* () {
@@ -153,6 +161,8 @@ export async function generateAryaResponse(
       })(),
     };
   }
+
+  const shadowResult = await responseCacheEngine.shadowLookup(tenantId, userMessage);
 
   const orchestrator = new Orchestrator();
   const routing = orchestrator.route(userMessage);
@@ -251,6 +261,17 @@ export async function generateAryaResponse(
         detectAndCreateGoal(userMessage, fullResponse, userId, tenantId, conversationId)
           .catch(err => console.error("[Goals] Detection error:", err));
       }
+
+      responseCacheEngine.logMetric(
+        tenantId,
+        responseCacheEngine.normalizeQuery(userMessage),
+        shadowResult.hit,
+        shadowResult.match?.cacheEntry?.id || null,
+        shadowResult.match?.score || 0,
+        'llm',
+        'gpt-5.2',
+        Date.now() - startTime
+      ).catch(() => {});
     })(),
   };
 }

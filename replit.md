@@ -52,14 +52,15 @@ The project is structured as a monorepo with a React frontend, an Express backen
     -   **Confidence & Uncertainty:** Provides confidence scores for responses, explicitly stating uncertainty when knowledge is low.
 -   **Notifications System:** Generates notifications for: welcome on signup, goal creation, goal progress, streak achievements, reminders. Routes at `/api/user/notifications` (GET, POST mark-read, POST read-all). Protected with `requireUser` middleware.
 -   **Database:** PostgreSQL with Drizzle ORM for schema definition and migrations.
-    -   Key tables: `arya_knowledge`, `arya_knowledge_drafts`, `arya_query_patterns`, `arya_neural_links`, `arya_memory`, `arya_goals`, `arya_goal_steps`, `arya_feedback`, `arya_users`, `arya_user_sessions`, `arya_notifications`, `arya_voice_sessions`.
+    -   Key tables: `arya_knowledge`, `arya_knowledge_drafts`, `arya_query_patterns`, `arya_neural_links`, `arya_memory`, `arya_goals`, `arya_goal_steps`, `arya_feedback`, `arya_users`, `arya_user_sessions`, `arya_notifications`, `arya_voice_sessions`, `arya_response_cache`, `arya_cache_metrics`.
 -   **Multi-Tenancy:** Achieved via `tenant_id` on all knowledge records and validation middleware.
 
 ## Key Files
 
 -   `shared/schema.ts` — All Drizzle ORM table definitions, insert schemas, and types.
 -   `server/routes.ts` — All API route definitions (admin, user auth, chat, voice, goals, notifications, knowledge, etc.).
--   `server/arya/chat-engine.ts` — Core chat logic: orchestrator routing, RAG, streaming, memory extraction, goal detection.
+-   `server/arya/chat-engine.ts` — Core chat logic: orchestrator routing, RAG, streaming, memory extraction, goal detection, shadow cache lookup.
+-   `server/arya/response-cache-engine.ts` — Learning loop: golden response caching, similarity matching, shadow lookup, cache metrics.
 -   `server/arya/user-auth-service.ts` — User signup, login, session management, profile updates.
 -   `client/src/lib/user-auth.tsx` — Frontend user authentication context provider.
 -   `client/src/pages/AryaChat.tsx` — Main chat interface with voice, text, memory panel, goals panel, notification bell, user auth modal.
@@ -84,3 +85,4 @@ The project is structured as a monorepo with a React frontend, an Express backen
 -   **Feb 2026:** Built notification system with bell icon in chat header, unread count, and mark-as-read functionality.
 -   **Feb 2026:** Integrated user token passing in text and voice chat routes for personalized goal detection.
 -   **Feb 2026:** Built Gemini-style voice conversation mode — full-screen overlay with auto-listen, silence detection, voice response (OpenAI TTS for English, Sarvam TTS for Indian languages), and continuous conversation loop. Fixed MediaRecorder compatibility for Safari/iOS.
+-   **Feb 2026:** Phase 1 Learning Loop — Added `arya_response_cache` and `arya_cache_metrics` tables. Built `ResponseCacheEngine` with golden response caching (from thumbs-up feedback), keyword-based similarity matching, and shadow-mode cache lookup in chat-engine (logs potential cache hits without serving them). Feedback engine now closes the loop: thumbs-up stores golden responses, thumbs-down reduces cache confidence. Admin API at `/api/learning/cache/stats`. This is the foundation for reducing LLM dependency over time.

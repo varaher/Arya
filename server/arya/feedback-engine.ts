@@ -1,6 +1,9 @@
 import { db } from "../db";
 import { aryaFeedback, aryaMemory, AryaFeedback } from "@shared/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
+import { ResponseCacheEngine } from "./response-cache-engine";
+
+const responseCacheEngine = new ResponseCacheEngine();
 
 export class FeedbackEngine {
 
@@ -31,6 +34,11 @@ export class FeedbackEngine {
         })
         .where(eq(aryaFeedback.id, existing[0].id))
         .returning();
+
+      this.processLearningLoop(messageId, conversationId, tenantId, rating).catch(err =>
+        console.error("[FeedbackEngine] Learning loop error:", err)
+      );
+
       return updated;
     }
 
@@ -55,7 +63,41 @@ export class FeedbackEngine {
       }).catch(() => {});
     }
 
+    this.processLearningLoop(messageId, conversationId, tenantId, rating).catch(err =>
+      console.error("[FeedbackEngine] Learning loop error:", err)
+    );
+
     return feedback;
+  }
+
+  private async processLearningLoop(
+    messageId: number,
+    conversationId: number,
+    tenantId: string,
+    rating: 'up' | 'down'
+  ): Promise<void> {
+    if (rating === 'up') {
+      const userQuery = await responseCacheEngine.getUserQueryForMessage(messageId, conversationId);
+      const assistantResponse = await responseCacheEngine.getAssistantResponse(messageId);
+
+      if (userQuery && assistantResponse && assistantResponse.length > 20) {
+        await responseCacheEngine.cacheGoldenResponse(
+          tenantId,
+          userQuery,
+          assistantResponse,
+          undefined,
+          messageId,
+          conversationId
+        );
+        console.log(`[LearningLoop] Golden response cached from thumbs-up on message ${messageId}`);
+      }
+    } else if (rating === 'down') {
+      const userQuery = await responseCacheEngine.getUserQueryForMessage(messageId, conversationId);
+      if (userQuery) {
+        await responseCacheEngine.markNegativeFeedback(tenantId, userQuery);
+        console.log(`[LearningLoop] Negative feedback recorded for message ${messageId}`);
+      }
+    }
   }
 
   async getFeedbackStats(tenantId: string): Promise<{
