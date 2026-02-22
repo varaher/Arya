@@ -1,13 +1,13 @@
-# ARYA Core - Personal AI Assistant Platform
+# ARYA Core - Personal Thinking & Growth Assistant
 
 ## Overview
 
-ARYA (Augmented Reasoning & Yielding Analytics) is a multi-tenant personal AI assistant platform designed for the VARAH Group. Its core purpose is to serve as a personal assistant that unifies and orchestrates AI capabilities across four critical knowledge domains: Medical, Business, Sanskrit (Vedic), and Chanakya (Governance/Leadership). This platform serves as the foundation for several downstream products, including ERmate (clinical documentation copilot) and ErPrana (patient monitoring and risk assessment). ARYA is positioned as "Your Personal Assistant" — an intelligent companion that remembers, learns, and grows with every user. ARYA thinks from a Bharatiya (Indian/Hindu) civilizational perspective and supports voice in 11 Indian languages via Sarvam AI.
+ARYA (Augmented Reasoning & Yielding Analytics) is a multi-tenant personal AI assistant platform designed for the VARAH Group. ARYA is positioned as "Your Personal Thinking & Growth Assistant" — not another chatbot, not an AI toy, not a tech demo. ARYA is a thinking companion, goal tracker, daily discipline guide, voice-based planner, wisdom-rooted advisor, and life organiser. It helps people: think clearly, set goals, stay disciplined, reflect daily, and grow spiritually + professionally. ARYA thinks from a Bharatiya (Indian/Hindu) civilizational perspective and supports voice in 11 Indian languages via Sarvam AI. The platform also serves as the foundation for downstream products including ERmate (clinical documentation copilot) and ErPrana (patient monitoring and risk assessment).
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
-Branding: ARYA is a "personal assistant" — never refer to it as "AGI" or "AGI-class." Avoid technical jargon in user-facing text.
+Branding: ARYA is "Your Personal Thinking & Growth Assistant" — never refer to it as "AGI," "AGI-class," or just "chatbot." Avoid technical jargon in user-facing text. Tone should be warm, encouraging, personal — like a wise friend, not a corporate AI.
 
 ## System Architecture
 
@@ -73,7 +73,8 @@ The project is structured as a monorepo with a React frontend, an Express backen
 
 ## Recent Changes
 
--   **Feb 2026:** Rebranded ARYA from "AGI-class AI assistant" to "Your Personal Assistant" across all user-facing text and backend system prompt. Removed all AGI references.
+-   **Feb 2026:** Refined positioning to "Your Personal Thinking & Growth Assistant" — updated welcome screen, footer, suggestion prompts, and system prompt to reflect five pillars: think clearly, set goals, stay disciplined, reflect daily, grow spiritually & professionally. Warm, friend-like tone in system prompt.
+-   **Feb 2026:** Rebranded ARYA from "AGI-class AI assistant" to personal assistant. Removed all AGI references.
 -   **Feb 2026:** Made logo background transparent (`arya-logo-transparent.png`), trimmed to content.
 -   **Feb 2026:** Added custom ARYA logo to welcome screen and login/signup modal.
 -   **Feb 2026:** Added PWA support (manifest.json, service worker, app icons, meta tags) so users can install ARYA on their phones from the browser.

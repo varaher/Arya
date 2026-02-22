@@ -1288,10 +1288,10 @@ export default function AryaChat() {
             <div className="flex flex-col items-center justify-center h-full text-center px-4">
               <img src="/arya-logo-transparent.png" alt="ARYA" className="w-48 md:w-64 mb-4 md:mb-6" data-testid="img-arya-logo" />
               <p className="text-[10px] uppercase tracking-widest font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent mb-3">
-                Your Personal Assistant
+                Your Personal Thinking & Growth Assistant
               </p>
               <p className="text-muted-foreground max-w-md mb-6 md:mb-8 text-sm md:text-base">
-                I remember our conversations, learn from your feedback, track your goals, and connect insights across domains. Ask me anything.
+                Think clearly. Set goals. Stay disciplined. Reflect daily. Grow spiritually & professionally. I'm here to help you become your best self.
               </p>
               {!isLoggedIn && (
                 <button
@@ -1305,10 +1305,10 @@ export default function AryaChat() {
               )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3 max-w-lg w-full">
                 {[
-                  { text: "What's the time right now?", badge: "Instant", icon: "⚡" },
-                  { text: "Write me an email to my team about our new product launch", badge: "Creative", icon: "✨" },
-                  { text: "Compare pros and cons of starting a franchise vs independent business", badge: "Analysis", icon: "🧠" },
-                  { text: "Help me plan my fitness goals for next month", badge: "Goals", icon: "🎯" },
+                  { text: "Help me think through a tough decision I'm facing", badge: "Think", icon: "🧠" },
+                  { text: "I want to build a daily reading habit — help me set a goal", badge: "Goals", icon: "🎯" },
+                  { text: "Give me a morning reflection to start my day with clarity", badge: "Reflect", icon: "🌅" },
+                  { text: "What does the Bhagavad Gita say about handling stress?", badge: "Wisdom", icon: "📿" },
                 ].map((suggestion, i) => (
                   <button
                     key={i}
@@ -1592,7 +1592,7 @@ export default function AryaChat() {
             )}
             <p className="text-[10px] md:text-xs text-muted-foreground text-center flex items-center gap-1.5">
               <Sparkles className="w-3 h-3 text-purple-400/50" />
-              ARYA — Your personal assistant that remembers, learns, and grows with you.
+              ARYA — Think clearly. Set goals. Grow daily.
             </p>
           </div>
         </div>
