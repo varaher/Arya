@@ -1713,17 +1713,27 @@ function VoiceConversationMode({
   const processingRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
   const autoListenTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const voiceMonitorStreamRef = useRef<MediaStream | null>(null);
+  const voiceMonitorCtxRef = useRef<AudioContext | null>(null);
+  const voiceMonitorFrameRef = useRef<number | null>(null);
   const queryClient = useQueryClient();
 
   useEffect(() => {
     convIdRef.current = activeConversation;
   }, [activeConversation]);
 
+  const stopVoiceMonitor = useCallback(() => {
+    if (voiceMonitorFrameRef.current) { cancelAnimationFrame(voiceMonitorFrameRef.current); voiceMonitorFrameRef.current = null; }
+    if (voiceMonitorStreamRef.current) { voiceMonitorStreamRef.current.getTracks().forEach(t => t.stop()); voiceMonitorStreamRef.current = null; }
+    if (voiceMonitorCtxRef.current) { try { voiceMonitorCtxRef.current.close(); } catch {} voiceMonitorCtxRef.current = null; }
+  }, []);
+
   const stopAllMedia = useCallback(() => {
     if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; }
     if (animFrameRef.current) { cancelAnimationFrame(animFrameRef.current); animFrameRef.current = null; }
     if (autoListenTimerRef.current) { clearTimeout(autoListenTimerRef.current); autoListenTimerRef.current = null; }
     if (abortRef.current) { try { abortRef.current.abort(); } catch {} abortRef.current = null; }
+    stopVoiceMonitor();
     if (audioRef.current) {
       audioRef.current.pause();
       if (audioRef.current.src) try { URL.revokeObjectURL(audioRef.current.src); } catch {}
@@ -1744,7 +1754,7 @@ function VoiceConversationMode({
     }
     analyserRef.current = null;
     processingRef.current = false;
-  }, []);
+  }, [stopVoiceMonitor]);
 
   useEffect(() => {
     return () => {
@@ -1964,31 +1974,48 @@ function VoiceConversationMode({
       if (!activeRef.current || abortController.signal.aborted) { processingRef.current = false; return; }
       setPhase("speaking");
 
-      if (responseAudioBase64) {
+      let voiceInterrupted = false;
+      const interruptAndListen = () => {
+        if (voiceInterrupted) return;
+        voiceInterrupted = true;
+        stopVoiceMonitor();
+        if (audioRef.current) { audioRef.current.pause(); if (audioRef.current.src) try { URL.revokeObjectURL(audioRef.current.src); } catch {} audioRef.current = null; }
+        if (abortRef.current) { try { abortRef.current.abort(); } catch {} abortRef.current = null; }
+        if (autoListenTimerRef.current) { clearTimeout(autoListenTimerRef.current); autoListenTimerRef.current = null; }
+        processingRef.current = false;
+        if (activeRef.current) startListening();
+      };
+
+      startVoiceMonitor(interruptAndListen);
+
+      if (responseAudioBase64 && !voiceInterrupted) {
         await playAudioAndWait(responseAudioBase64);
-      } else {
+      } else if (!voiceInterrupted) {
         const cleanText = fullContent.replace(/[#*_`~>\[\]()!|]/g, "").replace(/\n{2,}/g, ". ").replace(/\n/g, " ").trim();
-        if (cleanText.length > 2 && !abortController.signal.aborted) {
+        if (cleanText.length > 2 && !abortController.signal.aborted && !voiceInterrupted) {
           const ttsRes = await fetch("/api/arya/tts", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ text: cleanText.slice(0, 500), language: selectedLanguage }),
             signal: abortController.signal,
           });
-          if (ttsRes.ok) {
+          if (ttsRes.ok && !voiceInterrupted) {
             const ttsData = await ttsRes.json();
-            if (ttsData.audioBase64 && !abortController.signal.aborted) {
+            if (ttsData.audioBase64 && !abortController.signal.aborted && !voiceInterrupted) {
               await playAudioAndWait(ttsData.audioBase64);
             }
           }
         }
       }
 
+      stopVoiceMonitor();
+      if (voiceInterrupted) return;
+
       processingRef.current = false;
       if (activeRef.current && !abortController.signal.aborted) {
         autoListenTimerRef.current = setTimeout(() => {
           if (activeRef.current) startListening();
-        }, 800);
+        }, 600);
       }
 
     } catch (err: any) {
@@ -2000,7 +2027,51 @@ function VoiceConversationMode({
     }
   }, [selectedLanguage, token, onConversationCreated, queryClient]);
 
-  const playAudioAndWait = (base64Audio: string): Promise<void> => {
+  const startVoiceMonitor = useCallback(async (onVoiceDetected: () => void) => {
+    stopVoiceMonitor();
+    try {
+      const monStream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+      });
+      voiceMonitorStreamRef.current = monStream;
+      const monCtx = new AudioContext();
+      voiceMonitorCtxRef.current = monCtx;
+      const source = monCtx.createMediaStreamSource(monStream);
+      const analyser = monCtx.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.5;
+      source.connect(analyser);
+      const dataArr = new Uint8Array(analyser.frequencyBinCount);
+      const VOICE_THRESHOLD = 30;
+      let consecutiveFrames = 0;
+      const FRAMES_NEEDED = 10;
+      const startTime = Date.now();
+      const DELAY_MS = 500;
+
+      const check = () => {
+        if (!voiceMonitorStreamRef.current) return;
+        if (Date.now() - startTime < DELAY_MS) {
+          voiceMonitorFrameRef.current = requestAnimationFrame(check);
+          return;
+        }
+        analyser.getByteFrequencyData(dataArr);
+        const avg = dataArr.reduce((s, v) => s + v, 0) / dataArr.length;
+        if (avg > VOICE_THRESHOLD) {
+          consecutiveFrames++;
+          if (consecutiveFrames >= FRAMES_NEEDED) {
+            onVoiceDetected();
+            return;
+          }
+        } else {
+          consecutiveFrames = Math.max(0, consecutiveFrames - 1);
+        }
+        voiceMonitorFrameRef.current = requestAnimationFrame(check);
+      };
+      voiceMonitorFrameRef.current = requestAnimationFrame(check);
+    } catch {}
+  }, [stopVoiceMonitor]);
+
+  const playAudioAndWait = useCallback((base64Audio: string): Promise<void> => {
     return new Promise((resolve) => {
       try {
         const byteChars = atob(base64Audio);
@@ -2010,12 +2081,15 @@ function VoiceConversationMode({
         const url = URL.createObjectURL(blob);
         const audio = new Audio(url);
         audioRef.current = audio;
-        audio.onended = () => { URL.revokeObjectURL(url); resolve(); };
-        audio.onerror = () => { URL.revokeObjectURL(url); resolve(); };
-        audio.play().catch(() => resolve());
+        let resolved = false;
+        const done = () => { if (!resolved) { resolved = true; URL.revokeObjectURL(url); resolve(); } };
+        audio.onended = done;
+        audio.onerror = done;
+        audio.onpause = done;
+        audio.play().catch(done);
       } catch { resolve(); }
     });
-  };
+  }, []);
 
   const handleClose = () => {
     activeRef.current = false;
@@ -2215,7 +2289,7 @@ function VoiceConversationMode({
       </div>
 
       {phase === "speaking" && (
-        <p className="absolute bottom-6 left-0 right-0 text-center text-xs text-white/30">Tap anywhere to interrupt</p>
+        <p className="absolute bottom-6 left-0 right-0 text-center text-xs text-white/30">Speak or tap to interrupt</p>
       )}
 
       {showTranscript && (
