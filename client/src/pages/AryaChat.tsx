@@ -2000,114 +2000,211 @@ function VoiceConversationMode({
   }, []);
 
   const phaseText = {
-    idle: "Tap the mic to start",
+    idle: "Tap to speak",
     listening: "Listening...",
     processing: "Thinking...",
     speaking: "Speaking...",
   };
 
-  const ringSize = phase === "listening" ? 1 + audioLevel * 0.6 : 1;
+  const [showTranscript, setShowTranscript] = useState(false);
+
+  const orbScale = phase === "listening" ? 1 + audioLevel * 0.35 : 1;
+  const hasHistory = conversationLog.length > 0 || (transcript && phase === "processing") || (response && (phase === "processing" || phase === "speaking"));
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#0a0e1a] flex flex-col items-center justify-between" data-testid="voice-conversation-mode">
-      <div className="w-full flex items-center justify-between px-4 py-3 pt-safe">
-        <div className="flex items-center gap-2">
-          <img src="/arya-logo-transparent.png" alt="ARYA" className="w-8 h-8" />
-          <span className="text-white font-semibold text-sm">ARYA Voice</span>
-        </div>
+    <div className="fixed inset-0 z-50 bg-[#080b14] flex flex-col" data-testid="voice-conversation-mode" onClick={handleMicTap}>
+      <div className="w-full flex items-center justify-between px-5 py-4 pt-safe relative z-10">
         <button
           data-testid="button-close-voice-mode"
-          onClick={handleClose}
-          className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/20 transition-colors"
+          onClick={(e) => { e.stopPropagation(); handleClose(); }}
+          className="w-10 h-10 rounded-full flex items-center justify-center text-white/50 hover:text-white transition-colors"
         >
-          <X className="w-5 h-5" />
+          <X className="w-6 h-6" />
         </button>
+        <img src="/arya-logo-transparent.png" alt="ARYA" className="w-9 h-9 absolute left-1/2 -translate-x-1/2" />
+        {hasHistory && (
+          <button
+            data-testid="button-toggle-transcript"
+            onClick={(e) => { e.stopPropagation(); setShowTranscript(!showTranscript); }}
+            className="w-10 h-10 rounded-full flex items-center justify-center text-white/50 hover:text-white transition-colors"
+          >
+            <MessageSquare className="w-5 h-5" />
+          </button>
+        )}
+        {!hasHistory && <div className="w-10" />}
       </div>
 
-      <div className="flex-1 w-full max-w-md px-6 overflow-y-auto flex flex-col justify-end pb-4 gap-3">
-        {conversationLog.map((msg, i) => (
-          <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-            <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${
-              msg.role === "user"
-                ? "bg-cyan-600/30 text-white/90 rounded-br-sm"
-                : "bg-white/5 text-white/80 rounded-bl-sm"
-            }`}>
-              {msg.text}
-            </div>
-          </div>
-        ))}
-        {transcript && phase === "processing" && (
-          <div className="flex justify-end">
-            <div className="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm bg-cyan-600/30 text-white/90 rounded-br-sm">
-              {transcript}
-            </div>
-          </div>
-        )}
-        {response && (phase === "processing" || phase === "speaking") && (
-          <div className="flex justify-start">
-            <div className="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm bg-white/5 text-white/80 rounded-bl-sm">
-              {response}
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="flex flex-col items-center gap-4 pb-8 md:pb-12 pt-4">
-        <p className={`text-sm font-medium ${
-          phase === "listening" ? "text-cyan-400" :
-          phase === "processing" ? "text-amber-400" :
-          phase === "speaking" ? "text-green-400" : "text-white/50"
+      <div className="flex-1 flex flex-col items-center justify-center relative">
+        <h1 className={`text-3xl md:text-4xl font-light tracking-wide mb-12 transition-all duration-500 ${
+          phase === "listening" ? "text-white" :
+          phase === "processing" ? "text-white/70" :
+          phase === "speaking" ? "text-white" :
+          error ? "text-red-400/80" : "text-white/50"
         }`}>
           {error || phaseText[phase]}
-        </p>
+        </h1>
 
-        <div className="relative">
-          <div
-            className={`absolute inset-0 rounded-full transition-transform duration-200 ${
-              phase === "listening" ? "bg-cyan-500/20" :
-              phase === "speaking" ? "bg-green-500/20" : "bg-transparent"
-            }`}
-            style={{ transform: `scale(${ringSize + 0.3})` }}
-          />
-          <div
-            className={`absolute inset-0 rounded-full transition-transform duration-150 ${
-              phase === "listening" ? "bg-cyan-500/10" : "bg-transparent"
-            }`}
-            style={{ transform: `scale(${ringSize + 0.6})` }}
-          />
-          <button
-            data-testid="button-voice-mode-mic"
-            onClick={handleMicTap}
-            disabled={phase === "processing"}
-            className={`relative w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 ${
-              phase === "listening"
-                ? "bg-gradient-to-br from-cyan-500 to-cyan-600 shadow-lg shadow-cyan-500/40 scale-110"
-                : phase === "processing"
-                ? "bg-amber-500/30 cursor-wait"
-                : phase === "speaking"
-                ? "bg-gradient-to-br from-green-500 to-green-600 shadow-lg shadow-green-500/30"
-                : "bg-white/10 hover:bg-white/20"
-            }`}
-          >
-            {phase === "processing" ? (
-              <Loader2 className="w-8 h-8 text-amber-400 animate-spin" />
-            ) : phase === "listening" ? (
-              <Mic className="w-8 h-8 text-white" />
-            ) : phase === "speaking" ? (
-              <Volume2 className="w-8 h-8 text-white" />
-            ) : (
-              <Mic className="w-8 h-8 text-white/70" />
-            )}
-          </button>
+        <div className="relative w-40 h-40 flex items-center justify-center" onClick={(e) => { e.stopPropagation(); handleMicTap(); }}>
+          {phase === "listening" && (
+            <>
+              <div
+                className="absolute inset-0 rounded-full border border-cyan-400/20 transition-transform duration-200"
+                style={{ transform: `scale(${orbScale + 0.5})` }}
+              />
+              <div
+                className="absolute inset-0 rounded-full border border-cyan-400/10 transition-transform duration-300"
+                style={{ transform: `scale(${orbScale + 0.9})` }}
+              />
+            </>
+          )}
+
+          {phase === "processing" && (
+            <div className="absolute inset-0 rounded-full">
+              <div className="absolute inset-2 rounded-full border-2 border-transparent border-t-amber-400/60 border-r-cyan-400/40 animate-spin" style={{ animationDuration: "1.5s" }} />
+              <div className="absolute inset-5 rounded-full border border-transparent border-b-amber-400/30 border-l-cyan-400/20 animate-spin" style={{ animationDuration: "2.5s", animationDirection: "reverse" }} />
+            </div>
+          )}
+
+          {phase === "speaking" && (
+            <>
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-cyan-500/5 to-green-500/5 animate-pulse" style={{ animationDuration: "2s" }} />
+              <div className="absolute inset-4 rounded-full border border-green-400/15 animate-pulse" style={{ animationDuration: "1.5s" }} />
+            </>
+          )}
+
+          <div className={`relative w-24 h-24 rounded-full flex items-center justify-center transition-all duration-500 ${
+            phase === "listening"
+              ? "bg-gradient-to-br from-cyan-500/20 to-blue-600/20 shadow-[0_0_60px_rgba(6,182,212,0.15)]"
+              : phase === "processing"
+              ? "bg-gradient-to-br from-amber-500/15 to-orange-500/15"
+              : phase === "speaking"
+              ? "bg-gradient-to-br from-green-500/15 to-cyan-500/15 shadow-[0_0_40px_rgba(34,197,94,0.1)]"
+              : "bg-white/5 hover:bg-white/10"
+          }`}>
+            <svg viewBox="0 0 80 80" className="w-16 h-16">
+              {phase === "listening" ? (
+                <>
+                  <circle cx="30" cy="32" r="2.5" fill="rgba(6,182,212,0.8)">
+                    <animate attributeName="r" values="2.5;3.5;2.5" dur="1.2s" repeatCount="indefinite" />
+                  </circle>
+                  <circle cx="50" cy="32" r="2.5" fill="rgba(6,182,212,0.8)">
+                    <animate attributeName="r" values="2.5;3.5;2.5" dur="1.2s" begin="0.2s" repeatCount="indefinite" />
+                  </circle>
+                  <path d="M 28 48 Q 40 58 52 48" fill="none" stroke="rgba(6,182,212,0.6)" strokeWidth="2" strokeLinecap="round">
+                    <animate attributeName="d" values="M 28 48 Q 40 58 52 48;M 28 46 Q 40 56 52 46;M 28 48 Q 40 58 52 48" dur="2s" repeatCount="indefinite" />
+                  </path>
+                  <path d="M 18 38 Q 14 40 18 42" fill="none" stroke="rgba(6,182,212,0.3)" strokeWidth="1.5" strokeLinecap="round">
+                    <animate attributeName="d" values="M 18 38 Q 14 40 18 42;M 16 37 Q 11 40 16 43;M 18 38 Q 14 40 18 42" dur="1s" repeatCount="indefinite" />
+                  </path>
+                </>
+              ) : phase === "processing" ? (
+                <>
+                  <circle cx="28" cy="36" r="3" fill="rgba(245,158,11,0.6)">
+                    <animate attributeName="cy" values="36;32;36" dur="0.8s" repeatCount="indefinite" />
+                  </circle>
+                  <circle cx="40" cy="36" r="3" fill="rgba(245,158,11,0.6)">
+                    <animate attributeName="cy" values="36;32;36" dur="0.8s" begin="0.15s" repeatCount="indefinite" />
+                  </circle>
+                  <circle cx="52" cy="36" r="3" fill="rgba(245,158,11,0.6)">
+                    <animate attributeName="cy" values="36;32;36" dur="0.8s" begin="0.3s" repeatCount="indefinite" />
+                  </circle>
+                </>
+              ) : phase === "speaking" ? (
+                <>
+                  <circle cx="30" cy="32" r="2.5" fill="rgba(34,197,94,0.8)" />
+                  <circle cx="50" cy="32" r="2.5" fill="rgba(34,197,94,0.8)" />
+                  <path d="M 28 46 Q 40 56 52 46" fill="none" stroke="rgba(34,197,94,0.6)" strokeWidth="2" strokeLinecap="round" />
+                  <g transform="translate(40, 60)">
+                    {[-12, -6, 0, 6, 12].map((x, i) => (
+                      <rect key={i} x={x - 1.5} y="-4" width="3" rx="1.5" fill="rgba(34,197,94,0.5)">
+                        <animate attributeName="height" values="4;10;4" dur="0.6s" begin={`${i * 0.1}s`} repeatCount="indefinite" />
+                        <animate attributeName="y" values="-2;-5;-2" dur="0.6s" begin={`${i * 0.1}s`} repeatCount="indefinite" />
+                      </rect>
+                    ))}
+                  </g>
+                </>
+              ) : (
+                <>
+                  <circle cx="30" cy="34" r="2" fill="rgba(255,255,255,0.3)" />
+                  <circle cx="50" cy="34" r="2" fill="rgba(255,255,255,0.3)" />
+                  <path d="M 30 48 Q 40 52 50 48" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="2" strokeLinecap="round" />
+                </>
+              )}
+            </svg>
+          </div>
         </div>
 
-        <p className="text-[10px] text-white/30 text-center max-w-xs">
-          {phase === "listening" ? "Speak naturally — ARYA will respond when you pause" :
-           phase === "speaking" ? "Tap to interrupt and speak" :
-           phase === "processing" ? "Processing your message..." :
-           "Tap the mic to start a voice conversation"}
-        </p>
+        {error && (
+          <button
+            data-testid="button-retry-voice"
+            onClick={(e) => { e.stopPropagation(); setError(null); startListening(); }}
+            className="mt-6 px-5 py-2 rounded-full bg-white/10 text-white/70 text-sm hover:bg-white/15 transition-colors"
+          >
+            Try again
+          </button>
+        )}
       </div>
+
+      <div className="relative w-full h-28 overflow-hidden">
+        <svg className="w-full h-full" viewBox="0 0 400 112" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="arcGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="transparent" />
+              <stop offset="20%" stopColor={phase === "listening" ? "rgba(6,182,212,0.6)" : phase === "speaking" ? "rgba(34,197,94,0.5)" : phase === "processing" ? "rgba(245,158,11,0.5)" : "rgba(245,158,11,0.3)"}>
+                {phase === "listening" && <animate attributeName="stop-color" values="rgba(6,182,212,0.6);rgba(59,130,246,0.6);rgba(6,182,212,0.6)" dur="3s" repeatCount="indefinite" />}
+              </stop>
+              <stop offset="50%" stopColor={phase === "listening" ? "rgba(245,158,11,0.8)" : phase === "speaking" ? "rgba(6,182,212,0.6)" : phase === "processing" ? "rgba(245,158,11,0.7)" : "rgba(245,158,11,0.5)"}>
+                {phase === "listening" && <animate attributeName="stop-color" values="rgba(245,158,11,0.8);rgba(234,88,12,0.8);rgba(245,158,11,0.8)" dur="4s" repeatCount="indefinite" />}
+              </stop>
+              <stop offset="80%" stopColor={phase === "listening" ? "rgba(234,88,12,0.6)" : phase === "speaking" ? "rgba(34,197,94,0.5)" : phase === "processing" ? "rgba(234,88,12,0.5)" : "rgba(234,88,12,0.3)"}>
+                {phase === "listening" && <animate attributeName="stop-color" values="rgba(234,88,12,0.6);rgba(239,68,68,0.5);rgba(234,88,12,0.6)" dur="3.5s" repeatCount="indefinite" />}
+              </stop>
+              <stop offset="100%" stopColor="transparent" />
+            </linearGradient>
+          </defs>
+          <ellipse cx="200" cy="140" rx={phase === "listening" ? 160 + audioLevel * 30 : 150} ry="60" fill="none" stroke="url(#arcGrad)" strokeWidth={phase === "listening" ? 3 + audioLevel * 2 : phase === "speaking" ? 2.5 : 2} />
+          <ellipse cx="200" cy="160" rx="180" ry="50" fill="none" stroke="url(#arcGrad)" strokeWidth="1" opacity="0.3" />
+        </svg>
+        <div className="absolute inset-0 bg-gradient-to-t from-[#080b14] via-transparent to-transparent pointer-events-none" style={{ top: "60%" }} />
+      </div>
+
+      {phase === "speaking" && (
+        <p className="absolute bottom-6 left-0 right-0 text-center text-xs text-white/30">Tap anywhere to interrupt</p>
+      )}
+
+      {showTranscript && (
+        <div className="absolute inset-0 z-20 bg-[#080b14]/95 backdrop-blur-sm flex flex-col" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
+            <h3 className="text-white/80 text-sm font-medium">Conversation</h3>
+            <button onClick={() => setShowTranscript(false)} className="w-8 h-8 rounded-full flex items-center justify-center text-white/50 hover:text-white" data-testid="button-close-transcript">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+            {conversationLog.map((msg, i) => (
+              <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${
+                  msg.role === "user"
+                    ? "bg-cyan-600/20 text-white/90 rounded-br-sm"
+                    : "bg-white/5 text-white/75 rounded-bl-sm"
+                }`}>
+                  {msg.text}
+                </div>
+              </div>
+            ))}
+            {transcript && phase === "processing" && (
+              <div className="flex justify-end">
+                <div className="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm bg-cyan-600/20 text-white/90 rounded-br-sm">{transcript}</div>
+              </div>
+            )}
+            {response && (phase === "processing" || phase === "speaking") && (
+              <div className="flex justify-start">
+                <div className="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm bg-white/5 text-white/75 rounded-bl-sm">{response}</div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
