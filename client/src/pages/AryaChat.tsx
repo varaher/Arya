@@ -1348,10 +1348,10 @@ export default function AryaChat() {
                 <button
                   data-testid="button-welcome-signin"
                   onClick={() => setShowUserAuth(true)}
-                  className="mb-4 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600/20 to-amber-600/20 border border-cyan-500/30 text-sm text-white/80 hover:text-white hover:border-cyan-500/50 transition-all flex items-center gap-2"
+                  className="mb-4 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-white/60 hover:text-white/80 hover:border-cyan-500/30 transition-all flex items-center gap-1.5"
                 >
-                  <User className="w-4 h-4 text-cyan-400" />
-                  Sign in to set goals & track your voice practice
+                  <LogIn className="w-3 h-3 text-cyan-400" />
+                  Sign in to track goals
                 </button>
               )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3 max-w-lg w-full">
@@ -2359,7 +2359,15 @@ function UserAuthModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="min-h-screen bg-[#0a0e1a]/95 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-      <div className="w-full max-w-sm bg-card/90 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl p-6" onClick={e => e.stopPropagation()}>
+      <div className="w-full max-w-sm bg-card/90 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl p-6 relative" onClick={e => e.stopPropagation()}>
+        <button
+          data-testid="modal-button-close"
+          onClick={onClose}
+          className="absolute top-3 right-3 p-1.5 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-all"
+          aria-label="Close"
+        >
+          <X className="w-5 h-5" />
+        </button>
         <div className="text-center mb-5">
           <img src="/arya-logo-transparent.png" alt="ARYA" className="w-32 mx-auto mb-3" />
           <h2 className="text-lg font-bold text-white">{mode === "login" ? "Welcome Back" : "Join ARYA"}</h2>
@@ -2415,9 +2423,6 @@ function UserAuthModal({ onClose }: { onClose: () => void }) {
           <button onClick={() => { setMode(mode === "login" ? "signup" : "login"); setError(""); }} className="text-xs text-muted-foreground hover:text-white">
             {mode === "login" ? <>New here? <span className="text-cyan-400">Create account</span></> : <>Have an account? <span className="text-cyan-400">Sign in</span></>}
           </button>
-        </div>
-        <div className="text-center mt-3">
-          <button onClick={onClose} className="text-[10px] text-muted-foreground/50 hover:text-muted-foreground">Skip for now</button>
         </div>
       </div>
     </div>
