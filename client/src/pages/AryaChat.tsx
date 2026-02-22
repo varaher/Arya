@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
@@ -1651,7 +1652,7 @@ export default function AryaChat() {
         </div>
       </div>
 
-      {showVoiceMode && (
+      {showVoiceMode && createPortal(
         <VoiceConversationMode
           onClose={() => {
             setShowVoiceMode(false);
@@ -1664,7 +1665,8 @@ export default function AryaChat() {
           token={token}
           activeConversation={activeConversation}
           onConversationCreated={(id) => setActiveConversation(id)}
-        />
+        />,
+        document.body
       )}
 
       {showUserAuth && (
@@ -2012,7 +2014,7 @@ function VoiceConversationMode({
   const hasHistory = conversationLog.length > 0 || (transcript && phase === "processing") || (response && (phase === "processing" || phase === "speaking"));
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#080b14] flex flex-col" data-testid="voice-conversation-mode" onClick={handleMicTap}>
+    <div className="fixed inset-0 bg-[#080b14] flex flex-col" style={{ zIndex: 9999 }} data-testid="voice-conversation-mode" onClick={handleMicTap}>
       <div className="w-full flex items-center justify-between px-5 py-4 pt-safe relative z-10">
         <button
           data-testid="button-close-voice-mode"
