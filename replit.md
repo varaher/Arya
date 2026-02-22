@@ -1,12 +1,13 @@
-# ARYA Core - AI Orchestration Platform
+# ARYA Core - Personal AI Assistant Platform
 
 ## Overview
 
-ARYA (Augmented Reasoning & Yielding Analytics) is a multi-tenant AI agent platform designed for the VARAH Group. Its core purpose is to unify and orchestrate AI capabilities across four critical knowledge domains: Medical, Business, Sanskrit (Vedic), and Chanakya (Governance/Leadership). This platform serves as the foundation for several downstream products, including ERmate (clinical documentation copilot) and ErPrana (patient monitoring and risk assessment). ARYA's vision is to provide a comprehensive, intelligent system capable of nuanced understanding and actionable insights across diverse, complex domains, leveraging a balanced orchestrator for intelligent query routing. ARYA thinks from a Bharatiya (Indian/Hindu) civilizational perspective and supports voice in 11 Indian languages via Sarvam AI.
+ARYA (Augmented Reasoning & Yielding Analytics) is a multi-tenant personal AI assistant platform designed for the VARAH Group. Its core purpose is to serve as a personal assistant that unifies and orchestrates AI capabilities across four critical knowledge domains: Medical, Business, Sanskrit (Vedic), and Chanakya (Governance/Leadership). This platform serves as the foundation for several downstream products, including ERmate (clinical documentation copilot) and ErPrana (patient monitoring and risk assessment). ARYA is positioned as "Your Personal Assistant" — an intelligent companion that remembers, learns, and grows with every user. ARYA thinks from a Bharatiya (Indian/Hindu) civilizational perspective and supports voice in 11 Indian languages via Sarvam AI.
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+Branding: ARYA is a "personal assistant" — never refer to it as "AGI" or "AGI-class." Avoid technical jargon in user-facing text.
 
 ## System Architecture
 
@@ -17,6 +18,7 @@ The project is structured as a monorepo with a React frontend, an Express backen
 -   **Framework:** React 18 with TypeScript
 -   **UI/UX:** shadcn/ui (New York style) based on Radix UI, Tailwind CSS v4 for styling (dark theme: deep navy, cyan, amber), Space Grotesk (headings), Inter (body), JetBrains Mono (code).
 -   **PWA:** Manifest at `client/public/manifest.json`, service worker at `client/public/sw.js`, registered in `client/src/main.tsx`. App icons in `client/public/icons/`.
+-   **Logo:** Transparent-background logo at `client/public/arya-logo-transparent.png`. Original at `client/public/arya-logo.png`.
 -   **Key Pages:**
     -   `/`: Public conversational chat with ARYA (text and voice input, streaming AI responses with RAG).
     -   `/goals`: User goals page — view/manage personal goals, track daily progress, streaks, and voice session durations.
@@ -39,9 +41,9 @@ The project is structured as a monorepo with a React frontend, an Express backen
     -   **Goal Detection in Chat:** `server/arya/chat-engine.ts` — after streaming a response, if the user is logged in, detects goal-setting intent via pattern matching + GPT-4.1-mini validation. Auto-creates structured goals with steps and sends a notification.
 -   **AI Architecture:** Hybrid approach combining:
     -   **Alexa Mode (Instant):** Local processing for quick commands.
-    -   **Gemini Mode (Deep Reasoning):** Uses GPT-5.2 with RAG for complex analysis.
-    -   **GPT Mode (Creative):** Leverages GPT for creative tasks.
--   **AGI Capabilities:**
+    -   **Deep Reasoning:** Uses GPT-5.2 with RAG for complex analysis.
+    -   **Creative Mode:** Leverages GPT for creative tasks.
+-   **Smart Capabilities:**
     -   **Persistent Memory:** Extracts and remembers facts, preferences, and context from conversations using GPT-4.1-mini.
     -   **Goal & Plan Manager:** Breaks down complex tasks into prioritized, trackable steps. Goals linked to users with `userId`, daily target minutes, reminder times, streak tracking, voice session duration tracking, auto-progress updates.
     -   **Self-Reflection & Feedback:** Incorporates user feedback (thumbs up/down) to refine responses and memory.
@@ -71,6 +73,9 @@ The project is structured as a monorepo with a React frontend, an Express backen
 
 ## Recent Changes
 
+-   **Feb 2026:** Rebranded ARYA from "AGI-class AI assistant" to "Your Personal Assistant" across all user-facing text and backend system prompt. Removed all AGI references.
+-   **Feb 2026:** Made logo background transparent (`arya-logo-transparent.png`), trimmed to content.
+-   **Feb 2026:** Added custom ARYA logo to welcome screen and login/signup modal.
 -   **Feb 2026:** Added PWA support (manifest.json, service worker, app icons, meta tags) so users can install ARYA on their phones from the browser.
 -   **Feb 2026:** Built user authentication system (signup/login, bcrypt hashing, session tokens, user profile management).
 -   **Feb 2026:** Added user goals system with daily targets, streak tracking, voice session duration tracking, and auto-goal detection in chat via GPT-4.1-mini.
