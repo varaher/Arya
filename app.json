@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "f4e9eaa9-37b1-4f05-b8c9-3a2caba5f1c9"
+      }
+    },
+    "android": {
+      "package": "com.varah.arya"
+    }
+  }
+}
