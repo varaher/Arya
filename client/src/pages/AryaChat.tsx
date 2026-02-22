@@ -925,10 +925,31 @@ export default function AryaChat() {
     }
   }, [activeConversation, isStreaming, queryClient, createConversation, speakText]);
 
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+
   const startRecording = useCallback(async () => {
     try {
+      setVoiceError(null);
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream, { mimeType: "audio/webm;codecs=opus" });
+
+      const mimeTypes = [
+        "audio/webm;codecs=opus",
+        "audio/webm",
+        "audio/mp4",
+        "audio/ogg;codecs=opus",
+        "audio/ogg",
+        "",
+      ];
+      let selectedMime = "";
+      for (const mime of mimeTypes) {
+        if (!mime || MediaRecorder.isTypeSupported(mime)) {
+          selectedMime = mime;
+          break;
+        }
+      }
+
+      const recorderOptions: MediaRecorderOptions = selectedMime ? { mimeType: selectedMime } : {};
+      const recorder = new MediaRecorder(stream, recorderOptions);
       mediaRecorderRef.current = recorder;
       chunksRef.current = [];
 
@@ -942,8 +963,15 @@ export default function AryaChat() {
       recordingTimerRef.current = setInterval(() => {
         setRecordingTime((t) => t + 1);
       }, 1000);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Mic error:", err);
+      if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
+        setVoiceError("Microphone access denied. Please allow microphone in your browser settings.");
+      } else if (err?.name === "NotFoundError") {
+        setVoiceError("No microphone found. Please connect a microphone and try again.");
+      } else {
+        setVoiceError("Could not start recording. Please check your microphone.");
+      }
     }
   }, []);
 
@@ -958,7 +986,8 @@ export default function AryaChat() {
 
     const blob = await new Promise<Blob>((resolve) => {
       recorder.onstop = () => {
-        const b = new Blob(chunksRef.current, { type: "audio/webm" });
+        const recorderMime = recorder.mimeType || "audio/webm";
+        const b = new Blob(chunksRef.current, { type: recorderMime });
         recorder.stream.getTracks().forEach((t) => t.stop());
         resolve(b);
       };
@@ -1005,6 +1034,7 @@ export default function AryaChat() {
       const decoder = new TextDecoder();
       let buffer = "";
       let fullContent = "";
+      let hasAudioResponse = false;
 
       while (true) {
         const { done, value } = await streamReader.read();
@@ -1044,6 +1074,7 @@ export default function AryaChat() {
               setTranslatedContent(event.content);
             }
             if (event.type === "audio_response" && event.audio) {
+              hasAudioResponse = true;
               playAudioBase64(event.audio);
             }
             if (event.type === "done") {
@@ -1057,12 +1088,16 @@ export default function AryaChat() {
                   ],
                 })
               );
+              if (speakerOnRef.current && fullContent && !hasAudioResponse) {
+                speakText(fullContent);
+              }
             }
           } catch {}
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Voice error:", error);
+      setVoiceError("Voice processing failed. Please try again.");
     } finally {
       setIsStreaming(false);
       setStreamingContent("");
@@ -1070,7 +1105,7 @@ export default function AryaChat() {
         queryKey: ["/api/arya/conversations", convId],
       });
     }
-  }, [activeConversation, queryClient, createConversation, selectedLanguage, playAudioBase64]);
+  }, [activeConversation, queryClient, createConversation, selectedLanguage, playAudioBase64, speakText]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -1597,6 +1632,12 @@ export default function AryaChat() {
               </Button>
             </div>
           </Card>
+          {voiceError && (
+            <div className="flex items-center justify-center gap-2 mt-1.5 px-3">
+              <p className="text-xs text-red-400 text-center">{voiceError}</p>
+              <button onClick={() => setVoiceError(null)} className="text-red-400/60 hover:text-red-400 text-xs">✕</button>
+            </div>
+          )}
           <div className="flex items-center justify-center gap-2 mt-1.5 md:mt-2">
             {selectedLanguage !== "en-IN" && (
               <span className="text-[10px] md:text-xs text-amber-400/80 flex items-center gap-1">

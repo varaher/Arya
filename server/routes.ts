@@ -13,7 +13,7 @@ import { GoalsEngine } from "./arya/goals-engine";
 import { FeedbackEngine } from "./arya/feedback-engine";
 import { InsightsEngine } from "./arya/insights-engine";
 import { chatStorage } from "./replit_integrations/chat/storage";
-import { ensureCompatibleFormat, speechToText } from "./replit_integrations/audio/client";
+import { ensureCompatibleFormat, speechToText, textToSpeech as openaiTextToSpeech } from "./replit_integrations/audio/client";
 import {
   sarvamSpeechToText,
   sarvamTranslate,
@@ -1105,13 +1105,21 @@ export async function registerRoutes(
     try {
       const { text, language, speaker } = req.body;
       if (!text) return res.status(400).json({ error: "Text is required" });
-      const langCode = (language || "hi-IN") as SarvamLanguageCode;
-      const ttsResult = await sarvamTextToSpeech(
-        text,
-        langCode,
-        speaker || getSpeakerForLanguage(langCode)
-      );
-      res.json(ttsResult);
+      const langCode = (language || "en-IN") as SarvamLanguageCode;
+
+      if (langCode === "en-IN" || !process.env.SARVAM_API_KEY) {
+        const cleanText = text.length > 500 ? text.slice(0, 500) : text;
+        const audioBuffer = await openaiTextToSpeech(cleanText, "nova", "wav");
+        const audioBase64 = audioBuffer.toString("base64");
+        res.json({ audioBase64, format: "wav" });
+      } else {
+        const ttsResult = await sarvamTextToSpeech(
+          text,
+          langCode,
+          speaker || getSpeakerForLanguage(langCode)
+        );
+        res.json(ttsResult);
+      }
     } catch (error: any) {
       console.error("TTS error:", error);
       res.status(500).json({ error: error.message });
