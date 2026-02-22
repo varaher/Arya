@@ -8,6 +8,7 @@ ARYA (Augmented Reasoning & Yielding Analytics) is a multi-tenant personal AI as
 
 Preferred communication style: Simple, everyday language.
 Branding: ARYA is "Your Personal Thinking & Growth Assistant" — never refer to it as "AGI," "AGI-class," or just "chatbot." Avoid technical jargon in user-facing text. Tone should be warm, encouraging, personal — like a wise friend, not a corporate AI.
+Bharatiya/Vedic/Sanskrit knowledge is the invisible core — ARYA draws from this wisdom naturally in responses, but these terms should NOT appear in user-facing UI labels, prompts, or navigation. The wisdom shows through the quality of advice, not through labels.
 
 ## System Architecture
 

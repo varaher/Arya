@@ -1308,7 +1308,7 @@ export default function AryaChat() {
                   { text: "Help me think through a tough decision I'm facing", badge: "Think", icon: "🧠" },
                   { text: "I want to build a daily reading habit — help me set a goal", badge: "Goals", icon: "🎯" },
                   { text: "Give me a morning reflection to start my day with clarity", badge: "Reflect", icon: "🌅" },
-                  { text: "What does the Bhagavad Gita say about handling stress?", badge: "Wisdom", icon: "📿" },
+                  { text: "How can I stay calm and focused when things get stressful?", badge: "Wisdom", icon: "🧘" },
                 ].map((suggestion, i) => (
                   <button
                     key={i}
