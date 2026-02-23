@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useUserAuth } from "@/lib/user-auth";
@@ -326,7 +327,7 @@ function MemoryPanel({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="absolute right-0 top-0 bottom-0 w-80 bg-card/95 backdrop-blur-xl border-l border-border/50 z-40 flex flex-col" data-testid="panel-memory">
+    <div className="w-80 h-full bg-card/95 backdrop-blur-xl border-l border-border/50 flex flex-col" data-testid="panel-memory">
       <div className="p-3 border-b border-border/30 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Brain className="w-4 h-4 text-purple-400" />
@@ -457,7 +458,7 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
   ];
 
   return (
-    <div className="absolute right-0 top-0 bottom-0 w-80 sm:w-96 bg-card/95 backdrop-blur-xl border-l border-border/50 z-40 flex flex-col" data-testid="panel-customize">
+    <div className="w-80 sm:w-96 h-full bg-card/95 backdrop-blur-xl border-l border-border/50 flex flex-col" data-testid="panel-customize">
       <div className="p-3 border-b border-border/30 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Palette className="w-4 h-4 text-cyan-400" />
@@ -641,7 +642,7 @@ function GoalsPanel({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="absolute right-0 top-0 bottom-0 w-80 bg-card/95 backdrop-blur-xl border-l border-border/50 z-40 flex flex-col" data-testid="panel-goals">
+    <div className="w-80 h-full bg-card/95 backdrop-blur-xl border-l border-border/50 flex flex-col" data-testid="panel-goals">
       <div className="p-3 border-b border-border/30 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Target className="w-4 h-4 text-amber-400" />
@@ -1399,12 +1400,18 @@ export default function AryaChat() {
 
   return (
     <div className="flex h-[calc(100vh-5rem)] md:h-[calc(100vh-6rem)] gap-0 md:gap-4 relative" data-testid="page-arya-chat">
-      {showSidebar && (
-        <div
-          className="fixed inset-0 bg-black/50 z-20 md:hidden"
-          onClick={() => setShowSidebar(false)}
-        />
-      )}
+      <AnimatePresence>
+        {showSidebar && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black/50 z-20 md:hidden"
+            onClick={() => setShowSidebar(false)}
+          />
+        )}
+      </AnimatePresence>
 
       <div
         className={`${
@@ -1563,35 +1570,43 @@ export default function AryaChat() {
                 >
                   <User className="w-4 h-4 text-cyan-400" />
                 </button>
-                {showUserMenu && (
-                  <div className="absolute right-0 top-full mt-1 z-50 bg-card border border-white/10 rounded-xl shadow-xl py-2 min-w-[180px]">
-                    <div className="px-3 py-2 border-b border-white/5">
-                      <div className="text-xs font-medium text-white">{user?.name}</div>
-                      <div className="text-[10px] text-muted-foreground">{user?.phone}</div>
-                    </div>
-                    <button
-                      data-testid="button-my-goals"
-                      onClick={() => { setShowUserMenu(false); setLocation("/my-goals"); }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white/80 hover:bg-white/5"
+                <AnimatePresence>
+                  {showUserMenu && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.92, y: -5 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.92, y: -5 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute right-0 top-full mt-1 z-50 bg-card border border-white/10 rounded-xl shadow-xl py-2 min-w-[180px]"
                     >
-                      <Target className="w-3.5 h-3.5 text-amber-400" /> My Goals
-                    </button>
-                    <button
-                      data-testid="button-customize-arya"
-                      onClick={() => { setShowUserMenu(false); setShowCustomize(true); setShowMemory(false); setShowGoals(false); }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white/80 hover:bg-white/5"
-                    >
-                      <Palette className="w-3.5 h-3.5 text-cyan-400" /> Customize ARYA
-                    </button>
-                    <button
-                      data-testid="button-user-logout"
-                      onClick={() => { setShowUserMenu(false); userLogout(); }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-400 hover:bg-white/5"
-                    >
-                      <LogOut className="w-3.5 h-3.5" /> Sign Out
-                    </button>
-                  </div>
-                )}
+                      <div className="px-3 py-2 border-b border-white/5">
+                        <div className="text-xs font-medium text-white">{user?.name}</div>
+                        <div className="text-[10px] text-muted-foreground">{user?.phone}</div>
+                      </div>
+                      <button
+                        data-testid="button-my-goals"
+                        onClick={() => { setShowUserMenu(false); setLocation("/my-goals"); }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white/80 hover:bg-white/5"
+                      >
+                        <Target className="w-3.5 h-3.5 text-amber-400" /> My Goals
+                      </button>
+                      <button
+                        data-testid="button-customize-arya"
+                        onClick={() => { setShowUserMenu(false); setShowCustomize(true); setShowMemory(false); setShowGoals(false); }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white/80 hover:bg-white/5"
+                      >
+                        <Palette className="w-3.5 h-3.5 text-cyan-400" /> Customize ARYA
+                      </button>
+                      <button
+                        data-testid="button-user-logout"
+                        onClick={() => { setShowUserMenu(false); userLogout(); }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-400 hover:bg-white/5"
+                      >
+                        <LogOut className="w-3.5 h-3.5" /> Sign Out
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
               </>
             ) : (
@@ -1607,9 +1622,44 @@ export default function AryaChat() {
           </div>
         </div>
 
-        {showMemory && <MemoryPanel onClose={() => setShowMemory(false)} />}
-        {showGoals && <GoalsPanel onClose={() => setShowGoals(false)} />}
-        {showCustomize && isLoggedIn && token && <CustomizePanel onClose={() => setShowCustomize(false)} token={token} />}
+        <AnimatePresence>
+          {showMemory && (
+            <motion.div
+              key="memory-panel"
+              initial={{ x: 320, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 320, opacity: 0 }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              className="absolute right-0 top-0 bottom-0 z-40"
+            >
+              <MemoryPanel onClose={() => setShowMemory(false)} />
+            </motion.div>
+          )}
+          {showGoals && (
+            <motion.div
+              key="goals-panel"
+              initial={{ x: 320, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 320, opacity: 0 }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              className="absolute right-0 top-0 bottom-0 z-40"
+            >
+              <GoalsPanel onClose={() => setShowGoals(false)} />
+            </motion.div>
+          )}
+          {showCustomize && isLoggedIn && token && (
+            <motion.div
+              key="customize-panel"
+              initial={{ x: 384, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 384, opacity: 0 }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              className="absolute right-0 top-0 bottom-0 z-40"
+            >
+              <CustomizePanel onClose={() => setShowCustomize(false)} token={token} />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {insights.length > 0 && !activeConversation && (
           <InsightsCard insights={insights} onDismiss={(id) => dismissInsightMutation.mutate(id)} />
@@ -1617,14 +1667,37 @@ export default function AryaChat() {
 
         <div className="flex-1 overflow-y-auto px-2 sm:px-4 py-3 md:py-4 space-y-3 md:space-y-4" data-testid="list-messages">
           {!activeConversation && messages.length === 0 && !streamingContent && (
-            <div className="flex flex-col items-center justify-center h-full text-center px-4">
-              <img src="/arya-logo-transparent.png" alt="ARYA" className="w-48 md:w-64 mb-4 md:mb-6" data-testid="img-arya-logo" />
-              <p className="text-[10px] uppercase tracking-widest font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent mb-3">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.4 }}
+              className="flex flex-col items-center justify-center h-full text-center px-4"
+            >
+              <motion.img
+                src="/arya-logo-transparent.png"
+                alt="ARYA"
+                className="w-48 md:w-64 mb-4 md:mb-6"
+                data-testid="img-arya-logo"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+              />
+              <motion.p
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.2 }}
+                className="text-[10px] uppercase tracking-widest font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent mb-3"
+              >
                 Your Personal Thinking & Growth Assistant
-              </p>
-              <p className="text-muted-foreground max-w-md mb-6 md:mb-8 text-sm md:text-base">
+              </motion.p>
+              <motion.p
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.3 }}
+                className="text-muted-foreground max-w-md mb-6 md:mb-8 text-sm md:text-base"
+              >
                 Think clearly. Set goals. Stay disciplined. Reflect daily. Grow spiritually & professionally. I'm here to help you become your best self.
-              </p>
+              </motion.p>
               {!isLoggedIn && (
                 <button
                   data-testid="button-welcome-signin"
@@ -1635,33 +1708,46 @@ export default function AryaChat() {
                   Sign in to track goals
                 </button>
               )}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3 max-w-lg w-full">
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.4 }}
+                className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3 max-w-lg w-full"
+              >
                 {[
                   { text: "Help me think through a tough decision I'm facing", badge: "Think", icon: "🧠" },
                   { text: "I want to build a daily reading habit — help me set a goal", badge: "Goals", icon: "🎯" },
                   { text: "Give me a morning reflection to start my day with clarity", badge: "Reflect", icon: "🌅" },
                   { text: "How can I stay calm and focused when things get stressful?", badge: "Wisdom", icon: "🧘" },
                 ].map((suggestion, i) => (
-                  <button
+                  <motion.button
                     key={i}
                     data-testid={`button-suggestion-${i}`}
                     onClick={() => sendMessage(suggestion.text)}
                     className="text-left px-3 md:px-4 py-2.5 md:py-3 rounded-xl border border-border/50 bg-card/30 text-sm text-muted-foreground hover:text-white hover:border-primary/40 hover:bg-card/60 transition-all group"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: 0.5 + i * 0.08 }}
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    whileTap={{ scale: 0.98 }}
                   >
                     <span className="text-[9px] uppercase tracking-wider font-semibold text-cyan-400/60 group-hover:text-cyan-400 mb-1 flex items-center gap-1">
                       <span>{suggestion.icon}</span> {suggestion.badge}
                     </span>
                     <span className="block text-xs mt-0.5">{suggestion.text}</span>
-                  </button>
+                  </motion.button>
                 ))}
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           )}
 
-          {messages.map((msg) => (
-            <div
+          {messages.map((msg, msgIndex) => (
+            <motion.div
               key={msg.id}
               data-testid={`message-${msg.role}-${msg.id}`}
+              initial={{ opacity: 0, y: 12, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.25, delay: msgIndex > messages.length - 3 ? 0.05 : 0 }}
               className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
               <div
@@ -1695,11 +1781,17 @@ export default function AryaChat() {
                   </div>
                 )}
               </div>
-            </div>
+            </motion.div>
           ))}
 
           {streamingContent && (
-            <div className="flex justify-start" data-testid="message-streaming">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2 }}
+              className="flex justify-start"
+              data-testid="message-streaming"
+            >
               <div className={`max-w-[90%] sm:max-w-[80%] md:max-w-[75%] rounded-2xl px-3 md:px-4 py-2.5 md:py-3 ${
                 responseMode === "instant"
                   ? "bg-gradient-to-br from-amber-500/10 to-cyan-500/10 border border-amber-500/20"
@@ -1734,11 +1826,17 @@ export default function AryaChat() {
                   </div>
                 )}
               </div>
-            </div>
+            </motion.div>
           )}
 
           {isStreaming && !streamingContent && (
-            <div className="flex justify-start" data-testid="message-thinking">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2 }}
+              className="flex justify-start"
+              data-testid="message-thinking"
+            >
               <div className="rounded-2xl px-3 md:px-4 py-2.5 md:py-3 bg-card/60 border border-border/30">
                 <div className="flex items-center gap-1.5 mb-1">
                   <span className="text-xs font-semibold bg-gradient-to-r from-cyan-400 to-amber-400 bg-clip-text text-transparent">
@@ -1750,7 +1848,7 @@ export default function AryaChat() {
                   {selectedLanguage !== "en-IN" ? "Listening & translating..." : "Thinking..."}
                 </div>
               </div>
-            </div>
+            </motion.div>
           )}
 
           <div ref={messagesEndRef} />
@@ -1950,47 +2048,81 @@ export default function AryaChat() {
         document.body
       )}
 
-      {showInviteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-[#0a1628] border border-cyan-500/20 rounded-xl p-6 w-full max-w-sm mx-4 shadow-2xl" data-testid="invite-modal">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-white font-['Space_Grotesk']">Enter Invite Code</h3>
-              <button onClick={() => { setShowInviteModal(false); setInviteError(""); }} className="text-gray-400 hover:text-white" data-testid="close-invite-modal">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <p className="text-gray-400 text-sm mb-4">ARYA is in private beta. Enter your invite code to get access.</p>
-            <input
-              type="text"
-              value={inviteCode}
-              onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-              placeholder="e.g. ARYA-BETA-001"
-              className="w-full px-4 py-3 bg-[#0d1f3c] border border-cyan-500/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400 mb-3 font-mono tracking-wider"
-              data-testid="input-invite-code"
-              onKeyDown={(e) => e.key === "Enter" && handleRedeemInvite()}
-            />
-            {inviteError && <p className="text-red-400 text-sm mb-3" data-testid="text-invite-error">{inviteError}</p>}
-            <button
-              onClick={handleRedeemInvite}
-              disabled={inviteLoading || !inviteCode.trim()}
-              className="w-full py-3 bg-cyan-500 hover:bg-cyan-400 disabled:bg-gray-600 disabled:cursor-not-allowed text-black font-semibold rounded-lg transition-colors"
-              data-testid="button-redeem-invite"
+      <AnimatePresence>
+        {showInviteModal && (
+          <motion.div
+            key="invite-modal"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="bg-[#0a1628] border border-cyan-500/20 rounded-xl p-6 w-full max-w-sm mx-4 shadow-2xl"
+              data-testid="invite-modal"
             >
-              {inviteLoading ? "Verifying..." : "Redeem Code"}
-            </button>
-          </div>
-        </div>
-      )}
-      {showUserAuth && (
-        <div className="fixed inset-0 z-50">
-          <UserAuthModal onClose={() => setShowUserAuth(false)} />
-        </div>
-      )}
-      {showOnboarding && token && (
-        <div className="fixed inset-0 z-50">
-          <OnboardingModal token={token} onComplete={() => { setShowOnboarding(false); refreshUser(); }} />
-        </div>
-      )}
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-white font-['Space_Grotesk']">Enter Invite Code</h3>
+                <button onClick={() => { setShowInviteModal(false); setInviteError(""); }} className="text-gray-400 hover:text-white" data-testid="close-invite-modal">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <p className="text-gray-400 text-sm mb-4">ARYA is in private beta. Enter your invite code to get access.</p>
+              <input
+                type="text"
+                value={inviteCode}
+                onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+                placeholder="e.g. ARYA-BETA-001"
+                className="w-full px-4 py-3 bg-[#0d1f3c] border border-cyan-500/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400 mb-3 font-mono tracking-wider"
+                data-testid="input-invite-code"
+                onKeyDown={(e) => e.key === "Enter" && handleRedeemInvite()}
+              />
+              {inviteError && <p className="text-red-400 text-sm mb-3" data-testid="text-invite-error">{inviteError}</p>}
+              <button
+                onClick={handleRedeemInvite}
+                disabled={inviteLoading || !inviteCode.trim()}
+                className="w-full py-3 bg-cyan-500 hover:bg-cyan-400 disabled:bg-gray-600 disabled:cursor-not-allowed text-black font-semibold rounded-lg transition-colors"
+                data-testid="button-redeem-invite"
+              >
+                {inviteLoading ? "Verifying..." : "Redeem Code"}
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showUserAuth && (
+          <motion.div
+            key="auth-modal"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50"
+          >
+            <UserAuthModal onClose={() => setShowUserAuth(false)} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showOnboarding && token && (
+          <motion.div
+            key="onboarding-modal"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="fixed inset-0 z-50"
+          >
+            <OnboardingModal token={token} onComplete={() => { setShowOnboarding(false); refreshUser(); }} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

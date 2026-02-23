@@ -1,6 +1,7 @@
-import { Switch, Route, Redirect } from "wouter";
+import { Switch, Route, Redirect, useLocation } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
+import { motion, AnimatePresence } from "framer-motion";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AdminLayout, PublicLayout } from "@/components/layout/Layout";
@@ -36,65 +37,124 @@ function AdminRoute({ component: Component }: { component: React.ComponentType }
   return <Component />;
 }
 
+const pageVariants = {
+  initial: { opacity: 0, y: 8 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -8 },
+};
+const pageTransition = { duration: 0.25, ease: "easeInOut" as const };
+
+function AnimatedPage({ children }: { children: React.ReactNode }) {
+  return (
+    <motion.div
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      variants={pageVariants}
+      transition={pageTransition}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
 function Router() {
   const { isAdmin, isLoading } = useAdminAuth();
+  const [location] = useLocation();
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-muted-foreground text-sm">Loading...</div>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+          className="text-muted-foreground text-sm"
+        >
+          Loading...
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <Switch>
-      <Route path="/admin/login">
-        {isAdmin ? <Redirect to="/dashboard" /> : <AdminLogin />}
-      </Route>
+    <AnimatePresence mode="wait">
+      <Switch key={location}>
+        <Route path="/admin/login">
+          <AnimatedPage>
+            {isAdmin ? <Redirect to="/dashboard" /> : <AdminLogin />}
+          </AnimatedPage>
+        </Route>
 
-      <Route path="/">
-        {isAdmin ? (
-          <AdminLayout><AryaChat /></AdminLayout>
-        ) : (
-          <PublicLayout><AryaChat /></PublicLayout>
-        )}
-      </Route>
+        <Route path="/">
+          <AnimatedPage>
+            {isAdmin ? (
+              <AdminLayout><AryaChat /></AdminLayout>
+            ) : (
+              <PublicLayout><AryaChat /></PublicLayout>
+            )}
+          </AnimatedPage>
+        </Route>
 
-      <Route path="/my-goals">
-        <PublicLayout><UserGoals /></PublicLayout>
-      </Route>
+        <Route path="/my-goals">
+          <AnimatedPage>
+            <PublicLayout><UserGoals /></PublicLayout>
+          </AnimatedPage>
+        </Route>
 
-      <Route path="/dashboard">
-        <AdminLayout><AdminRoute component={Dashboard} /></AdminLayout>
-      </Route>
-      <Route path="/orchestrator">
-        <AdminLayout><AdminRoute component={Orchestrator} /></AdminLayout>
-      </Route>
-      <Route path="/knowledge">
-        <AdminLayout><AdminRoute component={Knowledge} /></AdminLayout>
-      </Route>
-      <Route path="/ermate">
-        <AdminLayout><AdminRoute component={ERmate} /></AdminLayout>
-      </Route>
-      <Route path="/erprana">
-        <AdminLayout><AdminRoute component={ErPrana} /></AdminLayout>
-      </Route>
-      <Route path="/learning">
-        <AdminLayout><AdminRoute component={SelfLearning} /></AdminLayout>
-      </Route>
-      <Route path="/neural-link">
-        <AdminLayout><AdminRoute component={NeuralLink} /></AdminLayout>
-      </Route>
-      <Route path="/api">
-        <AdminLayout><AdminRoute component={ApiPlayground} /></AdminLayout>
-      </Route>
-      <Route path="/developers">
-        <AdminLayout><AdminRoute component={DeveloperPortal} /></AdminLayout>
-      </Route>
+        <Route path="/dashboard">
+          <AnimatedPage>
+            <AdminLayout><AdminRoute component={Dashboard} /></AdminLayout>
+          </AnimatedPage>
+        </Route>
+        <Route path="/orchestrator">
+          <AnimatedPage>
+            <AdminLayout><AdminRoute component={Orchestrator} /></AdminLayout>
+          </AnimatedPage>
+        </Route>
+        <Route path="/knowledge">
+          <AnimatedPage>
+            <AdminLayout><AdminRoute component={Knowledge} /></AdminLayout>
+          </AnimatedPage>
+        </Route>
+        <Route path="/ermate">
+          <AnimatedPage>
+            <AdminLayout><AdminRoute component={ERmate} /></AdminLayout>
+          </AnimatedPage>
+        </Route>
+        <Route path="/erprana">
+          <AnimatedPage>
+            <AdminLayout><AdminRoute component={ErPrana} /></AdminLayout>
+          </AnimatedPage>
+        </Route>
+        <Route path="/learning">
+          <AnimatedPage>
+            <AdminLayout><AdminRoute component={SelfLearning} /></AdminLayout>
+          </AnimatedPage>
+        </Route>
+        <Route path="/neural-link">
+          <AnimatedPage>
+            <AdminLayout><AdminRoute component={NeuralLink} /></AdminLayout>
+          </AnimatedPage>
+        </Route>
+        <Route path="/api">
+          <AnimatedPage>
+            <AdminLayout><AdminRoute component={ApiPlayground} /></AdminLayout>
+          </AnimatedPage>
+        </Route>
+        <Route path="/developers">
+          <AnimatedPage>
+            <AdminLayout><AdminRoute component={DeveloperPortal} /></AdminLayout>
+          </AnimatedPage>
+        </Route>
 
-      <Route component={NotFound} />
-    </Switch>
+        <Route>
+          <AnimatedPage>
+            <NotFound />
+          </AnimatedPage>
+        </Route>
+      </Switch>
+    </AnimatePresence>
   );
 }
 
