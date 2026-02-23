@@ -38,6 +38,8 @@ import {
   ArrowRight,
   Briefcase,
   Clock,
+  Settings,
+  Palette,
 } from "lucide-react";
 
 function FormattedMessage({ content, isUser }: { content: string; isUser?: boolean }) {
@@ -374,6 +376,216 @@ function MemoryPanel({ onClose }: { onClose: () => void }) {
   );
 }
 
+function CustomizePanel({ onClose, token }: { onClose: () => void; token: string }) {
+  const queryClient = useQueryClient();
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const { data: prefs, isLoading } = useQuery<{
+    responseStyle: string;
+    responseTone: string;
+    focusAreas: string[] | null;
+    wisdomQuotes: string;
+  }>({
+    queryKey: ["/api/user/preferences"],
+    queryFn: async () => {
+      const res = await fetch("/api/user/preferences", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return res.json();
+    },
+  });
+
+  const [style, setStyle] = useState("balanced");
+  const [tone, setTone] = useState("friendly");
+  const [focus, setFocus] = useState<string[]>([]);
+  const [wisdom, setWisdom] = useState("sometimes");
+
+  useEffect(() => {
+    if (prefs) {
+      setStyle(prefs.responseStyle || "balanced");
+      setTone(prefs.responseTone || "friendly");
+      setFocus(prefs.focusAreas || []);
+      setWisdom(prefs.wisdomQuotes || "sometimes");
+    }
+  }, [prefs]);
+
+  const savePrefs = async () => {
+    setSaving(true);
+    try {
+      await fetch("/api/user/preferences", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ responseStyle: style, responseTone: tone, focusAreas: focus, wisdomQuotes: wisdom }),
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/preferences"] });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch {}
+    setSaving(false);
+  };
+
+  const toggleFocus = (area: string) => {
+    setFocus(prev => prev.includes(area) ? prev.filter(a => a !== area) : prev.length < 4 ? [...prev, area] : prev);
+  };
+
+  const styleOptions = [
+    { value: "concise", label: "Short & Sweet", desc: "Quick, to-the-point answers" },
+    { value: "balanced", label: "Balanced", desc: "Thorough but focused" },
+    { value: "detailed", label: "In-Depth", desc: "Comprehensive with examples" },
+  ];
+  const toneOptions = [
+    { value: "motivating", label: "Motivating", icon: "🔥" },
+    { value: "gentle", label: "Gentle", icon: "🌿" },
+    { value: "direct", label: "Direct", icon: "🎯" },
+    { value: "friendly", label: "Friendly", icon: "😊" },
+  ];
+  const focusOptions = [
+    { value: "career", label: "Career", icon: "💼" },
+    { value: "health", label: "Health", icon: "🏥" },
+    { value: "spirituality", label: "Spirituality", icon: "🧘" },
+    { value: "finance", label: "Finance", icon: "💰" },
+    { value: "relationships", label: "Relationships", icon: "❤️" },
+    { value: "learning", label: "Learning", icon: "📚" },
+    { value: "creativity", label: "Creativity", icon: "🎨" },
+    { value: "fitness", label: "Fitness", icon: "💪" },
+  ];
+  const wisdomOptions = [
+    { value: "always", label: "Always", desc: "Wisdom in every response" },
+    { value: "sometimes", label: "Sometimes", desc: "When it adds value" },
+    { value: "never", label: "Never", desc: "Keep it purely practical" },
+  ];
+
+  return (
+    <div className="absolute right-0 top-0 bottom-0 w-80 sm:w-96 bg-card/95 backdrop-blur-xl border-l border-border/50 z-40 flex flex-col" data-testid="panel-customize">
+      <div className="p-3 border-b border-border/30 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Palette className="w-4 h-4 text-cyan-400" />
+          <span className="text-sm font-semibold text-white">Customize ARYA</span>
+        </div>
+        <button onClick={onClose} className="p-1 rounded hover:bg-white/10 text-white/50" data-testid="button-close-customize">
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-cyan-400" /></div>
+      ) : (
+        <div className="flex-1 overflow-y-auto p-4 space-y-5">
+          <div className="text-[11px] text-white/40 leading-relaxed">
+            Personalize how ARYA responds to you. Changes take effect in your next conversation.
+          </div>
+
+          <div>
+            <div className="text-xs font-semibold text-white/70 mb-2">Response Length</div>
+            <div className="space-y-1.5">
+              {styleOptions.map(opt => (
+                <button
+                  key={opt.value}
+                  data-testid={`option-style-${opt.value}`}
+                  onClick={() => setStyle(opt.value)}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-all ${
+                    style === opt.value
+                      ? "bg-cyan-500/15 border border-cyan-500/30 text-cyan-300"
+                      : "bg-white/5 border border-transparent text-white/60 hover:bg-white/10"
+                  }`}
+                >
+                  <div className={`w-3 h-3 rounded-full border-2 flex-shrink-0 ${
+                    style === opt.value ? "border-cyan-400 bg-cyan-400" : "border-white/20"
+                  }`} />
+                  <div>
+                    <div className="text-xs font-medium">{opt.label}</div>
+                    <div className="text-[10px] text-white/40">{opt.desc}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div className="text-xs font-semibold text-white/70 mb-2">Conversation Tone</div>
+            <div className="grid grid-cols-2 gap-1.5">
+              {toneOptions.map(opt => (
+                <button
+                  key={opt.value}
+                  data-testid={`option-tone-${opt.value}`}
+                  onClick={() => setTone(opt.value)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
+                    tone === opt.value
+                      ? "bg-cyan-500/15 border border-cyan-500/30 text-cyan-300"
+                      : "bg-white/5 border border-transparent text-white/60 hover:bg-white/10"
+                  }`}
+                >
+                  <span className="text-sm">{opt.icon}</span>
+                  <span className="text-xs font-medium">{opt.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div className="text-xs font-semibold text-white/70 mb-1">Focus Areas</div>
+            <div className="text-[10px] text-white/30 mb-2">Pick up to 4 topics ARYA will relate advice to</div>
+            <div className="grid grid-cols-2 gap-1.5">
+              {focusOptions.map(opt => (
+                <button
+                  key={opt.value}
+                  data-testid={`option-focus-${opt.value}`}
+                  onClick={() => toggleFocus(opt.value)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
+                    focus.includes(opt.value)
+                      ? "bg-amber-500/15 border border-amber-500/30 text-amber-300"
+                      : "bg-white/5 border border-transparent text-white/60 hover:bg-white/10"
+                  }`}
+                >
+                  <span className="text-sm">{opt.icon}</span>
+                  <span className="text-xs font-medium">{opt.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div className="text-xs font-semibold text-white/70 mb-2">Wisdom & Quotes</div>
+            <div className="space-y-1.5">
+              {wisdomOptions.map(opt => (
+                <button
+                  key={opt.value}
+                  data-testid={`option-wisdom-${opt.value}`}
+                  onClick={() => setWisdom(opt.value)}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-all ${
+                    wisdom === opt.value
+                      ? "bg-cyan-500/15 border border-cyan-500/30 text-cyan-300"
+                      : "bg-white/5 border border-transparent text-white/60 hover:bg-white/10"
+                  }`}
+                >
+                  <div className={`w-3 h-3 rounded-full border-2 flex-shrink-0 ${
+                    wisdom === opt.value ? "border-cyan-400 bg-cyan-400" : "border-white/20"
+                  }`} />
+                  <div>
+                    <div className="text-xs font-medium">{opt.label}</div>
+                    <div className="text-[10px] text-white/40">{opt.desc}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button
+            data-testid="button-save-preferences"
+            onClick={savePrefs}
+            disabled={saving}
+            className="w-full py-2.5 rounded-lg bg-gradient-to-r from-cyan-500/20 to-cyan-600/20 border border-cyan-500/30 text-cyan-300 text-xs font-semibold hover:from-cyan-500/30 hover:to-cyan-600/30 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : saved ? <Check className="w-3.5 h-3.5" /> : <Settings className="w-3.5 h-3.5" />}
+            {saving ? "Saving..." : saved ? "Saved!" : "Save Preferences"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function GoalsPanel({ onClose }: { onClose: () => void }) {
   const queryClient = useQueryClient();
   const [newGoalTitle, setNewGoalTitle] = useState("");
@@ -667,6 +879,7 @@ export default function AryaChat() {
   const [responseMemoryUsed, setResponseMemoryUsed] = useState(false);
   const [showMemory, setShowMemory] = useState(false);
   const [showGoals, setShowGoals] = useState(false);
+  const [showCustomize, setShowCustomize] = useState(false);
   const [showConfidence, setShowConfidence] = useState(true);
   const [betaRestricted, setBetaRestricted] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -1364,6 +1577,13 @@ export default function AryaChat() {
                       <Target className="w-3.5 h-3.5 text-amber-400" /> My Goals
                     </button>
                     <button
+                      data-testid="button-customize-arya"
+                      onClick={() => { setShowUserMenu(false); setShowCustomize(true); setShowMemory(false); setShowGoals(false); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white/80 hover:bg-white/5"
+                    >
+                      <Palette className="w-3.5 h-3.5 text-cyan-400" /> Customize ARYA
+                    </button>
+                    <button
                       data-testid="button-user-logout"
                       onClick={() => { setShowUserMenu(false); userLogout(); }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-400 hover:bg-white/5"
@@ -1389,6 +1609,7 @@ export default function AryaChat() {
 
         {showMemory && <MemoryPanel onClose={() => setShowMemory(false)} />}
         {showGoals && <GoalsPanel onClose={() => setShowGoals(false)} />}
+        {showCustomize && isLoggedIn && token && <CustomizePanel onClose={() => setShowCustomize(false)} token={token} />}
 
         {insights.length > 0 && !activeConversation && (
           <InsightsCard insights={insights} onDismiss={(id) => dismissInsightMutation.mutate(id)} />

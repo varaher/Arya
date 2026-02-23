@@ -2,7 +2,7 @@
 
 ## Overview
 
-ARYA (Augmented Reasoning & Yielding Analytics) is a multi-tenant personal AI assistant platform designed for the VARAH Group. ARYA is positioned as "Your Personal Thinking & Growth Assistant" — not another chatbot, not an AI toy, not a tech demo. ARYA is a thinking companion, goal tracker, daily discipline guide, voice-based planner, wisdom-rooted advisor, and life organiser. It helps people: think clearly, set goals, stay disciplined, reflect daily, and grow spiritually + professionally. ARYA thinks from a Bharatiya (Indian/Hindu) civilizational perspective and supports voice in 11 Indian languages via Sarvam AI. The platform also serves as the foundation for downstream products including ERmate (clinical documentation copilot) and ErPrana (patient monitoring and risk assessment).
+ARYA (Augmented Reasoning & Yielding Analytics) is a multi-tenant personal AI assistant platform designed for the VARAH Group. It serves as "Your Personal Thinking & Growth Assistant," focusing on helping users think clearly, set goals, stay disciplined, reflect daily, and grow spiritually and professionally. ARYA integrates Bharatiya (Indian/Hindu) civilizational perspectives and supports voice interaction in 11 Indian languages via Sarvam AI. It also underpins future products like ERmate (clinical documentation copilot) and ErPrana (patient monitoring).
 
 ## User Preferences
 
@@ -12,87 +12,41 @@ Bharatiya/Vedic/Sanskrit knowledge is the invisible core — ARYA draws from thi
 
 ## System Architecture
 
-The project is structured as a monorepo with a React frontend, an Express backend, and a shared module for schemas and types. The application runs from the root `server/index.ts` entry point. The app is also a Progressive Web App (PWA) — installable on mobile phones from the browser.
+The project is structured as a monorepo with a React frontend, an Express backend, and a shared module for schemas and types. It functions as a Progressive Web App (PWA).
 
 ### Frontend
 
--   **Framework:** React 18 with TypeScript
--   **UI/UX:** shadcn/ui (New York style) based on Radix UI, Tailwind CSS v4 for styling (dark theme: deep navy, cyan, amber), Space Grotesk (headings), Inter (body), JetBrains Mono (code).
--   **PWA:** Manifest at `client/public/manifest.json`, service worker at `client/public/sw.js`, registered in `client/src/main.tsx`. App icons in `client/public/icons/`.
--   **Logo:** Transparent-background logo at `client/public/arya-logo-transparent.png`. Original at `client/public/arya-logo.png`.
--   **Key Pages:**
-    -   `/`: Public conversational chat with ARYA (text and voice input, streaming AI responses with RAG).
-    -   `/goals`: User goals page — view/manage personal goals, track daily progress, streaks, and voice session durations.
-    -   Admin-only pages for dashboard, orchestrator visualization, knowledge base management, self-learning engine, neural link explorer, ERmate processing, ErPrana monitoring, API playground, and developer portal.
--   **User Authentication:** Separate from admin auth. Users sign up with name/email/phone/password. JWT-like session tokens (30-day TTL) stored in localStorage. Context provider at `client/src/lib/user-auth.tsx`. Login/signup modal in chat UI. User menu with profile, goals link, sign out.
--   **Admin Authentication:** Password-based admin authentication with in-memory session tokens.
--   **Notifications:** Bell icon in chat header (visible when logged in) fetches from `/api/user/notifications`, shows unread count badge, dropdown list with mark-as-read.
+-   **Framework:** React 18 with TypeScript.
+-   **UI/UX:** shadcn/ui (New York style), Radix UI, Tailwind CSS v4 (dark theme: deep navy, cyan, amber), Space Grotesk (headings), Inter (body), JetBrains Mono (code).
+-   **PWA:** Installable on mobile, with manifest, service worker, and app icons.
+-   **Key Pages:** Public conversational chat, user goals management, and admin-only dashboards for orchestrator, knowledge base, self-learning engine, neural link explorer, clinical processing, patient monitoring, API playground, and developer portal.
+-   **User Authentication:** Name/email/phone/password signup, JWT-like session tokens (30-day TTL) stored in localStorage.
+-   **Admin Authentication:** Password-based, in-memory session tokens.
+-   **Notifications:** Bell icon for unread count and list of notifications.
+-   **User Customization:** Users can set response length, conversation tone, focus areas, and wisdom/quotes preference.
 
 ### Backend
 
--   **Framework:** Express.js on Node.js with TypeScript
--   **User Auth Service:** `server/arya/user-auth-service.ts` — signup (bcrypt password hashing), login, session verification, profile management. Sessions stored in `arya_user_sessions` table with 30-day expiry. Middleware: `requireUser` (blocks unauthenticated), `optionalUser` (attaches userId if available).
+-   **Framework:** Express.js on Node.js with TypeScript.
+-   **User Auth Service:** Handles signup (bcrypt hashing), login, session verification, and profile management.
 -   **Core Components:**
-    -   **Orchestrator:** Routes queries to appropriate knowledge domains based on intent, language, keywords, and app context. Supports single, dual, or four-pillar domain weighting.
-    -   **Knowledge Retriever:** Fetches knowledge units from PostgreSQL using keyword-based scoring, with future plans for semantic search.
+    -   **Orchestrator:** Routes queries to knowledge domains based on intent and context.
+    -   **Knowledge Retriever:** Fetches knowledge units from PostgreSQL.
     -   **Medical Engine:** Provides deterministic NLP parsing for clinical transcripts.
-    -   **Self-Learning Engine:** Tracks queries, identifies knowledge gaps, and auto-generates knowledge drafts for admin review.
-    -   **Neural Link Engine:** Discovers and stores cross-domain connections between knowledge units for synthesis and insights.
-    -   **Smart Commands:** Handles instant, local commands (time, date, math) without AI API calls for rapid responses.
-    -   **Goal Detection in Chat:** `server/arya/chat-engine.ts` — after streaming a response, if the user is logged in, detects goal-setting intent via pattern matching + GPT-4.1-mini validation. Auto-creates structured goals with steps and sends a notification.
--   **AI Architecture:** Hybrid approach combining:
-    -   **Alexa Mode (Instant):** Local processing for quick commands.
-    -   **Deep Reasoning:** Uses GPT-5.2 with RAG for complex analysis.
-    -   **Creative Mode:** Leverages GPT for creative tasks.
--   **Smart Capabilities:**
-    -   **Persistent Memory:** Extracts and remembers facts, preferences, and context from conversations using GPT-4.1-mini.
-    -   **Goal & Plan Manager:** Breaks down complex tasks into prioritized, trackable steps. Goals linked to users with `userId`, daily target minutes, reminder times, streak tracking, voice session duration tracking, auto-progress updates.
-    -   **Self-Reflection & Feedback:** Incorporates user feedback (thumbs up/down) to refine responses and memory.
-    -   **Proactive Insights:** Analyzes patterns and gaps to generate unprompted insights.
-    -   **Confidence & Uncertainty:** Provides confidence scores for responses, explicitly stating uncertainty when knowledge is low.
--   **Notifications System:** Generates notifications for: welcome on signup, goal creation, goal progress, streak achievements, reminders. Routes at `/api/user/notifications` (GET, POST mark-read, POST read-all). Protected with `requireUser` middleware.
--   **Database:** PostgreSQL with Drizzle ORM for schema definition and migrations.
-    -   Key tables: `arya_knowledge`, `arya_knowledge_drafts`, `arya_query_patterns`, `arya_neural_links`, `arya_memory`, `arya_goals`, `arya_goal_steps`, `arya_feedback`, `arya_users`, `arya_user_sessions`, `arya_notifications`, `arya_voice_sessions`, `arya_response_cache`, `arya_cache_metrics`, `arya_beta_allow_list`, `arya_invite_codes`, `arya_invite_redemptions`, `arya_usage_budget`, `arya_daily_cost`.
--   **Multi-Tenancy:** Achieved via `tenant_id` on all knowledge records and validation middleware.
-
-## Key Files
-
--   `shared/schema.ts` — All Drizzle ORM table definitions, insert schemas, and types.
--   `server/routes.ts` — All API route definitions (admin, user auth, chat, voice, goals, notifications, knowledge, etc.).
--   `server/arya/chat-engine.ts` — Core chat logic: orchestrator routing, RAG, streaming, memory extraction, goal detection, shadow cache lookup.
--   `server/arya/response-cache-engine.ts` — Learning loop: golden response caching, similarity matching, shadow lookup, cache metrics.
--   `server/arya/user-auth-service.ts` — User signup, login, session management, profile updates.
--   `server/arya/usage-budget.ts` — Granular usage tracking per call type, per-minute rate limiting, daily cost tracking, cost cap enforcement.
--   `server/arya/beta-guard.ts` — Beta mode guard, invite code management, allow list, user cap enforcement.
--   `client/src/lib/user-auth.tsx` — Frontend user authentication context provider with onboarding state and refreshUser().
--   `client/src/pages/AryaChat.tsx` — Main chat interface with voice, text, memory panel, goals panel, notification bell, user auth modal, onboarding modal.
--   `client/src/pages/UserGoals.tsx` — User goals management page.
--   `client/src/pages/Dashboard.tsx` — Admin cost dashboard with live data, usage breakdown, and cost cap controls.
--   `client/src/App.tsx` — App routing and provider wrappers.
+    -   **Self-Learning Engine:** Identifies knowledge gaps and auto-generates drafts.
+    -   **Neural Link Engine:** Discovers cross-domain connections for insights.
+    -   **Smart Commands:** Handles instant, local commands without AI API calls.
+    -   **Goal Detection in Chat:** Detects goal-setting intent post-response via pattern matching and GPT-4.1-mini, auto-creating structured goals.
+-   **AI Architecture:** Hybrid approach combining local processing for instant commands ("Alexa Mode"), deep reasoning with GPT-5.2 and RAG, and creative tasks using GPT.
+-   **Smart Capabilities:** Persistent memory, goal and plan management, self-reflection via user feedback, proactive insights, and confidence scoring.
+-   **Notifications System:** Generates notifications for welcome, goal creation, progress, streaks, and reminders.
+-   **Database:** PostgreSQL with Drizzle ORM. Key tables include `arya_knowledge`, `arya_goals`, `arya_users`, `arya_notifications`, and tables for memory, usage, and caching.
+-   **Multi-Tenancy:** Implemented via `tenant_id` and validation middleware.
+-   **Learning Loop:** `ResponseCacheEngine` for golden response caching, similarity matching, and shadow-mode cache lookup to reduce LLM dependency.
+-   **Usage & Cost Management:** Granular usage tracking, daily cost estimation, rate limiting, and cost cap enforcement. Beta mode with invite-only access and user caps.
 
 ## External Dependencies
 
--   **PostgreSQL:** Primary database for all persistent data.
+-   **PostgreSQL:** Primary database.
 -   **Sarvam.ai:** Used for Indian language Speech-to-Text (STT), Text-to-Speech (TTS), and Translation services.
--   **OpenAI (via Replit AI Integrations):** Provides LLM capabilities for conversational responses and voice transcription (gpt-5.2, gpt-4o-mini-transcribe).
-
-## Recent Changes
-
--   **Feb 2026:** Refined positioning to "Your Personal Thinking & Growth Assistant" — updated welcome screen, footer, suggestion prompts, and system prompt to reflect five pillars: think clearly, set goals, stay disciplined, reflect daily, grow spiritually & professionally. Warm, friend-like tone in system prompt.
--   **Feb 2026:** Rebranded ARYA from "AGI-class AI assistant" to personal assistant. Removed all AGI references.
--   **Feb 2026:** Made logo background transparent (`arya-logo-transparent.png`), trimmed to content.
--   **Feb 2026:** Added custom ARYA logo to welcome screen and login/signup modal.
--   **Feb 2026:** Added PWA support (manifest.json, service worker, app icons, meta tags) so users can install ARYA on their phones from the browser.
--   **Feb 2026:** Built user authentication system (signup/login, bcrypt hashing, session tokens, user profile management).
--   **Feb 2026:** Added user goals system with daily targets, streak tracking, voice session duration tracking, and auto-goal detection in chat via GPT-4.1-mini.
--   **Feb 2026:** Built notification system with bell icon in chat header, unread count, and mark-as-read functionality.
--   **Feb 2026:** Integrated user token passing in text and voice chat routes for personalized goal detection.
--   **Feb 2026:** Built Gemini-style voice conversation mode — full-screen overlay with auto-listen, silence detection, voice response (OpenAI TTS for English, Sarvam TTS for Indian languages), and continuous conversation loop. Fixed MediaRecorder compatibility for Safari/iOS.
--   **Feb 2026:** Phase 1 Learning Loop — Added `arya_response_cache` and `arya_cache_metrics` tables. Built `ResponseCacheEngine` with golden response caching (from thumbs-up feedback), keyword-based similarity matching, and shadow-mode cache lookup in chat-engine (logs potential cache hits without serving them). Feedback engine now closes the loop: thumbs-up stores golden responses, thumbs-down reduces cache confidence. Admin API at `/api/learning/cache/stats`. This is the foundation for reducing LLM dependency over time.
--   **Feb 2026:** Production hardening — Rate limiting (50 req/min per user), friendly error messages (no raw errors leak), secure logging (only error.message, no full objects), CORS restricted to own Replit domain in production.
--   **Feb 2026:** Soft launch safety — Beta mode (`BETA_MODE=true` env flag) with invite-only access. Users must be on the allow list (email/phone) or redeem an invite code to use chat/voice. Invite code management via admin API. Daily usage budget caps: per-user (50 LLM calls/day, `USER_DAILY_LLM_LIMIT`) and system-wide (2000 calls/day, `SYSTEM_DAILY_LLM_LIMIT`). Budget tracked in `arya_usage_budget` table. When limits hit, users see friendly "at capacity" messages. Admin can manage beta allow list and invite codes via `/api/admin/beta/*` endpoints. New tables: `arya_beta_allow_list`, `arya_invite_codes`, `arya_invite_redemptions`, `arya_usage_budget`. Frontend shows invite code modal when beta-restricted, and signup form includes required invite code field in beta mode.
--   **Feb 2026:** Granular usage limits — Per-user daily limits: 30 text chats, 20 voice minutes, 10 deep reasoning calls for logged-in users; 5 text chats with no voice/memory/goals for anonymous users. Per-minute rate limiting: 10 LLM calls/min for logged-in, 3/min for anonymous. 3 active goals max per user. Budget tracking uses atomic conditional UPDATE queries per call type (`text_chat`, `voice`, `deep_reasoning`).
--   **Feb 2026:** Cost tracking system — Daily cost estimation in INR (₹1.5/text chat, ₹2/voice minute, ₹3/deep reasoning). Global hard stop via `arya_daily_cost` table: when daily cost exceeds cap (default ₹500), all AI features disabled until next day. New `aryaDailyCost` table tracks `totalLlmCalls`, `totalTextChats`, `totalVoiceMinutes`, `totalDeepReasoning`, `estimatedCostInr`, `costCapInr`, `isDisabled`. Admin endpoints: `/api/admin/cost-dashboard` (GET) and `/api/admin/cost-cap` (POST).
--   **Feb 2026:** Enhanced beta model — Max 200 beta users enforced at signup. System-generated one-time-use invite codes (`ARYA-XXXXXX` format) with 7-day expiry. Each user gets 3 personal invite codes to share. Admin bulk code generation via `/api/admin/beta/generate-codes`.
--   **Feb 2026:** User onboarding flow — 4-step modal for first-time users: welcome, language selection (11 Indian languages), current work/profession, daily reminder time + voice preference. Saved via `/api/user/onboarding` route. `onboardingComplete` flag on user record. Skip option available. Auth context exposes `refreshUser()` for post-onboarding state refresh.
--   **Feb 2026:** Admin cost dashboard — Live dashboard at `/dashboard` with real data from `/api/admin/cost-dashboard`. Shows: estimated daily cost with progress bar against cap, LLM calls vs system limit, active users, avg chats/user, usage breakdown (text/voice/deep reasoning with per-unit costs), per-user limit reference, and cost cap control panel. Auto-refreshes every 30 seconds. Alert banner when AI features are disabled due to cost cap.
+-   **OpenAI (via Replit AI Integrations):** Provides LLM capabilities (gpt-5.2, gpt-4o-mini-transcribe) for conversational responses and voice transcription.

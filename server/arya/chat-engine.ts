@@ -7,7 +7,8 @@ import { ResponseCacheEngine } from "./response-cache-engine";
 import { processSmartCommand } from "./smart-commands";
 import type { Domain } from "@shared/schema";
 import { db } from "../db";
-import { aryaGoals, aryaGoalSteps, aryaNotifications } from "@shared/schema";
+import { aryaGoals, aryaGoalSteps, aryaNotifications, aryaUsers } from "@shared/schema";
+import { eq } from "drizzle-orm";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -135,6 +136,61 @@ export interface AryaResponseMeta {
 
 export { memoryEngine };
 
+async function getUserPreferenceContext(userId?: string | null): Promise<string> {
+  if (!userId) return "";
+  try {
+    const [user] = await db.select({
+      name: aryaUsers.name,
+      responseStyle: aryaUsers.responseStyle,
+      responseTone: aryaUsers.responseTone,
+      focusAreas: aryaUsers.focusAreas,
+      wisdomQuotes: aryaUsers.wisdomQuotes,
+      currentWork: aryaUsers.currentWork,
+    }).from(aryaUsers).where(eq(aryaUsers.id, userId)).limit(1);
+    if (!user) return "";
+
+    const parts: string[] = ["\n\nUSER PREFERENCES (customize your responses based on these):"];
+    if (user.name) parts.push(`- User's name: ${user.name}`);
+    if (user.currentWork) parts.push(`- Occupation/Work: ${user.currentWork}`);
+
+    const styleMap: Record<string, string> = {
+      concise: "Keep responses short and to the point. Use bullet points. No unnecessary elaboration.",
+      balanced: "Give thorough but focused responses. Use structure but keep it readable.",
+      detailed: "Give comprehensive, in-depth responses. Include examples, context, and nuance.",
+    };
+    if (user.responseStyle && styleMap[user.responseStyle]) {
+      parts.push(`- Response style: ${styleMap[user.responseStyle]}`);
+    }
+
+    const toneMap: Record<string, string> = {
+      motivating: "Be energetic, inspiring, and encouraging. Push the user to grow and achieve. Use phrases like 'You've got this' or 'Let's make it happen.'",
+      gentle: "Be soft, patient, and compassionate. Never rush. Acknowledge feelings first. Use calm, reassuring language.",
+      direct: "Be straightforward and no-nonsense. Skip pleasantries and get to the point. Give clear actionable advice.",
+      friendly: "Be warm, casual, and conversational. Like talking to a close friend. Use light humor when appropriate.",
+    };
+    if (user.responseTone && toneMap[user.responseTone]) {
+      parts.push(`- Tone: ${toneMap[user.responseTone]}`);
+    }
+
+    if (user.focusAreas && user.focusAreas.length > 0) {
+      parts.push(`- Focus areas of interest: ${user.focusAreas.join(", ")}. Relate advice to these areas when relevant.`);
+    }
+
+    const wisdomMap: Record<string, string> = {
+      always: "Naturally weave in wisdom, quotes, and philosophical insights in every response.",
+      sometimes: "Occasionally include wisdom or philosophical insights when they add genuine value.",
+      never: "Keep responses purely practical. No quotes, proverbs, or philosophical tangents.",
+    };
+    if (user.wisdomQuotes && wisdomMap[user.wisdomQuotes]) {
+      parts.push(`- Wisdom & quotes: ${wisdomMap[user.wisdomQuotes]}`);
+    }
+
+    return parts.length > 1 ? parts.join("\n") : "";
+  } catch {
+    return "";
+  }
+}
+
 export async function generateAryaResponse(
   userMessage: string,
   conversationHistory: ChatMessage[],
@@ -215,8 +271,10 @@ export async function generateAryaResponse(
     ? "\n\nNOTE: Your knowledge base has limited information on this topic. Be honest about uncertainty and avoid making things up."
     : "";
 
+  const userPrefs = await getUserPreferenceContext(userId);
+
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-    { role: "system", content: ARYA_SYSTEM_PROMPT + knowledgeContext + memoryContext + uncertaintyGuidance },
+    { role: "system", content: ARYA_SYSTEM_PROMPT + userPrefs + knowledgeContext + memoryContext + uncertaintyGuidance },
     ...conversationHistory.slice(-20).map(m => ({
       role: m.role as "user" | "assistant",
       content: m.content,

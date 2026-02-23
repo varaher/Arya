@@ -297,6 +297,57 @@ export async function registerRoutes(
   });
 
   // =============================================
+  // USER RESPONSE PREFERENCES
+  // =============================================
+
+  app.get("/api/user/preferences", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const [user] = await db.select({
+        responseStyle: aryaUsers.responseStyle,
+        responseTone: aryaUsers.responseTone,
+        focusAreas: aryaUsers.focusAreas,
+        wisdomQuotes: aryaUsers.wisdomQuotes,
+        currentWork: aryaUsers.currentWork,
+        preferredLanguage: aryaUsers.preferredLanguage,
+      }).from(aryaUsers).where(eq(aryaUsers.id, userId)).limit(1);
+      if (!user) return res.status(404).json({ error: "User not found" });
+      res.json(user);
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to get preferences" });
+    }
+  });
+
+  app.post("/api/user/preferences", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const { responseStyle, responseTone, focusAreas, wisdomQuotes } = req.body;
+
+      const validStyles = ["concise", "balanced", "detailed"];
+      const validTones = ["motivating", "gentle", "direct", "friendly"];
+      const validWisdom = ["always", "sometimes", "never"];
+      const validFocusAreas = ["career", "health", "spirituality", "finance", "relationships", "learning", "creativity", "fitness"];
+
+      const updates: any = {};
+      if (responseStyle && validStyles.includes(responseStyle)) updates.responseStyle = responseStyle;
+      if (responseTone && validTones.includes(responseTone)) updates.responseTone = responseTone;
+      if (wisdomQuotes && validWisdom.includes(wisdomQuotes)) updates.wisdomQuotes = wisdomQuotes;
+      if (Array.isArray(focusAreas)) {
+        updates.focusAreas = focusAreas.filter((a: string) => validFocusAreas.includes(a)).slice(0, 4);
+      }
+
+      if (Object.keys(updates).length === 0) {
+        return res.status(400).json({ error: "No valid preferences provided" });
+      }
+
+      await db.update(aryaUsers).set(updates).where(eq(aryaUsers.id, userId));
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to save preferences" });
+    }
+  });
+
+  // =============================================
   // USER INVITE CODE GENERATION
   // =============================================
 
