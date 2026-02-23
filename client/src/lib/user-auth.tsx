@@ -6,6 +6,8 @@ interface UserProfile {
   phone: string;
   email: string | null;
   preferredLanguage: string;
+  onboardingComplete?: boolean;
+  invitesRemaining?: number;
 }
 
 interface UserAuthContextType {
@@ -15,6 +17,7 @@ interface UserAuthContextType {
   login: (phone: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signup: (data: { name: string; phone: string; password: string; email?: string; preferredLanguage?: string; inviteCode?: string }) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
   token: string | null;
 }
 
@@ -25,6 +28,7 @@ const UserAuthContext = createContext<UserAuthContextType>({
   login: async () => ({ success: false }),
   signup: async () => ({ success: false }),
   logout: () => {},
+  refreshUser: async () => {},
   token: null,
 });
 
@@ -126,8 +130,15 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    const t = localStorage.getItem(TOKEN_KEY);
+    if (!t) return;
+    const u = await verifyToken(t);
+    if (u) setUser(u);
+  }, [verifyToken]);
+
   return (
-    <UserAuthContext.Provider value={{ user, isLoading, isLoggedIn: !!user, login, signup, logout, token }}>
+    <UserAuthContext.Provider value={{ user, isLoading, isLoggedIn: !!user, login, signup, logout, refreshUser, token }}>
       {children}
     </UserAuthContext.Provider>
   );

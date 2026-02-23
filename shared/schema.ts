@@ -380,6 +380,11 @@ export const aryaUsers = pgTable("arya_users", {
   passwordHash: varchar("password_hash", { length: 255 }).notNull(),
   preferredLanguage: varchar("preferred_language", { length: 10 }).default("en"),
   isActive: boolean("is_active").default(true).notNull(),
+  onboardingComplete: boolean("onboarding_complete").default(false).notNull(),
+  currentWork: text("current_work"),
+  wantsDailyReminder: boolean("wants_daily_reminder").default(false),
+  voiceEnabled: boolean("voice_enabled").default(true),
+  invitesRemaining: integer("invites_remaining").default(3).notNull(),
   lastLoginAt: timestamp("last_login_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -534,6 +539,29 @@ export const aryaUsageBudget = pgTable("arya_usage_budget", {
   userId: varchar("user_id", { length: 255 }),
   dateKey: varchar("date_key", { length: 10 }).notNull(),
   llmCallCount: integer("llm_call_count").default(0).notNull(),
+  textChatCount: integer("text_chat_count").default(0).notNull(),
+  voiceMinutes: integer("voice_minutes").default(0).notNull(),
+  deepReasoningCount: integer("deep_reasoning_count").default(0).notNull(),
+  estimatedCostInr: decimal("estimated_cost_inr", { precision: 10, scale: 2 }).default("0.00"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// =============================================
+// DAILY COST TRACKING
+// =============================================
+
+export const aryaDailyCost = pgTable("arya_daily_cost", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  dateKey: varchar("date_key", { length: 10 }).notNull().unique(),
+  totalLlmCalls: integer("total_llm_calls").default(0).notNull(),
+  totalTextChats: integer("total_text_chats").default(0).notNull(),
+  totalVoiceMinutes: integer("total_voice_minutes").default(0).notNull(),
+  totalDeepReasoning: integer("total_deep_reasoning").default(0).notNull(),
+  activeUsers: integer("active_users").default(0).notNull(),
+  estimatedCostInr: decimal("estimated_cost_inr", { precision: 10, scale: 2 }).default("0.00"),
+  costCapInr: decimal("cost_cap_inr", { precision: 10, scale: 2 }).default("500.00"),
+  isDisabled: boolean("is_disabled").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

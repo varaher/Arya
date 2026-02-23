@@ -52,7 +52,7 @@ export async function signupUser(
   await db.update(aryaUsers).set({ lastLoginAt: new Date() }).where(eq(aryaUsers.id, user.id));
 
   return {
-    user: { id: user.id, name: user.name, phone: user.phone, email: user.email, preferredLanguage: user.preferredLanguage },
+    user: { id: user.id, name: user.name, phone: user.phone, email: user.email, preferredLanguage: user.preferredLanguage, onboardingComplete: user.onboardingComplete },
     token,
     expiresAt,
   };
@@ -90,7 +90,7 @@ export async function loginUser(phone: string, password: string) {
   await db.update(aryaUsers).set({ lastLoginAt: new Date() }).where(eq(aryaUsers.id, user.id));
 
   return {
-    user: { id: user.id, name: user.name, phone: user.phone, email: user.email, preferredLanguage: user.preferredLanguage },
+    user: { id: user.id, name: user.name, phone: user.phone, email: user.email, preferredLanguage: user.preferredLanguage, onboardingComplete: user.onboardingComplete },
     token,
     expiresAt,
   };
@@ -118,7 +118,15 @@ export async function verifySession(token: string) {
 
   if (!user || !user.isActive) return null;
 
-  return { id: user.id, name: user.name, phone: user.phone, email: user.email, preferredLanguage: user.preferredLanguage };
+  return {
+    id: user.id,
+    name: user.name,
+    phone: user.phone,
+    email: user.email,
+    preferredLanguage: user.preferredLanguage,
+    onboardingComplete: user.onboardingComplete,
+    invitesRemaining: user.invitesRemaining,
+  };
 }
 
 export async function logoutUser(token: string) {
@@ -132,5 +140,16 @@ export async function getUserById(userId: string) {
     .where(eq(aryaUsers.id, userId))
     .limit(1);
   if (!user) return null;
-  return { id: user.id, name: user.name, phone: user.phone, email: user.email, preferredLanguage: user.preferredLanguage };
+  return {
+    id: user.id,
+    name: user.name,
+    phone: user.phone,
+    email: user.email,
+    preferredLanguage: user.preferredLanguage,
+    onboardingComplete: user.onboardingComplete,
+    currentWork: user.currentWork,
+    wantsDailyReminder: user.wantsDailyReminder,
+    voiceEnabled: user.voiceEnabled,
+    invitesRemaining: user.invitesRemaining,
+  };
 }

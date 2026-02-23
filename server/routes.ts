@@ -50,15 +50,22 @@ import {
   redeemInviteCode,
   addToAllowList,
   createInviteCode,
+  createSystemInviteCodes,
+  createUserInviteCode,
   listInviteCodes,
   listAllowList,
+  getBetaUserCount,
+  canAcceptMoreUsers,
+  getBetaConfig,
 } from "./arya/beta-guard";
-import { checkBudget, checkAndRecordBudget, recordLLMCall, getBudgetStats } from "./arya/usage-budget";
+import { checkBudget, checkAndRecordBudget, recordLLMCall, getBudgetStats, getCostDashboard, updateCostCap, getLimits, type CallType } from "./arya/usage-budget";
 import {
   aryaGoals,
   aryaGoalSteps,
   aryaVoiceSessions,
   aryaNotifications,
+  aryaUsers,
+  aryaUsageBudget,
 } from "@shared/schema";
 
 const retriever = new KnowledgeRetriever();
@@ -147,8 +154,16 @@ export async function registerRoutes(
   // USER AUTHENTICATION ROUTES
   // =============================================
 
-  app.get("/api/beta/status", (_req: Request, res: Response) => {
-    res.json({ betaMode: isBetaMode() });
+  app.get("/api/beta/status", async (_req: Request, res: Response) => {
+    const betaUserCount = await getBetaUserCount();
+    const accepting = await canAcceptMoreUsers();
+    res.json({
+      betaMode: isBetaMode(),
+      betaUserCount,
+      acceptingUsers: accepting,
+      ...getBetaConfig(),
+      limits: getLimits(),
+    });
   });
 
   app.post("/api/beta/redeem-invite", requireUser, async (req: Request, res: Response) => {
@@ -173,10 +188,23 @@ export async function registerRoutes(
       if (password.length < 6) {
         return res.status(400).json({ error: "Password must be at least 6 characters" });
       }
+
+      if (isBetaMode()) {
+        if (!inviteCode) {
+          return res.status(403).json({ error: "An invite code is required to sign up during the beta period." });
+        }
+        if (!await canAcceptMoreUsers()) {
+          return res.status(403).json({ error: "Beta is currently full (200 users). Please try again later." });
+        }
+      }
+
       const result = await signupUser(name, phone, password, email, preferredLanguage);
 
       if (isBetaMode() && inviteCode) {
-        await redeemInviteCode(result.user.id, inviteCode);
+        const redeemResult = await redeemInviteCode(result.user.id, inviteCode);
+        if (!redeemResult.success) {
+          return res.status(400).json({ error: redeemResult.error || "Invalid invite code" });
+        }
       }
 
       res.json(result);
@@ -225,6 +253,84 @@ export async function registerRoutes(
       await logoutUser(authHeader.slice(7));
     }
     res.json({ success: true });
+  });
+
+  // =============================================
+  // ONBOARDING ROUTES
+  // =============================================
+
+  app.get("/api/user/onboarding-status", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const user = await getUserById(userId);
+      if (!user) return res.status(404).json({ error: "User not found" });
+      res.json({
+        onboardingComplete: user.onboardingComplete,
+        preferredLanguage: user.preferredLanguage,
+        currentWork: user.currentWork,
+        wantsDailyReminder: user.wantsDailyReminder,
+        voiceEnabled: user.voiceEnabled,
+        invitesRemaining: user.invitesRemaining,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to get onboarding status" });
+    }
+  });
+
+  app.post("/api/user/onboarding", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const { preferredLanguage, currentWork, wantsDailyReminder, voiceEnabled } = req.body;
+
+      await db.update(aryaUsers).set({
+        preferredLanguage: preferredLanguage || "en",
+        currentWork: currentWork || null,
+        wantsDailyReminder: wantsDailyReminder ?? false,
+        voiceEnabled: voiceEnabled ?? true,
+        onboardingComplete: true,
+      }).where(eq(aryaUsers.id, userId));
+
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to save onboarding preferences" });
+    }
+  });
+
+  // =============================================
+  // USER INVITE CODE GENERATION
+  // =============================================
+
+  app.post("/api/user/generate-invite", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const result = await createUserInviteCode(userId);
+      if (!result.success) return res.status(400).json({ error: result.error });
+      res.json({ code: result.code });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to generate invite code" });
+    }
+  });
+
+  app.get("/api/user/usage", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const dateKey = new Date().toISOString().slice(0, 10);
+      const [budget] = await db.select().from(aryaUsageBudget)
+        .where(and(eq(aryaUsageBudget.userId, userId), eq(aryaUsageBudget.dateKey, dateKey)))
+        .limit(1);
+      const limits = getLimits();
+      res.json({
+        today: budget ? {
+          textChats: budget.textChatCount,
+          voiceMinutes: budget.voiceMinutes,
+          deepReasoning: budget.deepReasoningCount,
+          totalLlmCalls: budget.llmCallCount,
+        } : { textChats: 0, voiceMinutes: 0, deepReasoning: 0, totalLlmCalls: 0 },
+        limits: limits.user,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to fetch usage" });
+    }
   });
 
   // User auth middleware - extracts user from token, attaches to req
@@ -317,6 +423,12 @@ export async function registerRoutes(
       const userId = (req as any).userId;
       const { title, description, steps, priority, dailyTargetMinutes, reminderTime } = req.body;
       if (!title) return res.status(400).json({ error: "Title is required" });
+
+      const existingGoals = await db.select().from(aryaGoals)
+        .where(and(eq(aryaGoals.userId, userId), eq(aryaGoals.status, "active" as any)));
+      if (existingGoals.length >= 3) {
+        return res.status(429).json({ error: "You can have up to 3 active goals. Complete or remove an existing goal to add a new one." });
+      }
 
       const [goal] = await db.insert(aryaGoals).values({
         tenantId: "default",
@@ -1001,7 +1113,7 @@ export async function registerRoutes(
         }
       }
 
-      const budgetCheck = await checkAndRecordBudget(userId);
+      const budgetCheck = await checkAndRecordBudget(userId, 'text_chat');
       if (!budgetCheck.allowed) {
         return res.status(429).json({ error: budgetCheck.reason });
       }
@@ -1066,7 +1178,7 @@ export async function registerRoutes(
         }
       }
 
-      const budgetCheck = await checkAndRecordBudget(userId);
+      const budgetCheck = await checkAndRecordBudget(userId, 'voice');
       if (!budgetCheck.allowed) {
         return res.status(429).json({ error: budgetCheck.reason });
       }
@@ -1360,7 +1472,7 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Message is required" });
       }
 
-      const budgetCheck = await checkAndRecordBudget(null);
+      const budgetCheck = await checkAndRecordBudget(null, 'text_chat');
       if (!budgetCheck.allowed) {
         return res.status(429).json({ error: budgetCheck.reason });
       }
@@ -1632,10 +1744,47 @@ export async function registerRoutes(
 
   app.get("/api/admin/beta/status", requireAdmin, async (_req: Request, res: Response) => {
     const budgetStats = await getBudgetStats();
+    const betaUserCount = await getBetaUserCount();
     res.json({
       betaMode: isBetaMode(),
+      betaUserCount,
+      maxBetaUsers: 200,
+      acceptingUsers: await canAcceptMoreUsers(),
       ...budgetStats,
     });
+  });
+
+  app.get("/api/admin/cost-dashboard", requireAdmin, async (_req: Request, res: Response) => {
+    try {
+      const dashboard = await getCostDashboard();
+      res.json(dashboard);
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to get cost dashboard" });
+    }
+  });
+
+  app.post("/api/admin/cost-cap", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { costCapInr } = req.body;
+      if (!costCapInr || costCapInr < 0) {
+        return res.status(400).json({ error: "costCapInr is required and must be positive" });
+      }
+      await updateCostCap(costCapInr);
+      res.json({ success: true, newCap: costCapInr });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to update cost cap" });
+    }
+  });
+
+  app.post("/api/admin/beta/generate-codes", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { count } = req.body;
+      const numCodes = Math.min(count || 10, 50);
+      const codes = await createSystemInviteCodes(numCodes);
+      res.json({ codes, total: codes.length });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to generate invite codes" });
+    }
   });
 
   app.get("/api/admin/beta/allow-list", requireAdmin, async (_req: Request, res: Response) => {

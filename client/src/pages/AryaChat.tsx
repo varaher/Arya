@@ -35,6 +35,9 @@ import {
   LogIn,
   LogOut,
   Bell,
+  ArrowRight,
+  Briefcase,
+  Clock,
 } from "lucide-react";
 
 function FormattedMessage({ content, isUser }: { content: string; isUser?: boolean }) {
@@ -637,9 +640,10 @@ function NotificationBell({ token }: { token: string }) {
 }
 
 export default function AryaChat() {
-  const { user, isLoggedIn, token, logout: userLogout } = useUserAuth();
+  const { user, isLoggedIn, token, logout: userLogout, refreshUser } = useUserAuth();
   const [, setLocation] = useLocation();
   const [showUserAuth, setShowUserAuth] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showVoiceMode, setShowVoiceMode] = useState(false);
   const [activeConversation, setActiveConversation] = useState<number | null>(null);
@@ -741,6 +745,12 @@ export default function AryaChat() {
       queryClient.invalidateQueries({ queryKey: ["/api/arya/conversations"] });
     },
   });
+
+  useEffect(() => {
+    if (isLoggedIn && user && user.onboardingComplete === false) {
+      setShowOnboarding(true);
+    }
+  }, [isLoggedIn, user]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -1755,6 +1765,11 @@ export default function AryaChat() {
           <UserAuthModal onClose={() => setShowUserAuth(false)} />
         </div>
       )}
+      {showOnboarding && token && (
+        <div className="fixed inset-0 z-50">
+          <OnboardingModal token={token} onComplete={() => { setShowOnboarding(false); refreshUser(); }} />
+        </div>
+      )}
     </div>
   );
 }
@@ -2500,10 +2515,11 @@ function UserAuthModal({ onClose }: { onClose: () => void }) {
             <input
               data-testid="modal-input-invite-code"
               type="text"
-              placeholder="Invite Code (optional)"
+              placeholder="Invite Code (required)"
               value={signupInviteCode}
               onChange={e => setSignupInviteCode(e.target.value.toUpperCase())}
               className="w-full bg-background/50 border border-amber-500/20 rounded-xl text-white text-sm px-3 py-2.5 placeholder:text-muted-foreground focus:outline-none focus:border-amber-400/50 font-mono tracking-wider"
+              required
             />
           )}
           {error && <div className="text-xs text-red-400 bg-red-500/10 rounded-lg px-3 py-2" data-testid="modal-text-error">{error}</div>}
@@ -2521,6 +2537,192 @@ function UserAuthModal({ onClose }: { onClose: () => void }) {
             {mode === "login" ? <>New here? <span className="text-cyan-400">Create account</span></> : <>Have an account? <span className="text-cyan-400">Sign in</span></>}
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+const LANGUAGES = [
+  { code: "en", label: "English" },
+  { code: "hi", label: "Hindi" },
+  { code: "ta", label: "Tamil" },
+  { code: "te", label: "Telugu" },
+  { code: "kn", label: "Kannada" },
+  { code: "ml", label: "Malayalam" },
+  { code: "mr", label: "Marathi" },
+  { code: "bn", label: "Bengali" },
+  { code: "gu", label: "Gujarati" },
+  { code: "pa", label: "Punjabi" },
+  { code: "or", label: "Odia" },
+];
+
+function OnboardingModal({ token, onComplete }: { token: string; onComplete: () => void }) {
+  const [step, setStep] = useState(0);
+  const [language, setLanguage] = useState("en");
+  const [currentWork, setCurrentWork] = useState("");
+  const [dailyReminderTime, setDailyReminderTime] = useState("08:00");
+  const [voicePreference, setVoicePreference] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const handleComplete = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/user/onboarding", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ preferredLanguage: language, currentWork, wantsDailyReminder: !!dailyReminderTime, voiceEnabled: voicePreference }),
+      });
+      if (res.ok) onComplete();
+    } catch { /* silent */ }
+    setSaving(false);
+  };
+
+  return (
+    <div className="min-h-screen bg-[#0a0e1a]/95 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-card/90 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl p-6 relative overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="flex gap-1.5 mb-6">
+          {[0, 1, 2, 3].map(i => (
+            <div key={i} className={`h-1 flex-1 rounded-full transition-all ${i <= step ? "bg-cyan-500" : "bg-white/10"}`} />
+          ))}
+        </div>
+
+        {step === 0 && (
+          <div className="space-y-5" data-testid="onboarding-step-welcome">
+            <div className="text-center">
+              <img src="/arya-logo-transparent.png" alt="ARYA" className="w-28 mx-auto mb-4" />
+              <h2 className="text-xl font-bold text-white mb-2">Welcome to ARYA</h2>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Let me get to know you a little so I can be more helpful. This takes less than a minute.
+              </p>
+            </div>
+            <Button
+              data-testid="onboarding-button-start"
+              onClick={() => setStep(1)}
+              className="w-full bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-medium py-2.5 rounded-xl"
+            >
+              Let's Go <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+            <button onClick={onComplete} className="w-full text-xs text-muted-foreground hover:text-white py-1" data-testid="onboarding-button-skip">
+              Skip for now
+            </button>
+          </div>
+        )}
+
+        {step === 1 && (
+          <div className="space-y-4" data-testid="onboarding-step-language">
+            <div className="mb-2">
+              <div className="flex items-center gap-2 mb-1">
+                <Globe className="w-5 h-5 text-cyan-400" />
+                <h3 className="text-lg font-semibold text-white">Your Language</h3>
+              </div>
+              <p className="text-xs text-muted-foreground">Which language do you prefer? ARYA speaks 11 Indian languages.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-1">
+              {LANGUAGES.map(l => (
+                <button
+                  key={l.code}
+                  data-testid={`onboarding-lang-${l.code}`}
+                  onClick={() => setLanguage(l.code)}
+                  className={`px-3 py-2.5 rounded-xl text-sm text-left transition-all border ${language === l.code ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-300" : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10"}`}
+                >
+                  {l.label}
+                </button>
+              ))}
+            </div>
+            <Button
+              data-testid="onboarding-button-next-1"
+              onClick={() => setStep(2)}
+              className="w-full bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-medium py-2.5 rounded-xl"
+            >
+              Next <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="space-y-4" data-testid="onboarding-step-work">
+            <div className="mb-2">
+              <div className="flex items-center gap-2 mb-1">
+                <Briefcase className="w-5 h-5 text-cyan-400" />
+                <h3 className="text-lg font-semibold text-white">What do you do?</h3>
+              </div>
+              <p className="text-xs text-muted-foreground">This helps ARYA give you more relevant advice and suggestions.</p>
+            </div>
+            <input
+              data-testid="onboarding-input-work"
+              type="text"
+              placeholder="e.g. Student, Doctor, Business Owner, Engineer..."
+              value={currentWork}
+              onChange={e => setCurrentWork(e.target.value)}
+              className="w-full bg-background/50 border border-white/10 rounded-xl text-white text-sm px-4 py-3 placeholder:text-muted-foreground focus:outline-none focus:border-cyan-500/50"
+              autoFocus
+            />
+            <div className="flex gap-2">
+              <button onClick={() => setStep(1)} className="px-4 py-2.5 text-sm text-muted-foreground hover:text-white rounded-xl border border-white/10 hover:bg-white/5">Back</button>
+              <Button
+                data-testid="onboarding-button-next-2"
+                onClick={() => setStep(3)}
+                className="flex-1 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-medium py-2.5 rounded-xl"
+              >
+                Next <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="space-y-4" data-testid="onboarding-step-preferences">
+            <div className="mb-2">
+              <div className="flex items-center gap-2 mb-1">
+                <Clock className="w-5 h-5 text-cyan-400" />
+                <h3 className="text-lg font-semibold text-white">Your Preferences</h3>
+              </div>
+              <p className="text-xs text-muted-foreground">Set your daily check-in time and voice preference.</p>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1.5">Daily reminder time</label>
+                <input
+                  data-testid="onboarding-input-reminder"
+                  type="time"
+                  value={dailyReminderTime}
+                  onChange={e => setDailyReminderTime(e.target.value)}
+                  className="w-full bg-background/50 border border-white/10 rounded-xl text-white text-sm px-4 py-3 focus:outline-none focus:border-cyan-500/50"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1.5">Voice responses</label>
+                <div className="flex gap-2">
+                  <button
+                    data-testid="onboarding-voice-on"
+                    onClick={() => setVoicePreference(true)}
+                    className={`flex-1 px-3 py-2.5 rounded-xl text-sm transition-all border flex items-center justify-center gap-2 ${voicePreference ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-300" : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10"}`}
+                  >
+                    <Volume2 className="w-4 h-4" /> Voice On
+                  </button>
+                  <button
+                    data-testid="onboarding-voice-off"
+                    onClick={() => setVoicePreference(false)}
+                    className={`flex-1 px-3 py-2.5 rounded-xl text-sm transition-all border flex items-center justify-center gap-2 ${!voicePreference ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-300" : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10"}`}
+                  >
+                    <VolumeX className="w-4 h-4" /> Text Only
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setStep(2)} className="px-4 py-2.5 text-sm text-muted-foreground hover:text-white rounded-xl border border-white/10 hover:bg-white/5">Back</button>
+              <Button
+                data-testid="onboarding-button-finish"
+                onClick={handleComplete}
+                disabled={saving}
+                className="flex-1 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-medium py-2.5 rounded-xl"
+              >
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Start Using ARYA <Check className="w-4 h-4 ml-2" /></>}
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
