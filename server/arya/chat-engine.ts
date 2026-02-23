@@ -197,8 +197,8 @@ export async function generateAryaResponse(
   try {
     const relevantMemories = await memoryEngine.recall(tenantId, userMessage, 10);
     memoryContext = memoryEngine.buildMemoryContext(relevantMemories);
-  } catch (err) {
-    console.error("[Memory] Recall error:", err);
+  } catch (err: any) {
+    console.error("[MEMORY RECALL ERROR]", err?.message || "Unknown error");
   }
 
   const confidence = contextPieces.length > 0 ? 0.85 : 0.3;
@@ -209,7 +209,7 @@ export async function generateAryaResponse(
     resultCount: contextPieces.length,
     confidence,
     language: "en"
-  }).catch(err => console.error("[Learning] Ingest error:", err));
+  }).catch(err => console.error("[LEARNING INGEST ERROR]", err.message || "Unknown error"));
 
   const uncertaintyGuidance = confidence < 0.5
     ? "\n\nNOTE: Your knowledge base has limited information on this topic. Be honest about uncertainty and avoid making things up."
@@ -254,12 +254,12 @@ export async function generateAryaResponse(
 
       if (fullResponse.length > 20) {
         memoryEngine.extractAndStore(tenantId, userMessage, fullResponse, conversationId)
-          .catch(err => console.error("[Memory] Store error:", err));
+          .catch(err => console.error("[MEMORY STORE ERROR]", err.message || "Unknown error"));
       }
 
       if (userId && fullResponse.length > 20) {
         detectAndCreateGoal(userMessage, fullResponse, userId, tenantId, conversationId)
-          .catch(err => console.error("[Goals] Detection error:", err));
+          .catch(err => console.error("[GOALS DETECT ERROR]", err.message || "Unknown error"));
       }
 
       responseCacheEngine.logMetric(
@@ -368,8 +368,8 @@ Respond ONLY with valid JSON, no markdown.`
     });
 
     console.log(`[Goals] Auto-created goal "${parsed.title}" for user ${userId}`);
-  } catch (err) {
-    console.error("[Goals] Auto-create error:", err);
+  } catch (err: any) {
+    console.error("[GOALS CREATE ERROR]", err?.message || "Unknown error");
   }
 }
 

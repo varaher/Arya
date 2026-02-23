@@ -1,4 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
+import cors from "cors";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
@@ -13,6 +14,24 @@ declare module "http" {
     rawBody: unknown;
   }
 }
+
+const isProduction = process.env.NODE_ENV === "production";
+const allowedOrigins = process.env.REPLIT_DOMAINS
+  ? process.env.REPLIT_DOMAINS.split(",").map(d => `https://${d.trim()}`)
+  : [];
+
+app.use(cors({
+  origin: isProduction
+    ? (origin, callback) => {
+        if (!origin || allowedOrigins.some(allowed => origin === allowed)) {
+          callback(null, true);
+        } else {
+          callback(new Error("Not allowed"));
+        }
+      }
+    : true,
+  credentials: true,
+}));
 
 app.use(
   express.json({
@@ -71,7 +90,7 @@ app.use((req, res, next) => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
+      if (!isProduction && capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
 
@@ -87,15 +106,14 @@ app.use((req, res, next) => {
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
 
-    console.error("Internal Server Error:", err);
+    console.error(`[ERROR] ${status}:`, err.message || "Unknown error");
 
     if (res.headersSent) {
       return next(err);
     }
 
-    return res.status(status).json({ message });
+    return res.status(status).json({ error: "Something went wrong. Please try again." });
   });
 
   // importantly only setup vite in development and after

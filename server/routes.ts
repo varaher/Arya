@@ -152,7 +152,7 @@ export async function registerRoutes(
       if (error.message === "Phone number already registered") {
         return res.status(409).json({ error: error.message });
       }
-      console.error("Signup error:", error);
+      console.error("[SIGNUP ERROR]", error.message || "Unknown error");
       res.status(500).json({ error: "Signup failed" });
     }
   });
@@ -169,7 +169,7 @@ export async function registerRoutes(
       if (error.message === "Invalid phone number or password" || error.message === "Account is deactivated") {
         return res.status(401).json({ error: error.message });
       }
-      console.error("Login error:", error);
+      console.error("[LOGIN ERROR]", error.message || "Unknown error");
       res.status(500).json({ error: "Login failed" });
     }
   });
@@ -274,8 +274,8 @@ export async function registerRoutes(
         });
       }
       res.json(result);
-    } catch (error) {
-      console.error("Get user goals error:", error);
+    } catch (error: any) {
+      console.error("[GOALS ERROR]", error.message || "Unknown error");
       res.status(500).json({ error: "Failed to fetch goals" });
     }
   });
@@ -311,8 +311,8 @@ export async function registerRoutes(
       }
 
       res.json({ ...goal, steps: createdSteps });
-    } catch (error) {
-      console.error("Create user goal error:", error);
+    } catch (error: any) {
+      console.error("[CREATE GOAL ERROR]", error.message || "Unknown error");
       res.status(500).json({ error: "Failed to create goal" });
     }
   });
@@ -338,8 +338,8 @@ export async function registerRoutes(
 
       await db.update(aryaGoals).set(update).where(eq(aryaGoals.id, goalId));
       res.json({ success: true });
-    } catch (error) {
-      console.error("Update goal error:", error);
+    } catch (error: any) {
+      console.error("[UPDATE GOAL ERROR]", error.message || "Unknown error");
       res.status(500).json({ error: "Failed to update goal" });
     }
   });
@@ -363,8 +363,8 @@ export async function registerRoutes(
       }).returning();
 
       res.json(session);
-    } catch (error) {
-      console.error("Start voice session error:", error);
+    } catch (error: any) {
+      console.error("[START SESSION ERROR]", error.message || "Unknown error");
       res.status(500).json({ error: "Failed to start voice session" });
     }
   });
@@ -425,8 +425,8 @@ export async function registerRoutes(
       }
 
       res.json({ success: true });
-    } catch (error) {
-      console.error("End voice session error:", error);
+    } catch (error: any) {
+      console.error("[END SESSION ERROR]", error.message || "Unknown error");
       res.status(500).json({ error: "Failed to end voice session" });
     }
   });
@@ -444,8 +444,8 @@ export async function registerRoutes(
         .limit(50);
       const unreadCount = notifications.filter(n => !n.isRead).length;
       res.json({ notifications, unreadCount });
-    } catch (error) {
-      console.error("Get notifications error:", error);
+    } catch (error: any) {
+      console.error("[NOTIFICATIONS ERROR]", error.message || "Unknown error");
       res.status(500).json({ error: "Failed to fetch notifications" });
     }
   });
@@ -524,7 +524,7 @@ export async function registerRoutes(
         resultCount: results.total,
         confidence,
         language: validated.language
-      }).catch(err => console.error('[Learning] Ingest error:', err));
+      }).catch(err => console.error('[LEARNING INGEST ERROR]', err.message || "Unknown error"));
       
       res.json({
         answer,
@@ -544,7 +544,7 @@ export async function registerRoutes(
       });
       
     } catch (error: any) {
-      console.error('Knowledge query error:', error);
+      console.error('[KNOWLEDGE QUERY ERROR]', error.message || "Unknown error");
       res.status(400).json({
         error: 'Invalid request',
         message: error.message
@@ -635,7 +635,7 @@ export async function registerRoutes(
       }
       
     } catch (error: any) {
-      console.error('ERmate auto-fill error:', error);
+      console.error('[ERMATE ERROR]', error.message || "Unknown error");
       res.status(400).json({
         error: 'Invalid request',
         message: error.message
@@ -665,7 +665,7 @@ export async function registerRoutes(
         total: Number(totalResult[0]?.count || 0),
       });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
@@ -690,7 +690,7 @@ export async function registerRoutes(
         knowledgeUnitsSynced: Number(ermateSynced[0]?.count || 0),
       });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
@@ -720,7 +720,7 @@ export async function registerRoutes(
       res.json(result);
       
     } catch (error: any) {
-      console.error('ErPrana risk assessment error:', error);
+      console.error('[ERPRANA ERROR]', error.message || "Unknown error");
       res.status(400).json({
         error: 'Invalid request',
         message: error.message
@@ -743,7 +743,7 @@ export async function registerRoutes(
       });
       
     } catch (error: any) {
-      console.error('Get by domain error:', error);
+      console.error('[DOMAIN ERROR]', error.message || "Unknown error");
       res.status(500).json({
         error: 'Internal server error',
         message: error.message
@@ -762,8 +762,8 @@ export async function registerRoutes(
       const stats = await learningEngine.getLearningStats(tenantId);
       res.json(stats);
     } catch (error: any) {
-      console.error('Learning stats error:', error);
-      res.status(500).json({ error: error.message });
+      console.error('[LEARNING STATS ERROR]', error.message || "Unknown error");
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
@@ -775,8 +775,8 @@ export async function registerRoutes(
       const drafts = await learningEngine.getDrafts(tenantId, status);
       res.json({ drafts, total: drafts.length });
     } catch (error: any) {
-      console.error('Get drafts error:', error);
-      res.status(500).json({ error: error.message });
+      console.error('[DRAFTS ERROR]', error.message || "Unknown error");
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
@@ -793,8 +793,8 @@ export async function registerRoutes(
         res.status(404).json({ error: 'Draft not found' });
       }
     } catch (error: any) {
-      console.error('Approve draft error:', error);
-      res.status(500).json({ error: error.message });
+      console.error('[APPROVE DRAFT ERROR]', error.message || "Unknown error");
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
@@ -806,8 +806,8 @@ export async function registerRoutes(
       await learningEngine.rejectDraft(draftId, reviewedBy);
       res.json({ message: 'Draft rejected', id: draftId });
     } catch (error: any) {
-      console.error('Reject draft error:', error);
-      res.status(500).json({ error: error.message });
+      console.error('[REJECT DRAFT ERROR]', error.message || "Unknown error");
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
@@ -819,8 +819,8 @@ export async function registerRoutes(
       const patterns = await learningEngine.getQueryPatterns(tenantId, gapsOnly);
       res.json({ patterns, total: patterns.length });
     } catch (error: any) {
-      console.error('Get patterns error:', error);
-      res.status(500).json({ error: error.message });
+      console.error('[PATTERNS ERROR]', error.message || "Unknown error");
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
@@ -836,8 +836,8 @@ export async function registerRoutes(
       const count = await neuralLinkEngine.computeLinks(tenantId);
       res.json({ message: `Neural links computed successfully`, links_created: count });
     } catch (error: any) {
-      console.error('Compute links error:', error);
-      res.status(500).json({ error: error.message });
+      console.error('[COMPUTE LINKS ERROR]', error.message || "Unknown error");
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
@@ -848,8 +848,8 @@ export async function registerRoutes(
       const graph = await neuralLinkEngine.getNetworkGraph(tenantId);
       res.json(graph);
     } catch (error: any) {
-      console.error('Get graph error:', error);
-      res.status(500).json({ error: error.message });
+      console.error('[GRAPH ERROR]', error.message || "Unknown error");
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
@@ -874,8 +874,8 @@ export async function registerRoutes(
         total: links.length
       });
     } catch (error: any) {
-      console.error('Get unit links error:', error);
-      res.status(500).json({ error: error.message });
+      console.error('[UNIT LINKS ERROR]', error.message || "Unknown error");
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
@@ -896,7 +896,7 @@ export async function registerRoutes(
       );
       res.json(result);
     } catch (error: any) {
-      console.error('Synthesize error:', error);
+      console.error('[SYNTHESIZE ERROR]', error.message || "Unknown error");
       res.status(400).json({ error: error.message });
     }
   });
@@ -910,7 +910,7 @@ export async function registerRoutes(
       const conversations = await chatStorage.getAllConversations();
       res.json(conversations);
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
@@ -920,7 +920,7 @@ export async function registerRoutes(
       const conversation = await chatStorage.createConversation(title || "New Chat");
       res.status(201).json(conversation);
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
@@ -934,7 +934,7 @@ export async function registerRoutes(
       const messages = await chatStorage.getMessagesByConversation(id);
       res.json({ ...conversation, messages });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
@@ -944,7 +944,7 @@ export async function registerRoutes(
       await chatStorage.deleteConversation(id);
       res.status(204).send();
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
@@ -986,12 +986,13 @@ export async function registerRoutes(
       res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
       res.end();
     } catch (error: any) {
-      console.error("ARYA chat error:", error);
+      console.error("[CHAT ERROR]", error.message || "Unknown error");
+      const userMessage = "I'm having difficulty right now. Please try again in a moment.";
       if (res.headersSent) {
-        res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
+        res.write(`data: ${JSON.stringify({ error: userMessage })}\n\n`);
         res.end();
       } else {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: userMessage });
       }
     }
   });
@@ -1089,12 +1090,13 @@ export async function registerRoutes(
       res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
       res.end();
     } catch (error: any) {
-      console.error("ARYA voice error:", error);
+      console.error("[VOICE ERROR]", error.message || "Unknown error");
+      const userMessage = "I'm having difficulty right now. Please try again in a moment.";
       if (res.headersSent) {
-        res.write(`data: ${JSON.stringify({ type: "error", error: error.message })}\n\n`);
+        res.write(`data: ${JSON.stringify({ type: "error", error: userMessage })}\n\n`);
         res.end();
       } else {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: userMessage });
       }
     }
   });
@@ -1123,8 +1125,8 @@ export async function registerRoutes(
         res.json(ttsResult);
       }
     } catch (error: any) {
-      console.error("TTS error:", error);
-      res.status(500).json({ error: error.message });
+      console.error("[TTS ERROR]", error.message || "Unknown error");
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
@@ -1139,8 +1141,8 @@ export async function registerRoutes(
       );
       res.json(result);
     } catch (error: any) {
-      console.error("Translate error:", error);
-      res.status(500).json({ error: error.message });
+      console.error("[TRANSLATE ERROR]", error.message || "Unknown error");
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
@@ -1169,7 +1171,7 @@ export async function registerRoutes(
       });
       res.status(201).json(result);
     } catch (error: any) {
-      console.error("Create API key error:", error);
+      console.error("[API KEY ERROR]", error.message || "Unknown error");
       res.status(400).json({ error: error.message });
     }
   });
@@ -1180,7 +1182,7 @@ export async function registerRoutes(
       const keys = await listApiKeys(tenantId);
       res.json({ keys, total: keys.length });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
@@ -1194,7 +1196,7 @@ export async function registerRoutes(
         res.status(404).json({ error: "Key not found" });
       }
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
@@ -1208,7 +1210,7 @@ export async function registerRoutes(
         res.status(404).json({ error: "Key not found" });
       }
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
@@ -1218,7 +1220,7 @@ export async function registerRoutes(
       const usage = await getApiKeyUsage(req.params.id, days);
       res.json({ usage, total: usage.length });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
@@ -1228,7 +1230,7 @@ export async function registerRoutes(
       const stats = await getUsageStats(tenantId);
       res.json(stats);
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
@@ -1271,7 +1273,7 @@ export async function registerRoutes(
         resultCount: results.total,
         confidence,
         language: validated.language,
-      }).catch((err) => console.error("[Learning] Ingest error:", err));
+      }).catch((err) => console.error("[LEARNING INGEST ERROR]", err.message || "Unknown error"));
 
       res.json({
         answer,
@@ -1319,7 +1321,7 @@ export async function registerRoutes(
         res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
         res.end();
       } else {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: "Something went wrong. Please try again." });
       }
     }
   });
@@ -1415,7 +1417,7 @@ export async function registerRoutes(
       const memories = await memoryEngine.getAll(tenantId);
       res.json({ memories, total: memories.length });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
@@ -1424,7 +1426,7 @@ export async function registerRoutes(
       await memoryEngine.deleteMemory(req.params.id);
       res.json({ success: true });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
@@ -1434,7 +1436,7 @@ export async function registerRoutes(
       await memoryEngine.addExplicitMemory(tenant_id || 'varah', category, key, value);
       res.status(201).json({ success: true });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
@@ -1446,7 +1448,7 @@ export async function registerRoutes(
       const goals = await goalsEngine.getGoals(tenantId, status);
       res.json({ goals, total: goals.length });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
@@ -1456,7 +1458,7 @@ export async function registerRoutes(
       const goal = await goalsEngine.createGoal(tenant_id || 'varah', title, description, steps, priority);
       res.status(201).json(goal);
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
@@ -1466,7 +1468,7 @@ export async function registerRoutes(
       const success = await goalsEngine.updateGoalStatus(req.params.id, status);
       res.json({ success });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
@@ -1476,7 +1478,7 @@ export async function registerRoutes(
       const success = await goalsEngine.updateStepStatus(req.params.id, status);
       res.json({ success });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
@@ -1485,7 +1487,7 @@ export async function registerRoutes(
       await goalsEngine.deleteGoal(req.params.id);
       res.json({ success: true });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
@@ -1498,7 +1500,7 @@ export async function registerRoutes(
       );
       res.status(201).json(feedback);
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
@@ -1508,7 +1510,7 @@ export async function registerRoutes(
       const stats = await feedbackEngine.getFeedbackStats(tenantId);
       res.json(stats);
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
@@ -1519,7 +1521,7 @@ export async function registerRoutes(
       const insights = await insightsEngine.getActiveInsights(tenantId);
       res.json({ insights, total: insights.length });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
@@ -1529,7 +1531,7 @@ export async function registerRoutes(
       const insights = await insightsEngine.generateInsights(tenantId);
       res.json({ generated: insights.length, insights });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
@@ -1538,7 +1540,7 @@ export async function registerRoutes(
       await insightsEngine.dismissInsight(req.params.id);
       res.json({ success: true });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
@@ -1552,7 +1554,7 @@ export async function registerRoutes(
       const stats = await responseCacheEngine.getCacheStats(tenantId);
       res.json(stats);
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
