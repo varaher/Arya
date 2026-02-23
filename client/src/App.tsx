@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AdminLayout, PublicLayout } from "@/components/layout/Layout";
 import { AdminAuthProvider, useAdminAuth } from "@/lib/admin-auth";
 import { UserAuthProvider } from "@/lib/user-auth";
+import { ThemeProvider } from "@/lib/theme";
 import NotFound from "@/pages/not-found";
 
 import AryaChat from "@/pages/AryaChat";
@@ -160,16 +161,18 @@ function Router() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <AdminAuthProvider>
-          <UserAuthProvider>
-            <Toaster />
-            <Router />
-          </UserAuthProvider>
-        </AdminAuthProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <AdminAuthProvider>
+            <UserAuthProvider>
+              <Toaster />
+              <Router />
+            </UserAuthProvider>
+          </AdminAuthProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }
 

@@ -45,9 +45,40 @@
   }
   body {
     @apply font-sans antialiased bg-background text-foreground;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-display tracking-tight;
+  }
+
+  :root[data-theme="dark"] {
+    --color-background: hsl(222 47% 7%);
+    --color-foreground: hsl(210 20% 95%);
+
+    --color-card: hsl(222 40% 10%);
+    --color-card-foreground: hsl(210 20% 95%);
+
+    --color-popover: hsl(222 40% 10%);
+    --color-popover-foreground: hsl(210 20% 95%);
+
+    --color-primary: hsl(190 90% 50%);
+    --color-primary-foreground: hsl(222 47% 7%);
+
+    --color-secondary: hsl(43 96% 56%);
+    --color-secondary-foreground: hsl(222 47% 7%);
+
+    --color-muted: hsl(222 30% 15%);
+    --color-muted-foreground: hsl(215 16% 60%);
+
+    --color-accent: hsl(222 30% 15%);
+    --color-accent-foreground: hsl(210 20% 95%);
+
+    --color-destructive: hsl(0 72% 51%);
+    --color-destructive-foreground: hsl(0 0% 100%);
+
+    --color-border: hsl(222 30% 18%);
+    --color-input: hsl(222 30% 18%);
+    --color-ring: hsl(190 90% 50%);
   }
 }
 
@@ -57,9 +88,22 @@
   border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
+:root[data-theme="dark"] .glass-panel {
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 .tech-grid {
   background-size: 40px 40px;
   background-image:
     linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
 }
+
+:root[data-theme="dark"] .tech-grid {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+}
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
