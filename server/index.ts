@@ -2,6 +2,8 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import { rateLimit, ipKeyGenerator } from "express-rate-limit";
+import crypto from "crypto";
 
 const app = express();
 const httpServer = createServer(app);
@@ -22,6 +24,26 @@ app.use(
 );
 
 app.use(express.urlencoded({ extended: false }));
+
+app.set("trust proxy", 1);
+
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 50,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req: Request) => {
+    const userToken = req.headers["x-user-token"] as string;
+    if (userToken) {
+      const hash = crypto.createHash("sha256").update(userToken).digest("hex").slice(0, 16);
+      return `user:${hash}`;
+    }
+    return ipKeyGenerator(req.ip || "unknown");
+  },
+  message: { error: "Too many requests. Please wait a moment and try again." },
+});
+
+app.use("/api/", apiLimiter);
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
