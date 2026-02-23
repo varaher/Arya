@@ -2349,8 +2349,11 @@ function VoiceConversationMode({
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
       let hasSpoken = false;
       let lastSpeechTime = Date.now();
-      const SILENCE_THRESHOLD = 12;
-      const SILENCE_DURATION_MS = 1500;
+      let speechStartTime = 0;
+      let speechFrameCount = 0;
+      const SILENCE_THRESHOLD = 30;
+      const SILENCE_DURATION_MS = 1800;
+      const MIN_SPEECH_FRAMES = 15;
 
       const checkAudio = () => {
         if (!activeRef.current) return;
@@ -2359,11 +2362,15 @@ function VoiceConversationMode({
         setAudioLevel(Math.min(avg / 60, 1));
 
         if (avg > SILENCE_THRESHOLD) {
+          if (!hasSpoken) {
+            speechStartTime = Date.now();
+          }
           hasSpoken = true;
+          speechFrameCount++;
           lastSpeechTime = Date.now();
         }
 
-        if (hasSpoken && (Date.now() - lastSpeechTime) > SILENCE_DURATION_MS) {
+        if (hasSpoken && speechFrameCount >= MIN_SPEECH_FRAMES && (Date.now() - lastSpeechTime) > SILENCE_DURATION_MS) {
           processRecording();
           return;
         }
@@ -2424,7 +2431,7 @@ function VoiceConversationMode({
       audioContextRef.current = null;
     }
 
-    if (blob.size < 1000) {
+    if (blob.size < 3000) {
       processingRef.current = false;
       if (activeRef.current) startListening();
       return;
@@ -2581,9 +2588,9 @@ function VoiceConversationMode({
       analyser.smoothingTimeConstant = 0.5;
       source.connect(analyser);
       const dataArr = new Uint8Array(analyser.frequencyBinCount);
-      const VOICE_THRESHOLD = 30;
+      const VOICE_THRESHOLD = 40;
       let consecutiveFrames = 0;
-      const FRAMES_NEEDED = 10;
+      const FRAMES_NEEDED = 15;
       const startTime = Date.now();
       const DELAY_MS = 500;
 
