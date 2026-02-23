@@ -2518,7 +2518,6 @@ function VoiceConversationMode({
       }
 
       if (!activeRef.current || abortController.signal.aborted) { processingRef.current = false; return; }
-      setPhase("speaking");
 
       let voiceInterrupted = false;
       const interruptAndListen = () => {
@@ -2532,9 +2531,11 @@ function VoiceConversationMode({
         if (activeRef.current) startListening();
       };
 
-      startVoiceMonitor(interruptAndListen);
-
+      let audioReady = false;
       if (responseAudioBase64 && !voiceInterrupted) {
+        audioReady = true;
+        setPhase("speaking");
+        startVoiceMonitor(interruptAndListen);
         await playAudioAndWait(responseAudioBase64);
       } else if (!voiceInterrupted) {
         const cleanText = fullContent.replace(/[#*_`~>\[\]()!|]/g, "").replace(/\n{2,}/g, ". ").replace(/\n/g, " ").trim();
@@ -2548,10 +2549,16 @@ function VoiceConversationMode({
           if (ttsRes.ok && !voiceInterrupted) {
             const ttsData = await ttsRes.json();
             if (ttsData.audioBase64 && !abortController.signal.aborted && !voiceInterrupted) {
+              audioReady = true;
+              setPhase("speaking");
+              startVoiceMonitor(interruptAndListen);
               await playAudioAndWait(ttsData.audioBase64);
             }
           }
         }
+      }
+      if (!audioReady && !voiceInterrupted) {
+        startVoiceMonitor(interruptAndListen);
       }
 
       stopVoiceMonitor();
