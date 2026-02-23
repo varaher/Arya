@@ -13,7 +13,7 @@ interface UserAuthContextType {
   isLoading: boolean;
   isLoggedIn: boolean;
   login: (phone: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  signup: (data: { name: string; phone: string; password: string; email?: string; preferredLanguage?: string }) => Promise<{ success: boolean; error?: string }>;
+  signup: (data: { name: string; phone: string; password: string; email?: string; preferredLanguage?: string; inviteCode?: string }) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   token: string | null;
 }
@@ -93,7 +93,7 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const signup = useCallback(async (data: { name: string; phone: string; password: string; email?: string; preferredLanguage?: string }) => {
+  const signup = useCallback(async (data: { name: string; phone: string; password: string; email?: string; preferredLanguage?: string; inviteCode?: string }) => {
     try {
       const res = await fetch("/api/user/signup", {
         method: "POST",

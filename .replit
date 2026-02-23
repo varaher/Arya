@@ -43,3 +43,10 @@ waitForPort = 5000
 [agent]
 mockupState = "FULLSTACK"
 integrations = ["javascript_openai_ai_integrations:2.0.0"]
+
+[userenv]
+
+[userenv.shared]
+BETA_MODE = "true"
+USER_DAILY_LLM_LIMIT = "50"
+SYSTEM_DAILY_LLM_LIMIT = "2000"

@@ -45,6 +45,16 @@ import {
   getUserById,
 } from "./arya/user-auth-service";
 import {
+  isBetaMode,
+  isUserAllowed,
+  redeemInviteCode,
+  addToAllowList,
+  createInviteCode,
+  listInviteCodes,
+  listAllowList,
+} from "./arya/beta-guard";
+import { checkBudget, checkAndRecordBudget, recordLLMCall, getBudgetStats } from "./arya/usage-budget";
+import {
   aryaGoals,
   aryaGoalSteps,
   aryaVoiceSessions,
@@ -137,9 +147,26 @@ export async function registerRoutes(
   // USER AUTHENTICATION ROUTES
   // =============================================
 
+  app.get("/api/beta/status", (_req: Request, res: Response) => {
+    res.json({ betaMode: isBetaMode() });
+  });
+
+  app.post("/api/beta/redeem-invite", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const { code } = req.body;
+      if (!code) return res.status(400).json({ error: "Invite code is required" });
+      const result = await redeemInviteCode(userId, code);
+      if (!result.success) return res.status(400).json({ error: result.error });
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to redeem invite code" });
+    }
+  });
+
   app.post("/api/user/signup", async (req: Request, res: Response) => {
     try {
-      const { name, phone, password, email, preferredLanguage } = req.body;
+      const { name, phone, password, email, preferredLanguage, inviteCode } = req.body;
       if (!name || !phone || !password) {
         return res.status(400).json({ error: "Name, phone, and password are required" });
       }
@@ -147,6 +174,11 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Password must be at least 6 characters" });
       }
       const result = await signupUser(name, phone, password, email, preferredLanguage);
+
+      if (isBetaMode() && inviteCode) {
+        await redeemInviteCode(result.user.id, inviteCode);
+      }
+
       res.json(result);
     } catch (error: any) {
       if (error.message === "Phone number already registered") {
@@ -953,9 +985,25 @@ export async function registerRoutes(
     try {
       const conversationId = parseInt(req.params.id);
       const { content, tenant_id } = req.body;
+      const userId = (req as any).userId || null;
 
       if (!content || !content.trim()) {
         return res.status(400).json({ error: "Message content is required" });
+      }
+
+      if (isBetaMode()) {
+        if (!userId) {
+          return res.status(403).json({ error: "ARYA is currently in private beta. Please sign in with an approved account or enter an invite code.", betaRestricted: true });
+        }
+        const allowed = await isUserAllowed(userId);
+        if (!allowed) {
+          return res.status(403).json({ error: "ARYA is currently in private beta. Please enter an invite code to get access.", betaRestricted: true, needsInvite: true });
+        }
+      }
+
+      const budgetCheck = await checkAndRecordBudget(userId);
+      if (!budgetCheck.allowed) {
+        return res.status(429).json({ error: budgetCheck.reason });
       }
 
       await chatStorage.createMessage(conversationId, "user", content);
@@ -970,7 +1018,6 @@ export async function registerRoutes(
       res.setHeader("Cache-Control", "no-cache");
       res.setHeader("Connection", "keep-alive");
 
-      const userId = (req as any).userId || null;
       const { stream, meta } = await generateAryaResponse(content, history, tenant_id || "varah", conversationId, userId);
       let fullResponse = "";
 
@@ -1003,9 +1050,25 @@ export async function registerRoutes(
     try {
       const conversationId = parseInt(req.params.id);
       const { audio, tenant_id, language } = req.body;
+      const userId = (req as any).userId || null;
 
       if (!audio) {
         return res.status(400).json({ error: "Audio data (base64) is required" });
+      }
+
+      if (isBetaMode()) {
+        if (!userId) {
+          return res.status(403).json({ error: "ARYA is currently in private beta. Please sign in with an approved account or enter an invite code.", betaRestricted: true });
+        }
+        const allowed = await isUserAllowed(userId);
+        if (!allowed) {
+          return res.status(403).json({ error: "ARYA is currently in private beta. Please enter an invite code to get access.", betaRestricted: true, needsInvite: true });
+        }
+      }
+
+      const budgetCheck = await checkAndRecordBudget(userId);
+      if (!budgetCheck.allowed) {
+        return res.status(429).json({ error: budgetCheck.reason });
       }
 
       const rawBuffer = Buffer.from(audio, "base64");
@@ -1297,6 +1360,11 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Message is required" });
       }
 
+      const budgetCheck = await checkAndRecordBudget(null);
+      if (!budgetCheck.allowed) {
+        return res.status(429).json({ error: budgetCheck.reason });
+      }
+
       const chatHistory: ChatMessage[] = (history || []).map((m: any) => ({
         role: m.role,
         content: m.content,
@@ -1555,6 +1623,60 @@ export async function registerRoutes(
       res.json(stats);
     } catch (error: any) {
       res.status(500).json({ error: "Something went wrong. Please try again." });
+    }
+  });
+
+  // =============================================
+  // BETA ACCESS MANAGEMENT (Admin)
+  // =============================================
+
+  app.get("/api/admin/beta/status", requireAdmin, async (_req: Request, res: Response) => {
+    const budgetStats = await getBudgetStats();
+    res.json({
+      betaMode: isBetaMode(),
+      ...budgetStats,
+    });
+  });
+
+  app.get("/api/admin/beta/allow-list", requireAdmin, async (_req: Request, res: Response) => {
+    try {
+      const list = await listAllowList();
+      res.json({ allowList: list, total: list.length });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to fetch allow list" });
+    }
+  });
+
+  app.post("/api/admin/beta/allow-list", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { identifier, identifierType } = req.body;
+      if (!identifier || !identifierType) {
+        return res.status(400).json({ error: "identifier and identifierType (email/phone) are required" });
+      }
+      await addToAllowList(identifier, identifierType);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to add to allow list" });
+    }
+  });
+
+  app.get("/api/admin/beta/invite-codes", requireAdmin, async (_req: Request, res: Response) => {
+    try {
+      const codes = await listInviteCodes();
+      res.json({ codes, total: codes.length });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to fetch invite codes" });
+    }
+  });
+
+  app.post("/api/admin/beta/invite-codes", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { code, maxUses, expiresAt } = req.body;
+      if (!code) return res.status(400).json({ error: "code is required" });
+      const invite = await createInviteCode(code, maxUses || 1, expiresAt ? new Date(expiresAt) : undefined);
+      res.json(invite);
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to create invite code" });
     }
   });
 

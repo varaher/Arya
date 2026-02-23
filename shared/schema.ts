@@ -495,5 +495,48 @@ export const insertAryaCacheMetricSchema = createInsertSchema(aryaCacheMetrics).
 export type InsertAryaCacheMetric = z.infer<typeof insertAryaCacheMetricSchema>;
 export type AryaCacheMetric = typeof aryaCacheMetrics.$inferSelect;
 
+// =============================================
+// BETA ACCESS & INVITE CODES
+// =============================================
+
+export const aryaBetaAllowList = pgTable("arya_beta_allow_list", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  identifier: varchar("identifier", { length: 255 }).notNull().unique(),
+  identifierType: varchar("identifier_type", { length: 20 }).notNull().$type<'email' | 'phone'>(),
+  addedBy: varchar("added_by", { length: 100 }).default("admin"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const aryaInviteCodes = pgTable("arya_invite_codes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  code: varchar("code", { length: 50 }).notNull().unique(),
+  maxUses: integer("max_uses").default(1).notNull(),
+  usedCount: integer("used_count").default(0).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdBy: varchar("created_by", { length: 100 }).default("admin"),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const aryaInviteRedemptions = pgTable("arya_invite_redemptions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  inviteCodeId: varchar("invite_code_id", { length: 255 }).notNull(),
+  userId: varchar("user_id", { length: 255 }).notNull(),
+  redeemedAt: timestamp("redeemed_at").defaultNow().notNull(),
+});
+
+// =============================================
+// USAGE BUDGET TRACKING
+// =============================================
+
+export const aryaUsageBudget = pgTable("arya_usage_budget", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }),
+  dateKey: varchar("date_key", { length: 10 }).notNull(),
+  llmCallCount: integer("llm_call_count").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Re-export chat models
 export * from "./models/chat";

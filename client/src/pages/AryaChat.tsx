@@ -664,6 +664,11 @@ export default function AryaChat() {
   const [showMemory, setShowMemory] = useState(false);
   const [showGoals, setShowGoals] = useState(false);
   const [showConfidence, setShowConfidence] = useState(true);
+  const [betaRestricted, setBetaRestricted] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteCode, setInviteCode] = useState("");
+  const [inviteError, setInviteError] = useState("");
+  const [inviteLoading, setInviteLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -862,6 +867,26 @@ export default function AryaChat() {
         body: JSON.stringify({ content: text, tenant_id: "varah" }),
       });
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Something went wrong" }));
+        if (errorData.betaRestricted) {
+          setBetaRestricted(true);
+          if (errorData.needsInvite) setShowInviteModal(true);
+        }
+        queryClient.setQueryData(
+          ["/api/arya/conversations", convId],
+          (old: any) => ({
+            ...old,
+            messages: [
+              ...(old?.messages || []),
+              { id: Date.now() + 1, conversationId: convId, role: "assistant", content: errorData.error, createdAt: new Date().toISOString() },
+            ],
+          })
+        );
+        setIsStreaming(false);
+        return;
+      }
+
       const reader = response.body?.getReader();
       if (!reader) throw new Error("No reader");
 
@@ -926,6 +951,31 @@ export default function AryaChat() {
       });
     }
   }, [activeConversation, isStreaming, queryClient, createConversation, speakText]);
+
+  const handleRedeemInvite = useCallback(async () => {
+    if (!inviteCode.trim() || !token) return;
+    setInviteLoading(true);
+    setInviteError("");
+    try {
+      const res = await fetch("/api/beta/redeem-invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-user-token": token },
+        body: JSON.stringify({ code: inviteCode.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setShowInviteModal(false);
+        setBetaRestricted(false);
+        setInviteCode("");
+      } else {
+        setInviteError(data.error || "Invalid invite code");
+      }
+    } catch {
+      setInviteError("Something went wrong. Please try again.");
+    } finally {
+      setInviteLoading(false);
+    }
+  }, [inviteCode, token]);
 
   const [voiceError, setVoiceError] = useState<string | null>(null);
 
@@ -1669,6 +1719,37 @@ export default function AryaChat() {
         document.body
       )}
 
+      {showInviteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-[#0a1628] border border-cyan-500/20 rounded-xl p-6 w-full max-w-sm mx-4 shadow-2xl" data-testid="invite-modal">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-white font-['Space_Grotesk']">Enter Invite Code</h3>
+              <button onClick={() => { setShowInviteModal(false); setInviteError(""); }} className="text-gray-400 hover:text-white" data-testid="close-invite-modal">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-gray-400 text-sm mb-4">ARYA is in private beta. Enter your invite code to get access.</p>
+            <input
+              type="text"
+              value={inviteCode}
+              onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+              placeholder="e.g. ARYA-BETA-001"
+              className="w-full px-4 py-3 bg-[#0d1f3c] border border-cyan-500/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400 mb-3 font-mono tracking-wider"
+              data-testid="input-invite-code"
+              onKeyDown={(e) => e.key === "Enter" && handleRedeemInvite()}
+            />
+            {inviteError && <p className="text-red-400 text-sm mb-3" data-testid="text-invite-error">{inviteError}</p>}
+            <button
+              onClick={handleRedeemInvite}
+              disabled={inviteLoading || !inviteCode.trim()}
+              className="w-full py-3 bg-cyan-500 hover:bg-cyan-400 disabled:bg-gray-600 disabled:cursor-not-allowed text-black font-semibold rounded-lg transition-colors"
+              data-testid="button-redeem-invite"
+            >
+              {inviteLoading ? "Verifying..." : "Redeem Code"}
+            </button>
+          </div>
+        </div>
+      )}
       {showUserAuth && (
         <div className="fixed inset-0 z-50">
           <UserAuthModal onClose={() => setShowUserAuth(false)} />
@@ -2335,9 +2416,15 @@ function UserAuthModal({ onClose }: { onClose: () => void }) {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [signupInviteCode, setSignupInviteCode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPw, setShowPw] = useState(false);
+  const [isBeta, setIsBeta] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/beta/status").then(r => r.json()).then(d => setIsBeta(d.betaMode)).catch(() => {});
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -2350,7 +2437,7 @@ function UserAuthModal({ onClose }: { onClose: () => void }) {
         else onClose();
       } else {
         if (!name.trim()) { setError("Please enter your name"); setLoading(false); return; }
-        const r = await signup({ name: name.trim(), phone, password });
+        const r = await signup({ name: name.trim(), phone, password, inviteCode: signupInviteCode || undefined });
         if (!r.success) setError(r.error || "Signup failed");
         else onClose();
       }
@@ -2409,6 +2496,16 @@ function UserAuthModal({ onClose }: { onClose: () => void }) {
               {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
+          {mode === "signup" && isBeta && (
+            <input
+              data-testid="modal-input-invite-code"
+              type="text"
+              placeholder="Invite Code (optional)"
+              value={signupInviteCode}
+              onChange={e => setSignupInviteCode(e.target.value.toUpperCase())}
+              className="w-full bg-background/50 border border-amber-500/20 rounded-xl text-white text-sm px-3 py-2.5 placeholder:text-muted-foreground focus:outline-none focus:border-amber-400/50 font-mono tracking-wider"
+            />
+          )}
           {error && <div className="text-xs text-red-400 bg-red-500/10 rounded-lg px-3 py-2" data-testid="modal-text-error">{error}</div>}
           <Button
             data-testid="modal-button-submit"
