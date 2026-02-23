@@ -3302,7 +3302,7 @@ function OnboardingModal({ token, onComplete }: { token: string; onComplete: () 
     try {
       const res = await fetch("/api/user/onboarding", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json", "x-user-token": token },
         body: JSON.stringify({ preferredLanguage: language, currentWork, wantsDailyReminder: !!dailyReminderTime, voiceEnabled: voicePreference }),
       });
       if (res.ok) onComplete();
