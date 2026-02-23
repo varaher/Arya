@@ -206,7 +206,8 @@ export async function generateAryaResponse(
   conversationHistory: ChatMessage[],
   tenantId: string = "varah",
   conversationId?: number,
-  userId?: string | null
+  userId?: string | null,
+  voiceMode: boolean = false
 ): Promise<{ stream: AsyncIterable<string>; meta: AryaResponseMeta }> {
   const startTime = Date.now();
 
@@ -283,8 +284,12 @@ export async function generateAryaResponse(
 
   const userPrefs = await getUserPreferenceContext(userId);
 
+  const voiceInstruction = voiceMode
+    ? "\n\nVOICE MODE ACTIVE: The user is speaking to you via voice. Keep your response SHORT and conversational — 2-3 sentences max. No bullet points, no markdown, no numbered lists. Speak naturally as if talking to a friend. Get to the point immediately."
+    : "";
+
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-    { role: "system", content: ARYA_SYSTEM_PROMPT + userPrefs + knowledgeContext + memoryContext + uncertaintyGuidance },
+    { role: "system", content: ARYA_SYSTEM_PROMPT + userPrefs + knowledgeContext + memoryContext + uncertaintyGuidance + voiceInstruction },
     ...conversationHistory.slice(-20).map(m => ({
       role: m.role as "user" | "assistant",
       content: m.content,
@@ -296,7 +301,7 @@ export async function generateAryaResponse(
     model: "gpt-5.2",
     messages,
     stream: true,
-    max_completion_tokens: 2048,
+    max_completion_tokens: voiceMode ? 300 : 2048,
   });
 
   const meta: AryaResponseMeta = {

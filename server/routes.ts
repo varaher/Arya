@@ -1278,7 +1278,7 @@ export async function registerRoutes(
       res.write(`data: ${JSON.stringify({ type: "user_transcript", content: userTranscript, language: detectedLanguage })}\n\n`);
 
       const voiceUserId = (req as any).userId || null;
-      const { stream, meta } = await generateAryaResponse(queryForArya, history, tenant_id || "varah", conversationId, voiceUserId);
+      const { stream, meta } = await generateAryaResponse(queryForArya, history, tenant_id || "varah", conversationId, voiceUserId, true);
       let fullResponse = "";
 
       res.write(`data: ${JSON.stringify({ type: "meta", mode: meta.mode, icon: meta.icon })}\n\n`);
