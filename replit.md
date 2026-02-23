@@ -17,7 +17,7 @@ The project is structured as a monorepo with a React frontend, an Express backen
 ### Frontend
 
 -   **Framework:** React 18 with TypeScript.
--   **UI/UX:** shadcn/ui (New York style), Radix UI, Tailwind CSS v4 (dark theme: deep navy, cyan, amber), Space Grotesk (headings), Inter (body), JetBrains Mono (code).
+-   **UI/UX:** shadcn/ui (New York style), Radix UI, Tailwind CSS v4 (light/bright theme: white backgrounds, gray text, cyan/amber/purple accents), Space Grotesk (headings), Inter (body), JetBrains Mono (code).
 -   **PWA:** Installable on mobile, with manifest, service worker, and app icons.
 -   **Key Pages:** Public conversational chat, user goals management, and admin-only dashboards for orchestrator, knowledge base, self-learning engine, neural link explorer, clinical processing, patient monitoring, API playground, and developer portal.
 -   **User Authentication:** Name/email/phone/password signup, JWT-like session tokens (30-day TTL) stored in localStorage.
@@ -55,3 +55,4 @@ The project is structured as a monorepo with a React frontend, an Express backen
 ### Recent Changes
 -   **Quick Start Tutorial:** 7-step guided walkthrough for new users covering chat, voice, goals, memory, and customization. Auto-triggers after onboarding, accessible from user menu and welcome screen "Take a Tour" button. Completion persisted via API + localStorage.
 -   **Feedback/Issue Reporting:** Users can report issues via "Report Issue" in user menu. Categories: bug, feature request, content quality, performance, other. Stored in `arya_user_feedback` table. Admin endpoints for listing and managing feedback.
+-   **Light Theme Conversion:** Full UI converted from dark navy theme to bright/light theme. White backgrounds, gray text, light borders. Accent colors (cyan, purple, amber, emerald) adjusted for light backgrounds. Gradient buttons retain white text for contrast.
