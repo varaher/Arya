@@ -56,12 +56,12 @@ function FormattedMessage({ content, isUser }: { content: string; isUser?: boole
     <div className="prose-arya text-sm leading-relaxed">
       <ReactMarkdown
         components={{
-          p: ({ children }) => <p className="mb-2 last:mb-0 text-white/90">{children}</p>,
-          strong: ({ children }) => <strong className="font-semibold text-cyan-300">{children}</strong>,
-          em: ({ children }) => <em className="text-amber-300/90 not-italic font-medium">{children}</em>,
-          h1: ({ children }) => <h1 className="text-base font-bold text-white mb-2 mt-1">{children}</h1>,
-          h2: ({ children }) => <h2 className="text-sm font-bold text-white mb-2 mt-3 first:mt-0 pb-1 border-b border-white/10">{children}</h2>,
-          h3: ({ children }) => <h3 className="text-sm font-semibold text-cyan-300 mb-1.5 mt-2 first:mt-0">{children}</h3>,
+          p: ({ children }) => <p className="mb-2 last:mb-0 text-gray-800">{children}</p>,
+          strong: ({ children }) => <strong className="font-semibold text-cyan-600">{children}</strong>,
+          em: ({ children }) => <em className="text-amber-600/90 not-italic font-medium">{children}</em>,
+          h1: ({ children }) => <h1 className="text-base font-bold text-gray-900 mb-2 mt-1">{children}</h1>,
+          h2: ({ children }) => <h2 className="text-sm font-bold text-gray-900 mb-2 mt-3 first:mt-0 pb-1 border-b border-gray-200">{children}</h2>,
+          h3: ({ children }) => <h3 className="text-sm font-semibold text-cyan-600 mb-1.5 mt-2 first:mt-0">{children}</h3>,
           ul: ({ children }) => <ul className="space-y-1.5 my-2 pl-0">{children}</ul>,
           ol: ({ children }) => {
             let counter = 0;
@@ -82,14 +82,14 @@ function FormattedMessage({ content, isUser }: { content: string; isUser?: boole
             const siblings = node?.parentNode?.children?.filter((c: any) => c.tagName === 'li') || [];
             const num = siblings.indexOf(node) + 1;
             return isOrdered ? (
-              <li className="flex gap-2.5 items-start text-white/90 list-none">
-                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-gradient-to-br from-cyan-500/30 to-cyan-600/20 border border-cyan-500/30 flex items-center justify-center text-[10px] font-bold text-cyan-300 mt-0.5">
+              <li className="flex gap-2.5 items-start text-gray-800 list-none">
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-gradient-to-br from-cyan-500/30 to-cyan-600/20 border border-cyan-300 flex items-center justify-center text-[10px] font-bold text-cyan-600 mt-0.5">
                   {num}
                 </span>
                 <span className="flex-1">{children}</span>
               </li>
             ) : (
-              <li className="flex gap-2 items-start text-white/90 list-none">
+              <li className="flex gap-2 items-start text-gray-800 list-none">
                 <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-cyan-400 mt-1.5" />
                 <span className="flex-1">{children}</span>
               </li>
@@ -98,19 +98,19 @@ function FormattedMessage({ content, isUser }: { content: string; isUser?: boole
           code: ({ children, className }) => {
             const isBlock = className?.includes("language-");
             return isBlock ? (
-              <pre className="bg-black/40 border border-white/10 rounded-lg p-3 my-2 overflow-x-auto">
-                <code className="text-xs font-mono text-emerald-300">{children}</code>
+              <pre className="bg-gray-100 border border-gray-200 rounded-lg p-3 my-2 overflow-x-auto">
+                <code className="text-xs font-mono text-emerald-600">{children}</code>
               </pre>
             ) : (
-              <code className="bg-white/10 text-amber-300 px-1.5 py-0.5 rounded text-xs font-mono">{children}</code>
+              <code className="bg-gray-100 text-amber-600 px-1.5 py-0.5 rounded text-xs font-mono">{children}</code>
             );
           },
           blockquote: ({ children }) => (
-            <blockquote className="border-l-2 border-cyan-500/50 pl-3 my-2 text-white/70 italic">{children}</blockquote>
+            <blockquote className="border-l-2 border-cyan-300 pl-3 my-2 text-gray-600 italic">{children}</blockquote>
           ),
-          hr: () => <hr className="border-white/10 my-3" />,
+          hr: () => <hr className="border-gray-200 my-3" />,
           a: ({ children, href }) => (
-            <a href={href} target="_blank" rel="noopener noreferrer" className="text-cyan-400 underline underline-offset-2 hover:text-cyan-300">{children}</a>
+            <a href={href} target="_blank" rel="noopener noreferrer" className="text-cyan-600 underline underline-offset-2 hover:text-cyan-600">{children}</a>
           ),
         }}
       >
@@ -188,14 +188,14 @@ function ConfidenceBadge({ confidence, sourcesCount, memoryUsed }: { confidence?
   if (!confidence && confidence !== 0) return null;
   const pct = Math.round(confidence * 100);
   const colorClasses = pct >= 80
-    ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/20"
+    ? "bg-emerald-100 text-emerald-600 border-emerald-200"
     : pct >= 50
-    ? "bg-amber-500/20 text-amber-300 border-amber-500/20"
-    : "bg-red-500/20 text-red-300 border-red-500/20";
+    ? "bg-amber-100 text-amber-600 border-amber-200"
+    : "bg-red-100 text-red-500 border-red-200";
   return (
     <div className="flex items-center gap-1.5">
       {memoryUsed && (
-        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-medium border border-purple-500/20 flex items-center gap-0.5">
+        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-600 font-medium border border-purple-200 flex items-center gap-0.5">
           <Brain className="w-2.5 h-2.5" />
           Memory
         </span>
@@ -204,7 +204,7 @@ function ConfidenceBadge({ confidence, sourcesCount, memoryUsed }: { confidence?
         {pct}% sure
       </span>
       {sourcesCount !== undefined && sourcesCount > 0 && (
-        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300/70 font-medium">
+        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-cyan-50 text-cyan-600/70 font-medium">
           {sourcesCount} sources
         </span>
       )}
@@ -251,8 +251,8 @@ function FeedbackButtons({ messageId, conversationId }: { messageId: number; con
   if (submitted === 'up') {
     return (
       <div className="flex items-center gap-1 mt-1">
-        <ThumbsUp className="w-3 h-3 text-emerald-400" />
-        <span className="text-[10px] text-emerald-400">Thanks!</span>
+        <ThumbsUp className="w-3 h-3 text-emerald-600" />
+        <span className="text-[10px] text-emerald-600">Thanks!</span>
       </div>
     );
   }
@@ -264,14 +264,14 @@ function FeedbackButtons({ messageId, conversationId }: { messageId: number; con
           <button
             data-testid={`button-thumbsup-${messageId}`}
             onClick={() => handleFeedback('up')}
-            className="p-1 rounded hover:bg-white/10 text-white/30 hover:text-emerald-400 transition-colors"
+            className="p-1 rounded hover:bg-gray-100 text-gray-300 hover:text-emerald-600 transition-colors"
           >
             <ThumbsUp className="w-3 h-3" />
           </button>
           <button
             data-testid={`button-thumbsdown-${messageId}`}
             onClick={() => handleFeedback('down')}
-            className="p-1 rounded hover:bg-white/10 text-white/30 hover:text-red-400 transition-colors"
+            className="p-1 rounded hover:bg-gray-100 text-gray-300 hover:text-red-500 transition-colors"
           >
             <ThumbsDown className="w-3 h-3" />
           </button>
@@ -284,13 +284,13 @@ function FeedbackButtons({ messageId, conversationId }: { messageId: number; con
             value={correction}
             onChange={(e) => setCorrection(e.target.value)}
             placeholder="What should I have said?"
-            className="flex-1 text-xs bg-white/5 border border-white/10 rounded px-2 py-1 text-white placeholder:text-white/30 focus:outline-none focus:border-cyan-500/30"
+            className="flex-1 text-xs bg-gray-100 border border-gray-200 rounded px-2 py-1 text-gray-900 placeholder:text-gray-300 focus:outline-none focus:border-cyan-300"
             onKeyDown={(e) => e.key === 'Enter' && submitCorrection()}
           />
-          <button onClick={submitCorrection} className="p-1 rounded hover:bg-white/10 text-cyan-400">
+          <button onClick={submitCorrection} className="p-1 rounded hover:bg-gray-100 text-cyan-600">
             <Send className="w-3 h-3" />
           </button>
-          <button onClick={() => { setShowCorrection(false); setSubmitted(null); }} className="p-1 rounded hover:bg-white/10 text-white/30">
+          <button onClick={() => { setShowCorrection(false); setSubmitted(null); }} className="p-1 rounded hover:bg-gray-100 text-gray-300">
             <X className="w-3 h-3" />
           </button>
         </div>
@@ -332,42 +332,42 @@ function MemoryPanel({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="w-80 h-full bg-card/95 backdrop-blur-xl border-l border-border/50 flex flex-col" data-testid="panel-memory">
-      <div className="p-3 border-b border-border/30 flex items-center justify-between">
+    <div className="w-80 h-full bg-white backdrop-blur-xl border-l border-gray-200 flex flex-col" data-testid="panel-memory">
+      <div className="p-3 border-b border-gray-200 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Brain className="w-4 h-4 text-purple-400" />
-          <span className="text-sm font-semibold text-white">ARYA's Memory</span>
-          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300">{memories.length}</span>
+          <Brain className="w-4 h-4 text-purple-600" />
+          <span className="text-sm font-semibold text-gray-900">ARYA's Memory</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-600">{memories.length}</span>
         </div>
-        <button onClick={onClose} className="p-1 rounded hover:bg-white/10 text-white/50">
+        <button onClick={onClose} className="p-1 rounded hover:bg-gray-100 text-gray-400">
           <X className="w-4 h-4" />
         </button>
       </div>
       <div className="flex-1 overflow-y-auto p-3 space-y-4">
-        {isLoading && <div className="flex items-center justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-purple-400" /></div>}
+        {isLoading && <div className="flex items-center justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-purple-600" /></div>}
         {!isLoading && memories.length === 0 && (
           <div className="text-center py-8">
-            <Brain className="w-8 h-8 text-white/10 mx-auto mb-2" />
-            <p className="text-sm text-white/40">No memories yet</p>
-            <p className="text-xs text-white/20 mt-1">Chat with ARYA to build memory</p>
+            <Brain className="w-8 h-8 text-gray-900/10 mx-auto mb-2" />
+            <p className="text-sm text-gray-400">No memories yet</p>
+            <p className="text-xs text-gray-200 mt-1">Chat with ARYA to build memory</p>
           </div>
         )}
         {Object.entries(grouped).map(([category, items]) => (
           <div key={category}>
             <div className="flex items-center gap-1.5 mb-2">
               <span className="text-sm">{categoryIcons[category] || "📝"}</span>
-              <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">{category}</span>
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{category}</span>
             </div>
             <div className="space-y-1.5">
               {items.map((mem) => (
-                <div key={mem.id} className="group flex items-start gap-2 px-2.5 py-2 rounded-lg bg-white/5 border border-white/5 hover:border-purple-500/20 transition-colors">
+                <div key={mem.id} className="group flex items-start gap-2 px-2.5 py-2 rounded-lg bg-gray-100 border border-gray-100 hover:border-purple-200 transition-colors">
                   <div className="flex-1 min-w-0">
-                    <div className="text-xs font-medium text-white/80 truncate">{mem.key}</div>
-                    <div className="text-[11px] text-white/50 mt-0.5">{mem.value}</div>
+                    <div className="text-xs font-medium text-gray-700 truncate">{mem.key}</div>
+                    <div className="text-[11px] text-gray-400 mt-0.5">{mem.value}</div>
                   </div>
                   <button
                     onClick={() => deleteMutation.mutate(mem.id)}
-                    className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-white/10 text-white/30 hover:text-red-400 transition-all flex-shrink-0"
+                    className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-gray-100 text-gray-300 hover:text-red-500 transition-all flex-shrink-0"
                     data-testid={`button-delete-memory-${mem.id}`}
                   >
                     <X className="w-3 h-3" />
@@ -463,27 +463,27 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
   ];
 
   return (
-    <div className="w-80 sm:w-96 h-full bg-card/95 backdrop-blur-xl border-l border-border/50 flex flex-col" data-testid="panel-customize">
-      <div className="p-3 border-b border-border/30 flex items-center justify-between">
+    <div className="w-80 sm:w-96 h-full bg-white backdrop-blur-xl border-l border-gray-200 flex flex-col" data-testid="panel-customize">
+      <div className="p-3 border-b border-gray-200 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Palette className="w-4 h-4 text-cyan-400" />
-          <span className="text-sm font-semibold text-white">Customize ARYA</span>
+          <Palette className="w-4 h-4 text-cyan-600" />
+          <span className="text-sm font-semibold text-gray-900">Customize ARYA</span>
         </div>
-        <button onClick={onClose} className="p-1 rounded hover:bg-white/10 text-white/50" data-testid="button-close-customize">
+        <button onClick={onClose} className="p-1 rounded hover:bg-gray-100 text-gray-400" data-testid="button-close-customize">
           <X className="w-4 h-4" />
         </button>
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-cyan-400" /></div>
+        <div className="flex items-center justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-cyan-600" /></div>
       ) : (
         <div className="flex-1 overflow-y-auto p-4 space-y-5">
-          <div className="text-[11px] text-white/40 leading-relaxed">
+          <div className="text-[11px] text-gray-400 leading-relaxed">
             Personalize how ARYA responds to you. Changes take effect in your next conversation.
           </div>
 
           <div>
-            <div className="text-xs font-semibold text-white/70 mb-2">Response Length</div>
+            <div className="text-xs font-semibold text-gray-600 mb-2">Response Length</div>
             <div className="space-y-1.5">
               {styleOptions.map(opt => (
                 <button
@@ -492,16 +492,16 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
                   onClick={() => setStyle(opt.value)}
                   className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-all ${
                     style === opt.value
-                      ? "bg-cyan-500/15 border border-cyan-500/30 text-cyan-300"
-                      : "bg-white/5 border border-transparent text-white/60 hover:bg-white/10"
+                      ? "bg-cyan-50 border border-cyan-300 text-cyan-600"
+                      : "bg-gray-100 border border-transparent text-gray-500 hover:bg-gray-100"
                   }`}
                 >
                   <div className={`w-3 h-3 rounded-full border-2 flex-shrink-0 ${
-                    style === opt.value ? "border-cyan-400 bg-cyan-400" : "border-white/20"
+                    style === opt.value ? "border-cyan-400 bg-cyan-400" : "border-gray-200"
                   }`} />
                   <div>
                     <div className="text-xs font-medium">{opt.label}</div>
-                    <div className="text-[10px] text-white/40">{opt.desc}</div>
+                    <div className="text-[10px] text-gray-400">{opt.desc}</div>
                   </div>
                 </button>
               ))}
@@ -509,7 +509,7 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
           </div>
 
           <div>
-            <div className="text-xs font-semibold text-white/70 mb-2">Conversation Tone</div>
+            <div className="text-xs font-semibold text-gray-600 mb-2">Conversation Tone</div>
             <div className="grid grid-cols-2 gap-1.5">
               {toneOptions.map(opt => (
                 <button
@@ -518,8 +518,8 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
                   onClick={() => setTone(opt.value)}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
                     tone === opt.value
-                      ? "bg-cyan-500/15 border border-cyan-500/30 text-cyan-300"
-                      : "bg-white/5 border border-transparent text-white/60 hover:bg-white/10"
+                      ? "bg-cyan-50 border border-cyan-300 text-cyan-600"
+                      : "bg-gray-100 border border-transparent text-gray-500 hover:bg-gray-100"
                   }`}
                 >
                   <span className="text-sm">{opt.icon}</span>
@@ -530,8 +530,8 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
           </div>
 
           <div>
-            <div className="text-xs font-semibold text-white/70 mb-1">Focus Areas</div>
-            <div className="text-[10px] text-white/30 mb-2">Pick up to 4 topics ARYA will relate advice to</div>
+            <div className="text-xs font-semibold text-gray-600 mb-1">Focus Areas</div>
+            <div className="text-[10px] text-gray-300 mb-2">Pick up to 4 topics ARYA will relate advice to</div>
             <div className="grid grid-cols-2 gap-1.5">
               {focusOptions.map(opt => (
                 <button
@@ -540,8 +540,8 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
                   onClick={() => toggleFocus(opt.value)}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
                     focus.includes(opt.value)
-                      ? "bg-amber-500/15 border border-amber-500/30 text-amber-300"
-                      : "bg-white/5 border border-transparent text-white/60 hover:bg-white/10"
+                      ? "bg-amber-50 border border-amber-300 text-amber-600"
+                      : "bg-gray-100 border border-transparent text-gray-500 hover:bg-gray-100"
                   }`}
                 >
                   <span className="text-sm">{opt.icon}</span>
@@ -552,7 +552,7 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
           </div>
 
           <div>
-            <div className="text-xs font-semibold text-white/70 mb-2">Wisdom & Quotes</div>
+            <div className="text-xs font-semibold text-gray-600 mb-2">Wisdom & Quotes</div>
             <div className="space-y-1.5">
               {wisdomOptions.map(opt => (
                 <button
@@ -561,16 +561,16 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
                   onClick={() => setWisdom(opt.value)}
                   className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-all ${
                     wisdom === opt.value
-                      ? "bg-cyan-500/15 border border-cyan-500/30 text-cyan-300"
-                      : "bg-white/5 border border-transparent text-white/60 hover:bg-white/10"
+                      ? "bg-cyan-50 border border-cyan-300 text-cyan-600"
+                      : "bg-gray-100 border border-transparent text-gray-500 hover:bg-gray-100"
                   }`}
                 >
                   <div className={`w-3 h-3 rounded-full border-2 flex-shrink-0 ${
-                    wisdom === opt.value ? "border-cyan-400 bg-cyan-400" : "border-white/20"
+                    wisdom === opt.value ? "border-cyan-400 bg-cyan-400" : "border-gray-200"
                   }`} />
                   <div>
                     <div className="text-xs font-medium">{opt.label}</div>
-                    <div className="text-[10px] text-white/40">{opt.desc}</div>
+                    <div className="text-[10px] text-gray-400">{opt.desc}</div>
                   </div>
                 </button>
               ))}
@@ -581,7 +581,7 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
             data-testid="button-save-preferences"
             onClick={savePrefs}
             disabled={saving}
-            className="w-full py-2.5 rounded-lg bg-gradient-to-r from-cyan-500/20 to-cyan-600/20 border border-cyan-500/30 text-cyan-300 text-xs font-semibold hover:from-cyan-500/30 hover:to-cyan-600/30 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full py-2.5 rounded-lg bg-gradient-to-r from-cyan-500/20 to-cyan-600/20 border border-cyan-300 text-cyan-600 text-xs font-semibold hover:from-cyan-500/30 hover:to-cyan-600/30 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : saved ? <Check className="w-3.5 h-3.5" /> : <Settings className="w-3.5 h-3.5" />}
             {saving ? "Saving..." : saved ? "Saved!" : "Save Preferences"}
@@ -643,29 +643,29 @@ function GoalsPanel({ onClose }: { onClose: () => void }) {
 
   const goals = data?.goals || [];
   const priorityColors: Record<string, string> = {
-    low: "text-white/40", medium: "text-blue-400", high: "text-amber-400", critical: "text-red-400"
+    low: "text-gray-400", medium: "text-blue-400", high: "text-amber-600", critical: "text-red-500"
   };
 
   return (
-    <div className="w-80 h-full bg-card/95 backdrop-blur-xl border-l border-border/50 flex flex-col" data-testid="panel-goals">
-      <div className="p-3 border-b border-border/30 flex items-center justify-between">
+    <div className="w-80 h-full bg-white backdrop-blur-xl border-l border-gray-200 flex flex-col" data-testid="panel-goals">
+      <div className="p-3 border-b border-gray-200 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Target className="w-4 h-4 text-amber-400" />
-          <span className="text-sm font-semibold text-white">Goals & Plans</span>
-          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300">{goals.filter(g => g.status === 'active').length}</span>
+          <Target className="w-4 h-4 text-amber-600" />
+          <span className="text-sm font-semibold text-gray-900">Goals & Plans</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-600">{goals.filter(g => g.status === 'active').length}</span>
         </div>
-        <button onClick={onClose} className="p-1 rounded hover:bg-white/10 text-white/50">
+        <button onClick={onClose} className="p-1 rounded hover:bg-gray-100 text-gray-400">
           <X className="w-4 h-4" />
         </button>
       </div>
 
-      <div className="p-3 border-b border-border/20">
+      <div className="p-3 border-b border-gray-200">
         <input
           data-testid="input-goal-title"
           value={newGoalTitle}
           onChange={(e) => setNewGoalTitle(e.target.value)}
           placeholder="What's your goal?"
-          className="w-full text-xs bg-white/5 border border-white/10 rounded-lg px-2.5 py-2 text-white placeholder:text-white/30 focus:outline-none focus:border-amber-500/30 mb-1.5"
+          className="w-full text-xs bg-gray-100 border border-gray-200 rounded-lg px-2.5 py-2 text-gray-900 placeholder:text-gray-300 focus:outline-none focus:border-amber-300 mb-1.5"
         />
         <textarea
           data-testid="input-goal-steps"
@@ -673,34 +673,34 @@ function GoalsPanel({ onClose }: { onClose: () => void }) {
           onChange={(e) => setNewGoalSteps(e.target.value)}
           placeholder="Steps (one per line, optional)"
           rows={2}
-          className="w-full text-xs bg-white/5 border border-white/10 rounded-lg px-2.5 py-2 text-white placeholder:text-white/30 focus:outline-none focus:border-amber-500/30 resize-none mb-1.5"
+          className="w-full text-xs bg-gray-100 border border-gray-200 rounded-lg px-2.5 py-2 text-gray-900 placeholder:text-gray-300 focus:outline-none focus:border-amber-300 resize-none mb-1.5"
         />
         <Button
           data-testid="button-create-goal"
           onClick={() => newGoalTitle.trim() && createGoalMutation.mutate()}
           disabled={!newGoalTitle.trim()}
           size="sm"
-          className="w-full bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-500/20 text-xs"
+          className="w-full bg-amber-100 text-amber-600 hover:bg-amber-200 border border-amber-200 text-xs"
         >
           <Plus className="w-3 h-3 mr-1" /> Add Goal
         </Button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-3 space-y-3">
-        {isLoading && <div className="flex items-center justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-amber-400" /></div>}
+        {isLoading && <div className="flex items-center justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-amber-600" /></div>}
         {goals.map((goal) => (
-          <div key={goal.id} className="rounded-xl bg-white/5 border border-white/10 p-3 group" data-testid={`card-goal-${goal.id}`}>
+          <div key={goal.id} className="rounded-xl bg-gray-100 border border-gray-200 p-3 group" data-testid={`card-goal-${goal.id}`}>
             <div className="flex items-start justify-between mb-2">
               <div className="flex-1">
                 <div className="flex items-center gap-1.5">
                   <span className={`text-[9px] uppercase font-bold ${priorityColors[goal.priority]}`}>{goal.priority}</span>
-                  {goal.status === 'completed' && <Check className="w-3 h-3 text-emerald-400" />}
+                  {goal.status === 'completed' && <Check className="w-3 h-3 text-emerald-600" />}
                 </div>
-                <h4 className="text-xs font-medium text-white mt-0.5">{goal.title}</h4>
+                <h4 className="text-xs font-medium text-gray-900 mt-0.5">{goal.title}</h4>
               </div>
               <button
                 onClick={() => deleteGoalMutation.mutate(goal.id)}
-                className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-white/10 text-white/30 hover:text-red-400 transition-all"
+                className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-gray-100 text-gray-300 hover:text-red-500 transition-all"
               >
                 <Trash2 className="w-3 h-3" />
               </button>
@@ -708,10 +708,10 @@ function GoalsPanel({ onClose }: { onClose: () => void }) {
 
             {goal.steps.length > 0 && (
               <div className="mb-2">
-                <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
+                <div className="w-full h-1 bg-gray-100 rounded-full overflow-hidden">
                   <div className="h-full bg-gradient-to-r from-amber-500 to-emerald-500 rounded-full transition-all" style={{ width: `${goal.progress}%` }} />
                 </div>
-                <span className="text-[10px] text-white/30 mt-0.5 block">{goal.progress}%</span>
+                <span className="text-[10px] text-gray-300 mt-0.5 block">{goal.progress}%</span>
               </div>
             )}
 
@@ -720,15 +720,15 @@ function GoalsPanel({ onClose }: { onClose: () => void }) {
                 <button
                   key={step.id}
                   onClick={() => toggleStepMutation.mutate({ stepId: step.id, status: step.status })}
-                  className="w-full flex items-start gap-2 text-left px-1.5 py-1 rounded hover:bg-white/5 transition-colors"
+                  className="w-full flex items-start gap-2 text-left px-1.5 py-1 rounded hover:bg-gray-100 transition-colors"
                   data-testid={`button-step-${step.id}`}
                 >
                   <div className={`w-3.5 h-3.5 mt-0.5 rounded border flex-shrink-0 flex items-center justify-center ${
-                    step.status === 'completed' ? 'bg-emerald-500/30 border-emerald-500/50' : 'border-white/20'
+                    step.status === 'completed' ? 'bg-emerald-100 border-emerald-300' : 'border-gray-200'
                   }`}>
-                    {step.status === 'completed' && <Check className="w-2.5 h-2.5 text-emerald-400" />}
+                    {step.status === 'completed' && <Check className="w-2.5 h-2.5 text-emerald-600" />}
                   </div>
-                  <span className={`text-[11px] ${step.status === 'completed' ? 'text-white/30 line-through' : 'text-white/70'}`}>
+                  <span className={`text-[11px] ${step.status === 'completed' ? 'text-gray-300 line-through' : 'text-gray-600'}`}>
                     {step.description}
                   </span>
                 </button>
@@ -738,9 +738,9 @@ function GoalsPanel({ onClose }: { onClose: () => void }) {
         ))}
         {!isLoading && goals.length === 0 && (
           <div className="text-center py-8">
-            <Target className="w-8 h-8 text-white/10 mx-auto mb-2" />
-            <p className="text-sm text-white/40">No goals yet</p>
-            <p className="text-xs text-white/20 mt-1">Set goals and track progress</p>
+            <Target className="w-8 h-8 text-gray-900/10 mx-auto mb-2" />
+            <p className="text-sm text-gray-400">No goals yet</p>
+            <p className="text-xs text-gray-200 mt-1">Set goals and track progress</p>
           </div>
         )}
       </div>
@@ -767,22 +767,22 @@ function InsightsCard({ insights, onDismiss }: { insights: InsightItem[]; onDism
           return (
             <div
               key={insight.id}
-              className="flex items-start gap-3 px-3 py-2.5 rounded-xl bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border border-purple-500/20"
+              className="flex items-start gap-3 px-3 py-2.5 rounded-xl bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border border-purple-200"
               data-testid={`card-insight-${insight.id}`}
             >
-              <div className="w-7 h-7 rounded-lg bg-purple-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <Icon className="w-3.5 h-3.5 text-purple-400" />
+              <div className="w-7 h-7 rounded-lg bg-purple-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Icon className="w-3.5 h-3.5 text-purple-600" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] uppercase font-bold text-purple-400 tracking-wider">Insight</span>
-                  <span className="text-[10px] text-white/30">{insight.title}</span>
+                  <span className="text-[10px] uppercase font-bold text-purple-600 tracking-wider">Insight</span>
+                  <span className="text-[10px] text-gray-300">{insight.title}</span>
                 </div>
-                <p className="text-xs text-white/70 mt-0.5 leading-relaxed">{insight.insight.slice(0, 150)}{insight.insight.length > 150 ? '...' : ''}</p>
+                <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">{insight.insight.slice(0, 150)}{insight.insight.length > 150 ? '...' : ''}</p>
               </div>
               <button
                 onClick={() => onDismiss(insight.id)}
-                className="p-1 rounded hover:bg-white/10 text-white/30 hover:text-white/60 flex-shrink-0"
+                className="p-1 rounded hover:bg-gray-100 text-gray-300 hover:text-gray-500 flex-shrink-0"
                 data-testid={`button-dismiss-insight-${insight.id}`}
               >
                 <X className="w-3 h-3" />
@@ -818,7 +818,7 @@ function NotificationBell({ token }: { token: string }) {
       <button
         data-testid="button-notifications"
         onClick={() => setShowDropdown(!showDropdown)}
-        className="p-1.5 rounded-lg text-white/40 hover:text-white/60 hover:bg-white/5 transition-all relative"
+        className="p-1.5 rounded-lg text-gray-400 hover:text-gray-500 hover:bg-gray-100 transition-all relative"
       >
         <Bell className="w-4 h-4" />
         {unreadCount > 0 && (
@@ -828,24 +828,24 @@ function NotificationBell({ token }: { token: string }) {
         )}
       </button>
       {showDropdown && (
-        <div className="absolute right-0 top-full mt-1 z-50 bg-card border border-white/10 rounded-xl shadow-xl py-1 w-72 max-h-80 overflow-y-auto">
-          <div className="px-3 py-2 border-b border-white/5 flex items-center justify-between">
-            <span className="text-xs font-semibold text-white/70">Notifications</span>
-            {unreadCount > 0 && <span className="text-[10px] text-amber-400">{unreadCount} new</span>}
+        <div className="absolute right-0 top-full mt-1 z-50 bg-card border border-gray-200 rounded-xl shadow-xl py-1 w-72 max-h-80 overflow-y-auto">
+          <div className="px-3 py-2 border-b border-gray-100 flex items-center justify-between">
+            <span className="text-xs font-semibold text-gray-600">Notifications</span>
+            {unreadCount > 0 && <span className="text-[10px] text-amber-600">{unreadCount} new</span>}
           </div>
           {notifications.length === 0 ? (
-            <div className="px-3 py-4 text-xs text-white/30 text-center">No notifications yet</div>
+            <div className="px-3 py-4 text-xs text-gray-300 text-center">No notifications yet</div>
           ) : (
             notifications.slice(0, 20).map((n: any) => (
               <div
                 key={n.id}
                 data-testid={`notification-item-${n.id}`}
-                className={`px-3 py-2 text-xs border-b border-white/5 last:border-0 cursor-pointer hover:bg-white/5 ${!n.isRead ? 'bg-cyan-500/5' : ''}`}
+                className={`px-3 py-2 text-xs border-b border-gray-100 last:border-0 cursor-pointer hover:bg-gray-100 ${!n.isRead ? 'bg-cyan-50' : ''}`}
                 onClick={() => { if (!n.isRead) markRead(n.id); }}
               >
-                <div className="font-medium text-white/80">{n.title}</div>
-                <div className="text-white/40 mt-0.5">{n.message}</div>
-                <div className="text-white/20 mt-1 text-[10px]">
+                <div className="font-medium text-gray-700">{n.title}</div>
+                <div className="text-gray-400 mt-0.5">{n.message}</div>
+                <div className="text-gray-200 mt-1 text-[10px]">
                   {new Date(n.createdAt).toLocaleDateString()}
                 </div>
               </div>
@@ -1433,13 +1433,13 @@ export default function AryaChat() {
       <div
         className={`${
           showSidebar ? "translate-x-0" : "-translate-x-full"
-        } md:translate-x-0 fixed md:relative z-30 md:z-auto top-0 left-0 h-full w-72 md:w-64 lg:w-72 flex-shrink-0 flex flex-col bg-card/95 md:bg-transparent backdrop-blur-xl md:backdrop-blur-none border-r md:border-r-0 border-border/50 transition-transform duration-300 pt-14 md:pt-0`}
+        } md:translate-x-0 fixed md:relative z-30 md:z-auto top-0 left-0 h-full w-72 md:w-64 lg:w-72 flex-shrink-0 flex flex-col bg-white md:bg-transparent backdrop-blur-xl md:backdrop-blur-none border-r md:border-r-0 border-gray-200 transition-transform duration-300 pt-14 md:pt-0`}
       >
-        <div className="p-3 border-b border-border/20">
+        <div className="p-3 border-b border-gray-200">
           <div className="flex items-center gap-2 mb-3 px-1">
-            <MessageSquare className="w-4 h-4 text-cyan-400" />
-            <span className="text-sm font-semibold text-white">Chat History</span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/10 text-white/60 ml-auto">
+            <MessageSquare className="w-4 h-4 text-cyan-600" />
+            <span className="text-sm font-semibold text-gray-900">Chat History</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 ml-auto">
               {conversations.length}
             </span>
           </div>
@@ -1449,7 +1449,7 @@ export default function AryaChat() {
               createConversation.mutate("New Chat");
               setShowSidebar(false);
             }}
-            className="w-full bg-gradient-to-r from-cyan-600 to-cyan-500 text-white hover:from-cyan-500 hover:to-cyan-400 shadow-lg shadow-cyan-500/20"
+            className="w-full bg-gradient-to-r from-cyan-600 to-cyan-500 text-white hover:from-cyan-500 hover:to-cyan-400 shadow-lg shadow-cyan-300/30"
             size="sm"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -1457,12 +1457,12 @@ export default function AryaChat() {
           </Button>
         </div>
 
-        <div className="px-2 py-2 border-b border-border/10 flex gap-1">
+        <div className="px-2 py-2 border-b border-gray-100 flex gap-1">
           <button
             data-testid="button-toggle-memory"
             onClick={() => { setShowMemory(!showMemory); setShowGoals(false); }}
             className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-medium transition-colors ${
-              showMemory ? 'bg-purple-500/20 text-purple-300 border border-purple-500/20' : 'text-white/40 hover:text-white/60 hover:bg-white/5'
+              showMemory ? 'bg-purple-100 text-purple-600 border border-purple-200' : 'text-gray-400 hover:text-gray-500 hover:bg-gray-100'
             }`}
           >
             <Brain className="w-3 h-3" />
@@ -1472,7 +1472,7 @@ export default function AryaChat() {
             data-testid="button-toggle-goals"
             onClick={() => { setShowGoals(!showGoals); setShowMemory(false); }}
             className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-medium transition-colors ${
-              showGoals ? 'bg-amber-500/20 text-amber-300 border border-amber-500/20' : 'text-white/40 hover:text-white/60 hover:bg-white/5'
+              showGoals ? 'bg-amber-100 text-amber-600 border border-amber-200' : 'text-gray-400 hover:text-gray-500 hover:bg-gray-100'
             }`}
           >
             <Target className="w-3 h-3" />
@@ -1494,20 +1494,20 @@ export default function AryaChat() {
                 }}
                 className={`group flex items-start gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer transition-all ${
                   activeConversation === conv.id
-                    ? "bg-gradient-to-r from-cyan-500/15 to-transparent border border-cyan-500/25 text-white"
-                    : "hover:bg-white/5 text-muted-foreground hover:text-white border border-transparent"
+                    ? "bg-gradient-to-r from-cyan-500/15 to-transparent border border-cyan-300 text-gray-900"
+                    : "hover:bg-gray-100 text-muted-foreground hover:text-gray-900 border border-transparent"
                 }`}
               >
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${
                   activeConversation === conv.id
-                    ? "bg-cyan-500/20 text-cyan-400"
-                    : "bg-white/5 text-white/40"
+                    ? "bg-cyan-100 text-cyan-600"
+                    : "bg-gray-100 text-gray-400"
                 }`}>
                   <MessageSquare className="w-3.5 h-3.5" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <span className="truncate text-sm block leading-tight">{conv.title}</span>
-                  <span className="text-[10px] text-white/30 mt-0.5 block">{timeStr}</span>
+                  <span className="text-[10px] text-gray-300 mt-0.5 block">{timeStr}</span>
                 </div>
                 <button
                   data-testid={`button-delete-conversation-${conv.id}`}
@@ -1515,7 +1515,7 @@ export default function AryaChat() {
                     e.stopPropagation();
                     deleteConversation.mutate(conv.id);
                   }}
-                  className="opacity-0 group-hover:opacity-100 hover:text-red-400 transition-opacity mt-1"
+                  className="opacity-0 group-hover:opacity-100 hover:text-red-500 transition-opacity mt-1"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -1524,27 +1524,27 @@ export default function AryaChat() {
           })}
           {conversations.length === 0 && (
             <div className="text-center py-8 px-3">
-              <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-3">
-                <MessageSquare className="w-5 h-5 text-white/20" />
+              <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                <MessageSquare className="w-5 h-5 text-gray-200" />
               </div>
               <p className="text-muted-foreground text-sm">No conversations yet</p>
-              <p className="text-white/30 text-xs mt-1">Start chatting with ARYA!</p>
+              <p className="text-gray-300 text-xs mt-1">Start chatting with ARYA!</p>
             </div>
           )}
         </div>
       </div>
 
       <div className="flex-1 flex flex-col min-w-0 relative">
-        <div className="flex items-center justify-between px-3 py-2 md:hidden border-b border-border/20">
+        <div className="flex items-center justify-between px-3 py-2 md:hidden border-b border-gray-200">
           <button
             data-testid="button-toggle-conversations"
             onClick={() => setShowSidebar(!showSidebar)}
-            className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-card/40 border border-border/30 hover:bg-card/60 transition-all"
+            className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white/80 border border-gray-200 hover:bg-white/90 transition-all"
           >
-            {showSidebar ? <PanelLeftClose className="w-4 h-4 text-cyan-400" /> : <PanelLeftOpen className="w-4 h-4 text-cyan-400" />}
-            <span className="text-xs font-medium text-white/80">History</span>
+            {showSidebar ? <PanelLeftClose className="w-4 h-4 text-cyan-600" /> : <PanelLeftOpen className="w-4 h-4 text-cyan-600" />}
+            <span className="text-xs font-medium text-gray-700">History</span>
             {conversations.length > 0 && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-medium">
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-cyan-100 text-cyan-600 font-medium">
                 {conversations.length}
               </span>
             )}
@@ -1558,14 +1558,14 @@ export default function AryaChat() {
             <button
               data-testid="button-toggle-memory-mobile"
               onClick={() => { setShowMemory(!showMemory); setShowGoals(false); }}
-              className={`p-1.5 rounded-lg transition-all ${showMemory ? 'bg-purple-500/20 text-purple-400' : 'text-white/40 hover:text-white/60'}`}
+              className={`p-1.5 rounded-lg transition-all ${showMemory ? 'bg-purple-100 text-purple-600' : 'text-gray-400 hover:text-gray-500'}`}
             >
               <Brain className="w-4 h-4" />
             </button>
             <button
               data-testid="button-toggle-goals-mobile"
               onClick={() => { setShowGoals(!showGoals); setShowMemory(false); }}
-              className={`p-1.5 rounded-lg transition-all ${showGoals ? 'bg-amber-500/20 text-amber-400' : 'text-white/40 hover:text-white/60'}`}
+              className={`p-1.5 rounded-lg transition-all ${showGoals ? 'bg-amber-100 text-amber-600' : 'text-gray-400 hover:text-gray-500'}`}
             >
               <Target className="w-4 h-4" />
             </button>
@@ -1583,9 +1583,9 @@ export default function AryaChat() {
                 <button
                   data-testid="button-user-menu"
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="p-1.5 rounded-lg bg-gradient-to-br from-cyan-500/20 to-amber-500/20 border border-cyan-500/30 hover:border-cyan-500/50 transition-all"
+                  className="p-1.5 rounded-lg bg-gradient-to-br from-cyan-500/20 to-amber-500/20 border border-cyan-300 hover:border-cyan-300 transition-all"
                 >
-                  <User className="w-4 h-4 text-cyan-400" />
+                  <User className="w-4 h-4 text-cyan-600" />
                 </button>
                 <AnimatePresence>
                   {showUserMenu && (
@@ -1594,44 +1594,44 @@ export default function AryaChat() {
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.92, y: -5 }}
                       transition={{ duration: 0.15 }}
-                      className="absolute right-0 top-full mt-1 z-50 bg-card border border-white/10 rounded-xl shadow-xl py-2 min-w-[180px]"
+                      className="absolute right-0 top-full mt-1 z-50 bg-card border border-gray-200 rounded-xl shadow-xl py-2 min-w-[180px]"
                     >
-                      <div className="px-3 py-2 border-b border-white/5">
-                        <div className="text-xs font-medium text-white">{user?.name}</div>
+                      <div className="px-3 py-2 border-b border-gray-100">
+                        <div className="text-xs font-medium text-gray-900">{user?.name}</div>
                         <div className="text-[10px] text-muted-foreground">{user?.phone}</div>
                       </div>
                       <button
                         data-testid="button-my-goals"
                         onClick={() => { setShowUserMenu(false); setLocation("/my-goals"); }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white/80 hover:bg-white/5"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-100"
                       >
-                        <Target className="w-3.5 h-3.5 text-amber-400" /> My Goals
+                        <Target className="w-3.5 h-3.5 text-amber-600" /> My Goals
                       </button>
                       <button
                         data-testid="button-customize-arya"
                         onClick={() => { setShowUserMenu(false); setShowCustomize(true); setShowMemory(false); setShowGoals(false); }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white/80 hover:bg-white/5"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-100"
                       >
-                        <Palette className="w-3.5 h-3.5 text-cyan-400" /> Customize ARYA
+                        <Palette className="w-3.5 h-3.5 text-cyan-600" /> Customize ARYA
                       </button>
                       <button
                         data-testid="button-quick-tutorial"
                         onClick={() => { setShowUserMenu(false); setShowTutorial(true); }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white/80 hover:bg-white/5"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-100"
                       >
-                        <HelpCircle className="w-3.5 h-3.5 text-amber-400" /> Quick Tutorial
+                        <HelpCircle className="w-3.5 h-3.5 text-amber-600" /> Quick Tutorial
                       </button>
                       <button
                         data-testid="button-report-issue"
                         onClick={() => { setShowUserMenu(false); setShowFeedbackModal(true); }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white/80 hover:bg-white/5"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:bg-gray-100"
                       >
-                        <MessageCircleWarning className="w-3.5 h-3.5 text-orange-400" /> Report Issue
+                        <MessageCircleWarning className="w-3.5 h-3.5 text-orange-600" /> Report Issue
                       </button>
                       <button
                         data-testid="button-user-logout"
                         onClick={() => { setShowUserMenu(false); userLogout(); }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-400 hover:bg-white/5"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-500 hover:bg-gray-100"
                       >
                         <LogOut className="w-3.5 h-3.5" /> Sign Out
                       </button>
@@ -1644,7 +1644,7 @@ export default function AryaChat() {
               <button
                 data-testid="button-user-login"
                 onClick={() => setShowUserAuth(true)}
-                className="p-1.5 rounded-lg text-white/40 hover:text-white/60 hover:bg-white/5 transition-all"
+                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-500 hover:bg-gray-100 transition-all"
                 title="Sign in"
               >
                 <LogIn className="w-4 h-4" />
@@ -1734,18 +1734,18 @@ export default function AryaChat() {
                   <button
                     data-testid="button-welcome-signin"
                     onClick={() => setShowUserAuth(true)}
-                    className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-white/60 hover:text-white/80 hover:border-cyan-500/30 transition-all flex items-center gap-1.5"
+                    className="px-3 py-1.5 rounded-lg bg-gray-100 border border-gray-200 text-xs text-gray-500 hover:text-gray-700 hover:border-cyan-300 transition-all flex items-center gap-1.5"
                   >
-                    <LogIn className="w-3 h-3 text-cyan-400" />
+                    <LogIn className="w-3 h-3 text-cyan-600" />
                     Sign in to track goals
                   </button>
                 )}
                 <button
                   data-testid="button-welcome-tutorial"
                   onClick={() => setShowTutorial(true)}
-                  className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-white/60 hover:text-white/80 hover:border-amber-500/30 transition-all flex items-center gap-1.5"
+                  className="px-3 py-1.5 rounded-lg bg-gray-100 border border-gray-200 text-xs text-gray-500 hover:text-gray-700 hover:border-amber-300 transition-all flex items-center gap-1.5"
                 >
-                  <HelpCircle className="w-3 h-3 text-amber-400" />
+                  <HelpCircle className="w-3 h-3 text-amber-600" />
                   Take a Tour
                 </button>
               </div>
@@ -1765,14 +1765,14 @@ export default function AryaChat() {
                     key={i}
                     data-testid={`button-suggestion-${i}`}
                     onClick={() => sendMessage(suggestion.text)}
-                    className="text-left px-3 md:px-4 py-2.5 md:py-3 rounded-xl border border-border/50 bg-card/30 text-sm text-muted-foreground hover:text-white hover:border-primary/40 hover:bg-card/60 transition-all group"
+                    className="text-left px-3 md:px-4 py-2.5 md:py-3 rounded-xl border border-gray-200 bg-white/80 text-sm text-muted-foreground hover:text-gray-900 hover:border-primary/40 hover:bg-white/90 transition-all group"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, delay: 0.5 + i * 0.08 }}
                     whileHover={{ scale: 1.02, y: -2 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    <span className="text-[9px] uppercase tracking-wider font-semibold text-cyan-400/60 group-hover:text-cyan-400 mb-1 flex items-center gap-1">
+                    <span className="text-[9px] uppercase tracking-wider font-semibold text-cyan-600/60 group-hover:text-cyan-600 mb-1 flex items-center gap-1">
                       <span>{suggestion.icon}</span> {suggestion.badge}
                     </span>
                     <span className="block text-xs mt-0.5">{suggestion.text}</span>
@@ -1794,8 +1794,8 @@ export default function AryaChat() {
               <div
                 className={`group max-w-[90%] sm:max-w-[80%] md:max-w-[75%] rounded-2xl px-3 md:px-4 py-2.5 md:py-3 ${
                   msg.role === "user"
-                    ? "bg-primary/20 border border-primary/30 text-white"
-                    : "bg-card/60 border border-border/30 text-white/90"
+                    ? "bg-primary/20 border border-primary/30 text-gray-900"
+                    : "bg-white/90 border border-gray-200 text-gray-800"
                 }`}
               >
                 {msg.role === "assistant" && (
@@ -1835,15 +1835,15 @@ export default function AryaChat() {
             >
               <div className={`max-w-[90%] sm:max-w-[80%] md:max-w-[75%] rounded-2xl px-3 md:px-4 py-2.5 md:py-3 ${
                 responseMode === "instant"
-                  ? "bg-gradient-to-br from-amber-500/10 to-cyan-500/10 border border-amber-500/20"
-                  : "bg-card/60 border border-border/30"
-              } text-white/90`}>
+                  ? "bg-gradient-to-br from-amber-500/10 to-cyan-500/10 border border-amber-200"
+                  : "bg-white/90 border border-gray-200"
+              } text-gray-800`}>
                 <div className="flex items-center gap-1.5 mb-1">
                   <span className="text-xs font-semibold bg-gradient-to-r from-cyan-400 to-amber-400 bg-clip-text text-transparent">
                     ARYA
                   </span>
                   {responseMode === "instant" && (
-                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-medium border border-amber-500/20">
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-600 font-medium border border-amber-200">
                       Instant
                     </span>
                   )}
@@ -1856,12 +1856,12 @@ export default function AryaChat() {
                   <span className="inline-block w-1.5 h-4 bg-primary/60 animate-pulse ml-0.5 align-middle" />
                 </div>
                 {translatedContent && (
-                  <div className="mt-3 pt-3 border-t border-border/30">
+                  <div className="mt-3 pt-3 border-t border-gray-200">
                     <div className="flex items-center gap-1.5 mb-1">
-                      <Globe className="w-3 h-3 text-amber-400" />
-                      <span className="text-xs text-amber-400">{currentLang?.native || selectedLanguage}</span>
+                      <Globe className="w-3 h-3 text-amber-600" />
+                      <span className="text-xs text-amber-600">{currentLang?.native || selectedLanguage}</span>
                     </div>
-                    <div className="text-white/80">
+                    <div className="text-gray-700">
                       <FormattedMessage content={translatedContent} />
                     </div>
                   </div>
@@ -1878,7 +1878,7 @@ export default function AryaChat() {
               className="flex justify-start"
               data-testid="message-thinking"
             >
-              <div className="rounded-2xl px-3 md:px-4 py-2.5 md:py-3 bg-card/60 border border-border/30">
+              <div className="rounded-2xl px-3 md:px-4 py-2.5 md:py-3 bg-white/90 border border-gray-200">
                 <div className="flex items-center gap-1.5 mb-1">
                   <span className="text-xs font-semibold bg-gradient-to-r from-cyan-400 to-amber-400 bg-clip-text text-transparent">
                     ARYA
@@ -1898,7 +1898,7 @@ export default function AryaChat() {
         <div className="px-2 sm:px-4 pb-3 md:pb-4 pt-1 md:pt-2">
           {playingAudio && (
             <div className="flex items-center justify-center gap-2 mb-2">
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-300">
                 <div className="flex gap-0.5">
                   {[...Array(4)].map((_, i) => (
                     <div
@@ -1908,18 +1908,18 @@ export default function AryaChat() {
                     />
                   ))}
                 </div>
-                <span className="text-xs text-amber-400">ARYA is speaking...</span>
+                <span className="text-xs text-amber-600">ARYA is speaking...</span>
                 <button
                   data-testid="button-stop-audio"
                   onClick={stopAudio}
-                  className="p-0.5 rounded-full hover:bg-amber-500/20"
+                  className="p-0.5 rounded-full hover:bg-amber-100"
                 >
-                  <VolumeX className="w-3.5 h-3.5 text-amber-400" />
+                  <VolumeX className="w-3.5 h-3.5 text-amber-600" />
                 </button>
               </div>
             </div>
           )}
-          <Card className="bg-card/50 border-border/50 backdrop-blur-sm">
+          <Card className="bg-white/90 border-gray-200 backdrop-blur-sm">
             <div className="flex items-end gap-1.5 md:gap-2 p-2 md:p-3">
               <div className="relative" ref={langMenuRef}>
                 <Button
@@ -1929,16 +1929,16 @@ export default function AryaChat() {
                   onClick={() => setShowLanguageMenu(!showLanguageMenu)}
                   className={`flex-shrink-0 rounded-full h-9 w-9 md:h-10 md:w-10 ${
                     selectedLanguage !== "en-IN"
-                      ? "text-amber-400 bg-amber-500/10 hover:bg-amber-500/20"
-                      : "text-muted-foreground hover:text-white hover:bg-card"
+                      ? "text-amber-600 bg-amber-50 hover:bg-amber-100"
+                      : "text-muted-foreground hover:text-gray-900 hover:bg-card"
                   }`}
                   title={`Voice language: ${currentLang?.name || "English"}`}
                 >
                   <Globe className="w-4 h-4" />
                 </Button>
                 {showLanguageMenu && (
-                  <div className="absolute bottom-full left-0 mb-2 w-52 bg-card border border-border/50 rounded-xl shadow-xl overflow-hidden z-50">
-                    <div className="px-3 py-2 border-b border-border/30">
+                  <div className="absolute bottom-full left-0 mb-2 w-52 bg-card border border-gray-200 rounded-xl shadow-xl overflow-hidden z-50">
+                    <div className="px-3 py-2 border-b border-gray-200">
                       <p className="text-xs font-medium text-muted-foreground">Voice Language</p>
                     </div>
                     <div className="max-h-64 overflow-y-auto py-1">
@@ -1950,8 +1950,8 @@ export default function AryaChat() {
                             setSelectedLanguage(lang.code);
                             setShowLanguageMenu(false);
                           }}
-                          className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-white/5 transition-colors ${
-                            selectedLanguage === lang.code ? "text-primary bg-primary/10" : "text-white/80"
+                          className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-100 transition-colors ${
+                            selectedLanguage === lang.code ? "text-primary bg-primary/10" : "text-gray-700"
                           }`}
                         >
                           <span>{lang.name}</span>
@@ -1971,7 +1971,7 @@ export default function AryaChat() {
                 className={`flex-shrink-0 rounded-full h-9 w-9 md:h-10 md:w-10 ${
                   speakerOn
                     ? "text-primary bg-primary/10 hover:bg-primary/20"
-                    : "text-muted-foreground hover:text-white hover:bg-card"
+                    : "text-muted-foreground hover:text-gray-900 hover:bg-card"
                 }`}
                 title={speakerOn ? "ARYA will speak responses (tap to mute)" : "Tap to make ARYA speak responses"}
               >
@@ -1984,7 +1984,7 @@ export default function AryaChat() {
                 size="icon"
                 onClick={() => setShowVoiceMode(true)}
                 disabled={isStreaming}
-                className="flex-shrink-0 rounded-full h-9 w-9 md:h-10 md:w-10 bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 text-cyan-400 hover:from-cyan-500/30 hover:to-cyan-600/20 border border-cyan-500/20"
+                className="flex-shrink-0 rounded-full h-9 w-9 md:h-10 md:w-10 bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 text-cyan-600 hover:from-cyan-500/30 hover:to-cyan-600/20 border border-cyan-200"
                 title="Start voice conversation"
               >
                 <Mic className="w-5 h-5" />
@@ -2004,7 +2004,7 @@ export default function AryaChat() {
                       />
                     ))}
                   </div>
-                  <span className="text-sm text-red-400 font-mono">
+                  <span className="text-sm text-red-500 font-mono">
                     {formatTime(recordingTime)}
                   </span>
                   <span className="text-xs text-muted-foreground hidden sm:inline">
@@ -2021,7 +2021,7 @@ export default function AryaChat() {
                   placeholder="Ask ARYA anything..."
                   disabled={isStreaming}
                   rows={1}
-                  className="flex-1 resize-none bg-transparent border-0 text-white placeholder:text-muted-foreground text-sm focus:outline-none py-2 max-h-32"
+                  className="flex-1 resize-none bg-transparent border-0 text-gray-900 placeholder:text-muted-foreground text-sm focus:outline-none py-2 max-h-32"
                   style={{
                     height: "auto",
                     minHeight: "2.25rem",
@@ -2053,19 +2053,19 @@ export default function AryaChat() {
           </Card>
           {voiceError && (
             <div className="flex items-center justify-center gap-2 mt-1.5 px-3">
-              <p className="text-xs text-red-400 text-center">{voiceError}</p>
-              <button onClick={() => setVoiceError(null)} className="text-red-400/60 hover:text-red-400 text-xs">✕</button>
+              <p className="text-xs text-red-500 text-center">{voiceError}</p>
+              <button onClick={() => setVoiceError(null)} className="text-red-500/60 hover:text-red-500 text-xs">✕</button>
             </div>
           )}
           <div className="flex items-center justify-center gap-2 mt-1.5 md:mt-2">
             {selectedLanguage !== "en-IN" && (
-              <span className="text-[10px] md:text-xs text-amber-400/80 flex items-center gap-1">
+              <span className="text-[10px] md:text-xs text-amber-600/80 flex items-center gap-1">
                 <Volume2 className="w-3 h-3" />
                 Voice: {currentLang?.native}
               </span>
             )}
             <p className="text-[10px] md:text-xs text-muted-foreground text-center flex items-center gap-1.5">
-              <Sparkles className="w-3 h-3 text-purple-400/50" />
+              <Sparkles className="w-3 h-3 text-purple-600/50" />
               ARYA — Think clearly. Set goals. Grow daily.
             </p>
           </div>
@@ -2104,12 +2104,12 @@ export default function AryaChat() {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="bg-[#0a1628] border border-cyan-500/20 rounded-xl p-6 w-full max-w-sm mx-4 shadow-2xl"
+              className="bg-white border border-cyan-200 rounded-xl p-6 w-full max-w-sm mx-4 shadow-2xl"
               data-testid="invite-modal"
             >
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-white font-['Space_Grotesk']">Enter Invite Code</h3>
-                <button onClick={() => { setShowInviteModal(false); setInviteError(""); }} className="text-gray-400 hover:text-white" data-testid="close-invite-modal">
+                <h3 className="text-lg font-semibold text-gray-900 font-['Space_Grotesk']">Enter Invite Code</h3>
+                <button onClick={() => { setShowInviteModal(false); setInviteError(""); }} className="text-gray-400 hover:text-gray-900" data-testid="close-invite-modal">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -2119,11 +2119,11 @@ export default function AryaChat() {
                 value={inviteCode}
                 onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
                 placeholder="e.g. ARYA-BETA-001"
-                className="w-full px-4 py-3 bg-[#0d1f3c] border border-cyan-500/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400 mb-3 font-mono tracking-wider"
+                className="w-full px-4 py-3 bg-gray-50 border border-cyan-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-cyan-400 mb-3 font-mono tracking-wider"
                 data-testid="input-invite-code"
                 onKeyDown={(e) => e.key === "Enter" && handleRedeemInvite()}
               />
-              {inviteError && <p className="text-red-400 text-sm mb-3" data-testid="text-invite-error">{inviteError}</p>}
+              {inviteError && <p className="text-red-500 text-sm mb-3" data-testid="text-invite-error">{inviteError}</p>}
               <button
                 onClick={handleRedeemInvite}
                 disabled={inviteLoading || !inviteCode.trim()}
@@ -2655,12 +2655,12 @@ function VoiceConversationMode({
   const hasHistory = conversationLog.length > 0 || (transcript && phase === "processing") || (response && (phase === "processing" || phase === "speaking"));
 
   return (
-    <div className="fixed inset-0 bg-[#080b14] flex flex-col" style={{ zIndex: 9999 }} data-testid="voice-conversation-mode" onClick={handleMicTap}>
+    <div className="fixed inset-0 bg-slate-50 flex flex-col" style={{ zIndex: 9999 }} data-testid="voice-conversation-mode" onClick={handleMicTap}>
       <div className="w-full flex items-center justify-between px-5 py-4 pt-safe relative z-10">
         <button
           data-testid="button-close-voice-mode"
           onClick={(e) => { e.stopPropagation(); handleClose(); }}
-          className="w-10 h-10 rounded-full flex items-center justify-center text-white/50 hover:text-white transition-colors"
+          className="w-10 h-10 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-900 transition-colors"
         >
           <X className="w-6 h-6" />
         </button>
@@ -2669,7 +2669,7 @@ function VoiceConversationMode({
           <button
             data-testid="button-toggle-transcript"
             onClick={(e) => { e.stopPropagation(); setShowTranscript(!showTranscript); }}
-            className="w-10 h-10 rounded-full flex items-center justify-center text-white/50 hover:text-white transition-colors"
+            className="w-10 h-10 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-900 transition-colors"
           >
             <MessageSquare className="w-5 h-5" />
           </button>
@@ -2679,10 +2679,10 @@ function VoiceConversationMode({
 
       <div className="flex-1 flex flex-col items-center justify-center relative">
         <h1 className={`text-3xl md:text-4xl font-light tracking-wide mb-12 transition-all duration-500 ${
-          phase === "listening" ? "text-white" :
-          phase === "processing" ? "text-white/70" :
-          phase === "speaking" ? "text-white" :
-          error ? "text-red-400/80" : "text-white/50"
+          phase === "listening" ? "text-gray-900" :
+          phase === "processing" ? "text-gray-600" :
+          phase === "speaking" ? "text-gray-900" :
+          error ? "text-red-500/80" : "text-gray-400"
         }`}>
           {error || phaseText[phase]}
         </h1>
@@ -2722,7 +2722,7 @@ function VoiceConversationMode({
               ? "bg-gradient-to-br from-amber-500/15 to-orange-500/15"
               : phase === "speaking"
               ? "bg-gradient-to-br from-green-500/15 to-cyan-500/15 shadow-[0_0_40px_rgba(34,197,94,0.1)]"
-              : "bg-white/5 hover:bg-white/10"
+              : "bg-gray-100 hover:bg-gray-100"
           }`}>
             <svg viewBox="0 0 80 80" className="w-16 h-16">
               {phase === "listening" ? (
@@ -2781,7 +2781,7 @@ function VoiceConversationMode({
           <button
             data-testid="button-retry-voice"
             onClick={(e) => { e.stopPropagation(); setError(null); startListening(); }}
-            className="mt-6 px-5 py-2 rounded-full bg-white/10 text-white/70 text-sm hover:bg-white/15 transition-colors"
+            className="mt-6 px-5 py-2 rounded-full bg-gray-100 text-gray-600 text-sm hover:bg-gray-100 transition-colors"
           >
             Try again
           </button>
@@ -2808,18 +2808,18 @@ function VoiceConversationMode({
           <ellipse cx="200" cy="140" rx={phase === "listening" ? 160 + audioLevel * 30 : 150} ry="60" fill="none" stroke="url(#arcGrad)" strokeWidth={phase === "listening" ? 3 + audioLevel * 2 : phase === "speaking" ? 2.5 : 2} />
           <ellipse cx="200" cy="160" rx="180" ry="50" fill="none" stroke="url(#arcGrad)" strokeWidth="1" opacity="0.3" />
         </svg>
-        <div className="absolute inset-0 bg-gradient-to-t from-[#080b14] via-transparent to-transparent pointer-events-none" style={{ top: "60%" }} />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-50 via-transparent to-transparent pointer-events-none" style={{ top: "60%" }} />
       </div>
 
       {phase === "speaking" && (
-        <p className="absolute bottom-6 left-0 right-0 text-center text-xs text-white/30">Speak or tap to interrupt</p>
+        <p className="absolute bottom-6 left-0 right-0 text-center text-xs text-gray-300">Speak or tap to interrupt</p>
       )}
 
       {showTranscript && (
-        <div className="absolute inset-0 z-20 bg-[#080b14]/95 backdrop-blur-sm flex flex-col" onClick={(e) => e.stopPropagation()}>
-          <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
-            <h3 className="text-white/80 text-sm font-medium">Conversation</h3>
-            <button onClick={() => setShowTranscript(false)} className="w-8 h-8 rounded-full flex items-center justify-center text-white/50 hover:text-white" data-testid="button-close-transcript">
+        <div className="absolute inset-0 z-20 bg-slate-50/95 backdrop-blur-sm flex flex-col" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+            <h3 className="text-gray-700 text-sm font-medium">Conversation</h3>
+            <button onClick={() => setShowTranscript(false)} className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-900" data-testid="button-close-transcript">
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -2828,8 +2828,8 @@ function VoiceConversationMode({
               <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                 <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${
                   msg.role === "user"
-                    ? "bg-cyan-600/20 text-white/90 rounded-br-sm"
-                    : "bg-white/5 text-white/75 rounded-bl-sm"
+                    ? "bg-cyan-100 text-gray-800 rounded-br-sm"
+                    : "bg-gray-100 text-gray-600 rounded-bl-sm"
                 }`}>
                   {msg.text}
                 </div>
@@ -2837,12 +2837,12 @@ function VoiceConversationMode({
             ))}
             {transcript && phase === "processing" && (
               <div className="flex justify-end">
-                <div className="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm bg-cyan-600/20 text-white/90 rounded-br-sm">{transcript}</div>
+                <div className="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm bg-cyan-100 text-gray-800 rounded-br-sm">{transcript}</div>
               </div>
             )}
             {response && (phase === "processing" || phase === "speaking") && (
               <div className="flex justify-start">
-                <div className="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm bg-white/5 text-white/75 rounded-bl-sm">{response}</div>
+                <div className="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm bg-gray-100 text-gray-600 rounded-bl-sm">{response}</div>
               </div>
             )}
           </div>
@@ -2887,19 +2887,19 @@ function UserAuthModal({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0e1a]/95 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-      <div className="w-full max-w-sm bg-card/90 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl p-6 relative" onClick={e => e.stopPropagation()}>
+    <div className="min-h-screen bg-white/95 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+      <div className="w-full max-w-sm bg-white backdrop-blur-xl rounded-2xl border border-gray-200 shadow-2xl p-6 relative" onClick={e => e.stopPropagation()}>
         <button
           data-testid="modal-button-close"
           onClick={onClose}
-          className="absolute top-3 right-3 p-1.5 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-all"
+          className="absolute top-3 right-3 p-1.5 rounded-lg text-gray-400 hover:text-gray-900 hover:bg-gray-100 transition-all"
           aria-label="Close"
         >
           <X className="w-5 h-5" />
         </button>
         <div className="text-center mb-5">
           <img src="/arya-logo-transparent.png" alt="ARYA" className="w-32 mx-auto mb-3" />
-          <h2 className="text-lg font-bold text-white">{mode === "login" ? "Welcome Back" : "Join ARYA"}</h2>
+          <h2 className="text-lg font-bold text-gray-900">{mode === "login" ? "Welcome Back" : "Join ARYA"}</h2>
           <p className="text-xs text-muted-foreground mt-0.5">
             {mode === "login" ? "Sign in to track your goals" : "Create account to set goals & track progress"}
           </p>
@@ -2912,7 +2912,7 @@ function UserAuthModal({ onClose }: { onClose: () => void }) {
               placeholder="Your Name"
               value={name}
               onChange={e => setName(e.target.value)}
-              className="w-full bg-background/50 border border-white/10 rounded-xl text-white text-sm px-3 py-2.5 placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
+              className="w-full bg-background/50 border border-gray-200 rounded-xl text-gray-900 text-sm px-3 py-2.5 placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
               autoFocus
             />
           )}
@@ -2922,7 +2922,7 @@ function UserAuthModal({ onClose }: { onClose: () => void }) {
             placeholder="+91 98765 43210"
             value={phone}
             onChange={e => setPhone(e.target.value)}
-            className="w-full bg-background/50 border border-white/10 rounded-xl text-white text-sm px-3 py-2.5 placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
+            className="w-full bg-background/50 border border-gray-200 rounded-xl text-gray-900 text-sm px-3 py-2.5 placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
             autoFocus={mode === "login"}
           />
           <div className="relative">
@@ -2932,7 +2932,7 @@ function UserAuthModal({ onClose }: { onClose: () => void }) {
               placeholder={mode === "signup" ? "Create password (min 6 chars)" : "Password"}
               value={password}
               onChange={e => setPassword(e.target.value)}
-              className="w-full bg-background/50 border border-white/10 rounded-xl text-white text-sm px-3 py-2.5 pr-10 placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
+              className="w-full bg-background/50 border border-gray-200 rounded-xl text-gray-900 text-sm px-3 py-2.5 pr-10 placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
             />
             <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
               {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -2945,11 +2945,11 @@ function UserAuthModal({ onClose }: { onClose: () => void }) {
               placeholder="Invite Code (required)"
               value={signupInviteCode}
               onChange={e => setSignupInviteCode(e.target.value.toUpperCase())}
-              className="w-full bg-background/50 border border-amber-500/20 rounded-xl text-white text-sm px-3 py-2.5 placeholder:text-muted-foreground focus:outline-none focus:border-amber-400/50 font-mono tracking-wider"
+              className="w-full bg-background/50 border border-amber-200 rounded-xl text-gray-900 text-sm px-3 py-2.5 placeholder:text-muted-foreground focus:outline-none focus:border-amber-400/50 font-mono tracking-wider"
               required
             />
           )}
-          {error && <div className="text-xs text-red-400 bg-red-500/10 rounded-lg px-3 py-2" data-testid="modal-text-error">{error}</div>}
+          {error && <div className="text-xs text-red-500 bg-red-500/10 rounded-lg px-3 py-2" data-testid="modal-text-error">{error}</div>}
           <Button
             data-testid="modal-button-submit"
             type="submit"
@@ -2960,8 +2960,8 @@ function UserAuthModal({ onClose }: { onClose: () => void }) {
           </Button>
         </form>
         <div className="text-center mt-3">
-          <button onClick={() => { setMode(mode === "login" ? "signup" : "login"); setError(""); }} className="text-xs text-muted-foreground hover:text-white">
-            {mode === "login" ? <>New here? <span className="text-cyan-400">Create account</span></> : <>Have an account? <span className="text-cyan-400">Sign in</span></>}
+          <button onClick={() => { setMode(mode === "login" ? "signup" : "login"); setError(""); }} className="text-xs text-muted-foreground hover:text-gray-900">
+            {mode === "login" ? <>New here? <span className="text-cyan-600">Create account</span></> : <>Have an account? <span className="text-cyan-600">Sign in</span></>}
           </button>
         </div>
       </div>
@@ -3015,19 +3015,19 @@ function FeedbackModal({ token, onClose }: { token: string | null; onClose: () =
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-[#0a0e1a]/95 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+      <div className="min-h-screen bg-white/95 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: "spring", damping: 25, stiffness: 300 }}
-          className="w-full max-w-md bg-card/90 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl p-6 text-center"
+          className="w-full max-w-md bg-white backdrop-blur-xl rounded-2xl border border-gray-200 shadow-2xl p-6 text-center"
           onClick={e => e.stopPropagation()}
           data-testid="feedback-success"
         >
-          <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
-            <CircleCheck className="w-7 h-7 text-emerald-400" />
+          <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-emerald-100 border border-emerald-500/30 flex items-center justify-center">
+            <CircleCheck className="w-7 h-7 text-emerald-600" />
           </div>
-          <h2 className="text-lg font-bold text-white mb-2">Thank you!</h2>
+          <h2 className="text-lg font-bold text-gray-900 mb-2">Thank you!</h2>
           <p className="text-sm text-muted-foreground mb-5">Your feedback helps us make ARYA better for everyone. We'll review it carefully.</p>
           <Button
             data-testid="feedback-button-close"
@@ -3042,27 +3042,27 @@ function FeedbackModal({ token, onClose }: { token: string | null; onClose: () =
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0e1a]/95 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+    <div className="min-h-screen bg-white/95 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="w-full max-w-md bg-card/90 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl p-6 relative"
+        className="w-full max-w-md bg-white backdrop-blur-xl rounded-2xl border border-gray-200 shadow-2xl p-6 relative"
         onClick={e => e.stopPropagation()}
         data-testid="feedback-modal"
       >
-        <button onClick={onClose} className="absolute top-4 right-4 text-white/40 hover:text-white/80 transition-colors" data-testid="feedback-button-close-x">
+        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 transition-colors" data-testid="feedback-button-close-x">
           <X className="w-5 h-5" />
         </button>
         <div className="flex items-center gap-2 mb-1">
-          <MessageCircleWarning className="w-5 h-5 text-orange-400" />
-          <h2 className="text-lg font-bold text-white">Report an Issue</h2>
+          <MessageCircleWarning className="w-5 h-5 text-orange-600" />
+          <h2 className="text-lg font-bold text-gray-900">Report an Issue</h2>
         </div>
         <p className="text-xs text-muted-foreground mb-5">Let us know what's not working or what could be better.</p>
 
         <div className="space-y-4">
           <div>
-            <label className="text-xs font-medium text-white/60 mb-2 block">What's this about?</label>
+            <label className="text-xs font-medium text-gray-500 mb-2 block">What's this about?</label>
             <div className="grid grid-cols-1 gap-2">
               {categories.map(c => (
                 <button
@@ -3071,8 +3071,8 @@ function FeedbackModal({ token, onClose }: { token: string | null; onClose: () =
                   onClick={() => setCategory(c.value)}
                   className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm text-left transition-all border ${
                     category === c.value
-                      ? "bg-cyan-500/15 border-cyan-500/40 text-cyan-300"
-                      : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10"
+                      ? "bg-cyan-50 border-cyan-500/40 text-cyan-600"
+                      : "bg-gray-100 border-gray-200 text-gray-600 hover:bg-gray-100"
                   }`}
                 >
                   <span>{c.icon}</span>
@@ -3083,7 +3083,7 @@ function FeedbackModal({ token, onClose }: { token: string | null; onClose: () =
           </div>
 
           <div>
-            <label className="text-xs font-medium text-white/60 mb-2 block">Tell us more</label>
+            <label className="text-xs font-medium text-gray-500 mb-2 block">Tell us more</label>
             <textarea
               data-testid="feedback-input-description"
               value={description}
@@ -3091,9 +3091,9 @@ function FeedbackModal({ token, onClose }: { token: string | null; onClose: () =
               placeholder="Describe what happened or what you'd like to see..."
               rows={4}
               maxLength={2000}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-cyan-500/50 resize-none"
+              className="w-full bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-300 focus:outline-none focus:border-cyan-300 resize-none"
             />
-            <div className="text-right text-[10px] text-white/30 mt-1">{description.length}/2000</div>
+            <div className="text-right text-[10px] text-gray-300 mt-1">{description.length}/2000</div>
           </div>
 
           <Button
@@ -3115,56 +3115,56 @@ const TUTORIAL_STEPS = [
     title: "Welcome to ARYA",
     description: "ARYA is your personal thinking and growth assistant. Let me show you around so you can get the most out of it.",
     icon: Sparkles,
-    iconColor: "text-cyan-400",
-    iconBg: "bg-cyan-500/20 border-cyan-500/30",
+    iconColor: "text-cyan-600",
+    iconBg: "bg-cyan-100 border-cyan-300",
     tip: null,
   },
   {
     title: "Chat with ARYA",
     description: "Just type or speak your thoughts. ARYA helps you think through decisions, set goals, reflect on your day, and find clarity.",
     icon: MessageSquare,
-    iconColor: "text-cyan-400",
-    iconBg: "bg-cyan-500/20 border-cyan-500/30",
+    iconColor: "text-cyan-600",
+    iconBg: "bg-cyan-100 border-cyan-300",
     tip: "Try asking: \"Help me think through a career change I'm considering\"",
   },
   {
     title: "Talk using your voice",
     description: "Tap the microphone button to speak in your preferred language. ARYA understands 11 Indian languages including Hindi, Tamil, Telugu, and more.",
     icon: Mic,
-    iconColor: "text-purple-400",
-    iconBg: "bg-purple-500/20 border-purple-500/30",
+    iconColor: "text-purple-600",
+    iconBg: "bg-purple-100 border-purple-300",
     tip: "Long-press the mic for hands-free voice conversation mode",
   },
   {
     title: "Set goals and stay on track",
     description: "ARYA can detect goals from your conversations and help you break them into steps. Track your progress, build streaks, and stay disciplined.",
     icon: Target,
-    iconColor: "text-amber-400",
-    iconBg: "bg-amber-500/20 border-amber-500/30",
+    iconColor: "text-amber-600",
+    iconBg: "bg-amber-100 border-amber-300",
     tip: "Try saying: \"I want to read for 30 minutes every day\"",
   },
   {
     title: "ARYA remembers you",
     description: "The more you chat, the better ARYA understands you. It remembers your preferences, context, and what matters to you — like a wise friend who truly listens.",
     icon: Brain,
-    iconColor: "text-purple-400",
-    iconBg: "bg-purple-500/20 border-purple-500/30",
+    iconColor: "text-purple-600",
+    iconBg: "bg-purple-100 border-purple-300",
     tip: "Tap the brain icon to see what ARYA remembers about you",
   },
   {
     title: "Make ARYA yours",
     description: "Customize how ARYA responds — choose your tone, response length, focus areas, and more from the Customize option in your menu.",
     icon: Palette,
-    iconColor: "text-cyan-400",
-    iconBg: "bg-cyan-500/20 border-cyan-500/30",
+    iconColor: "text-cyan-600",
+    iconBg: "bg-cyan-100 border-cyan-300",
     tip: "Go to your profile menu → Customize ARYA",
   },
   {
     title: "You're all set!",
     description: "You're ready to start your journey with ARYA. Think clearly, set goals, stay disciplined, and grow every day.",
     icon: Zap,
-    iconColor: "text-amber-400",
-    iconBg: "bg-amber-500/20 border-amber-500/30",
+    iconColor: "text-amber-600",
+    iconBg: "bg-amber-100 border-amber-300",
     tip: null,
   },
 ];
@@ -3197,24 +3197,24 @@ function QuickStartTutorial({ onClose, onStartChat, token }: { onClose: () => vo
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0e1a]/95 backdrop-blur-sm flex items-center justify-center p-4" onClick={handleClose}>
+    <div className="min-h-screen bg-white/95 backdrop-blur-sm flex items-center justify-center p-4" onClick={handleClose}>
       <motion.div
         key={step}
         initial={{ opacity: 0, x: 30 }}
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: -30 }}
         transition={{ duration: 0.25 }}
-        className="w-full max-w-md bg-card/90 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl p-6 relative overflow-hidden"
+        className="w-full max-w-md bg-white backdrop-blur-xl rounded-2xl border border-gray-200 shadow-2xl p-6 relative overflow-hidden"
         onClick={e => e.stopPropagation()}
         data-testid={`tutorial-step-${step}`}
       >
-        <button onClick={handleClose} className="absolute top-4 right-4 text-white/40 hover:text-white/80 transition-colors" data-testid="tutorial-button-close">
+        <button onClick={handleClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 transition-colors" data-testid="tutorial-button-close">
           <X className="w-5 h-5" />
         </button>
 
         <div className="flex gap-1.5 mb-6">
           {TUTORIAL_STEPS.map((_, i) => (
-            <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-300 ${i <= step ? "bg-cyan-500" : "bg-white/10"}`} />
+            <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-300 ${i <= step ? "bg-cyan-500" : "bg-gray-100"}`} />
           ))}
         </div>
 
@@ -3227,7 +3227,7 @@ function QuickStartTutorial({ onClose, onStartChat, token }: { onClose: () => vo
           >
             <Icon className={`w-8 h-8 ${current.iconColor}`} />
           </motion.div>
-          <h2 className="text-xl font-bold text-white mb-2">{current.title}</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">{current.title}</h2>
           <p className="text-sm text-muted-foreground leading-relaxed">{current.description}</p>
         </div>
 
@@ -3236,11 +3236,11 @@ function QuickStartTutorial({ onClose, onStartChat, token }: { onClose: () => vo
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 mb-6"
+            className="bg-gray-100 border border-gray-200 rounded-xl px-4 py-3 mb-6"
           >
             <div className="flex items-start gap-2">
-              <Lightbulb className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
-              <p className="text-xs text-white/70 leading-relaxed">{current.tip}</p>
+              <Lightbulb className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+              <p className="text-xs text-gray-600 leading-relaxed">{current.tip}</p>
             </div>
           </motion.div>
         )}
@@ -3251,7 +3251,7 @@ function QuickStartTutorial({ onClose, onStartChat, token }: { onClose: () => vo
               data-testid="tutorial-button-back"
               onClick={() => setStep(s => s - 1)}
               variant="outline"
-              className="flex-1 border-white/10 text-white/60 hover:text-white hover:bg-white/5 rounded-xl py-2.5"
+              className="flex-1 border-gray-200 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-xl py-2.5"
             >
               Back
             </Button>
@@ -3279,7 +3279,7 @@ function QuickStartTutorial({ onClose, onStartChat, token }: { onClose: () => vo
           <button
             data-testid="tutorial-button-skip"
             onClick={handleClose}
-            className="w-full text-xs text-muted-foreground hover:text-white py-2 mt-2"
+            className="w-full text-xs text-muted-foreground hover:text-gray-900 py-2 mt-2"
           >
             Skip tutorial
           </button>
@@ -3311,11 +3311,11 @@ function OnboardingModal({ token, onComplete }: { token: string; onComplete: () 
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0e1a]/95 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-card/90 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl p-6 relative overflow-hidden" onClick={e => e.stopPropagation()}>
+    <div className="min-h-screen bg-white/95 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-white backdrop-blur-xl rounded-2xl border border-gray-200 shadow-2xl p-6 relative overflow-hidden" onClick={e => e.stopPropagation()}>
         <div className="flex gap-1.5 mb-6">
           {[0, 1, 2, 3].map(i => (
-            <div key={i} className={`h-1 flex-1 rounded-full transition-all ${i <= step ? "bg-cyan-500" : "bg-white/10"}`} />
+            <div key={i} className={`h-1 flex-1 rounded-full transition-all ${i <= step ? "bg-cyan-500" : "bg-gray-100"}`} />
           ))}
         </div>
 
@@ -3323,7 +3323,7 @@ function OnboardingModal({ token, onComplete }: { token: string; onComplete: () 
           <div className="space-y-5" data-testid="onboarding-step-welcome">
             <div className="text-center">
               <img src="/arya-logo-transparent.png" alt="ARYA" className="w-28 mx-auto mb-4" />
-              <h2 className="text-xl font-bold text-white mb-2">Welcome to ARYA</h2>
+              <h2 className="text-xl font-bold text-gray-900 mb-2">Welcome to ARYA</h2>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 Let me get to know you a little so I can be more helpful. This takes less than a minute.
               </p>
@@ -3335,7 +3335,7 @@ function OnboardingModal({ token, onComplete }: { token: string; onComplete: () 
             >
               Let's Go <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
-            <button onClick={onComplete} className="w-full text-xs text-muted-foreground hover:text-white py-1" data-testid="onboarding-button-skip">
+            <button onClick={onComplete} className="w-full text-xs text-muted-foreground hover:text-gray-900 py-1" data-testid="onboarding-button-skip">
               Skip for now
             </button>
           </div>
@@ -3345,8 +3345,8 @@ function OnboardingModal({ token, onComplete }: { token: string; onComplete: () 
           <div className="space-y-4" data-testid="onboarding-step-language">
             <div className="mb-2">
               <div className="flex items-center gap-2 mb-1">
-                <Globe className="w-5 h-5 text-cyan-400" />
-                <h3 className="text-lg font-semibold text-white">Your Language</h3>
+                <Globe className="w-5 h-5 text-cyan-600" />
+                <h3 className="text-lg font-semibold text-gray-900">Your Language</h3>
               </div>
               <p className="text-xs text-muted-foreground">Which language do you prefer? ARYA speaks 11 Indian languages.</p>
             </div>
@@ -3356,7 +3356,7 @@ function OnboardingModal({ token, onComplete }: { token: string; onComplete: () 
                   key={l.code}
                   data-testid={`onboarding-lang-${l.code}`}
                   onClick={() => setLanguage(l.code)}
-                  className={`px-3 py-2.5 rounded-xl text-sm text-left transition-all border ${language === l.code ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-300" : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10"}`}
+                  className={`px-3 py-2.5 rounded-xl text-sm text-left transition-all border ${language === l.code ? "bg-cyan-100 border-cyan-300 text-cyan-600" : "bg-gray-100 border-gray-200 text-gray-600 hover:bg-gray-100"}`}
                 >
                   {l.label}
                 </button>
@@ -3376,8 +3376,8 @@ function OnboardingModal({ token, onComplete }: { token: string; onComplete: () 
           <div className="space-y-4" data-testid="onboarding-step-work">
             <div className="mb-2">
               <div className="flex items-center gap-2 mb-1">
-                <Briefcase className="w-5 h-5 text-cyan-400" />
-                <h3 className="text-lg font-semibold text-white">What do you do?</h3>
+                <Briefcase className="w-5 h-5 text-cyan-600" />
+                <h3 className="text-lg font-semibold text-gray-900">What do you do?</h3>
               </div>
               <p className="text-xs text-muted-foreground">This helps ARYA give you more relevant advice and suggestions.</p>
             </div>
@@ -3387,11 +3387,11 @@ function OnboardingModal({ token, onComplete }: { token: string; onComplete: () 
               placeholder="e.g. Student, Doctor, Business Owner, Engineer..."
               value={currentWork}
               onChange={e => setCurrentWork(e.target.value)}
-              className="w-full bg-background/50 border border-white/10 rounded-xl text-white text-sm px-4 py-3 placeholder:text-muted-foreground focus:outline-none focus:border-cyan-500/50"
+              className="w-full bg-background/50 border border-gray-200 rounded-xl text-gray-900 text-sm px-4 py-3 placeholder:text-muted-foreground focus:outline-none focus:border-cyan-300"
               autoFocus
             />
             <div className="flex gap-2">
-              <button onClick={() => setStep(1)} className="px-4 py-2.5 text-sm text-muted-foreground hover:text-white rounded-xl border border-white/10 hover:bg-white/5">Back</button>
+              <button onClick={() => setStep(1)} className="px-4 py-2.5 text-sm text-muted-foreground hover:text-gray-900 rounded-xl border border-gray-200 hover:bg-gray-100">Back</button>
               <Button
                 data-testid="onboarding-button-next-2"
                 onClick={() => setStep(3)}
@@ -3407,8 +3407,8 @@ function OnboardingModal({ token, onComplete }: { token: string; onComplete: () 
           <div className="space-y-4" data-testid="onboarding-step-preferences">
             <div className="mb-2">
               <div className="flex items-center gap-2 mb-1">
-                <Clock className="w-5 h-5 text-cyan-400" />
-                <h3 className="text-lg font-semibold text-white">Your Preferences</h3>
+                <Clock className="w-5 h-5 text-cyan-600" />
+                <h3 className="text-lg font-semibold text-gray-900">Your Preferences</h3>
               </div>
               <p className="text-xs text-muted-foreground">Set your daily check-in time and voice preference.</p>
             </div>
@@ -3420,7 +3420,7 @@ function OnboardingModal({ token, onComplete }: { token: string; onComplete: () 
                   type="time"
                   value={dailyReminderTime}
                   onChange={e => setDailyReminderTime(e.target.value)}
-                  className="w-full bg-background/50 border border-white/10 rounded-xl text-white text-sm px-4 py-3 focus:outline-none focus:border-cyan-500/50"
+                  className="w-full bg-background/50 border border-gray-200 rounded-xl text-gray-900 text-sm px-4 py-3 focus:outline-none focus:border-cyan-300"
                 />
               </div>
               <div>
@@ -3429,14 +3429,14 @@ function OnboardingModal({ token, onComplete }: { token: string; onComplete: () 
                   <button
                     data-testid="onboarding-voice-on"
                     onClick={() => setVoicePreference(true)}
-                    className={`flex-1 px-3 py-2.5 rounded-xl text-sm transition-all border flex items-center justify-center gap-2 ${voicePreference ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-300" : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10"}`}
+                    className={`flex-1 px-3 py-2.5 rounded-xl text-sm transition-all border flex items-center justify-center gap-2 ${voicePreference ? "bg-cyan-100 border-cyan-300 text-cyan-600" : "bg-gray-100 border-gray-200 text-gray-600 hover:bg-gray-100"}`}
                   >
                     <Volume2 className="w-4 h-4" /> Voice On
                   </button>
                   <button
                     data-testid="onboarding-voice-off"
                     onClick={() => setVoicePreference(false)}
-                    className={`flex-1 px-3 py-2.5 rounded-xl text-sm transition-all border flex items-center justify-center gap-2 ${!voicePreference ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-300" : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10"}`}
+                    className={`flex-1 px-3 py-2.5 rounded-xl text-sm transition-all border flex items-center justify-center gap-2 ${!voicePreference ? "bg-cyan-100 border-cyan-300 text-cyan-600" : "bg-gray-100 border-gray-200 text-gray-600 hover:bg-gray-100"}`}
                   >
                     <VolumeX className="w-4 h-4" /> Text Only
                   </button>
@@ -3444,7 +3444,7 @@ function OnboardingModal({ token, onComplete }: { token: string; onComplete: () 
               </div>
             </div>
             <div className="flex gap-2">
-              <button onClick={() => setStep(2)} className="px-4 py-2.5 text-sm text-muted-foreground hover:text-white rounded-xl border border-white/10 hover:bg-white/5">Back</button>
+              <button onClick={() => setStep(2)} className="px-4 py-2.5 text-sm text-muted-foreground hover:text-gray-900 rounded-xl border border-gray-200 hover:bg-gray-100">Back</button>
               <Button
                 data-testid="onboarding-button-finish"
                 onClick={handleComplete}
