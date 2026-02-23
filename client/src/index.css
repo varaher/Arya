@@ -8,33 +8,33 @@
   --font-display: 'Space Grotesk', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  --color-background: hsl(222 47% 11%);
-  --color-foreground: hsl(210 40% 98%);
+  --color-background: hsl(210 20% 98%);
+  --color-foreground: hsl(222 47% 11%);
   
-  --color-card: hsl(222 47% 13%);
-  --color-card-foreground: hsl(210 40% 98%);
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(222 47% 11%);
   
-  --color-popover: hsl(222 47% 11%);
-  --color-popover-foreground: hsl(210 40% 98%);
+  --color-popover: hsl(0 0% 100%);
+  --color-popover-foreground: hsl(222 47% 11%);
   
-  --color-primary: hsl(186 100% 50%);
-  --color-primary-foreground: hsl(222 47% 11%);
+  --color-primary: hsl(200 90% 40%);
+  --color-primary-foreground: hsl(0 0% 100%);
   
-  --color-secondary: hsl(43 96% 64%);
+  --color-secondary: hsl(43 96% 56%);
   --color-secondary-foreground: hsl(222 47% 11%);
   
-  --color-muted: hsl(217 33% 17%);
-  --color-muted-foreground: hsl(215 20% 65%);
+  --color-muted: hsl(210 15% 93%);
+  --color-muted-foreground: hsl(215 16% 47%);
   
-  --color-accent: hsl(217 33% 17%);
-  --color-accent-foreground: hsl(210 40% 98%);
+  --color-accent: hsl(210 15% 93%);
+  --color-accent-foreground: hsl(222 47% 11%);
   
-  --color-destructive: hsl(0 62% 30%);
-  --color-destructive-foreground: hsl(210 40% 98%);
+  --color-destructive: hsl(0 72% 51%);
+  --color-destructive-foreground: hsl(0 0% 100%);
   
-  --color-border: hsl(217 33% 20%);
-  --color-input: hsl(217 33% 20%);
-  --color-ring: hsl(186 100% 50%);
+  --color-border: hsl(214 20% 88%);
+  --color-input: hsl(214 20% 88%);
+  --color-ring: hsl(200 90% 40%);
   
   --radius: 0.25rem;
 }
@@ -52,14 +52,14 @@
 }
 
 .glass-panel {
-  background: rgba(17, 24, 39, 0.7);
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .tech-grid {
   background-size: 40px 40px;
   background-image:
-    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
 }
