@@ -1102,7 +1102,17 @@ export default function AryaChat() {
         const errorData = await response.json().catch(() => ({ error: "Something went wrong" }));
         if (errorData.betaRestricted) {
           setBetaRestricted(true);
-          if (errorData.needsInvite) setShowInviteModal(true);
+          fetch(`/api/arya/conversations/${convId}`, { method: "DELETE" }).catch(() => {});
+          setActiveConversation(null);
+          queryClient.invalidateQueries({ queryKey: ["/api/arya/conversations"] });
+          queryClient.removeQueries({ queryKey: ["/api/arya/conversations", convId] });
+          setIsStreaming(false);
+          if (errorData.needsInvite) {
+            setShowInviteModal(true);
+          } else {
+            setShowUserAuth(true);
+          }
+          return;
         }
         queryClient.setQueryData(
           ["/api/arya/conversations", convId],
