@@ -66,6 +66,7 @@ import {
   aryaNotifications,
   aryaUsers,
   aryaUsageBudget,
+  aryaUserFeedback,
 } from "@shared/schema";
 
 const retriever = new KnowledgeRetriever();
@@ -1877,6 +1878,82 @@ export async function registerRoutes(
       res.json(invite);
     } catch (error: any) {
       res.status(500).json({ error: "Failed to create invite code" });
+    }
+  });
+
+  // =============================================
+  // USER FEEDBACK / ISSUE REPORTING
+  // =============================================
+
+  app.post("/api/user/feedback", async (req: Request, res: Response) => {
+    try {
+      const { category, description, page } = req.body;
+      if (!category || !description) {
+        return res.status(400).json({ error: "Category and description are required" });
+      }
+      const validCategories = ['bug', 'feature', 'content', 'performance', 'other'];
+      if (!validCategories.includes(category)) {
+        return res.status(400).json({ error: "Invalid category" });
+      }
+      let userId: string | null = null;
+      const authHeader = req.headers.authorization;
+      if (authHeader?.startsWith("Bearer ")) {
+        const session = await verifySession(authHeader.split(" ")[1]);
+        if (session) userId = session.id;
+      }
+      const [feedback] = await db.insert(aryaUserFeedback).values({
+        userId,
+        category,
+        description: description.substring(0, 2000),
+        page: page || null,
+      }).returning();
+      res.status(201).json({ success: true, id: feedback.id });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to submit feedback" });
+    }
+  });
+
+  app.get("/api/admin/feedback", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const status = req.query.status as string;
+      let query = db.select().from(aryaUserFeedback).orderBy(desc(aryaUserFeedback.createdAt));
+      const items = await query;
+      const filtered = status ? items.filter(i => i.status === status) : items;
+      res.json({ items: filtered, total: filtered.length });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to fetch feedback" });
+    }
+  });
+
+  app.patch("/api/admin/feedback/:id", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { status, adminNotes } = req.body;
+      const updates: any = {};
+      if (status) updates.status = status;
+      if (adminNotes !== undefined) updates.adminNotes = adminNotes;
+      await db.update(aryaUserFeedback).set(updates).where(eq(aryaUserFeedback.id, req.params.id));
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to update feedback" });
+    }
+  });
+
+  // Tutorial completion tracking
+  app.post("/api/user/tutorial-complete", async (req: Request, res: Response) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader?.startsWith("Bearer ")) {
+        return res.json({ success: true });
+      }
+      const session = await verifySession(authHeader.split(" ")[1]);
+      if (session) {
+        await db.update(aryaUsers)
+          .set({ onboardingComplete: true })
+          .where(eq(aryaUsers.id, session.id));
+      }
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: "Something went wrong" });
     }
   });
 

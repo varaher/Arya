@@ -51,3 +51,7 @@ The project is structured as a monorepo with a React frontend, an Express backen
 -   **Sarvam.ai:** Used for Indian language Speech-to-Text (STT), Text-to-Speech (TTS), and Translation services.
 -   **OpenAI (via Replit AI Integrations):** Provides LLM capabilities (gpt-5.2, gpt-4o-mini-transcribe) for conversational responses and voice transcription.
 -   **Framer Motion:** Provides animated transitions — page transitions, panel slide-in/out, modal animations, chat message entrances, welcome screen staggered reveal, user menu dropdown, and mobile sidebar overlay fade.
+
+### Recent Changes
+-   **Quick Start Tutorial:** 7-step guided walkthrough for new users covering chat, voice, goals, memory, and customization. Auto-triggers after onboarding, accessible from user menu and welcome screen "Take a Tour" button. Completion persisted via API + localStorage.
+-   **Feedback/Issue Reporting:** Users can report issues via "Report Issue" in user menu. Categories: bug, feature request, content quality, performance, other. Stored in `arya_user_feedback` table. Admin endpoints for listing and managing feedback.

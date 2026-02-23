@@ -570,5 +570,29 @@ export const aryaDailyCost = pgTable("arya_daily_cost", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// =============================================
+// USER FEEDBACK / ISSUE REPORTING
+// =============================================
+
+export const aryaUserFeedback = pgTable("arya_user_feedback", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }),
+  category: varchar("category", { length: 50 }).notNull().$type<'bug' | 'feature' | 'content' | 'performance' | 'other'>(),
+  description: text("description").notNull(),
+  page: varchar("page", { length: 100 }),
+  status: varchar("status", { length: 20 }).default("open").$type<'open' | 'in_progress' | 'resolved' | 'closed'>(),
+  adminNotes: text("admin_notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAryaUserFeedbackSchema = createInsertSchema(aryaUserFeedback).omit({
+  id: true,
+  createdAt: true,
+  status: true,
+  adminNotes: true,
+});
+export type InsertAryaUserFeedback = z.infer<typeof insertAryaUserFeedbackSchema>;
+export type AryaUserFeedback = typeof aryaUserFeedback.$inferSelect;
+
 // Re-export chat models
 export * from "./models/chat";

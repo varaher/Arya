@@ -41,6 +41,11 @@ import {
   Clock,
   Settings,
   Palette,
+  MessageCircleWarning,
+  HelpCircle,
+  Zap,
+  MousePointer,
+  CircleCheck,
 } from "lucide-react";
 
 function FormattedMessage({ content, isUser }: { content: string; isUser?: boolean }) {
@@ -887,6 +892,8 @@ export default function AryaChat() {
   const [inviteCode, setInviteCode] = useState("");
   const [inviteError, setInviteError] = useState("");
   const [inviteLoading, setInviteLoading] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -1598,6 +1605,20 @@ export default function AryaChat() {
                         <Palette className="w-3.5 h-3.5 text-cyan-400" /> Customize ARYA
                       </button>
                       <button
+                        data-testid="button-quick-tutorial"
+                        onClick={() => { setShowUserMenu(false); setShowTutorial(true); }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white/80 hover:bg-white/5"
+                      >
+                        <HelpCircle className="w-3.5 h-3.5 text-amber-400" /> Quick Tutorial
+                      </button>
+                      <button
+                        data-testid="button-report-issue"
+                        onClick={() => { setShowUserMenu(false); setShowFeedbackModal(true); }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white/80 hover:bg-white/5"
+                      >
+                        <MessageCircleWarning className="w-3.5 h-3.5 text-orange-400" /> Report Issue
+                      </button>
+                      <button
                         data-testid="button-user-logout"
                         onClick={() => { setShowUserMenu(false); userLogout(); }}
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-400 hover:bg-white/5"
@@ -1698,16 +1719,26 @@ export default function AryaChat() {
               >
                 Think clearly. Set goals. Stay disciplined. Reflect daily. Grow spiritually & professionally. I'm here to help you become your best self.
               </motion.p>
-              {!isLoggedIn && (
+              <div className="flex items-center gap-2 mb-4">
+                {!isLoggedIn && (
+                  <button
+                    data-testid="button-welcome-signin"
+                    onClick={() => setShowUserAuth(true)}
+                    className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-white/60 hover:text-white/80 hover:border-cyan-500/30 transition-all flex items-center gap-1.5"
+                  >
+                    <LogIn className="w-3 h-3 text-cyan-400" />
+                    Sign in to track goals
+                  </button>
+                )}
                 <button
-                  data-testid="button-welcome-signin"
-                  onClick={() => setShowUserAuth(true)}
-                  className="mb-4 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-white/60 hover:text-white/80 hover:border-cyan-500/30 transition-all flex items-center gap-1.5"
+                  data-testid="button-welcome-tutorial"
+                  onClick={() => setShowTutorial(true)}
+                  className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-white/60 hover:text-white/80 hover:border-amber-500/30 transition-all flex items-center gap-1.5"
                 >
-                  <LogIn className="w-3 h-3 text-cyan-400" />
-                  Sign in to track goals
+                  <HelpCircle className="w-3 h-3 text-amber-400" />
+                  Take a Tour
                 </button>
-              )}
+              </div>
               <motion.div
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -2119,7 +2150,40 @@ export default function AryaChat() {
             transition={{ duration: 0.25 }}
             className="fixed inset-0 z-50"
           >
-            <OnboardingModal token={token} onComplete={() => { setShowOnboarding(false); refreshUser(); }} />
+            <OnboardingModal token={token} onComplete={() => {
+              setShowOnboarding(false);
+              refreshUser();
+              const tutorialDone = localStorage.getItem("arya_tutorial_done") === "true";
+              if (!tutorialDone) setShowTutorial(true);
+            }} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showFeedbackModal && (
+          <motion.div
+            key="feedback-modal"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50"
+          >
+            <FeedbackModal token={token} onClose={() => setShowFeedbackModal(false)} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showTutorial && (
+          <motion.div
+            key="tutorial-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="fixed inset-0 z-50"
+          >
+            <QuickStartTutorial token={token} onClose={() => setShowTutorial(false)} onStartChat={(text) => { setShowTutorial(false); sendMessage(text); }} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -2908,6 +2972,312 @@ const LANGUAGES = [
   { code: "pa", label: "Punjabi" },
   { code: "or", label: "Odia" },
 ];
+
+function FeedbackModal({ token, onClose }: { token: string | null; onClose: () => void }) {
+  const [category, setCategory] = useState<string>("");
+  const [description, setDescription] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  const categories = [
+    { value: "bug", label: "Something isn't working", icon: "🐛" },
+    { value: "feature", label: "I'd like a new feature", icon: "💡" },
+    { value: "content", label: "Response quality issue", icon: "📝" },
+    { value: "performance", label: "App is slow or laggy", icon: "⚡" },
+    { value: "other", label: "Something else", icon: "💬" },
+  ];
+
+  const handleSubmit = async () => {
+    if (!category || !description.trim()) return;
+    setSubmitting(true);
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers.Authorization = `Bearer ${token}`;
+      await fetch("/api/user/feedback", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ category, description: description.trim(), page: window.location.pathname }),
+      });
+      setSubmitted(true);
+    } catch {}
+    setSubmitting(false);
+  };
+
+  if (submitted) {
+    return (
+      <div className="min-h-screen bg-[#0a0e1a]/95 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: "spring", damping: 25, stiffness: 300 }}
+          className="w-full max-w-md bg-card/90 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl p-6 text-center"
+          onClick={e => e.stopPropagation()}
+          data-testid="feedback-success"
+        >
+          <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
+            <CircleCheck className="w-7 h-7 text-emerald-400" />
+          </div>
+          <h2 className="text-lg font-bold text-white mb-2">Thank you!</h2>
+          <p className="text-sm text-muted-foreground mb-5">Your feedback helps us make ARYA better for everyone. We'll review it carefully.</p>
+          <Button
+            data-testid="feedback-button-close"
+            onClick={onClose}
+            className="w-full bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-medium py-2.5 rounded-xl"
+          >
+            Done
+          </Button>
+        </motion.div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#0a0e1a]/95 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        className="w-full max-w-md bg-card/90 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl p-6 relative"
+        onClick={e => e.stopPropagation()}
+        data-testid="feedback-modal"
+      >
+        <button onClick={onClose} className="absolute top-4 right-4 text-white/40 hover:text-white/80 transition-colors" data-testid="feedback-button-close-x">
+          <X className="w-5 h-5" />
+        </button>
+        <div className="flex items-center gap-2 mb-1">
+          <MessageCircleWarning className="w-5 h-5 text-orange-400" />
+          <h2 className="text-lg font-bold text-white">Report an Issue</h2>
+        </div>
+        <p className="text-xs text-muted-foreground mb-5">Let us know what's not working or what could be better.</p>
+
+        <div className="space-y-4">
+          <div>
+            <label className="text-xs font-medium text-white/60 mb-2 block">What's this about?</label>
+            <div className="grid grid-cols-1 gap-2">
+              {categories.map(c => (
+                <button
+                  key={c.value}
+                  data-testid={`feedback-category-${c.value}`}
+                  onClick={() => setCategory(c.value)}
+                  className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm text-left transition-all border ${
+                    category === c.value
+                      ? "bg-cyan-500/15 border-cyan-500/40 text-cyan-300"
+                      : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10"
+                  }`}
+                >
+                  <span>{c.icon}</span>
+                  <span>{c.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-white/60 mb-2 block">Tell us more</label>
+            <textarea
+              data-testid="feedback-input-description"
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+              placeholder="Describe what happened or what you'd like to see..."
+              rows={4}
+              maxLength={2000}
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-cyan-500/50 resize-none"
+            />
+            <div className="text-right text-[10px] text-white/30 mt-1">{description.length}/2000</div>
+          </div>
+
+          <Button
+            data-testid="feedback-button-submit"
+            onClick={handleSubmit}
+            disabled={!category || !description.trim() || submitting}
+            className="w-full bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-medium py-2.5 rounded-xl disabled:opacity-40"
+          >
+            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Submit Feedback"}
+          </Button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+const TUTORIAL_STEPS = [
+  {
+    title: "Welcome to ARYA",
+    description: "ARYA is your personal thinking and growth assistant. Let me show you around so you can get the most out of it.",
+    icon: Sparkles,
+    iconColor: "text-cyan-400",
+    iconBg: "bg-cyan-500/20 border-cyan-500/30",
+    tip: null,
+  },
+  {
+    title: "Chat with ARYA",
+    description: "Just type or speak your thoughts. ARYA helps you think through decisions, set goals, reflect on your day, and find clarity.",
+    icon: MessageSquare,
+    iconColor: "text-cyan-400",
+    iconBg: "bg-cyan-500/20 border-cyan-500/30",
+    tip: "Try asking: \"Help me think through a career change I'm considering\"",
+  },
+  {
+    title: "Talk using your voice",
+    description: "Tap the microphone button to speak in your preferred language. ARYA understands 11 Indian languages including Hindi, Tamil, Telugu, and more.",
+    icon: Mic,
+    iconColor: "text-purple-400",
+    iconBg: "bg-purple-500/20 border-purple-500/30",
+    tip: "Long-press the mic for hands-free voice conversation mode",
+  },
+  {
+    title: "Set goals and stay on track",
+    description: "ARYA can detect goals from your conversations and help you break them into steps. Track your progress, build streaks, and stay disciplined.",
+    icon: Target,
+    iconColor: "text-amber-400",
+    iconBg: "bg-amber-500/20 border-amber-500/30",
+    tip: "Try saying: \"I want to read for 30 minutes every day\"",
+  },
+  {
+    title: "ARYA remembers you",
+    description: "The more you chat, the better ARYA understands you. It remembers your preferences, context, and what matters to you — like a wise friend who truly listens.",
+    icon: Brain,
+    iconColor: "text-purple-400",
+    iconBg: "bg-purple-500/20 border-purple-500/30",
+    tip: "Tap the brain icon to see what ARYA remembers about you",
+  },
+  {
+    title: "Make ARYA yours",
+    description: "Customize how ARYA responds — choose your tone, response length, focus areas, and more from the Customize option in your menu.",
+    icon: Palette,
+    iconColor: "text-cyan-400",
+    iconBg: "bg-cyan-500/20 border-cyan-500/30",
+    tip: "Go to your profile menu → Customize ARYA",
+  },
+  {
+    title: "You're all set!",
+    description: "You're ready to start your journey with ARYA. Think clearly, set goals, stay disciplined, and grow every day.",
+    icon: Zap,
+    iconColor: "text-amber-400",
+    iconBg: "bg-amber-500/20 border-amber-500/30",
+    tip: null,
+  },
+];
+
+function QuickStartTutorial({ onClose, onStartChat, token }: { onClose: () => void; onStartChat: (text: string) => void; token?: string | null }) {
+  const [step, setStep] = useState(0);
+  const current = TUTORIAL_STEPS[step];
+  const Icon = current.icon;
+  const isLast = step === TUTORIAL_STEPS.length - 1;
+  const isFirst = step === 0;
+
+  const markTutorialComplete = useCallback(() => {
+    try { localStorage.setItem("arya_tutorial_done", "true"); } catch {}
+    if (token) {
+      fetch("/api/user/tutorial-complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      }).catch(() => {});
+    }
+  }, [token]);
+
+  const handleClose = () => {
+    markTutorialComplete();
+    onClose();
+  };
+
+  const handleStartChat = (text: string) => {
+    markTutorialComplete();
+    onStartChat(text);
+  };
+
+  return (
+    <div className="min-h-screen bg-[#0a0e1a]/95 backdrop-blur-sm flex items-center justify-center p-4" onClick={handleClose}>
+      <motion.div
+        key={step}
+        initial={{ opacity: 0, x: 30 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -30 }}
+        transition={{ duration: 0.25 }}
+        className="w-full max-w-md bg-card/90 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl p-6 relative overflow-hidden"
+        onClick={e => e.stopPropagation()}
+        data-testid={`tutorial-step-${step}`}
+      >
+        <button onClick={handleClose} className="absolute top-4 right-4 text-white/40 hover:text-white/80 transition-colors" data-testid="tutorial-button-close">
+          <X className="w-5 h-5" />
+        </button>
+
+        <div className="flex gap-1.5 mb-6">
+          {TUTORIAL_STEPS.map((_, i) => (
+            <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-300 ${i <= step ? "bg-cyan-500" : "bg-white/10"}`} />
+          ))}
+        </div>
+
+        <div className="text-center mb-6">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.1, type: "spring", damping: 20 }}
+            className={`w-16 h-16 mx-auto mb-4 rounded-2xl ${current.iconBg} border flex items-center justify-center`}
+          >
+            <Icon className={`w-8 h-8 ${current.iconColor}`} />
+          </motion.div>
+          <h2 className="text-xl font-bold text-white mb-2">{current.title}</h2>
+          <p className="text-sm text-muted-foreground leading-relaxed">{current.description}</p>
+        </div>
+
+        {current.tip && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 mb-6"
+          >
+            <div className="flex items-start gap-2">
+              <Lightbulb className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
+              <p className="text-xs text-white/70 leading-relaxed">{current.tip}</p>
+            </div>
+          </motion.div>
+        )}
+
+        <div className="flex gap-3">
+          {!isFirst && (
+            <Button
+              data-testid="tutorial-button-back"
+              onClick={() => setStep(s => s - 1)}
+              variant="outline"
+              className="flex-1 border-white/10 text-white/60 hover:text-white hover:bg-white/5 rounded-xl py-2.5"
+            >
+              Back
+            </Button>
+          )}
+          {isLast ? (
+            <Button
+              data-testid="tutorial-button-start-chatting"
+              onClick={() => handleStartChat("Hello ARYA! I just finished the tutorial. What can you help me with today?")}
+              className="flex-1 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-medium py-2.5 rounded-xl"
+            >
+              Start Chatting <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          ) : (
+            <Button
+              data-testid="tutorial-button-next"
+              onClick={() => setStep(s => s + 1)}
+              className="flex-1 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-medium py-2.5 rounded-xl"
+            >
+              {isFirst ? "Show Me Around" : "Next"} <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          )}
+        </div>
+
+        {isFirst && (
+          <button
+            data-testid="tutorial-button-skip"
+            onClick={handleClose}
+            className="w-full text-xs text-muted-foreground hover:text-white py-2 mt-2"
+          >
+            Skip tutorial
+          </button>
+        )}
+      </motion.div>
+    </div>
+  );
+}
 
 function OnboardingModal({ token, onComplete }: { token: string; onComplete: () => void }) {
   const [step, setStep] = useState(0);
