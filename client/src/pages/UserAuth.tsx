@@ -1,11 +1,25 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useUserAuth } from "@/lib/user-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Eye, EyeOff, Phone, User, Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
 
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (config: { client_id: string; callback: (response: { credential: string }) => void; auto_select?: boolean }) => void;
+          renderButton: (element: HTMLElement, options: object) => void;
+          prompt: () => void;
+        };
+      };
+    };
+  }
+}
+
 export default function UserAuth({ onClose }: { onClose?: () => void }) {
-  const { login, signup } = useUserAuth();
+  const { login, signup, loginWithGoogle } = useUserAuth();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -14,6 +28,75 @@ export default function UserAuth({ onClose }: { onClose?: () => void }) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleClientId, setGoogleClientId] = useState<string | null>(null);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const googleBtnRef = useRef<HTMLDivElement>(null);
+  const googleScriptLoaded = useRef(false);
+
+  useEffect(() => {
+    fetch("/api/user/google-config")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.clientId) setGoogleClientId(d.clientId);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!googleClientId || googleScriptLoaded.current) return;
+
+    const existingScript = document.getElementById("google-gis-script");
+    if (existingScript) {
+      initGoogleSignIn();
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.id = "google-gis-script";
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = () => initGoogleSignIn();
+    document.head.appendChild(script);
+    googleScriptLoaded.current = true;
+  }, [googleClientId]);
+
+  function initGoogleSignIn() {
+    if (!window.google || !googleClientId || !googleBtnRef.current) return;
+    window.google.accounts.id.initialize({
+      client_id: googleClientId,
+      callback: handleGoogleCredential,
+    });
+    window.google.accounts.id.renderButton(googleBtnRef.current, {
+      theme: "filled_black",
+      size: "large",
+      shape: "rectangular",
+      width: googleBtnRef.current.offsetWidth || 340,
+      text: mode === "signup" ? "signup_with" : "signin_with",
+      logo_alignment: "left",
+    });
+  }
+
+  useEffect(() => {
+    if (window.google && googleClientId && googleBtnRef.current) {
+      initGoogleSignIn();
+    }
+  }, [mode, googleClientId]);
+
+  async function handleGoogleCredential(response: { credential: string }) {
+    setGoogleLoading(true);
+    setError("");
+    try {
+      const result = await loginWithGoogle(response.credential);
+      if (result.success) {
+        onClose?.();
+      } else {
+        setError(result.error || "Google sign-in failed");
+      }
+    } finally {
+      setGoogleLoading(false);
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,6 +143,30 @@ export default function UserAuth({ onClose }: { onClose?: () => void }) {
             {mode === "login" ? "Sign in to continue your journey" : "Create your account to get started"}
           </p>
         </div>
+
+        {googleClientId && (
+          <div className="mb-4">
+            <div className="bg-card/50 backdrop-blur-sm rounded-2xl border border-white/5 p-4">
+              {googleLoading ? (
+                <div className="flex items-center justify-center gap-2 py-2 text-sm text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Signing in with Google...
+                </div>
+              ) : (
+                <div
+                  ref={googleBtnRef}
+                  data-testid="button-google-signin"
+                  className="w-full flex justify-center"
+                />
+              )}
+            </div>
+            <div className="flex items-center gap-3 my-4">
+              <div className="flex-1 h-px bg-white/10" />
+              <span className="text-xs text-muted-foreground/60">or continue with phone</span>
+              <div className="flex-1 h-px bg-white/10" />
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="bg-card/50 backdrop-blur-sm rounded-2xl border border-white/5 p-6 space-y-4">

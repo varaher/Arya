@@ -43,6 +43,7 @@ import {
   verifySession,
   logoutUser,
   getUserById,
+  googleOAuthLogin,
 } from "./arya/user-auth-service";
 import {
   isBetaMode,
@@ -227,7 +228,12 @@ export async function registerRoutes(
       const result = await loginUser(phone, password);
       res.json(result);
     } catch (error: any) {
-      if (error.message === "Invalid phone number or password" || error.message === "Account is deactivated") {
+      const knownErrors = [
+        "Invalid phone number or password",
+        "Account is deactivated",
+        "This account uses Google sign-in. Please sign in with Google.",
+      ];
+      if (knownErrors.includes(error.message)) {
         return res.status(401).json({ error: error.message });
       }
       console.error("[LOGIN ERROR]", error.message || "Unknown error");
@@ -254,6 +260,38 @@ export async function registerRoutes(
       await logoutUser(authHeader.slice(7));
     }
     res.json({ success: true });
+  });
+
+  app.get("/api/user/google-config", (_req: Request, res: Response) => {
+    const clientId = process.env.GOOGLE_CLIENT_ID || null;
+    res.json({ clientId });
+  });
+
+  app.post("/api/user/google-auth", async (req: Request, res: Response) => {
+    try {
+      const { idToken } = req.body;
+      if (!idToken) {
+        return res.status(400).json({ error: "Google ID token is required" });
+      }
+
+      if (isBetaMode()) {
+        if (!await canAcceptMoreUsers()) {
+          return res.status(403).json({ error: "Beta is currently full (200 users). Please try again later." });
+        }
+      }
+
+      const result = await googleOAuthLogin(idToken);
+      res.json(result);
+    } catch (error: any) {
+      if (error.message === "Google OAuth is not configured") {
+        return res.status(503).json({ error: "Google sign-in is not available" });
+      }
+      if (error.message === "Account is deactivated") {
+        return res.status(401).json({ error: "Account is deactivated" });
+      }
+      console.error("[GOOGLE AUTH ERROR]", error.message || "Unknown error");
+      res.status(500).json({ error: "Google sign-in failed" });
+    }
   });
 
   // =============================================

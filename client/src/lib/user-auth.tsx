@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useEffect, useCallback, type React
 interface UserProfile {
   id: string;
   name: string;
-  phone: string;
+  phone: string | null;
   email: string | null;
   preferredLanguage: string;
   onboardingComplete?: boolean;
@@ -16,6 +16,7 @@ interface UserAuthContextType {
   isLoggedIn: boolean;
   login: (phone: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signup: (data: { name: string; phone: string; password: string; email?: string; preferredLanguage?: string; inviteCode?: string }) => Promise<{ success: boolean; error?: string }>;
+  loginWithGoogle: (idToken: string) => Promise<{ success: boolean; error?: string; isNewUser?: boolean }>;
   logout: () => void;
   refreshUser: () => Promise<void>;
   token: string | null;
@@ -27,6 +28,7 @@ const UserAuthContext = createContext<UserAuthContextType>({
   isLoggedIn: false,
   login: async () => ({ success: false }),
   signup: async () => ({ success: false }),
+  loginWithGoogle: async () => ({ success: false }),
   logout: () => {},
   refreshUser: async () => {},
   token: null,
@@ -117,6 +119,26 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const loginWithGoogle = useCallback(async (idToken: string) => {
+    try {
+      const res = await fetch("/api/user/google-auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken }),
+      });
+      const data = await res.json();
+      if (res.ok && data.token) {
+        localStorage.setItem(TOKEN_KEY, data.token);
+        setToken(data.token);
+        setUser(data.user);
+        return { success: true, isNewUser: data.isNewUser };
+      }
+      return { success: false, error: data.error || "Google sign-in failed" };
+    } catch {
+      return { success: false, error: "Connection error" };
+    }
+  }, []);
+
   const logout = useCallback(() => {
     const t = localStorage.getItem(TOKEN_KEY);
     if (t) {
@@ -138,7 +160,7 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
   }, [verifyToken]);
 
   return (
-    <UserAuthContext.Provider value={{ user, isLoading, isLoggedIn: !!user, login, signup, logout, refreshUser, token }}>
+    <UserAuthContext.Provider value={{ user, isLoading, isLoggedIn: !!user, login, signup, loginWithGoogle, logout, refreshUser, token }}>
       {children}
     </UserAuthContext.Provider>
   );

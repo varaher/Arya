@@ -375,9 +375,10 @@ export type AryaInsight = typeof aryaInsights.$inferSelect;
 export const aryaUsers = pgTable("arya_users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: varchar("name", { length: 200 }).notNull(),
-  phone: varchar("phone", { length: 20 }).notNull().unique(),
+  phone: varchar("phone", { length: 20 }).unique(),
   email: varchar("email", { length: 255 }),
-  passwordHash: varchar("password_hash", { length: 255 }).notNull(),
+  passwordHash: varchar("password_hash", { length: 255 }),
+  googleId: varchar("google_id", { length: 255 }).unique(),
   preferredLanguage: varchar("preferred_language", { length: 10 }).default("en"),
   isActive: boolean("is_active").default(true).notNull(),
   onboardingComplete: boolean("onboarding_complete").default(false).notNull(),

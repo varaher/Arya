@@ -3,6 +3,7 @@ import { aryaUsers, aryaUserSessions, aryaNotifications } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
+import { OAuth2Client } from "google-auth-library";
 
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -73,6 +74,10 @@ export async function loginUser(phone: string, password: string) {
     throw new Error("Account is deactivated");
   }
 
+  if (!user.passwordHash) {
+    throw new Error("This account uses Google sign-in. Please sign in with Google.");
+  }
+
   const valid = await bcrypt.compare(password, user.passwordHash);
   if (!valid) {
     throw new Error("Invalid phone number or password");
@@ -131,6 +136,89 @@ export async function verifySession(token: string) {
 
 export async function logoutUser(token: string) {
   await db.delete(aryaUserSessions).where(eq(aryaUserSessions.token, token));
+}
+
+export async function googleOAuthLogin(idToken: string): Promise<{
+  user: { id: string; name: string; phone: string | null; email: string | null; preferredLanguage: string | null; onboardingComplete: boolean };
+  token: string;
+  expiresAt: Date;
+  isNewUser: boolean;
+}> {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  if (!clientId) {
+    throw new Error("Google OAuth is not configured");
+  }
+
+  const client = new OAuth2Client(clientId);
+  const ticket = await client.verifyIdToken({ idToken, audience: clientId });
+  const payload = ticket.getPayload();
+
+  if (!payload || !payload.sub || !payload.email) {
+    throw new Error("Invalid Google token");
+  }
+
+  const googleId = payload.sub;
+  const email = payload.email;
+  const name = payload.name || email.split("@")[0];
+
+  let isNewUser = false;
+
+  const [existingByGoogle] = await db
+    .select()
+    .from(aryaUsers)
+    .where(eq(aryaUsers.googleId, googleId))
+    .limit(1);
+
+  let user = existingByGoogle;
+
+  if (!user && email) {
+    const [existingByEmail] = await db
+      .select()
+      .from(aryaUsers)
+      .where(eq(aryaUsers.email, email))
+      .limit(1);
+
+    if (existingByEmail) {
+      await db.update(aryaUsers).set({ googleId }).where(eq(aryaUsers.id, existingByEmail.id));
+      user = { ...existingByEmail, googleId };
+    }
+  }
+
+  if (!user) {
+    isNewUser = true;
+    const [newUser] = await db.insert(aryaUsers).values({
+      name,
+      email,
+      googleId,
+      preferredLanguage: "en",
+    }).returning();
+
+    await db.insert(aryaNotifications).values({
+      userId: newUser.id,
+      type: "welcome",
+      title: "Welcome to ARYA!",
+      message: `Welcome ${name}! I'm ARYA, your Personal Thinking & Growth Assistant. Start chatting, set your goals, or try voice in your language!`,
+    });
+
+    user = newUser;
+  }
+
+  if (!user.isActive) {
+    throw new Error("Account is deactivated");
+  }
+
+  const token = uuidv4();
+  const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
+
+  await db.insert(aryaUserSessions).values({ userId: user.id, token, expiresAt });
+  await db.update(aryaUsers).set({ lastLoginAt: new Date() }).where(eq(aryaUsers.id, user.id));
+
+  return {
+    user: { id: user.id, name: user.name, phone: user.phone ?? null, email: user.email ?? null, preferredLanguage: user.preferredLanguage ?? null, onboardingComplete: user.onboardingComplete },
+    token,
+    expiresAt,
+    isNewUser,
+  };
 }
 
 export async function getUserById(userId: string) {
