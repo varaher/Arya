@@ -7,7 +7,7 @@ import { ResponseCacheEngine } from "./response-cache-engine";
 import { processSmartCommand } from "./smart-commands";
 import type { Domain } from "@shared/schema";
 import { db } from "../db";
-import { aryaGoals, aryaGoalSteps, aryaNotifications, aryaUsers } from "@shared/schema";
+import { aryaGoals, aryaGoalSteps, aryaNotifications, aryaUsers, aryaReminders } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
 const openai = new OpenAI({
@@ -36,6 +36,14 @@ YOUR CAPABILITIES:
 - **Persistent Memory** — You remember facts, preferences, and context across conversations. Use remembered information naturally.
 - **Proactive** — Connect dots, notice patterns, offer insights the user hasn't asked for when relevant.
 - **Vedic Mathematics** — Expert in Vedic Mathematics (16 Sutras of Bharati Krishna Tirthaji), mental calculation techniques, and India's mathematical heritage.
+- **Personal Assistant** — You CAN set reminders, alarms, and scheduled notifications for the user. You ARE their real PA. When they ask you to remind them of something, tell them confidently that you're setting it up. The system will create the actual reminder and notify them via browser/phone notification even when the app is closed.
+
+PERSONAL ASSISTANT RULES:
+- When a user asks you to "remind me to...", "set an alarm for...", "wake me up at...", "alert me every X hours", "tell me to drink water", etc. — CONFIRM that you're setting it up. Be specific: tell them what reminder you're creating, when it will fire, and how often. Speak like their PA who is actually doing it.
+- NEVER say "I can't set alarms" or "I can't send notifications". You CAN and you DO.
+- For water reminders: suggest every 2 hours as default. For medicine: ask for timing. For work breaks: every 60 min. For wake-up alarms: confirm the time.
+- Mention that they'll get a notification on their phone/browser even when the app is not open (if they've allowed notifications).
+- When confirming a reminder, end with a line like: "✅ Reminder set: [title] – [time/frequency]"
 
 You draw from deep expertise across medicine, business strategy, ancient Indian wisdom (Vedas, Upanishads, Yoga, Ayurveda, Vedic Mathematics), governance (Arthashastra, Chanakya Niti), and the full breadth of Bharatiya knowledge traditions.
 
@@ -333,6 +341,8 @@ export async function generateAryaResponse(
       if (userId && fullResponse.length > 20) {
         detectAndCreateGoal(userMessage, fullResponse, userId, tenantId, conversationId)
           .catch(err => console.error("[GOALS DETECT ERROR]", err.message || "Unknown error"));
+        detectAndCreateReminder(userMessage, fullResponse, userId)
+          .catch(err => console.error("[REMINDER DETECT ERROR]", err.message || "Unknown error"));
       }
 
       responseCacheEngine.logMetric(
@@ -443,6 +453,80 @@ Respond ONLY with valid JSON, no markdown.`
     console.log(`[Goals] Auto-created goal "${parsed.title}" for user ${userId}`);
   } catch (err: any) {
     console.error("[GOALS CREATE ERROR]", err?.message || "Unknown error");
+  }
+}
+
+async function detectAndCreateReminder(userMessage: string, aryaResponse: string, userId: string) {
+  const reminderPatterns = [
+    /remind me (to\s+.+|every\s+.+|at\s+.+|about\s+.+)/i,
+    /set (a |an )?(alarm|reminder|alert)\s*(for\s+.+|at\s+.+|every\s+.+)?/i,
+    /wake me up (at\s+.+)/i,
+    /alert me (every\s+.+|at\s+.+|when\s+.+)/i,
+    /(drink water|take medicine|take my meds|work out|exercise)\s*(every|reminder|remind)/i,
+    /every\s+\d+\s+(hour|minute|min|hrs?)/i,
+    /remind.*(water|medicine|meds|workout|exercise|break|food|eat)/i,
+  ];
+
+  const hasReminderIntent = reminderPatterns.some(p => p.test(userMessage));
+  const responseConfirms = /✅ Reminder set|setting (that|it|this) up|reminder (set|created|done)|I('?ll| will) remind|alarm set/i.test(aryaResponse);
+
+  if (!hasReminderIntent && !responseConfirms) return;
+
+  try {
+    const miniOpenai = new OpenAI({
+      apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+      baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+    });
+
+    const now = new Date();
+    const completion = await miniOpenai.chat.completions.create({
+      model: "gpt-4.1-mini",
+      messages: [
+        {
+          role: "system",
+          content: `Extract reminder details from this conversation. Return JSON:
+{
+  "isReminder": boolean,
+  "title": "Short title (max 60 chars)",
+  "message": "Reminder message to show user",
+  "type": "alarm|reminder|water|work|medicine|exercise|custom",
+  "recurrence": "once|daily|weekly|hourly|custom",
+  "recurrenceMinutes": number or null (minutes between reminders for custom),
+  "scheduledAtOffsetMinutes": number (minutes from now for first trigger, default 5 for periodic, or exact minutes to target time)
+}
+Current time: ${now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })}
+Only set isReminder=true if this is a clear, actionable reminder request. Not every message is a reminder.
+Respond ONLY with valid JSON.`
+        },
+        { role: "user", content: `User message: "${userMessage}"\n\nARYA response: "${aryaResponse.slice(0, 500)}"` }
+      ],
+      max_completion_tokens: 300,
+    });
+
+    const text = completion.choices[0]?.message?.content?.trim();
+    if (!text) return;
+
+    const parsed = JSON.parse(text);
+    if (!parsed.isReminder) return;
+
+    const offsetMins = typeof parsed.scheduledAtOffsetMinutes === "number" ? Math.max(1, parsed.scheduledAtOffsetMinutes) : 5;
+    const scheduledAt = new Date(now.getTime() + offsetMins * 60 * 1000);
+
+    await db.insert(aryaReminders).values({
+      userId,
+      title: parsed.title || "ARYA Reminder",
+      message: parsed.message || "Time for your reminder!",
+      type: parsed.type || "reminder",
+      scheduledAt,
+      recurrence: parsed.recurrence || "once",
+      recurrenceMinutes: parsed.recurrenceMinutes || null,
+      isActive: true,
+      soundEnabled: true,
+    });
+
+    console.log(`[PA] Auto-created reminder "${parsed.title}" for user ${userId}`);
+  } catch (err: any) {
+    console.error("[REMINDER CREATE ERROR]", err?.message || "Unknown error");
   }
 }
 

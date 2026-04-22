@@ -595,5 +595,55 @@ export const insertAryaUserFeedbackSchema = createInsertSchema(aryaUserFeedback)
 export type InsertAryaUserFeedback = z.infer<typeof insertAryaUserFeedbackSchema>;
 export type AryaUserFeedback = typeof aryaUserFeedback.$inferSelect;
 
+// =============================================
+// PA REMINDERS & ALARMS
+// =============================================
+
+export const aryaReminders = pgTable("arya_reminders", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  message: text("message").notNull(),
+  type: varchar("type", { length: 20 }).default("reminder").notNull().$type<'alarm' | 'reminder' | 'water' | 'work' | 'medicine' | 'exercise' | 'custom'>(),
+  scheduledAt: timestamp("scheduled_at").notNull(),
+  recurrence: varchar("recurrence", { length: 20 }).default("once").notNull().$type<'once' | 'daily' | 'hourly' | 'weekly' | 'custom'>(),
+  recurrenceMinutes: integer("recurrence_minutes"),
+  isActive: boolean("is_active").default(true).notNull(),
+  soundEnabled: boolean("sound_enabled").default(true).notNull(),
+  lastTriggeredAt: timestamp("last_triggered_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAryaReminderSchema = createInsertSchema(aryaReminders).omit({
+  id: true,
+  createdAt: true,
+  lastTriggeredAt: true,
+});
+export type InsertAryaReminder = z.infer<typeof insertAryaReminderSchema>;
+export type AryaReminder = typeof aryaReminders.$inferSelect;
+
+// =============================================
+// PUSH NOTIFICATION SUBSCRIPTIONS
+// =============================================
+
+export const aryaPushSubscriptions = pgTable("arya_push_subscriptions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull(),
+  endpoint: text("endpoint").notNull().unique(),
+  p256dh: text("p256dh").notNull(),
+  auth: text("auth").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// =============================================
+// APP SETTINGS (VAPID keys, etc.)
+// =============================================
+
+export const aryaAppSettings = pgTable("arya_app_settings", {
+  key: varchar("key", { length: 100 }).primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Re-export chat models
 export * from "./models/chat";

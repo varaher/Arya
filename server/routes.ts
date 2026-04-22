@@ -26,7 +26,7 @@ import {
   type SarvamLanguageCode,
 } from "./arya/sarvam-service";
 import { QueryRequestSchema, DomainSchema, aryaKnowledge, aryaClinicalRecords } from "@shared/schema";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, or, isNull, lte } from "drizzle-orm";
 import { db } from "./db";
 import {
   createApiKey,
@@ -68,7 +68,10 @@ import {
   aryaUsers,
   aryaUsageBudget,
   aryaUserFeedback,
+  aryaReminders,
+  aryaPushSubscriptions,
 } from "@shared/schema";
+import { getVapidPublicKey } from "./arya/reminder-scheduler";
 
 const retriever = new KnowledgeRetriever();
 const medicalEngine = new MedicalEngine();
@@ -291,6 +294,132 @@ export async function registerRoutes(
       }
       console.error("[GOOGLE AUTH ERROR]", error.message || "Unknown error");
       res.status(500).json({ error: "Google sign-in failed" });
+    }
+  });
+
+  // =============================================
+  // PUSH NOTIFICATION ROUTES
+  // =============================================
+
+  app.get("/api/push/vapid-key", (_req: Request, res: Response) => {
+    const publicKey = getVapidPublicKey();
+    if (!publicKey) return res.status(503).json({ error: "Push not configured" });
+    res.json({ publicKey });
+  });
+
+  app.post("/api/push/subscribe", async (req: Request, res: Response) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith("Bearer ")) return res.status(401).json({ error: "Unauthorized" });
+    const user = await verifySession(authHeader.slice(7));
+    if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+    const { endpoint, p256dh, auth } = req.body;
+    if (!endpoint || !p256dh || !auth) return res.status(400).json({ error: "Missing subscription data" });
+
+    try {
+      await db.insert(aryaPushSubscriptions)
+        .values({ userId: user.id, endpoint, p256dh, auth })
+        .onConflictDoNothing();
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to save subscription" });
+    }
+  });
+
+  app.post("/api/push/unsubscribe", async (req: Request, res: Response) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith("Bearer ")) return res.status(401).json({ error: "Unauthorized" });
+    const user = await verifySession(authHeader.slice(7));
+    if (!user) return res.status(401).json({ error: "Unauthorized" });
+    const { endpoint } = req.body;
+    if (endpoint) {
+      await db.delete(aryaPushSubscriptions).where(eq(aryaPushSubscriptions.endpoint, endpoint));
+    }
+    res.json({ success: true });
+  });
+
+  // =============================================
+  // REMINDERS ROUTES
+  // =============================================
+
+  async function requireUserAuth(req: Request, res: Response): Promise<{ id: string; name: string } | null> {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith("Bearer ")) { res.status(401).json({ error: "Unauthorized" }); return null; }
+    const user = await verifySession(authHeader.slice(7));
+    if (!user) { res.status(401).json({ error: "Unauthorized" }); return null; }
+    return user;
+  }
+
+  app.get("/api/reminders", async (req: Request, res: Response) => {
+    const user = await requireUserAuth(req, res);
+    if (!user) return;
+    try {
+      const reminders = await db.select().from(aryaReminders)
+        .where(eq(aryaReminders.userId, user.id))
+        .orderBy(desc(aryaReminders.createdAt));
+      res.json(reminders);
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to fetch reminders" });
+    }
+  });
+
+  app.post("/api/reminders", async (req: Request, res: Response) => {
+    const user = await requireUserAuth(req, res);
+    if (!user) return;
+    try {
+      const { title, message, type, scheduledAt, recurrence, recurrenceMinutes, isActive, soundEnabled } = req.body;
+      if (!title || !message || !scheduledAt) return res.status(400).json({ error: "title, message and scheduledAt are required" });
+
+      const [reminder] = await db.insert(aryaReminders).values({
+        userId: user.id,
+        title: title.trim(),
+        message: message.trim(),
+        type: type || "reminder",
+        scheduledAt: new Date(scheduledAt),
+        recurrence: recurrence || "once",
+        recurrenceMinutes: recurrenceMinutes || null,
+        isActive: isActive !== false,
+        soundEnabled: soundEnabled !== false,
+      }).returning();
+
+      res.json(reminder);
+    } catch (err: any) {
+      console.error("[REMINDER CREATE]", err.message);
+      res.status(500).json({ error: "Failed to create reminder" });
+    }
+  });
+
+  app.patch("/api/reminders/:id", async (req: Request, res: Response) => {
+    const user = await requireUserAuth(req, res);
+    if (!user) return;
+    try {
+      const { id } = req.params;
+      const updates: Record<string, any> = {};
+      if (req.body.isActive !== undefined) updates.isActive = req.body.isActive;
+      if (req.body.title !== undefined) updates.title = req.body.title;
+      if (req.body.message !== undefined) updates.message = req.body.message;
+      if (req.body.scheduledAt !== undefined) updates.scheduledAt = new Date(req.body.scheduledAt);
+
+      const [updated] = await db.update(aryaReminders)
+        .set(updates)
+        .where(and(eq(aryaReminders.id, id), eq(aryaReminders.userId, user.id)))
+        .returning();
+      if (!updated) return res.status(404).json({ error: "Reminder not found" });
+      res.json(updated);
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to update reminder" });
+    }
+  });
+
+  app.delete("/api/reminders/:id", async (req: Request, res: Response) => {
+    const user = await requireUserAuth(req, res);
+    if (!user) return;
+    try {
+      await db.delete(aryaReminders)
+        .where(and(eq(aryaReminders.id, req.params.id), eq(aryaReminders.userId, user.id)));
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to delete reminder" });
     }
   });
 

@@ -271,13 +271,8 @@ function matchesTimerReminder(msg: string): boolean {
   return /\b(set (a |an )?(timer|alarm|reminder))\b/i.test(msg);
 }
 
-function handleTimerReminder(msg: string): SmartCommandResult {
-  return {
-    handled: true,
-    type: "info",
-    icon: "bell",
-    response: "I can't set timers or alarms directly on your device yet — but I'm working on it! For now, you can ask me to remind you what to do, and I'll note it for you in our conversation.",
-  };
+function handleTimerReminder(_msg: string): SmartCommandResult {
+  return { handled: false };
 }
 
 function matchesDefinitionQuery(msg: string): boolean {

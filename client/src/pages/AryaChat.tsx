@@ -50,6 +50,8 @@ import {
   Moon,
 } from "lucide-react";
 import { useTheme } from "@/lib/theme";
+import RemindersPanel from "@/components/RemindersPanel";
+import { requestNotificationPermission } from "@/lib/push-notifications";
 
 function FormattedMessage({ content, isUser }: { content: string; isUser?: boolean }) {
   if (isUser) {
@@ -890,6 +892,7 @@ export default function AryaChat() {
   const [showMemory, setShowMemory] = useState(false);
   const [showGoals, setShowGoals] = useState(false);
   const [showCustomize, setShowCustomize] = useState(false);
+  const [showReminders, setShowReminders] = useState(false);
   const [showConfidence, setShowConfidence] = useState(true);
   const [betaRestricted, setBetaRestricted] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -976,6 +979,15 @@ export default function AryaChat() {
       setShowOnboarding(true);
     }
   }, [isLoggedIn, user]);
+
+  useEffect(() => {
+    if (isLoggedIn && token && "Notification" in window && Notification.permission === "default") {
+      const timer = setTimeout(() => {
+        requestNotificationPermission(token).catch(() => {});
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoggedIn, token]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -1464,7 +1476,7 @@ export default function AryaChat() {
         <div className="px-2 py-2 border-b border-gray-100 dark:border-slate-700 flex gap-1">
           <button
             data-testid="button-toggle-memory"
-            onClick={() => { setShowMemory(!showMemory); setShowGoals(false); }}
+            onClick={() => { setShowMemory(!showMemory); setShowGoals(false); setShowReminders(false); }}
             className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-medium transition-colors ${
               showMemory ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800' : 'text-gray-400 hover:text-gray-500 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700'
             }`}
@@ -1474,13 +1486,23 @@ export default function AryaChat() {
           </button>
           <button
             data-testid="button-toggle-goals"
-            onClick={() => { setShowGoals(!showGoals); setShowMemory(false); }}
+            onClick={() => { setShowGoals(!showGoals); setShowMemory(false); setShowReminders(false); }}
             className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-medium transition-colors ${
               showGoals ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800' : 'text-gray-400 hover:text-gray-500 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700'
             }`}
           >
             <Target className="w-3 h-3" />
             Goals
+          </button>
+          <button
+            data-testid="button-toggle-reminders"
+            onClick={() => { setShowReminders(!showReminders); setShowMemory(false); setShowGoals(false); }}
+            className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-medium transition-colors ${
+              showReminders ? 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-800' : 'text-gray-400 hover:text-gray-500 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700'
+            }`}
+          >
+            <Bell className="w-3 h-3" />
+            Alerts
           </button>
         </div>
 
@@ -1568,10 +1590,18 @@ export default function AryaChat() {
             </button>
             <button
               data-testid="button-toggle-goals-mobile"
-              onClick={() => { setShowGoals(!showGoals); setShowMemory(false); }}
+              onClick={() => { setShowGoals(!showGoals); setShowMemory(false); setShowReminders(false); }}
               className={`p-1.5 rounded-lg transition-all ${showGoals ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' : 'text-gray-400 hover:text-gray-500 dark:hover:text-gray-400'}`}
             >
               <Target className="w-4 h-4" />
+            </button>
+            <button
+              data-testid="button-toggle-reminders-mobile"
+              onClick={() => { setShowReminders(!showReminders); setShowMemory(false); setShowGoals(false); }}
+              className={`p-1.5 rounded-lg transition-all ${showReminders ? 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400' : 'text-gray-400 hover:text-gray-500 dark:hover:text-gray-400'}`}
+              title="Reminders & Alarms"
+            >
+              <Bell className="w-4 h-4" />
             </button>
             <button
               data-testid="button-new-chat-mobile"
@@ -1700,6 +1730,18 @@ export default function AryaChat() {
               className="absolute right-0 top-0 bottom-0 z-40"
             >
               <CustomizePanel onClose={() => setShowCustomize(false)} token={token} />
+            </motion.div>
+          )}
+          {showReminders && (
+            <motion.div
+              key="reminders-panel"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50"
+            >
+              <div className="absolute inset-0 bg-black/40" onClick={() => setShowReminders(false)} />
+              <RemindersPanel onClose={() => setShowReminders(false)} />
             </motion.div>
           )}
         </AnimatePresence>

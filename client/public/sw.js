@@ -1,4 +1,4 @@
-const CACHE_NAME = 'arya-pwa-v1';
+const CACHE_NAME = 'arya-pwa-v2';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
@@ -61,4 +61,42 @@ self.addEventListener('fetch', (event) => {
   }
 
   event.respondWith(fetch(request).catch(() => caches.match(request)));
+});
+
+// =============================================
+// PUSH NOTIFICATION HANDLER
+// =============================================
+
+self.addEventListener('push', (event) => {
+  let data = { title: 'ARYA Reminder', body: 'Time for your scheduled reminder!', icon: '/icons/icon-192.png', url: '/' };
+  try {
+    if (event.data) data = { ...data, ...JSON.parse(event.data.text()) };
+  } catch (e) {}
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: data.icon || '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      vibrate: [200, 100, 200],
+      requireInteraction: false,
+      data: { url: data.url || '/' },
+      actions: [{ action: 'open', title: 'Open ARYA' }],
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || '/';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) return clients.openWindow(url);
+    })
+  );
 });
