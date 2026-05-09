@@ -2,7 +2,7 @@
 
 **Multi-Tenant AI Agent Platform for VARAH Group**
 
-ARYA (Augmented Reasoning & Yielding Analytics) is an independent AI orchestration engine that powers multiple VARAH products: ERmate (clinical documentation), ErPrana (patient monitoring), NÉVARH (Vedic wellness), and corporate applications.
+ARYA (Augmented Reasoning & Yielding Awareness) is an independent AI orchestration engine that powers multiple VARAH products: ERmate (clinical documentation), ErPrana (patient monitoring), NÉVARH (Vedic wellness), and corporate applications.
 
 ---
 

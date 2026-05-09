@@ -2,12 +2,12 @@
 
 ## Overview
 
-ARYA (Augmented Reasoning & Yielding Analytics) is a multi-tenant personal AI assistant platform designed for the VARAH Group. It serves as "Your Personal Thinking & Growth Assistant," focusing on helping users think clearly, set goals, stay disciplined, reflect daily, and grow spiritually and professionally. ARYA integrates Bharatiya (Indian/Hindu) civilizational perspectives and supports voice interaction in 11 Indian languages via Sarvam AI. It also underpins future products like ERmate (clinical documentation copilot) and ErPrana (patient monitoring).
+ARYA (Augmented Reasoning & Yielding Awareness) is a multi-tenant personal AI assistant platform designed for the VARAH Group. It serves as "Your Personal Thinking & Growth Assistant," focusing on helping users think clearly, set goals, stay disciplined, reflect daily, and grow spiritually and professionally. ARYA integrates Bharatiya (Indian/Hindu) civilizational perspectives and supports voice interaction in 11 Indian languages via Sarvam AI. It also underpins future products like ERmate (clinical documentation copilot) and ErPrana (patient monitoring).
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
-Branding: ARYA is "Your Personal Thinking & Growth Assistant" — never refer to it as "AGI," "AGI-class," or just "chatbot." Avoid technical jargon in user-facing text. Tone should be warm, encouraging, personal — like a wise friend, not a corporate AI.
+Branding: ARYA stands for "Augmented Reasoning & Yielding Awareness." ARYA is "Your Personal Thinking & Growth Assistant" — never refer to it as "AGI," "AGI-class," or just "chatbot." Avoid technical jargon in user-facing text. Tone should be warm, encouraging, personal — like a wise friend, not a corporate AI.
 Bharatiya/Vedic/Sanskrit knowledge is the invisible core — ARYA draws from this wisdom naturally in responses, but these terms should NOT appear in user-facing UI labels, prompts, or navigation. The wisdom shows through the quality of advice, not through labels.
 
 ## System Architecture
