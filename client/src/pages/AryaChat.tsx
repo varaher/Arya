@@ -3005,7 +3005,7 @@ function VoiceConversationMode({
 }
 
 function UserAuthModal({ onClose }: { onClose: () => void }) {
-  const { login, signup } = useUserAuth();
+  const { login, signup, loginWithGoogle } = useUserAuth();
   const [mode, setMode] = useState<"login" | "signup">("signup");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -3015,10 +3015,64 @@ function UserAuthModal({ onClose }: { onClose: () => void }) {
   const [loading, setLoading] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [isBeta, setIsBeta] = useState(false);
+  const [googleClientId, setGoogleClientId] = useState<string | null>(null);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const googleBtnRef = useRef<HTMLDivElement>(null);
+  const googleScriptLoaded = useRef(false);
 
   useEffect(() => {
     fetch("/api/beta/status").then(r => r.json()).then(d => setIsBeta(d.betaMode)).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    fetch("/api/user/google-config").then(r => r.json()).then(d => {
+      if (d.clientId) setGoogleClientId(d.clientId);
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!googleClientId || googleScriptLoaded.current) return;
+    const existing = document.getElementById("google-gis-script");
+    if (existing) { initGoogleBtn(); return; }
+    const script = document.createElement("script");
+    script.id = "google-gis-script";
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = () => initGoogleBtn();
+    document.head.appendChild(script);
+    googleScriptLoaded.current = true;
+  }, [googleClientId]);
+
+  useEffect(() => {
+    if (window.google && googleClientId && googleBtnRef.current) initGoogleBtn();
+  }, [mode, googleClientId]);
+
+  function initGoogleBtn() {
+    if (!window.google || !googleClientId || !googleBtnRef.current) return;
+    window.google.accounts.id.initialize({ client_id: googleClientId, callback: handleGoogleCredential });
+    setTimeout(() => {
+      if (!googleBtnRef.current) return;
+      window.google!.accounts.id.renderButton(googleBtnRef.current, {
+        theme: "outline",
+        size: "large",
+        shape: "rectangular",
+        width: googleBtnRef.current.offsetWidth || 320,
+        text: mode === "signup" ? "signup_with" : "signin_with",
+        logo_alignment: "left",
+      });
+    }, 100);
+  }
+
+  async function handleGoogleCredential(response: { credential: string }) {
+    setGoogleLoading(true);
+    setError("");
+    try {
+      const result = await loginWithGoogle(response.credential);
+      if (result.success) onClose();
+      else setError(result.error || "Google sign-in failed");
+    } finally { setGoogleLoading(false); }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -3058,6 +3112,22 @@ function UserAuthModal({ onClose }: { onClose: () => void }) {
             {mode === "login" ? "Sign in to track your goals" : "Create account to set goals & track progress"}
           </p>
         </div>
+        {googleClientId && (
+          <div className="mb-4">
+            {googleLoading ? (
+              <div className="flex items-center justify-center gap-2 py-3 text-sm text-muted-foreground">
+                <Loader2 className="w-4 h-4 animate-spin" /> Signing in with Google...
+              </div>
+            ) : (
+              <div ref={googleBtnRef} data-testid="button-google-signin" className="w-full flex justify-center" />
+            )}
+            <div className="flex items-center gap-3 mt-4 mb-1">
+              <div className="flex-1 h-px bg-gray-200 dark:bg-slate-700" />
+              <span className="text-[11px] text-muted-foreground">or sign in with phone</span>
+              <div className="flex-1 h-px bg-gray-200 dark:bg-slate-700" />
+            </div>
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-3">
           {mode === "signup" && (
             <input
