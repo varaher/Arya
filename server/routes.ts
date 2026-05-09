@@ -1268,31 +1268,38 @@ export async function registerRoutes(
   // ARYA CHAT API ROUTES (Conversational AI)
   // =============================================
 
-  app.get("/api/arya/conversations", async (_req: Request, res: Response) => {
+  app.get("/api/arya/conversations", optionalUser, async (req: Request, res: Response) => {
     try {
-      const conversations = await chatStorage.getAllConversations();
+      const userId = (req as any).userId || null;
+      const conversations = await chatStorage.getAllConversations(userId);
       res.json(conversations);
     } catch (error: any) {
       res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
-  app.post("/api/arya/conversations", async (req: Request, res: Response) => {
+  app.post("/api/arya/conversations", optionalUser, async (req: Request, res: Response) => {
     try {
       const { title } = req.body;
-      const conversation = await chatStorage.createConversation(title || "New Chat");
+      const userId = (req as any).userId || null;
+      const conversation = await chatStorage.createConversation(title || "New Chat", userId);
       res.status(201).json(conversation);
     } catch (error: any) {
       res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
-  app.get("/api/arya/conversations/:id", async (req: Request, res: Response) => {
+  app.get("/api/arya/conversations/:id", optionalUser, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
+      const userId = (req as any).userId || null;
       const conversation = await chatStorage.getConversation(id);
       if (!conversation) {
         return res.status(404).json({ error: "Conversation not found" });
+      }
+      // Only allow access if conversation belongs to this user
+      if (conversation.userId && conversation.userId !== userId) {
+        return res.status(403).json({ error: "Access denied" });
       }
       const messages = await chatStorage.getMessagesByConversation(id);
       res.json({ ...conversation, messages });
@@ -1301,10 +1308,11 @@ export async function registerRoutes(
     }
   });
 
-  app.delete("/api/arya/conversations/:id", async (req: Request, res: Response) => {
+  app.delete("/api/arya/conversations/:id", optionalUser, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
-      await chatStorage.deleteConversation(id);
+      const userId = (req as any).userId || null;
+      await chatStorage.deleteConversation(id, userId);
       res.status(204).send();
     } catch (error: any) {
       res.status(500).json({ error: "Something went wrong. Please try again." });

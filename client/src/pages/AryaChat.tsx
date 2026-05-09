@@ -911,18 +911,22 @@ export default function AryaChat() {
   const queryClient = useQueryClient();
 
   const { data: conversations = [] } = useQuery<Conversation[]>({
-    queryKey: ["/api/arya/conversations"],
+    queryKey: ["/api/arya/conversations", token],
     queryFn: async () => {
-      const res = await fetch("/api/arya/conversations");
+      const headers: Record<string, string> = {};
+      if (token) headers["x-user-token"] = token;
+      const res = await fetch("/api/arya/conversations", { headers });
       return res.json();
     },
   });
 
   const { data: conversationData } = useQuery<{ messages: Message[] }>({
-    queryKey: ["/api/arya/conversations", activeConversation],
+    queryKey: ["/api/arya/conversations", activeConversation, token],
     queryFn: async () => {
       if (!activeConversation) return { messages: [] };
-      const res = await fetch(`/api/arya/conversations/${activeConversation}`);
+      const headers: Record<string, string> = {};
+      if (token) headers["x-user-token"] = token;
+      const res = await fetch(`/api/arya/conversations/${activeConversation}`, { headers });
       return res.json();
     },
     enabled: !!activeConversation,
@@ -949,9 +953,11 @@ export default function AryaChat() {
 
   const createConversation = useMutation({
     mutationFn: async (title: string) => {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["x-user-token"] = token;
       const res = await fetch("/api/arya/conversations", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ title }),
       });
       return res.json();
@@ -964,7 +970,9 @@ export default function AryaChat() {
 
   const deleteConversation = useMutation({
     mutationFn: async (id: number) => {
-      await fetch(`/api/arya/conversations/${id}`, { method: "DELETE" });
+      const headers: Record<string, string> = {};
+      if (token) headers["x-user-token"] = token;
+      await fetch(`/api/arya/conversations/${id}`, { method: "DELETE", headers });
     },
     onSuccess: () => {
       if (activeConversation) {
@@ -979,6 +987,12 @@ export default function AryaChat() {
       setShowOnboarding(true);
     }
   }, [isLoggedIn, user]);
+
+  // Refresh conversations when login state changes so each user sees only their own
+  useEffect(() => {
+    setActiveConversation(null);
+    queryClient.invalidateQueries({ queryKey: ["/api/arya/conversations"] });
+  }, [isLoggedIn, token]);
 
   useEffect(() => {
     if (isLoggedIn && token && "Notification" in window && Notification.permission === "default") {
