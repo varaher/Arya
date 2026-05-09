@@ -3024,19 +3024,13 @@ function UserAuthModal({ onClose }: { onClose: () => void }) {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [signupInviteCode, setSignupInviteCode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPw, setShowPw] = useState(false);
-  const [isBeta, setIsBeta] = useState(false);
   const [googleClientId, setGoogleClientId] = useState<string | null>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
   const googleBtnRef = useRef<HTMLDivElement>(null);
   const googleScriptLoaded = useRef(false);
-
-  useEffect(() => {
-    fetch("/api/beta/status").then(r => r.json()).then(d => setIsBeta(d.betaMode)).catch(() => {});
-  }, []);
 
   useEffect(() => {
     fetch("/api/user/google-config").then(r => r.json()).then(d => {
@@ -3099,7 +3093,7 @@ function UserAuthModal({ onClose }: { onClose: () => void }) {
         else onClose();
       } else {
         if (!name.trim()) { setError("Please enter your name"); setLoading(false); return; }
-        const r = await signup({ name: name.trim(), phone, password, inviteCode: signupInviteCode || undefined });
+        const r = await signup({ name: name.trim(), phone, password });
         if (!r.success) setError(r.error || "Signup failed");
         else onClose();
       }
@@ -3176,17 +3170,6 @@ function UserAuthModal({ onClose }: { onClose: () => void }) {
               {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
-          {mode === "signup" && isBeta && (
-            <input
-              data-testid="modal-input-invite-code"
-              type="text"
-              placeholder="Invite Code (required)"
-              value={signupInviteCode}
-              onChange={e => setSignupInviteCode(e.target.value.toUpperCase())}
-              className="w-full bg-background/50 border border-amber-200 dark:border-amber-800 rounded-xl text-gray-900 dark:text-white text-sm px-3 py-2.5 placeholder:text-muted-foreground focus:outline-none focus:border-amber-400/50 font-mono tracking-wider"
-              required
-            />
-          )}
           {error && <div className="text-xs text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2" data-testid="modal-text-error">{error}</div>}
           <Button
             data-testid="modal-button-submit"
