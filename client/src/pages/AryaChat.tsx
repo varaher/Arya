@@ -1558,6 +1558,84 @@ export default function AryaChat() {
             </div>
           )}
         </div>
+
+        {/* Desktop sidebar footer — user/login */}
+        <div className="border-t border-gray-100 dark:border-slate-700 p-2 hidden md:block">
+          {isLoggedIn ? (
+            <div className="relative">
+              <button
+                data-testid="button-user-menu-sidebar"
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="w-full flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-all"
+              >
+                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-cyan-500/20 to-amber-500/20 border border-cyan-300 dark:border-cyan-700 flex items-center justify-center flex-shrink-0">
+                  <User className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                </div>
+                <div className="flex-1 min-w-0 text-left">
+                  <div className="text-xs font-medium text-gray-900 dark:text-white truncate">{user?.name}</div>
+                  <div className="text-[10px] text-muted-foreground truncate">{user?.email || user?.phone}</div>
+                </div>
+                <NotificationBell token={token!} />
+              </button>
+              <AnimatePresence>
+                {showUserMenu && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.92, y: 5 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.92, y: 5 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute bottom-full left-0 right-0 mb-1 z-50 bg-card border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl py-2"
+                  >
+                    <button
+                      data-testid="button-my-goals-sidebar"
+                      onClick={() => { setShowUserMenu(false); setLocation("/my-goals"); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
+                    >
+                      <Target className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /> My Goals
+                    </button>
+                    <button
+                      data-testid="button-customize-arya-sidebar"
+                      onClick={() => { setShowUserMenu(false); setShowCustomize(true); setShowMemory(false); setShowGoals(false); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
+                    >
+                      <Palette className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" /> Customize ARYA
+                    </button>
+                    <button
+                      data-testid="button-quick-tutorial-sidebar"
+                      onClick={() => { setShowUserMenu(false); setShowTutorial(true); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
+                    >
+                      <HelpCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /> Quick Tutorial
+                    </button>
+                    <button
+                      data-testid="button-report-issue-sidebar"
+                      onClick={() => { setShowUserMenu(false); setShowFeedbackModal(true); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
+                    >
+                      <MessageCircleWarning className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400" /> Report Issue
+                    </button>
+                    <button
+                      data-testid="button-user-logout-sidebar"
+                      onClick={() => { setShowUserMenu(false); userLogout(); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-500 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-slate-700"
+                    >
+                      <LogOut className="w-3.5 h-3.5" /> Sign Out
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ) : (
+            <button
+              data-testid="button-user-login-sidebar"
+              onClick={() => setShowUserAuth(true)}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-cyan-600 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-800 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 transition-all"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              Sign in / Create account
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex-1 flex flex-col min-w-0 relative">
