@@ -2449,9 +2449,11 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
         return res.status(400).json({ error: "Invalid category" });
       }
       let userId: string | null = null;
-      const authHeader = req.headers.authorization;
-      if (authHeader?.startsWith("Bearer ")) {
-        const session = await verifySession(authHeader.split(" ")[1]);
+      const xToken = req.headers["x-user-token"] as string;
+      const bearerToken = req.headers.authorization?.startsWith("Bearer ") ? req.headers.authorization.split(" ")[1] : null;
+      const sessionToken = xToken || bearerToken;
+      if (sessionToken) {
+        const session = await verifySession(sessionToken);
         if (session) userId = session.id;
       }
       const [feedback] = await db.insert(aryaUserFeedback).values({

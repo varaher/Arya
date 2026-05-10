@@ -4251,6 +4251,7 @@ function FeedbackModal({ token, onClose }: { token: string | null; onClose: () =
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState("");
 
   const categories = [
     { value: "bug", label: "Something isn't working", icon: "🐛" },
@@ -4263,16 +4264,25 @@ function FeedbackModal({ token, onClose }: { token: string | null; onClose: () =
   const handleSubmit = async () => {
     if (!category || !description.trim()) return;
     setSubmitting(true);
+    setError("");
     try {
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (token) headers["x-user-token"] = token;
-      await fetch("/api/user/feedback", {
+      const res = await fetch("/api/user/feedback", {
         method: "POST",
         headers,
         body: JSON.stringify({ category, description: description.trim(), page: window.location.pathname }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || "Could not send your report. Please try again.");
+        setSubmitting(false);
+        return;
+      }
       setSubmitted(true);
-    } catch {}
+    } catch {
+      setError("Network error — please check your connection and try again.");
+    }
     setSubmitting(false);
   };
 
@@ -4358,6 +4368,12 @@ function FeedbackModal({ token, onClose }: { token: string | null; onClose: () =
             />
             <div className="text-right text-[10px] text-gray-300 dark:text-gray-600 mt-1">{description.length}/2000</div>
           </div>
+
+          {error && (
+            <div className="text-sm text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl px-3 py-2" data-testid="feedback-error">
+              {error}
+            </div>
+          )}
 
           <Button
             data-testid="feedback-button-submit"

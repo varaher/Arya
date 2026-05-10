@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   BrainCircuit, 
   Database, 
@@ -13,8 +13,27 @@ import {
   AlertTriangle,
   RefreshCw,
   TrendingUp,
+  MessageCircleWarning,
+  Bug,
+  Lightbulb,
+  FileText,
+  Circle,
+  CheckCircle2,
+  Clock,
+  X,
 } from "lucide-react";
 import { useState } from "react";
+
+interface FeedbackItem {
+  id: string;
+  userId: string | null;
+  category: string;
+  description: string;
+  page: string | null;
+  status: string;
+  adminNotes: string | null;
+  createdAt: string;
+}
 
 interface CostDashboard {
   date: string;
@@ -38,6 +57,172 @@ interface CostDashboard {
 
 function getAdminToken() {
   return localStorage.getItem("arya_admin_token") || "";
+}
+
+const CATEGORY_META: Record<string, { label: string; icon: React.FC<any>; color: string }> = {
+  bug:         { label: "Bug",            icon: Bug,                    color: "text-red-400" },
+  feature:     { label: "Feature Request",icon: Lightbulb,              color: "text-amber-400" },
+  content:     { label: "Content Quality",icon: FileText,               color: "text-cyan-400" },
+  performance: { label: "Performance",    icon: Zap,                    color: "text-purple-400" },
+  other:       { label: "Other",          icon: MessageCircleWarning,   color: "text-slate-400" },
+};
+
+const STATUS_META: Record<string, { label: string; icon: React.FC<any>; color: string }> = {
+  open:        { label: "Open",        icon: Circle,       color: "text-amber-400" },
+  in_progress: { label: "In Progress", icon: Clock,        color: "text-cyan-400" },
+  resolved:    { label: "Resolved",    icon: CheckCircle2, color: "text-emerald-400" },
+  closed:      { label: "Closed",      icon: X,            color: "text-slate-500" },
+};
+
+function FeedbackPanel() {
+  const queryClient = useQueryClient();
+  const [filter, setFilter] = useState("all");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [notes, setNotes] = useState<Record<string, string>>({});
+
+  const { data, isLoading } = useQuery<{ items: FeedbackItem[]; total: number }>({
+    queryKey: ["/api/admin/feedback"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/feedback", {
+        headers: { Authorization: `Bearer ${getAdminToken()}` },
+      });
+      if (!res.ok) throw new Error("Unauthorized");
+      return res.json();
+    },
+    refetchInterval: 60000,
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, status, adminNotes }: { id: string; status?: string; adminNotes?: string }) => {
+      await fetch(`/api/admin/feedback/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getAdminToken()}` },
+        body: JSON.stringify({ status, adminNotes }),
+      });
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/admin/feedback"] }),
+  });
+
+  const items = data?.items ?? [];
+  const filtered = filter === "all" ? items : items.filter(i => i.status === filter);
+
+  const counts = {
+    all: items.length,
+    open: items.filter(i => i.status === "open").length,
+    in_progress: items.filter(i => i.status === "in_progress").length,
+    resolved: items.filter(i => i.status === "resolved").length,
+  };
+
+  return (
+    <div className="space-y-5" data-testid="panel-feedback">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-xl font-display font-bold text-white">User Reports</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">{data?.total ?? 0} total reports from users</p>
+        </div>
+        <div className="flex gap-1.5 text-xs">
+          {(["all", "open", "in_progress", "resolved"] as const).map(s => (
+            <button
+              key={s}
+              data-testid={`filter-feedback-${s}`}
+              onClick={() => setFilter(s)}
+              className={`px-3 py-1 rounded-full border transition-colors ${filter === s ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:text-white"}`}
+            >
+              {s === "all" ? `All (${counts.all})` : s === "in_progress" ? `In Progress (${counts.in_progress})` : `${s.charAt(0).toUpperCase() + s.slice(1)} (${counts[s as keyof typeof counts]})`}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="text-center py-12 text-muted-foreground text-sm">Loading reports…</div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground text-sm">No reports in this category.</div>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map(item => {
+            const cat = CATEGORY_META[item.category] ?? CATEGORY_META.other;
+            const st = STATUS_META[item.status] ?? STATUS_META.open;
+            const CatIcon = cat.icon;
+            const StIcon = st.icon;
+            const isOpen = expandedId === item.id;
+            return (
+              <div
+                key={item.id}
+                data-testid={`card-feedback-${item.id}`}
+                className="bg-card/50 border border-border rounded-xl overflow-hidden"
+              >
+                <button
+                  className="w-full text-left px-4 py-3 flex items-start gap-3 hover:bg-white/5 transition-colors"
+                  onClick={() => {
+                    setExpandedId(isOpen ? null : item.id);
+                    if (!notes[item.id]) setNotes(n => ({ ...n, [item.id]: item.adminNotes ?? "" }));
+                  }}
+                >
+                  <div className={`mt-0.5 shrink-0 ${cat.color}`}>
+                    <CatIcon className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-medium text-white">{cat.label}</span>
+                      {item.page && <span className="text-[10px] font-mono text-muted-foreground bg-white/5 px-1.5 py-0.5 rounded">{item.page}</span>}
+                      <span className={`flex items-center gap-1 text-[10px] ${st.color}`}>
+                        <StIcon className="w-3 h-3" />{st.label}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-0.5 truncate">{item.description}</p>
+                    <p className="text-[10px] text-muted-foreground/60 mt-0.5">{new Date(item.createdAt).toLocaleString()} {item.userId ? `· User ${item.userId.slice(0, 8)}` : "· Anonymous"}</p>
+                  </div>
+                </button>
+
+                {isOpen && (
+                  <div className="px-4 pb-4 border-t border-border/50 pt-3 space-y-3">
+                    <p className="text-sm text-white/80 leading-relaxed">{item.description}</p>
+                    <div className="flex flex-wrap gap-2 items-center">
+                      <span className="text-xs text-muted-foreground">Update status:</span>
+                      {Object.entries(STATUS_META).map(([val, meta]) => {
+                        const SIcon = meta.icon;
+                        return (
+                          <button
+                            key={val}
+                            data-testid={`status-btn-${val}-${item.id}`}
+                            onClick={() => updateMutation.mutate({ id: item.id, status: val })}
+                            className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border transition-colors ${item.status === val ? "bg-primary/20 border-primary text-primary" : "border-border text-muted-foreground hover:text-white"}`}
+                          >
+                            <SIcon className="w-3 h-3" />{meta.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Admin notes</label>
+                      <textarea
+                        data-testid={`input-admin-notes-${item.id}`}
+                        rows={2}
+                        className="w-full bg-background/50 border border-white/10 rounded-lg text-white text-sm px-3 py-2 placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 resize-none"
+                        placeholder="Internal notes (not shown to user)"
+                        value={notes[item.id] ?? ""}
+                        onChange={e => setNotes(n => ({ ...n, [item.id]: e.target.value }))}
+                      />
+                      <Button
+                        data-testid={`button-save-notes-${item.id}`}
+                        size="sm"
+                        className="mt-1.5 bg-primary/20 hover:bg-primary/30 text-primary border border-primary/30"
+                        onClick={() => updateMutation.mutate({ id: item.id, adminNotes: notes[item.id] })}
+                        disabled={updateMutation.isPending}
+                      >
+                        Save Notes
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function Dashboard() {
@@ -281,6 +466,12 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="bg-card/50 border-border backdrop-blur-sm" data-testid="card-feedback-panel">
+        <CardContent className="pt-6">
+          <FeedbackPanel />
+        </CardContent>
+      </Card>
     </div>
   );
 }
