@@ -2277,7 +2277,10 @@ export default function AryaChat() {
           <Button
             data-testid="button-new-chat"
             onClick={() => {
-              createConversation.mutate("New Chat");
+              setActiveConversation(null);
+              setStreamingContent("");
+              setIsStreaming(false);
+              setInput("");
               setShowSidebar(false);
             }}
             className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:from-emerald-500 hover:to-emerald-400 shadow-lg shadow-emerald-300/30 dark:shadow-emerald-500/20"
@@ -2520,7 +2523,12 @@ export default function AryaChat() {
             </button>
             <button
               data-testid="button-new-chat-mobile"
-              onClick={() => createConversation.mutate("New Chat")}
+              onClick={() => {
+                setActiveConversation(null);
+                setStreamingContent("");
+                setIsStreaming(false);
+                setInput("");
+              }}
               className="p-1.5 rounded-lg bg-primary/20 border border-primary/30 hover:bg-primary/30 transition-all"
             >
               <Plus className="w-4 h-4 text-primary" />
