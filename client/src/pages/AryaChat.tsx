@@ -418,7 +418,7 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
     queryKey: ["/api/user/preferences"],
     queryFn: async () => {
       const res = await fetch("/api/user/preferences", {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { "x-user-token": token },
       });
       return res.json();
     },
@@ -455,27 +455,27 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
       await Promise.all([
         fetch("/api/user/preferences", {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          headers: { "Content-Type": "application/json", "x-user-token": token },
           body: JSON.stringify({ responseStyle: style, responseTone: tone, focusAreas: focus, wisdomQuotes: wisdom }),
         }),
         fetch("/api/user/news-notifications", {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          headers: { "Content-Type": "application/json", "x-user-token": token },
           body: JSON.stringify({ enabled: newsDigest }),
         }),
         fetch("/api/user/morning-briefing", {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          headers: { "Content-Type": "application/json", "x-user-token": token },
           body: JSON.stringify({ enabled: morningBriefing, time: briefingTime }),
         }),
         fetch("/api/user/weekly-review", {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          headers: { "Content-Type": "application/json", "x-user-token": token },
           body: JSON.stringify({ enabled: weeklyReview }),
         }),
         fetch("/api/user/ui-language", {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          headers: { "Content-Type": "application/json", "x-user-token": token },
           body: JSON.stringify({ language: uiLang }),
         }),
       ]);
@@ -1105,7 +1105,7 @@ function VoiceNotesPanel({ onClose, token }: { onClose: () => void; token: strin
   const { data, isLoading } = useQuery<{ notes: any[] }>({
     queryKey: ["/api/user/voice-notes"],
     queryFn: async () => {
-      const res = await fetch("/api/user/voice-notes", { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch("/api/user/voice-notes", { headers: { "x-user-token": token } });
       if (!res.ok) return { notes: [] };
       return res.json();
     },
@@ -1117,7 +1117,7 @@ function VoiceNotesPanel({ onClose, token }: { onClose: () => void; token: strin
 
   const deleteNote = useMutation({
     mutationFn: async (id: string) => {
-      await fetch(`/api/user/voice-notes/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+      await fetch(`/api/user/voice-notes/${id}`, { method: "DELETE", headers: { "x-user-token": token } });
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/user/voice-notes"] }),
   });
@@ -1164,7 +1164,7 @@ function VoiceNotesPanel({ onClose, token }: { onClose: () => void; token: strin
             setTranscript(text);
             await fetch("/api/user/voice-notes", {
               method: "POST",
-              headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+              headers: { "Content-Type": "application/json", "x-user-token": token },
               body: JSON.stringify({ transcript: text, durationSeconds: duration }),
             });
             queryClient.invalidateQueries({ queryKey: ["/api/user/voice-notes"] });
@@ -1288,7 +1288,7 @@ function MoodCheckInCard({ token, onComplete }: { token: string; onComplete: () 
     try {
       await fetch("/api/user/mood", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json", "x-user-token": token },
         body: JSON.stringify({ mood, energy, note: note || undefined }),
       });
       localStorage.setItem("arya_mood_date", new Date().toDateString());
@@ -4203,7 +4203,7 @@ function FeedbackModal({ token, onClose }: { token: string | null; onClose: () =
     setSubmitting(true);
     try {
       const headers: Record<string, string> = { "Content-Type": "application/json" };
-      if (token) headers.Authorization = `Bearer ${token}`;
+      if (token) headers["x-user-token"] = token;
       await fetch("/api/user/feedback", {
         method: "POST",
         headers,
