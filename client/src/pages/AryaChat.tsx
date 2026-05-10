@@ -1024,8 +1024,9 @@ export default function AryaChat() {
   const playAudioBase64 = useCallback((base64Audio: string) => {
     try {
       if (audioRef.current) {
-        audioRef.current.pause();
+        const prev = audioRef.current;
         audioRef.current = null;
+        prev.pause();
       }
       const byteChars = atob(base64Audio);
       const byteArray = new Uint8Array(byteChars.length);
@@ -1045,9 +1046,14 @@ export default function AryaChat() {
         setPlayingAudio(false);
         URL.revokeObjectURL(url);
       };
-      audio.play();
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          setPlayingAudio(false);
+          URL.revokeObjectURL(url);
+        });
+      }
     } catch (err) {
-      console.error("Audio playback error:", err);
       setPlayingAudio(false);
     }
   }, []);
