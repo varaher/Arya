@@ -1974,128 +1974,137 @@ export default function AryaChat() {
           <InsightsCard insights={insights} onDismiss={(id) => dismissInsightMutation.mutate(id)} />
         )}
 
-        <div className="flex-1 overflow-y-auto px-2 sm:px-4 py-3 md:py-4 space-y-3 md:space-y-4" data-testid="list-messages">
-          {!activeConversation && messages.length === 0 && !streamingContent && (
+        {/* Welcome screen — rendered OUTSIDE scroll container so it can fill height */}
+        {!activeConversation && messages.length === 0 && !streamingContent && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4 }}
+            className="flex-1 flex flex-col items-center justify-center text-center px-4 py-6 overflow-y-auto"
+          >
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.4 }}
-              className="flex flex-col items-center justify-center h-full text-center px-4"
+              data-testid="img-arya-logo"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="mb-3 flex flex-col items-center gap-2"
             >
-              <motion.div
-                data-testid="img-arya-logo"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
-                className="mb-4 md:mb-6 flex flex-col items-center gap-2"
+              <span
+                style={{
+                  fontFamily: "'Space Grotesk', sans-serif",
+                  fontSize: "3.5rem",
+                  fontWeight: 700,
+                  letterSpacing: "0.18em",
+                  lineHeight: 1,
+                  display: "block",
+                  color: "#047857",
+                  textShadow: "0 0 20px rgba(16,185,129,0.75), 0 0 40px rgba(52,211,153,0.4), 0 2px 6px rgba(4,120,87,0.25)",
+                }}
               >
-                <span
-                  className="text-6xl md:text-7xl font-bold tracking-tight leading-none select-none"
-                  style={{ fontFamily: "'Space Grotesk', sans-serif", color: "#059669" }}
-                >
-                  ARYA
-                </span>
-                <span className="flex gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#34d399" }} />
-                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#059669" }} />
-                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#065f46" }} />
-                </span>
-              </motion.div>
-              <motion.p
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.2 }}
-                className="text-[10px] uppercase tracking-widest font-bold bg-gradient-to-r from-emerald-500 to-green-400 bg-clip-text text-transparent mb-3"
-              >
-                Your Personal Thinking & Growth Assistant
-              </motion.p>
-              <motion.p
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.3 }}
-                className="text-muted-foreground max-w-md mb-6 md:mb-8 text-sm md:text-base"
-              >
-                Think clearly. Set goals. Stay disciplined. Reflect daily. Grow spiritually & professionally. I'm here to help you become your best self.
-              </motion.p>
-              <div className="flex items-center gap-2 mb-4">
-                {!isLoggedIn && (
-                  <button
-                    data-testid="button-welcome-signin"
-                    onClick={() => setShowUserAuth(true)}
-                    className="px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all flex items-center gap-1.5"
-                  >
-                    <LogIn className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                    Sign in to track goals
-                  </button>
-                )}
+                ARYA
+              </span>
+              <span className="flex gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: "radial-gradient(circle at 40% 40%, #6ee7b7, #059669)" }} />
+                <span className="w-2 h-2 rounded-full" style={{ background: "radial-gradient(circle at 40% 40%, #34d399, #047857)" }} />
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: "radial-gradient(circle at 40% 40%, #6ee7b7, #059669)" }} />
+              </span>
+            </motion.div>
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.2 }}
+              className="text-[10px] uppercase tracking-widest font-bold text-emerald-600 dark:text-emerald-400 mb-3"
+            >
+              Your Personal Thinking & Growth Assistant
+            </motion.p>
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.3 }}
+              className="text-muted-foreground max-w-md mb-5 text-sm md:text-base"
+            >
+              Think clearly. Set goals. Stay disciplined. Reflect daily. Grow spiritually & professionally. I'm here to help you become your best self.
+            </motion.p>
+            <div className="flex items-center gap-2 mb-4">
+              {!isLoggedIn && (
                 <button
-                  data-testid="button-welcome-tutorial"
-                  onClick={() => setShowTutorial(true)}
-                  className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-slate-700 border border-gray-200 dark:border-slate-700 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-amber-300 transition-all flex items-center gap-1.5"
+                  data-testid="button-welcome-signin"
+                  onClick={() => setShowUserAuth(true)}
+                  className="px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all flex items-center gap-1.5"
                 >
-                  <HelpCircle className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-                  Take a Tour
+                  <LogIn className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                  Sign in to track goals
                 </button>
-              </div>
-              <motion.div
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.4 }}
-                className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3 max-w-lg w-full"
+              )}
+              <button
+                data-testid="button-welcome-tutorial"
+                onClick={() => setShowTutorial(true)}
+                className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-slate-700 border border-gray-200 dark:border-slate-700 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-amber-300 transition-all flex items-center gap-1.5"
               >
-                {[
-                  { text: "Help me think through a tough decision I'm facing", badge: "Think", icon: "🧠" },
-                  { text: "I want to build a daily reading habit — help me set a goal", badge: "Goals", icon: "🎯" },
-                  { text: "Give me a morning reflection to start my day with clarity", badge: "Reflect", icon: "🌅" },
-                  { text: "How can I stay calm and focused when things get stressful?", badge: "Wisdom", icon: "🧘" },
-                ].map((suggestion, i) => (
-                  <motion.button
-                    key={i}
-                    data-testid={`button-suggestion-${i}`}
-                    onClick={() => sendMessage(suggestion.text)}
-                    className="text-left px-3 md:px-4 py-2.5 md:py-3 rounded-xl border border-emerald-100 dark:border-emerald-900/40 bg-white/80 dark:bg-slate-900/80 text-sm text-muted-foreground hover:text-gray-900 dark:hover:text-white hover:border-emerald-300 dark:hover:border-emerald-700 hover:bg-emerald-50/60 dark:hover:bg-emerald-950/30 transition-all group"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: 0.5 + i * 0.08 }}
-                    whileHover={{ scale: 1.02, y: -2 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <span className="text-[9px] uppercase tracking-wider font-semibold text-emerald-600 dark:text-emerald-400/70 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 mb-1 flex items-center gap-1">
-                      <span>{suggestion.icon}</span> {suggestion.badge}
-                    </span>
-                    <span className="block text-xs mt-0.5">{suggestion.text}</span>
-                  </motion.button>
-                ))}
-
-                {/* Talk to ARYA — full-width featured card */}
+                <HelpCircle className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                Take a Tour
+              </button>
+            </div>
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.4 }}
+              className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3 max-w-lg w-full"
+            >
+              {[
+                { text: "Help me think through a tough decision I'm facing", badge: "Think", icon: "🧠" },
+                { text: "I want to build a daily reading habit — help me set a goal", badge: "Goals", icon: "🎯" },
+                { text: "Give me a morning reflection to start my day with clarity", badge: "Reflect", icon: "🌅" },
+                { text: "How can I stay calm and focused when things get stressful?", badge: "Wisdom", icon: "🧘" },
+              ].map((suggestion, i) => (
                 <motion.button
-                  data-testid="button-suggestion-talk"
-                  onClick={() => setShowVoiceMode(true)}
-                  className="col-span-1 sm:col-span-2 text-left px-4 py-3 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-gradient-to-r from-emerald-50/80 to-green-50/60 dark:from-emerald-950/40 dark:to-green-950/30 hover:from-emerald-50 hover:to-green-50 dark:hover:from-emerald-950/60 dark:hover:to-green-950/50 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all group"
+                  key={i}
+                  data-testid={`button-suggestion-${i}`}
+                  onClick={() => sendMessage(suggestion.text)}
+                  className="text-left px-3 md:px-4 py-2.5 md:py-3 rounded-xl border border-emerald-100 dark:border-emerald-900/40 bg-white/80 dark:bg-slate-900/80 text-sm text-muted-foreground hover:text-gray-900 dark:hover:text-white hover:border-emerald-300 dark:hover:border-emerald-700 hover:bg-emerald-50/60 dark:hover:bg-emerald-950/30 transition-all group"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: 0.82 }}
-                  whileHover={{ scale: 1.01, y: -2 }}
+                  transition={{ duration: 0.3, delay: 0.5 + i * 0.08 }}
+                  whileHover={{ scale: 1.02, y: -2 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <span className="text-[9px] uppercase tracking-wider font-semibold text-emerald-600 dark:text-emerald-400/80 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 mb-1 flex items-center gap-1">
-                        <Mic className="w-2.5 h-2.5" /> Talk to ARYA
-                      </span>
-                      <span className="block text-xs text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200 mt-0.5">
-                        Speak freely — ARYA listens, thinks, and replies in your language. Hands-free, like talking to your PA.
-                      </span>
-                    </div>
-                    <div className="ml-3 w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center flex-shrink-0 group-hover:bg-emerald-200 dark:group-hover:bg-emerald-800/60 transition-colors">
-                      <Mic className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                    </div>
-                  </div>
+                  <span className="text-[9px] uppercase tracking-wider font-semibold text-emerald-600 dark:text-emerald-400/70 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 mb-1 flex items-center gap-1">
+                    <span>{suggestion.icon}</span> {suggestion.badge}
+                  </span>
+                  <span className="block text-xs mt-0.5">{suggestion.text}</span>
                 </motion.button>
-              </motion.div>
-            </motion.div>
-          )}
+              ))}
 
+              {/* Talk to ARYA — full-width featured card */}
+              <motion.button
+                data-testid="button-suggestion-talk"
+                onClick={() => setShowVoiceMode(true)}
+                className="col-span-1 sm:col-span-2 text-left px-4 py-3 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-gradient-to-r from-emerald-50/80 to-green-50/60 dark:from-emerald-950/40 dark:to-green-950/30 hover:from-emerald-50 hover:to-green-50 dark:hover:from-emerald-950/60 dark:hover:to-green-950/50 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all group"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.82 }}
+                whileHover={{ scale: 1.01, y: -2 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <span className="text-[9px] uppercase tracking-wider font-semibold text-emerald-600 dark:text-emerald-400/80 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 mb-1 flex items-center gap-1">
+                      <Mic className="w-2.5 h-2.5" /> Talk to ARYA
+                    </span>
+                    <span className="block text-xs text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200 mt-0.5">
+                      Speak freely — ARYA listens, thinks, and replies in your language. Hands-free, like talking to your PA.
+                    </span>
+                  </div>
+                  <div className="ml-3 w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center flex-shrink-0 group-hover:bg-emerald-200 dark:group-hover:bg-emerald-800/60 transition-colors">
+                    <Mic className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                </div>
+              </motion.button>
+            </motion.div>
+          </motion.div>
+        )}
+
+        <div className={`overflow-y-auto px-2 sm:px-4 py-3 md:py-4 space-y-3 md:space-y-4 ${(!activeConversation && messages.length === 0 && !streamingContent) ? "hidden" : "flex-1"}`} data-testid="list-messages">
           {messages.map((msg, msgIndex) => (
             <motion.div
               key={msg.id}
@@ -3048,8 +3057,14 @@ function VoiceConversationMode({
         </button>
         <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center">
           <span
-            className="text-xl font-bold tracking-tight select-none"
-            style={{ fontFamily: "'Space Grotesk', sans-serif", color: "#059669" }}
+            style={{
+              fontFamily: "'Space Grotesk', sans-serif",
+              fontSize: "1.25rem",
+              fontWeight: 700,
+              letterSpacing: "0.12em",
+              color: "#047857",
+              textShadow: "0 0 8px rgba(16,185,129,0.6), 0 0 16px rgba(52,211,153,0.3)",
+            }}
           >
             ARYA
           </span>
@@ -3363,15 +3378,23 @@ function UserAuthModal({ onClose }: { onClose: () => void }) {
         <div className="text-center mb-5">
           <div className="mb-3 flex flex-col items-center gap-1.5">
             <span
-              className="text-4xl font-bold tracking-tight leading-none select-none"
-              style={{ fontFamily: "'Space Grotesk', sans-serif", color: "#059669" }}
+              style={{
+                fontFamily: "'Space Grotesk', sans-serif",
+                fontSize: "2.5rem",
+                fontWeight: 700,
+                letterSpacing: "0.14em",
+                lineHeight: 1,
+                display: "block",
+                color: "#047857",
+                textShadow: "0 0 14px rgba(16,185,129,0.65), 0 0 28px rgba(52,211,153,0.35)",
+              }}
             >
               ARYA
             </span>
-            <span className="flex gap-1">
-              <span className="w-1 h-1 rounded-full" style={{ backgroundColor: "#34d399" }} />
-              <span className="w-1 h-1 rounded-full" style={{ backgroundColor: "#059669" }} />
-              <span className="w-1 h-1 rounded-full" style={{ backgroundColor: "#065f46" }} />
+            <span className="flex gap-1.5">
+              <span className="w-1 h-1 rounded-full" style={{ background: "radial-gradient(circle at 40% 40%, #6ee7b7, #059669)" }} />
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: "radial-gradient(circle at 40% 40%, #34d399, #047857)" }} />
+              <span className="w-1 h-1 rounded-full" style={{ background: "radial-gradient(circle at 40% 40%, #6ee7b7, #059669)" }} />
             </span>
           </div>
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">{mode === "login" ? "Welcome Back" : "Join ARYA"}</h2>
@@ -3834,15 +3857,23 @@ function OnboardingModal({ token, onComplete }: { token: string; onComplete: () 
             <div className="text-center">
               <div className="mb-4 flex flex-col items-center gap-2">
                 <span
-                  className="text-5xl font-bold tracking-tight leading-none select-none"
-                  style={{ fontFamily: "'Space Grotesk', sans-serif", color: "#059669" }}
+                  style={{
+                    fontFamily: "'Space Grotesk', sans-serif",
+                    fontSize: "3rem",
+                    fontWeight: 700,
+                    letterSpacing: "0.14em",
+                    lineHeight: 1,
+                    display: "block",
+                    color: "#047857",
+                    textShadow: "0 0 16px rgba(16,185,129,0.65), 0 0 32px rgba(52,211,153,0.35)",
+                  }}
                 >
                   ARYA
                 </span>
-                <span className="flex gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#34d399" }} />
-                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#059669" }} />
-                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#065f46" }} />
+                <span className="flex gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: "radial-gradient(circle at 40% 40%, #6ee7b7, #059669)" }} />
+                  <span className="w-2 h-2 rounded-full" style={{ background: "radial-gradient(circle at 40% 40%, #34d399, #047857)" }} />
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: "radial-gradient(circle at 40% 40%, #6ee7b7, #059669)" }} />
                 </span>
               </div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Welcome to ARYA</h2>
