@@ -5,6 +5,14 @@ interface SmartCommandResult {
   icon?: string;
 }
 
+function getISTHour(): number {
+  return parseInt(new Date().toLocaleString("en-US", {
+    hour: "2-digit",
+    hour12: false,
+    timeZone: "Asia/Kolkata",
+  }), 10);
+}
+
 export function processSmartCommand(message: string): SmartCommandResult {
   const msg = message.trim().toLowerCase();
 
@@ -66,7 +74,7 @@ function handleTimeCommand(msg: string): SmartCommandResult {
 }
 
 function getTimeGreeting(date: Date): string {
-  const hour = date.getHours();
+  const hour = getISTHour();
   if (hour < 5) return "Burning the midnight oil? Don't forget to rest.";
   if (hour < 12) return "Good morning! Hope your day is off to a great start.";
   if (hour < 17) return "Good afternoon! How's your day going?";
@@ -241,8 +249,7 @@ function matchesGreeting(msg: string): boolean {
 }
 
 function handleGreeting(msg: string): SmartCommandResult {
-  const now = new Date();
-  const hour = new Date().getHours();
+  const hour = getISTHour();
   let greeting: string;
 
   if (/namaste|namaskar/i.test(msg)) {
@@ -251,12 +258,16 @@ function handleGreeting(msg: string): SmartCommandResult {
     greeting = "Vanakkam! What can I do for you?";
   } else if (/sat sri akal/i.test(msg)) {
     greeting = "Sat Sri Akal! How may I assist you?";
+  } else if (hour < 5) {
+    greeting = "You're up late! What's on your mind?";
   } else if (hour < 12) {
     greeting = "Good morning! What's on your mind today?";
   } else if (hour < 17) {
     greeting = "Good afternoon! How can I help you?";
-  } else {
+  } else if (hour < 21) {
     greeting = "Good evening! What can I do for you?";
+  } else {
+    greeting = "Good night! Still thinking? I'm here.";
   }
 
   return {
