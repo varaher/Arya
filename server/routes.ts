@@ -2118,7 +2118,7 @@ export async function registerRoutes(
     try {
       const userId = (req as any).userId;
       const today = new Date().toDateString();
-      const cacheKey = `${userId}_${today}`;
+      const cacheKey = `v3_${userId}_${today}`;
 
       if (dailyQuoteCache.has(cacheKey)) {
         const cached = dailyQuoteCache.get(cacheKey)!;
@@ -2156,7 +2156,7 @@ ${memoryContext ? `What you know about ${firstName}: ${memoryContext}` : "No spe
 Rules:
 - Address ${firstName} directly if you know things about them — reference their actual situation, goals, or struggles
 - Sound like a trusted advisor speaking warmly, not a scripture or motivational poster
-- 1–3 sentences. No fluff. Profound but accessible
+- EXACTLY 1 sentence. Maximum 20 words. Short, sharp, memorable
 - NEVER mention Gita, Vedas, Chanakya, or any religious text — let the wisdom be invisible
 - NEVER use clichés ("every day is a new beginning", "you've got this", etc.)
 - The tone should be calm, grounding, and energising at once
@@ -2166,7 +2166,7 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
       const response = await openai.chat.completions.create({
         model: "gpt-4.1-mini",
         messages: [{ role: "user", content: prompt }],
-        max_completion_tokens: 150,
+        max_completion_tokens: 80,
         response_format: { type: "json_object" },
       });
 

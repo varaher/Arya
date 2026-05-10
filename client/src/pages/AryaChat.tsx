@@ -1270,7 +1270,7 @@ function VoiceNotesPanel({ onClose, token }: { onClose: () => void; token: strin
 
 function DailyQuoteCard({ token }: { token: string | null }) {
   const today = new Date().toDateString();
-  const cacheKey = `arya_quote_v2_${today}`;
+  const cacheKey = `arya_quote_v3_${today}`;
 
   const { data, isLoading } = useQuery<{ quote: string; source: string }>({
     queryKey: ["/api/arya/daily-quote"],
@@ -1300,7 +1300,7 @@ function DailyQuoteCard({ token }: { token: string | null }) {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.25 }}
-      className="w-full max-w-md mx-auto mb-3 px-5 py-3.5 rounded-2xl relative overflow-hidden"
+      className="w-full max-w-md mx-auto mb-3 px-5 py-3.5 rounded-2xl relative"
       style={{
         background: "linear-gradient(135deg, rgba(6,78,59,0.06) 0%, rgba(245,158,11,0.06) 100%)",
         border: "1px solid rgba(6,78,59,0.12)",
@@ -1314,7 +1314,7 @@ function DailyQuoteCard({ token }: { token: string | null }) {
       ) : data ? (
         <>
           <p
-            className="text-sm md:text-[15px] leading-relaxed text-gray-700 dark:text-gray-200 font-medium mb-2"
+            className="text-sm leading-relaxed text-gray-700 dark:text-gray-200 font-medium mb-2 break-words"
             style={{ fontFamily: "'Space Grotesk', sans-serif" }}
             data-testid="text-daily-quote"
           >
