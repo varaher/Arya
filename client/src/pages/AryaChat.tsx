@@ -63,11 +63,11 @@ function FormattedMessage({ content, isUser }: { content: string; isUser?: boole
       <ReactMarkdown
         components={{
           p: ({ children }) => <p className="mb-2 last:mb-0 text-gray-800 dark:text-gray-100">{children}</p>,
-          strong: ({ children }) => <strong className="font-semibold text-cyan-600 dark:text-cyan-400">{children}</strong>,
+          strong: ({ children }) => <strong className="font-semibold text-emerald-600 dark:text-emerald-400">{children}</strong>,
           em: ({ children }) => <em className="text-amber-600/90 dark:text-amber-400/90 not-italic font-medium">{children}</em>,
           h1: ({ children }) => <h1 className="text-base font-bold text-gray-900 dark:text-white mb-2 mt-1">{children}</h1>,
           h2: ({ children }) => <h2 className="text-sm font-bold text-gray-900 dark:text-white mb-2 mt-3 first:mt-0 pb-1 border-b border-gray-200 dark:border-slate-700">{children}</h2>,
-          h3: ({ children }) => <h3 className="text-sm font-semibold text-cyan-600 dark:text-cyan-400 mb-1.5 mt-2 first:mt-0">{children}</h3>,
+          h3: ({ children }) => <h3 className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 mb-1.5 mt-2 first:mt-0">{children}</h3>,
           ul: ({ children }) => <ul className="space-y-1.5 my-2 pl-0">{children}</ul>,
           ol: ({ children }) => {
             let counter = 0;
@@ -89,14 +89,14 @@ function FormattedMessage({ content, isUser }: { content: string; isUser?: boole
             const num = siblings.indexOf(node) + 1;
             return isOrdered ? (
               <li className="flex gap-2.5 items-start text-gray-800 dark:text-gray-100 list-none">
-                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-gradient-to-br from-cyan-500/30 to-cyan-600/20 border border-cyan-300 dark:border-cyan-700 flex items-center justify-center text-[10px] font-bold text-cyan-600 dark:text-cyan-400 mt-0.5">
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-gradient-to-br from-emerald-500/30 to-emerald-600/20 border border-emerald-300 dark:border-emerald-700 flex items-center justify-center text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
                   {num}
                 </span>
                 <span className="flex-1">{children}</span>
               </li>
             ) : (
               <li className="flex gap-2 items-start text-gray-800 dark:text-gray-100 list-none">
-                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-cyan-400 mt-1.5" />
+                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5" />
                 <span className="flex-1">{children}</span>
               </li>
             );
@@ -112,11 +112,11 @@ function FormattedMessage({ content, isUser }: { content: string; isUser?: boole
             );
           },
           blockquote: ({ children }) => (
-            <blockquote className="border-l-2 border-cyan-300 dark:border-cyan-700 pl-3 my-2 text-gray-600 dark:text-gray-300 italic">{children}</blockquote>
+            <blockquote className="border-l-2 border-emerald-300 dark:border-emerald-700 pl-3 my-2 text-gray-600 dark:text-gray-300 italic">{children}</blockquote>
           ),
           hr: () => <hr className="border-gray-200 dark:border-slate-700 my-3" />,
           a: ({ children, href }) => (
-            <a href={href} target="_blank" rel="noopener noreferrer" className="text-cyan-600 dark:text-cyan-400 underline underline-offset-2 hover:text-cyan-600 dark:hover:text-cyan-400">{children}</a>
+            <a href={href} target="_blank" rel="noopener noreferrer" className="text-emerald-600 dark:text-emerald-400 underline underline-offset-2 hover:text-emerald-700 dark:hover:text-emerald-300">{children}</a>
           ),
         }}
       >
@@ -210,7 +210,7 @@ function ConfidenceBadge({ confidence, sourcesCount, memoryUsed }: { confidence?
         {pct}% sure
       </span>
       {sourcesCount !== undefined && sourcesCount > 0 && (
-        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-cyan-50 dark:bg-cyan-900/20 text-cyan-600 dark:text-cyan-400/70 font-medium">
+        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400/70 font-medium">
           {sourcesCount} sources
         </span>
       )}
@@ -290,10 +290,10 @@ function FeedbackButtons({ messageId, conversationId }: { messageId: number; con
             value={correction}
             onChange={(e) => setCorrection(e.target.value)}
             placeholder="What should I have said?"
-            className="flex-1 text-xs bg-gray-100 dark:bg-slate-700 border border-gray-200 dark:border-slate-700 rounded px-2 py-1 text-gray-900 dark:text-white placeholder:text-gray-300 dark:placeholder:text-gray-600 focus:outline-none focus:border-cyan-300 dark:focus:border-cyan-700"
+            className="flex-1 text-xs bg-gray-100 dark:bg-slate-700 border border-gray-200 dark:border-slate-700 rounded px-2 py-1 text-gray-900 dark:text-white placeholder:text-gray-300 dark:placeholder:text-gray-600 focus:outline-none focus:border-emerald-300 dark:focus:border-emerald-700"
             onKeyDown={(e) => e.key === 'Enter' && submitCorrection()}
           />
-          <button onClick={submitCorrection} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-slate-700 text-cyan-600 dark:text-cyan-400">
+          <button onClick={submitCorrection} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-slate-700 text-emerald-600 dark:text-emerald-400">
             <Send className="w-3 h-3" />
           </button>
           <button onClick={() => { setShowCorrection(false); setSubmitted(null); }} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-300 dark:text-gray-600">
@@ -482,7 +482,7 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
     <div className="w-80 sm:w-96 h-full bg-white dark:bg-slate-900 backdrop-blur-xl border-l border-gray-200 dark:border-slate-700 flex flex-col" data-testid="panel-customize">
       <div className="p-3 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Palette className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+          <Palette className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           <span className="text-sm font-semibold text-gray-900 dark:text-white">Customize ARYA</span>
         </div>
         <button onClick={onClose} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-400" data-testid="button-close-customize">
@@ -491,7 +491,7 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-cyan-600 dark:text-cyan-400" /></div>
+        <div className="flex items-center justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-emerald-600 dark:text-emerald-400" /></div>
       ) : (
         <div className="flex-1 overflow-y-auto p-4 space-y-5">
           <div className="text-[11px] text-gray-400 leading-relaxed">
@@ -508,12 +508,12 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
                   onClick={() => setStyle(opt.value)}
                   className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-all ${
                     style === opt.value
-                      ? "bg-cyan-50 dark:bg-cyan-900/20 border border-cyan-300 dark:border-cyan-700 text-cyan-600 dark:text-cyan-400"
+                      ? "bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-300 dark:border-emerald-700 text-emerald-600 dark:text-emerald-400"
                       : "bg-gray-100 dark:bg-slate-700 border border-transparent text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700"
                   }`}
                 >
                   <div className={`w-3 h-3 rounded-full border-2 flex-shrink-0 ${
-                    style === opt.value ? "border-cyan-400 bg-cyan-400" : "border-gray-200 dark:border-slate-700"
+                    style === opt.value ? "border-emerald-400 bg-emerald-400" : "border-gray-200 dark:border-slate-700"
                   }`} />
                   <div>
                     <div className="text-xs font-medium">{opt.label}</div>
@@ -534,7 +534,7 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
                   onClick={() => setTone(opt.value)}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
                     tone === opt.value
-                      ? "bg-cyan-50 dark:bg-cyan-900/20 border border-cyan-300 dark:border-cyan-700 text-cyan-600 dark:text-cyan-400"
+                      ? "bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-300 dark:border-emerald-700 text-emerald-600 dark:text-emerald-400"
                       : "bg-gray-100 dark:bg-slate-700 border border-transparent text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700"
                   }`}
                 >
@@ -577,12 +577,12 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
                   onClick={() => setWisdom(opt.value)}
                   className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-all ${
                     wisdom === opt.value
-                      ? "bg-cyan-50 dark:bg-cyan-900/20 border border-cyan-300 dark:border-cyan-700 text-cyan-600 dark:text-cyan-400"
+                      ? "bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-300 dark:border-emerald-700 text-emerald-600 dark:text-emerald-400"
                       : "bg-gray-100 dark:bg-slate-700 border border-transparent text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700"
                   }`}
                 >
                   <div className={`w-3 h-3 rounded-full border-2 flex-shrink-0 ${
-                    wisdom === opt.value ? "border-cyan-400 bg-cyan-400" : "border-gray-200 dark:border-slate-700"
+                    wisdom === opt.value ? "border-emerald-400 bg-emerald-400" : "border-gray-200 dark:border-slate-700"
                   }`} />
                   <div>
                     <div className="text-xs font-medium">{opt.label}</div>
@@ -622,7 +622,7 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
             data-testid="button-save-preferences"
             onClick={savePrefs}
             disabled={saving}
-            className="w-full py-2.5 rounded-lg bg-gradient-to-r from-cyan-500/20 to-cyan-600/20 border border-cyan-300 dark:border-cyan-700 text-cyan-600 dark:text-cyan-400 text-xs font-semibold hover:from-cyan-500/30 hover:to-cyan-600/30 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full py-2.5 rounded-lg bg-gradient-to-r from-emerald-500/20 to-emerald-600/20 border border-emerald-300 dark:border-emerald-700 text-emerald-600 dark:text-emerald-400 text-xs font-semibold hover:from-emerald-500/30 hover:to-emerald-600/30 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : saved ? <Check className="w-3.5 h-3.5" /> : <Settings className="w-3.5 h-3.5" />}
             {saving ? "Saving..." : saved ? "Saved!" : "Save Preferences"}
@@ -808,7 +808,7 @@ function InsightsCard({ insights, onDismiss }: { insights: InsightItem[]; onDism
           return (
             <div
               key={insight.id}
-              className="flex items-start gap-3 px-3 py-2.5 rounded-xl bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border border-purple-200 dark:border-purple-800"
+              className="flex items-start gap-3 px-3 py-2.5 rounded-xl bg-gradient-to-r from-purple-500/10 to-emerald-500/10 border border-purple-200 dark:border-purple-800"
               data-testid={`card-insight-${insight.id}`}
             >
               <div className="w-7 h-7 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -881,7 +881,7 @@ function NotificationBell({ token }: { token: string }) {
               <div
                 key={n.id}
                 data-testid={`notification-item-${n.id}`}
-                className={`px-3 py-2 text-xs border-b border-gray-100 dark:border-slate-700 last:border-0 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-700 ${!n.isRead ? 'bg-cyan-50 dark:bg-cyan-900/20' : ''}`}
+                className={`px-3 py-2 text-xs border-b border-gray-100 dark:border-slate-700 last:border-0 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-700 ${!n.isRead ? 'bg-emerald-50 dark:bg-emerald-900/20' : ''}`}
                 onClick={() => { if (!n.isRead) markRead(n.id); }}
               >
                 <div className="font-medium text-gray-700 dark:text-gray-200">{n.title}</div>
@@ -1599,7 +1599,7 @@ export default function AryaChat() {
       >
         <div className="p-3 border-b border-gray-200 dark:border-slate-700">
           <div className="flex items-center gap-2 mb-3 px-1">
-            <MessageSquare className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+            <MessageSquare className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             <span className="text-sm font-semibold text-gray-900 dark:text-white">Chat History</span>
             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400 ml-auto">
               {conversations.length}
@@ -1611,7 +1611,7 @@ export default function AryaChat() {
               createConversation.mutate("New Chat");
               setShowSidebar(false);
             }}
-            className="w-full bg-gradient-to-r from-cyan-600 to-cyan-500 text-white hover:from-cyan-500 hover:to-cyan-400 shadow-lg shadow-cyan-300/30 dark:shadow-cyan-500/20"
+            className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:from-emerald-500 hover:to-emerald-400 shadow-lg shadow-emerald-300/30 dark:shadow-emerald-500/20"
             size="sm"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -1644,7 +1644,7 @@ export default function AryaChat() {
             data-testid="button-toggle-reminders"
             onClick={() => { setShowReminders(!showReminders); setShowMemory(false); setShowGoals(false); }}
             className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-medium transition-colors ${
-              showReminders ? 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-800' : 'text-gray-400 hover:text-gray-500 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700'
+              showReminders ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800' : 'text-gray-400 hover:text-gray-500 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700'
             }`}
           >
             <Bell className="w-3 h-3" />
@@ -1666,13 +1666,13 @@ export default function AryaChat() {
                 }}
                 className={`group flex items-start gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer transition-all ${
                   activeConversation === conv.id
-                    ? "bg-gradient-to-r from-cyan-500/15 to-transparent border border-cyan-300 dark:border-cyan-700 text-gray-900 dark:text-white"
+                    ? "bg-gradient-to-r from-emerald-500/15 to-transparent border border-emerald-300 dark:border-emerald-700 text-gray-900 dark:text-white"
                     : "hover:bg-gray-100 dark:hover:bg-slate-700 text-muted-foreground hover:text-gray-900 dark:hover:text-white border border-transparent"
                 }`}
               >
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${
                   activeConversation === conv.id
-                    ? "bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400"
+                    ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"
                     : "bg-gray-100 dark:bg-slate-700 text-gray-400"
                 }`}>
                   <MessageSquare className="w-3.5 h-3.5" />
@@ -1714,8 +1714,8 @@ export default function AryaChat() {
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 className="w-full flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-all"
               >
-                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-cyan-500/20 to-amber-500/20 border border-cyan-300 dark:border-cyan-700 flex items-center justify-center flex-shrink-0">
-                  <User className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-emerald-500/20 to-amber-500/20 border border-emerald-300 dark:border-emerald-700 flex items-center justify-center flex-shrink-0">
+                  <User className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <div className="flex-1 min-w-0 text-left">
                   <div className="text-xs font-medium text-gray-900 dark:text-white truncate">{user?.name}</div>
@@ -1744,7 +1744,7 @@ export default function AryaChat() {
                       onClick={() => { setShowUserMenu(false); setShowCustomize(true); setShowMemory(false); setShowGoals(false); }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                     >
-                      <Palette className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" /> Customize ARYA
+                      <Palette className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> Customize ARYA
                     </button>
                     <button
                       data-testid="button-quick-tutorial-sidebar"
@@ -1775,7 +1775,7 @@ export default function AryaChat() {
             <button
               data-testid="button-user-login-sidebar"
               onClick={() => setShowUserAuth(true)}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-cyan-600 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-800 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 transition-all"
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all"
             >
               <LogIn className="w-3.5 h-3.5" />
               Sign in / Create account
@@ -1791,10 +1791,10 @@ export default function AryaChat() {
             onClick={() => setShowSidebar(!showSidebar)}
             className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white/80 dark:bg-slate-900/80 border border-gray-200 dark:border-slate-700 hover:bg-white/90 dark:bg-slate-900/90 transition-all"
           >
-            {showSidebar ? <PanelLeftClose className="w-4 h-4 text-cyan-600 dark:text-cyan-400" /> : <PanelLeftOpen className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />}
+            {showSidebar ? <PanelLeftClose className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> : <PanelLeftOpen className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}
             <span className="text-xs font-medium text-gray-700 dark:text-gray-200">History</span>
             {conversations.length > 0 && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400 font-medium">
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-medium">
                 {conversations.length}
               </span>
             )}
@@ -1822,7 +1822,7 @@ export default function AryaChat() {
             <button
               data-testid="button-toggle-reminders-mobile"
               onClick={() => { setShowReminders(!showReminders); setShowMemory(false); setShowGoals(false); }}
-              className={`p-1.5 rounded-lg transition-all ${showReminders ? 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400' : 'text-gray-400 hover:text-gray-500 dark:hover:text-gray-400'}`}
+              className={`p-1.5 rounded-lg transition-all ${showReminders ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'text-gray-400 hover:text-gray-500 dark:hover:text-gray-400'}`}
               title="Reminders & Alarms"
             >
               <Bell className="w-4 h-4" />
@@ -1849,9 +1849,9 @@ export default function AryaChat() {
                 <button
                   data-testid="button-user-menu"
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="p-1.5 rounded-lg bg-gradient-to-br from-cyan-500/20 to-amber-500/20 border border-cyan-300 dark:border-cyan-700 hover:border-cyan-300 dark:hover:border-cyan-700 transition-all"
+                  className="p-1.5 rounded-lg bg-gradient-to-br from-emerald-500/20 to-amber-500/20 border border-emerald-300 dark:border-emerald-700 hover:border-emerald-400 dark:hover:border-emerald-600 transition-all"
                 >
-                  <User className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                  <User className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 </button>
                 <AnimatePresence>
                   {showUserMenu && (
@@ -1878,7 +1878,7 @@ export default function AryaChat() {
                         onClick={() => { setShowUserMenu(false); setShowCustomize(true); setShowMemory(false); setShowGoals(false); }}
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                       >
-                        <Palette className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" /> Customize ARYA
+                        <Palette className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> Customize ARYA
                       </button>
                       <button
                         data-testid="button-quick-tutorial"
@@ -1999,7 +1999,7 @@ export default function AryaChat() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.2 }}
-                className="text-[10px] uppercase tracking-widest font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent mb-3"
+                className="text-[10px] uppercase tracking-widest font-bold bg-gradient-to-r from-emerald-500 to-green-400 bg-clip-text text-transparent mb-3"
               >
                 Your Personal Thinking & Growth Assistant
               </motion.p>
@@ -2016,9 +2016,9 @@ export default function AryaChat() {
                   <button
                     data-testid="button-welcome-signin"
                     onClick={() => setShowUserAuth(true)}
-                    className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-slate-700 border border-gray-200 dark:border-slate-700 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-cyan-300 dark:hover:border-cyan-700 transition-all flex items-center gap-1.5"
+                    className="px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all flex items-center gap-1.5"
                   >
-                    <LogIn className="w-3 h-3 text-cyan-600 dark:text-cyan-400" />
+                    <LogIn className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                     Sign in to track goals
                   </button>
                 )}
@@ -2047,14 +2047,14 @@ export default function AryaChat() {
                     key={i}
                     data-testid={`button-suggestion-${i}`}
                     onClick={() => sendMessage(suggestion.text)}
-                    className="text-left px-3 md:px-4 py-2.5 md:py-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/80 text-sm text-muted-foreground hover:text-gray-900 dark:hover:text-white hover:border-primary/40 hover:bg-white/90 dark:bg-slate-900/90 transition-all group"
+                    className="text-left px-3 md:px-4 py-2.5 md:py-3 rounded-xl border border-emerald-100 dark:border-emerald-900/40 bg-white/80 dark:bg-slate-900/80 text-sm text-muted-foreground hover:text-gray-900 dark:hover:text-white hover:border-emerald-300 dark:hover:border-emerald-700 hover:bg-emerald-50/60 dark:hover:bg-emerald-950/30 transition-all group"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, delay: 0.5 + i * 0.08 }}
                     whileHover={{ scale: 1.02, y: -2 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    <span className="text-[9px] uppercase tracking-wider font-semibold text-cyan-600 dark:text-cyan-400/60 group-hover:text-cyan-600 dark:hover:text-cyan-400 mb-1 flex items-center gap-1">
+                    <span className="text-[9px] uppercase tracking-wider font-semibold text-emerald-600 dark:text-emerald-400/70 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 mb-1 flex items-center gap-1">
                       <span>{suggestion.icon}</span> {suggestion.badge}
                     </span>
                     <span className="block text-xs mt-0.5">{suggestion.text}</span>
@@ -2065,7 +2065,7 @@ export default function AryaChat() {
                 <motion.button
                   data-testid="button-suggestion-talk"
                   onClick={() => setShowVoiceMode(true)}
-                  className="col-span-1 sm:col-span-2 text-left px-4 py-3 rounded-xl border border-cyan-200 dark:border-cyan-800/60 bg-gradient-to-r from-cyan-50/80 to-blue-50/60 dark:from-cyan-950/40 dark:to-blue-950/30 hover:from-cyan-50 hover:to-blue-50 dark:hover:from-cyan-950/60 dark:hover:to-blue-950/50 hover:border-cyan-300 dark:hover:border-cyan-700 transition-all group"
+                  className="col-span-1 sm:col-span-2 text-left px-4 py-3 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-gradient-to-r from-emerald-50/80 to-green-50/60 dark:from-emerald-950/40 dark:to-green-950/30 hover:from-emerald-50 hover:to-green-50 dark:hover:from-emerald-950/60 dark:hover:to-green-950/50 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all group"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: 0.82 }}
@@ -2074,15 +2074,15 @@ export default function AryaChat() {
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <span className="text-[9px] uppercase tracking-wider font-semibold text-cyan-600 dark:text-cyan-400/70 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 mb-1 flex items-center gap-1">
+                      <span className="text-[9px] uppercase tracking-wider font-semibold text-emerald-600 dark:text-emerald-400/80 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 mb-1 flex items-center gap-1">
                         <Mic className="w-2.5 h-2.5" /> Talk to ARYA
                       </span>
                       <span className="block text-xs text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200 mt-0.5">
                         Speak freely — ARYA listens, thinks, and replies in your language. Hands-free, like talking to your PA.
                       </span>
                     </div>
-                    <div className="ml-3 w-8 h-8 rounded-full bg-cyan-100 dark:bg-cyan-900/40 flex items-center justify-center flex-shrink-0 group-hover:bg-cyan-200 dark:group-hover:bg-cyan-800/60 transition-colors">
-                      <Mic className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                    <div className="ml-3 w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center flex-shrink-0 group-hover:bg-emerald-200 dark:group-hover:bg-emerald-800/60 transition-colors">
+                      <Mic className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     </div>
                   </div>
                 </motion.button>
@@ -2108,7 +2108,7 @@ export default function AryaChat() {
               >
                 {msg.role === "assistant" && (
                   <div className="flex items-center gap-1.5 mb-1">
-                    <span className="text-xs font-semibold bg-gradient-to-r from-cyan-400 to-amber-400 bg-clip-text text-transparent">
+                    <span className="text-xs font-semibold bg-gradient-to-r from-emerald-500 to-amber-400 bg-clip-text text-transparent">
                       ARYA
                     </span>
                   </div>
@@ -2143,11 +2143,11 @@ export default function AryaChat() {
             >
               <div className={`max-w-[90%] sm:max-w-[80%] md:max-w-[75%] rounded-2xl px-3 md:px-4 py-2.5 md:py-3 ${
                 responseMode === "instant"
-                  ? "bg-gradient-to-br from-amber-500/10 to-cyan-500/10 border border-amber-200 dark:border-amber-800"
+                  ? "bg-gradient-to-br from-amber-500/10 to-emerald-500/10 border border-amber-200 dark:border-amber-800"
                   : "bg-white/90 dark:bg-slate-900/90 border border-gray-200 dark:border-slate-700"
               } text-gray-800 dark:text-gray-100`}>
                 <div className="flex items-center gap-1.5 mb-1">
-                  <span className="text-xs font-semibold bg-gradient-to-r from-cyan-400 to-amber-400 bg-clip-text text-transparent">
+                  <span className="text-xs font-semibold bg-gradient-to-r from-emerald-500 to-amber-400 bg-clip-text text-transparent">
                     ARYA
                   </span>
                   {responseMode === "instant" && (
@@ -2188,7 +2188,7 @@ export default function AryaChat() {
             >
               <div className="rounded-2xl px-3 md:px-4 py-2.5 md:py-3 bg-white/90 dark:bg-slate-900/90 border border-gray-200 dark:border-slate-700">
                 <div className="flex items-center gap-1.5 mb-1">
-                  <span className="text-xs font-semibold bg-gradient-to-r from-cyan-400 to-amber-400 bg-clip-text text-transparent">
+                  <span className="text-xs font-semibold bg-gradient-to-r from-emerald-500 to-amber-400 bg-clip-text text-transparent">
                     ARYA
                   </span>
                 </div>
@@ -2313,7 +2313,7 @@ export default function AryaChat() {
                 size="icon"
                 onClick={() => setShowVoiceMode(true)}
                 disabled={isStreaming}
-                className="flex-shrink-0 rounded-full h-9 w-9 md:h-10 md:w-10 bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 text-cyan-600 dark:text-cyan-400 hover:from-cyan-500/30 hover:to-cyan-600/20 border border-cyan-200 dark:border-cyan-800"
+                className="flex-shrink-0 rounded-full h-9 w-9 md:h-10 md:w-10 bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 text-emerald-600 dark:text-emerald-400 hover:from-emerald-500/30 hover:to-emerald-600/20 border border-emerald-200 dark:border-emerald-800"
                 title="Start voice conversation"
               >
                 <Mic className="w-5 h-5" />
@@ -2454,7 +2454,7 @@ export default function AryaChat() {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="bg-white dark:bg-slate-900 border border-cyan-200 dark:border-cyan-800 rounded-xl p-6 w-full max-w-sm mx-4 shadow-2xl"
+              className="bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800 rounded-xl p-6 w-full max-w-sm mx-4 shadow-2xl"
               data-testid="invite-modal"
             >
               <div className="flex justify-between items-center mb-4">
@@ -2469,7 +2469,7 @@ export default function AryaChat() {
                 value={inviteCode}
                 onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
                 placeholder="e.g. ARYA-BETA-001"
-                className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-cyan-200 dark:border-cyan-800 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400 mb-3 font-mono tracking-wider"
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:border-emerald-400 mb-3 font-mono tracking-wider"
                 data-testid="input-invite-code"
                 onKeyDown={(e) => e.key === "Enter" && handleRedeemInvite()}
               />
@@ -2477,7 +2477,7 @@ export default function AryaChat() {
               <button
                 onClick={handleRedeemInvite}
                 disabled={inviteLoading || !inviteCode.trim()}
-                className="w-full py-3 bg-cyan-50 dark:bg-cyan-900/200 hover:bg-cyan-400 disabled:bg-gray-600 disabled:cursor-not-allowed text-black font-semibold rounded-lg transition-colors"
+                className="w-full py-3 bg-emerald-100 dark:bg-emerald-900/50 hover:bg-emerald-200 dark:hover:bg-emerald-800/60 disabled:bg-gray-600 disabled:cursor-not-allowed text-emerald-800 dark:text-emerald-200 font-semibold rounded-lg transition-colors"
                 data-testid="button-redeem-invite"
               >
                 {inviteLoading ? "Verifying..." : "Redeem Code"}
@@ -3069,11 +3069,11 @@ function VoiceConversationMode({
           {phase === "listening" && (
             <>
               <div
-                className="absolute inset-0 rounded-full border border-cyan-400/20 transition-transform duration-200"
+                className="absolute inset-0 rounded-full border border-emerald-400/20 transition-transform duration-200"
                 style={{ transform: `scale(${orbScale + 0.5})` }}
               />
               <div
-                className="absolute inset-0 rounded-full border border-cyan-400/10 transition-transform duration-300"
+                className="absolute inset-0 rounded-full border border-emerald-400/10 transition-transform duration-300"
                 style={{ transform: `scale(${orbScale + 0.9})` }}
               />
             </>
@@ -3081,25 +3081,25 @@ function VoiceConversationMode({
 
           {phase === "processing" && (
             <div className="absolute inset-0 rounded-full">
-              <div className="absolute inset-2 rounded-full border-2 border-transparent border-t-amber-400/60 border-r-cyan-400/40 animate-spin" style={{ animationDuration: "1.5s" }} />
-              <div className="absolute inset-5 rounded-full border border-transparent border-b-amber-400/30 border-l-cyan-400/20 animate-spin" style={{ animationDuration: "2.5s", animationDirection: "reverse" }} />
+              <div className="absolute inset-2 rounded-full border-2 border-transparent border-t-amber-400/60 border-r-emerald-400/40 animate-spin" style={{ animationDuration: "1.5s" }} />
+              <div className="absolute inset-5 rounded-full border border-transparent border-b-amber-400/30 border-l-emerald-400/20 animate-spin" style={{ animationDuration: "2.5s", animationDirection: "reverse" }} />
             </div>
           )}
 
           {phase === "speaking" && (
             <>
-              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-cyan-500/5 to-green-500/5 animate-pulse" style={{ animationDuration: "2s" }} />
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-emerald-500/5 to-green-500/5 animate-pulse" style={{ animationDuration: "2s" }} />
               <div className="absolute inset-4 rounded-full border border-green-400/15 animate-pulse" style={{ animationDuration: "1.5s" }} />
             </>
           )}
 
           <div className={`relative w-24 h-24 rounded-full flex items-center justify-center transition-all duration-500 ${
             phase === "listening"
-              ? "bg-gradient-to-br from-cyan-500/20 to-blue-600/20 shadow-[0_0_60px_rgba(6,182,212,0.15)]"
+              ? "bg-gradient-to-br from-emerald-500/20 to-green-600/20 shadow-[0_0_60px_rgba(16,185,129,0.15)]"
               : phase === "processing"
               ? "bg-gradient-to-br from-amber-500/15 to-orange-500/15"
               : phase === "speaking"
-              ? "bg-gradient-to-br from-green-500/15 to-cyan-500/15 shadow-[0_0_40px_rgba(34,197,94,0.1)]"
+              ? "bg-gradient-to-br from-green-500/15 to-emerald-500/15 shadow-[0_0_40px_rgba(34,197,94,0.1)]"
               : "bg-gray-100 dark:bg-slate-700 hover:bg-gray-100 dark:hover:bg-slate-700"
           }`}>
             <svg viewBox="0 0 80 80" className="w-16 h-16">
@@ -3208,7 +3208,7 @@ function VoiceConversationMode({
                 <div key={i} className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}>
                   <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${
                     msg.role === "user"
-                      ? "bg-cyan-100 dark:bg-cyan-900/30 text-gray-800 dark:text-gray-100 rounded-br-sm"
+                      ? "bg-emerald-100 dark:bg-emerald-900/30 text-gray-800 dark:text-gray-100 rounded-br-sm"
                       : "bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 rounded-bl-sm"
                   }`}>
                     {msg.text}
@@ -3240,7 +3240,7 @@ function VoiceConversationMode({
             })}
             {transcript && phase === "processing" && (
               <div className="flex justify-end">
-                <div className="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm bg-cyan-100 dark:bg-cyan-900/30 text-gray-800 dark:text-gray-100 rounded-br-sm">{transcript}</div>
+                <div className="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm bg-emerald-100 dark:bg-emerald-900/30 text-gray-800 dark:text-gray-100 rounded-br-sm">{transcript}</div>
               </div>
             )}
             {response && (phase === "processing" || phase === "speaking") && (
@@ -3407,7 +3407,7 @@ function UserAuthModal({ onClose }: { onClose: () => void }) {
                       title={l.name}
                       className={`py-1.5 px-1 rounded-lg text-[11px] font-medium border transition-all ${
                         signupLang === l.code
-                          ? "border-cyan-400 bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300"
+                          ? "border-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300"
                           : "border-gray-200 dark:border-slate-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-slate-600"
                       }`}
                     >{l.label}</button>
@@ -3443,14 +3443,14 @@ function UserAuthModal({ onClose }: { onClose: () => void }) {
             data-testid="modal-button-submit"
             type="submit"
             disabled={loading || !phone || !password}
-            className="w-full bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-medium py-2.5 rounded-xl"
+            className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-medium py-2.5 rounded-xl"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : mode === "login" ? "Sign In" : "Create Account"}
           </Button>
         </form>
         <div className="text-center mt-3">
           <button onClick={() => { setMode(mode === "login" ? "signup" : "login"); setError(""); }} className="text-xs text-muted-foreground hover:text-gray-900 dark:hover:text-white">
-            {mode === "login" ? <>New here? <span className="text-cyan-600 dark:text-cyan-400">Create account</span></> : <>Have an account? <span className="text-cyan-600 dark:text-cyan-400">Sign in</span></>}
+            {mode === "login" ? <>New here? <span className="text-emerald-600 dark:text-emerald-400">Create account</span></> : <>Have an account? <span className="text-emerald-600 dark:text-emerald-400">Sign in</span></>}
           </button>
         </div>
       </div>
@@ -3521,7 +3521,7 @@ function FeedbackModal({ token, onClose }: { token: string | null; onClose: () =
           <Button
             data-testid="feedback-button-close"
             onClick={onClose}
-            className="w-full bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-medium py-2.5 rounded-xl"
+            className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-medium py-2.5 rounded-xl"
           >
             Done
           </Button>
@@ -3560,7 +3560,7 @@ function FeedbackModal({ token, onClose }: { token: string | null; onClose: () =
                   onClick={() => setCategory(c.value)}
                   className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm text-left transition-all border ${
                     category === c.value
-                      ? "bg-cyan-50 dark:bg-cyan-900/20 border-cyan-500/40 text-cyan-600 dark:text-cyan-400"
+                      ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500/40 text-emerald-600 dark:text-emerald-400"
                       : "bg-gray-100 dark:bg-slate-700 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
                   }`}
                 >
@@ -3580,7 +3580,7 @@ function FeedbackModal({ token, onClose }: { token: string | null; onClose: () =
               placeholder="Describe what happened or what you'd like to see..."
               rows={4}
               maxLength={2000}
-              className="w-full bg-gray-100 dark:bg-slate-700 border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-gray-300 dark:placeholder:text-gray-600 focus:outline-none focus:border-cyan-300 dark:focus:border-cyan-700 resize-none"
+              className="w-full bg-gray-100 dark:bg-slate-700 border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-gray-300 dark:placeholder:text-gray-600 focus:outline-none focus:border-emerald-300 dark:focus:border-emerald-700 resize-none"
             />
             <div className="text-right text-[10px] text-gray-300 dark:text-gray-600 mt-1">{description.length}/2000</div>
           </div>
@@ -3589,7 +3589,7 @@ function FeedbackModal({ token, onClose }: { token: string | null; onClose: () =
             data-testid="feedback-button-submit"
             onClick={handleSubmit}
             disabled={!category || !description.trim() || submitting}
-            className="w-full bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-medium py-2.5 rounded-xl disabled:opacity-40"
+            className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-medium py-2.5 rounded-xl disabled:opacity-40"
           >
             {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Submit Feedback"}
           </Button>
@@ -3604,16 +3604,16 @@ const TUTORIAL_STEPS = [
     title: "Welcome to ARYA",
     description: "ARYA is your personal thinking and growth assistant. Let me show you around so you can get the most out of it.",
     icon: Sparkles,
-    iconColor: "text-cyan-600 dark:text-cyan-400",
-    iconBg: "bg-cyan-100 dark:bg-cyan-900/30 border-cyan-300 dark:border-cyan-700",
+    iconColor: "text-emerald-600 dark:text-emerald-400",
+    iconBg: "bg-emerald-100 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700",
     tip: null,
   },
   {
     title: "Chat with ARYA",
     description: "Just type or speak your thoughts. ARYA helps you think through decisions, set goals, reflect on your day, and find clarity.",
     icon: MessageSquare,
-    iconColor: "text-cyan-600 dark:text-cyan-400",
-    iconBg: "bg-cyan-100 dark:bg-cyan-900/30 border-cyan-300 dark:border-cyan-700",
+    iconColor: "text-emerald-600 dark:text-emerald-400",
+    iconBg: "bg-emerald-100 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700",
     tip: "Try asking: \"Help me think through a career change I'm considering\"",
   },
   {
@@ -3644,8 +3644,8 @@ const TUTORIAL_STEPS = [
     title: "Make ARYA yours",
     description: "Customize how ARYA responds — choose your tone, response length, focus areas, and more from the Customize option in your menu.",
     icon: Palette,
-    iconColor: "text-cyan-600 dark:text-cyan-400",
-    iconBg: "bg-cyan-100 dark:bg-cyan-900/30 border-cyan-300 dark:border-cyan-700",
+    iconColor: "text-emerald-600 dark:text-emerald-400",
+    iconBg: "bg-emerald-100 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700",
     tip: "Go to your profile menu → Customize ARYA",
   },
   {
@@ -3703,7 +3703,7 @@ function QuickStartTutorial({ onClose, onStartChat, token }: { onClose: () => vo
 
         <div className="flex gap-1.5 mb-6">
           {TUTORIAL_STEPS.map((_, i) => (
-            <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-300 ${i <= step ? "bg-cyan-50 dark:bg-cyan-900/200" : "bg-gray-100 dark:bg-slate-700"}`} />
+            <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-300 ${i <= step ? "bg-emerald-300 dark:bg-emerald-700" : "bg-gray-100 dark:bg-slate-700"}`} />
           ))}
         </div>
 
@@ -3749,7 +3749,7 @@ function QuickStartTutorial({ onClose, onStartChat, token }: { onClose: () => vo
             <Button
               data-testid="tutorial-button-start-chatting"
               onClick={() => handleStartChat("Hello ARYA! I just finished the tutorial. What can you help me with today?")}
-              className="flex-1 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-medium py-2.5 rounded-xl"
+              className="flex-1 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-medium py-2.5 rounded-xl"
             >
               Start Chatting <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
@@ -3757,7 +3757,7 @@ function QuickStartTutorial({ onClose, onStartChat, token }: { onClose: () => vo
             <Button
               data-testid="tutorial-button-next"
               onClick={() => setStep(s => s + 1)}
-              className="flex-1 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-medium py-2.5 rounded-xl"
+              className="flex-1 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-medium py-2.5 rounded-xl"
             >
               {isFirst ? "Show Me Around" : "Next"} <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
@@ -3804,7 +3804,7 @@ function OnboardingModal({ token, onComplete }: { token: string; onComplete: () 
       <div className="w-full max-w-md bg-white dark:bg-slate-900 backdrop-blur-xl rounded-2xl border border-gray-200 dark:border-slate-700 shadow-2xl p-6 relative overflow-hidden" onClick={e => e.stopPropagation()}>
         <div className="flex gap-1.5 mb-6">
           {[0, 1, 2, 3].map(i => (
-            <div key={i} className={`h-1 flex-1 rounded-full transition-all ${i <= step ? "bg-cyan-50 dark:bg-cyan-900/200" : "bg-gray-100 dark:bg-slate-700"}`} />
+            <div key={i} className={`h-1 flex-1 rounded-full transition-all ${i <= step ? "bg-emerald-300 dark:bg-emerald-700" : "bg-gray-100 dark:bg-slate-700"}`} />
           ))}
         </div>
 
@@ -3822,7 +3822,7 @@ function OnboardingModal({ token, onComplete }: { token: string; onComplete: () 
             <Button
               data-testid="onboarding-button-start"
               onClick={() => setStep(1)}
-              className="w-full bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-medium py-2.5 rounded-xl"
+              className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-medium py-2.5 rounded-xl"
             >
               Let's Go <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
@@ -3836,7 +3836,7 @@ function OnboardingModal({ token, onComplete }: { token: string; onComplete: () 
           <div className="space-y-4" data-testid="onboarding-step-language">
             <div className="mb-2">
               <div className="flex items-center gap-2 mb-1">
-                <Globe className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+                <Globe className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Your Language</h3>
               </div>
               <p className="text-xs text-muted-foreground">Which language do you prefer? ARYA speaks 11 Indian languages.</p>
@@ -3847,7 +3847,7 @@ function OnboardingModal({ token, onComplete }: { token: string; onComplete: () 
                   key={l.code}
                   data-testid={`onboarding-lang-${l.code}`}
                   onClick={() => setLanguage(l.code)}
-                  className={`px-3 py-2.5 rounded-xl text-sm text-left transition-all border ${language === l.code ? "bg-cyan-100 dark:bg-cyan-900/30 border-cyan-300 dark:border-cyan-700 text-cyan-600 dark:text-cyan-400" : "bg-gray-100 dark:bg-slate-700 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"}`}
+                  className={`px-3 py-2.5 rounded-xl text-sm text-left transition-all border ${language === l.code ? "bg-emerald-100 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700 text-emerald-600 dark:text-emerald-400" : "bg-gray-100 dark:bg-slate-700 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"}`}
                 >
                   {l.label}
                 </button>
@@ -3856,7 +3856,7 @@ function OnboardingModal({ token, onComplete }: { token: string; onComplete: () 
             <Button
               data-testid="onboarding-button-next-1"
               onClick={() => setStep(2)}
-              className="w-full bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-medium py-2.5 rounded-xl"
+              className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-medium py-2.5 rounded-xl"
             >
               Next <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
@@ -3867,7 +3867,7 @@ function OnboardingModal({ token, onComplete }: { token: string; onComplete: () 
           <div className="space-y-4" data-testid="onboarding-step-work">
             <div className="mb-2">
               <div className="flex items-center gap-2 mb-1">
-                <Briefcase className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+                <Briefcase className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">What do you do?</h3>
               </div>
               <p className="text-xs text-muted-foreground">This helps ARYA give you more relevant advice and suggestions.</p>
@@ -3878,7 +3878,7 @@ function OnboardingModal({ token, onComplete }: { token: string; onComplete: () 
               placeholder="e.g. Student, Doctor, Business Owner, Engineer..."
               value={currentWork}
               onChange={e => setCurrentWork(e.target.value)}
-              className="w-full bg-background/50 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white text-sm px-4 py-3 placeholder:text-muted-foreground focus:outline-none focus:border-cyan-300 dark:focus:border-cyan-700"
+              className="w-full bg-background/50 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white text-sm px-4 py-3 placeholder:text-muted-foreground focus:outline-none focus:border-emerald-300 dark:focus:border-emerald-700"
               autoFocus
             />
             <div className="flex gap-2">
@@ -3886,7 +3886,7 @@ function OnboardingModal({ token, onComplete }: { token: string; onComplete: () 
               <Button
                 data-testid="onboarding-button-next-2"
                 onClick={() => setStep(3)}
-                className="flex-1 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-medium py-2.5 rounded-xl"
+                className="flex-1 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-medium py-2.5 rounded-xl"
               >
                 Next <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
@@ -3898,7 +3898,7 @@ function OnboardingModal({ token, onComplete }: { token: string; onComplete: () 
           <div className="space-y-4" data-testid="onboarding-step-preferences">
             <div className="mb-2">
               <div className="flex items-center gap-2 mb-1">
-                <Clock className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+                <Clock className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Your Preferences</h3>
               </div>
               <p className="text-xs text-muted-foreground">Set your daily check-in time and voice preference.</p>
@@ -3911,7 +3911,7 @@ function OnboardingModal({ token, onComplete }: { token: string; onComplete: () 
                   type="time"
                   value={dailyReminderTime}
                   onChange={e => setDailyReminderTime(e.target.value)}
-                  className="w-full bg-background/50 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white text-sm px-4 py-3 focus:outline-none focus:border-cyan-300 dark:focus:border-cyan-700"
+                  className="w-full bg-background/50 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white text-sm px-4 py-3 focus:outline-none focus:border-emerald-300 dark:focus:border-emerald-700"
                 />
               </div>
               <div>
@@ -3920,14 +3920,14 @@ function OnboardingModal({ token, onComplete }: { token: string; onComplete: () 
                   <button
                     data-testid="onboarding-voice-on"
                     onClick={() => setVoicePreference(true)}
-                    className={`flex-1 px-3 py-2.5 rounded-xl text-sm transition-all border flex items-center justify-center gap-2 ${voicePreference ? "bg-cyan-100 dark:bg-cyan-900/30 border-cyan-300 dark:border-cyan-700 text-cyan-600 dark:text-cyan-400" : "bg-gray-100 dark:bg-slate-700 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"}`}
+                    className={`flex-1 px-3 py-2.5 rounded-xl text-sm transition-all border flex items-center justify-center gap-2 ${voicePreference ? "bg-emerald-100 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700 text-emerald-600 dark:text-emerald-400" : "bg-gray-100 dark:bg-slate-700 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"}`}
                   >
                     <Volume2 className="w-4 h-4" /> Voice On
                   </button>
                   <button
                     data-testid="onboarding-voice-off"
                     onClick={() => setVoicePreference(false)}
-                    className={`flex-1 px-3 py-2.5 rounded-xl text-sm transition-all border flex items-center justify-center gap-2 ${!voicePreference ? "bg-cyan-100 dark:bg-cyan-900/30 border-cyan-300 dark:border-cyan-700 text-cyan-600 dark:text-cyan-400" : "bg-gray-100 dark:bg-slate-700 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"}`}
+                    className={`flex-1 px-3 py-2.5 rounded-xl text-sm transition-all border flex items-center justify-center gap-2 ${!voicePreference ? "bg-emerald-100 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700 text-emerald-600 dark:text-emerald-400" : "bg-gray-100 dark:bg-slate-700 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"}`}
                   >
                     <VolumeX className="w-4 h-4" /> Text Only
                   </button>
@@ -3940,7 +3940,7 @@ function OnboardingModal({ token, onComplete }: { token: string; onComplete: () 
                 data-testid="onboarding-button-finish"
                 onClick={handleComplete}
                 disabled={saving}
-                className="flex-1 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-medium py-2.5 rounded-xl"
+                className="flex-1 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-medium py-2.5 rounded-xl"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Start Using ARYA <Check className="w-4 h-4 ml-2" /></>}
               </Button>
