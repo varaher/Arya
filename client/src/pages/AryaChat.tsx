@@ -1998,7 +1998,6 @@ export default function AryaChat() {
                   lineHeight: 1,
                   display: "block",
                   color: "#047857",
-                  textShadow: "0 0 20px rgba(16,185,129,0.75), 0 0 40px rgba(52,211,153,0.4), 0 2px 6px rgba(4,120,87,0.25)",
                 }}
               >
                 ARYA
@@ -3063,7 +3062,6 @@ function VoiceConversationMode({
               fontWeight: 700,
               letterSpacing: "0.12em",
               color: "#047857",
-              textShadow: "0 0 8px rgba(16,185,129,0.6), 0 0 16px rgba(52,211,153,0.3)",
             }}
           >
             ARYA
@@ -3386,7 +3384,6 @@ function UserAuthModal({ onClose }: { onClose: () => void }) {
                 lineHeight: 1,
                 display: "block",
                 color: "#047857",
-                textShadow: "0 0 14px rgba(16,185,129,0.65), 0 0 28px rgba(52,211,153,0.35)",
               }}
             >
               ARYA
@@ -3865,7 +3862,6 @@ function OnboardingModal({ token, onComplete }: { token: string; onComplete: () 
                     lineHeight: 1,
                     display: "block",
                     color: "#047857",
-                    textShadow: "0 0 16px rgba(16,185,129,0.65), 0 0 32px rgba(52,211,153,0.35)",
                   }}
                 >
                   ARYA
