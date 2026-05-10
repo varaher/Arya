@@ -398,6 +398,7 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
     responseTone: string;
     focusAreas: string[] | null;
     wisdomQuotes: string;
+    wantsNewsDigest: boolean;
   }>({
     queryKey: ["/api/user/preferences"],
     queryFn: async () => {
@@ -412,6 +413,7 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
   const [tone, setTone] = useState("friendly");
   const [focus, setFocus] = useState<string[]>([]);
   const [wisdom, setWisdom] = useState("sometimes");
+  const [newsDigest, setNewsDigest] = useState(false);
 
   useEffect(() => {
     if (prefs) {
@@ -419,17 +421,25 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
       setTone(prefs.responseTone || "friendly");
       setFocus(prefs.focusAreas || []);
       setWisdom(prefs.wisdomQuotes || "sometimes");
+      setNewsDigest(!!prefs.wantsNewsDigest);
     }
   }, [prefs]);
 
   const savePrefs = async () => {
     setSaving(true);
     try {
-      await fetch("/api/user/preferences", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ responseStyle: style, responseTone: tone, focusAreas: focus, wisdomQuotes: wisdom }),
-      });
+      await Promise.all([
+        fetch("/api/user/preferences", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ responseStyle: style, responseTone: tone, focusAreas: focus, wisdomQuotes: wisdom }),
+        }),
+        fetch("/api/user/news-notifications", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ enabled: newsDigest }),
+        }),
+      ]);
       queryClient.invalidateQueries({ queryKey: ["/api/user/preferences"] });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -581,6 +591,31 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
                 </button>
               ))}
             </div>
+          </div>
+
+          <div>
+            <div className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2">News & Updates</div>
+            <button
+              data-testid="toggle-news-digest"
+              type="button"
+              onClick={() => setNewsDigest(v => !v)}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg border transition-all ${
+                newsDigest
+                  ? "bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700"
+                  : "bg-gray-100 dark:bg-slate-700 border-transparent"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-base">📰</span>
+                <div className="text-left">
+                  <div className="text-xs font-medium text-gray-700 dark:text-gray-300">Daily News Digest</div>
+                  <div className="text-[10px] text-gray-400">India & world headlines, 6-hourly — Indian perspective</div>
+                </div>
+              </div>
+              <div className={`w-9 h-5 rounded-full transition-colors relative flex-shrink-0 ${newsDigest ? "bg-amber-400" : "bg-gray-200 dark:bg-slate-600"}`}>
+                <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${newsDigest ? "left-4" : "left-0.5"}`} />
+              </div>
+            </button>
           </div>
 
           <button

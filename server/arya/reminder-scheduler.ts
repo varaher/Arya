@@ -1,7 +1,8 @@
 import webpush from "web-push";
 import { db } from "../db";
-import { aryaReminders, aryaAppSettings, aryaPushSubscriptions } from "@shared/schema";
+import { aryaReminders, aryaAppSettings, aryaPushSubscriptions, aryaUsers, aryaNotifications } from "@shared/schema";
 import { eq, and, lte, isNull, or } from "drizzle-orm";
+import { fetchLatestNews, getNewsDigestText } from "./news-service";
 
 let vapidPublicKey: string | null = null;
 let isInitialized = false;
@@ -136,11 +137,49 @@ async function checkAndFireReminders(): Promise<void> {
 }
 
 let schedulerInterval: ReturnType<typeof setInterval> | null = null;
+let newsDigestInterval: ReturnType<typeof setInterval> | null = null;
+let lastNewsDigestSent = 0;
+
+async function sendNewsDigest(): Promise<void> {
+  const now = Date.now();
+  if (now - lastNewsDigestSent < 6 * 60 * 60 * 1000) return; // at most once per 6h
+  try {
+    const headlines = await fetchLatestNews(true);
+    if (headlines.length === 0) return;
+
+    const digestText = getNewsDigestText(headlines);
+    if (!digestText) return;
+
+    const subscribers = await db.select({ id: aryaUsers.id }).from(aryaUsers)
+      .where(eq(aryaUsers.wantsNewsDigest, true));
+
+    for (const user of subscribers) {
+      try {
+        await db.insert(aryaNotifications).values({
+          userId: user.id,
+          type: "news_digest",
+          title: "Today's Headlines",
+          message: digestText.slice(0, 500),
+        });
+        await sendPushToUser(user.id, "📰 ARYA News Digest", headlines[0]?.title || "Latest headlines available", "/icons/icon-192.png");
+      } catch {}
+    }
+
+    lastNewsDigestSent = now;
+    console.log(`[NEWS DIGEST] Sent to ${subscribers.length} subscribers`);
+  } catch (err: any) {
+    console.error("[NEWS DIGEST ERROR]", err.message);
+  }
+}
 
 export function startReminderScheduler(): void {
   if (schedulerInterval) return;
   schedulerInterval = setInterval(checkAndFireReminders, 30 * 1000);
   checkAndFireReminders();
+
+  newsDigestInterval = setInterval(sendNewsDigest, 60 * 60 * 1000); // check every hour, sends at most every 6h
+  setTimeout(sendNewsDigest, 5000); // send shortly after startup if due
+
   console.log("[SCHEDULER] Reminder scheduler started (30s interval)");
 }
 
@@ -148,5 +187,9 @@ export function stopReminderScheduler(): void {
   if (schedulerInterval) {
     clearInterval(schedulerInterval);
     schedulerInterval = null;
+  }
+  if (newsDigestInterval) {
+    clearInterval(newsDigestInterval);
+    newsDigestInterval = null;
   }
 }

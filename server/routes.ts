@@ -478,6 +478,7 @@ export async function registerRoutes(
         wisdomQuotes: aryaUsers.wisdomQuotes,
         currentWork: aryaUsers.currentWork,
         preferredLanguage: aryaUsers.preferredLanguage,
+        wantsNewsDigest: aryaUsers.wantsNewsDigest,
       }).from(aryaUsers).where(eq(aryaUsers.id, userId)).limit(1);
       if (!user) return res.status(404).json({ error: "User not found" });
       res.json(user);
@@ -1423,10 +1424,14 @@ export async function registerRoutes(
         console.log(`[Voice] Using Sarvam AI for language: ${language}`);
         const sttResult = await sarvamSpeechToText(audioBuffer, language as SarvamLanguageCode);
         userTranscript = sttResult.transcript;
-        detectedLanguage = sttResult.languageCode || language;
+        // Always use the user's requested language for output — never let Sarvam override to Urdu
+        // Hindi and Urdu sound identical; Sarvam sometimes detects hi-IN speech as ur-IN
+        let rawDetected = sttResult.languageCode || language;
+        if (rawDetected === "ur-IN" || rawDetected === "ur") rawDetected = "hi-IN";
+        detectedLanguage = rawDetected;
 
         if (isIndianLanguage(detectedLanguage)) {
-          const translation = await sarvamTranslate(userTranscript, detectedLanguage, "en-IN");
+          const translation = await sarvamTranslate(userTranscript, language as SarvamLanguageCode, "en-IN");
           queryForArya = translation.translatedText;
           console.log(`[Voice] Translated "${userTranscript}" → "${queryForArya}"`);
         } else {
@@ -1530,6 +1535,31 @@ export async function registerRoutes(
       } else {
         res.status(500).json({ error: userMessage });
       }
+    }
+  });
+
+  // ── News ──────────────────────────────────────────────────────────────────
+  app.get("/api/arya/news", optionalUser, async (req: Request, res: Response) => {
+    try {
+      const { fetchLatestNews } = await import("./arya/news-service");
+      const category = (req.query.category as string) || "all";
+      const force = req.query.force === "true";
+      const headlines = await fetchLatestNews(force);
+      const filtered = category !== "all" ? headlines.filter(h => h.category === category) : headlines;
+      res.json({ headlines: filtered.slice(0, 20), total: filtered.length, cached: !force });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to fetch news", details: err.message });
+    }
+  });
+
+  app.post("/api/user/news-notifications", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const { enabled } = req.body;
+      await db.update(aryaUsers).set({ wantsNewsDigest: !!enabled }).where(eq(aryaUsers.id, userId));
+      res.json({ ok: true, wantsNewsDigest: !!enabled });
+    } catch {
+      res.status(500).json({ error: "Failed to update preference" });
     }
   });
 

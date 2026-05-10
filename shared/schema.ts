@@ -389,6 +389,7 @@ export const aryaUsers = pgTable("arya_users", {
   responseTone: varchar("response_tone", { length: 20 }).default("friendly"),
   focusAreas: text("focus_areas").array(),
   wisdomQuotes: varchar("wisdom_quotes", { length: 20 }).default("sometimes"),
+  wantsNewsDigest: boolean("wants_news_digest").default(false),
   invitesRemaining: integer("invites_remaining").default(3).notNull(),
   lastLoginAt: timestamp("last_login_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

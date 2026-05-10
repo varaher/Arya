@@ -9,6 +9,7 @@ import type { Domain } from "@shared/schema";
 import { db } from "../db";
 import { aryaGoals, aryaGoalSteps, aryaNotifications, aryaUsers, aryaReminders } from "@shared/schema";
 import { eq } from "drizzle-orm";
+import { fetchLatestNews, formatNewsForChat } from "./news-service";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -268,6 +269,26 @@ export async function generateAryaResponse(
     ? `\n\nRelevant knowledge context (use naturally, do NOT cite or reference):\n${contextPieces.slice(0, 6).join("\n\n")}`
     : "";
 
+  // Inject live news headlines when user is asking about news/current events
+  let newsContext = "";
+  const newsKeywords = /\b(news|headlines|latest|today|current events|happening|update|what.*going on|what.*india|what.*world)\b/i;
+  if (newsKeywords.test(userMessage)) {
+    try {
+      const headlines = await fetchLatestNews();
+      if (headlines.length > 0) {
+        const category = /\b(business|market|economy|stock)\b/i.test(userMessage) ? "business"
+          : /\b(world|global|international|abroad)\b/i.test(userMessage) ? "world"
+          : /\b(sport|cricket|football|ipl)\b/i.test(userMessage) ? "sport"
+          : /\b(science|tech|technology|space)\b/i.test(userMessage) ? "science"
+          : "india";
+        const formatted = formatNewsForChat(headlines, category, 6);
+        if (formatted) {
+          newsContext = `\n\nLIVE NEWS HEADLINES (today, from Indian sources — use these to answer current events questions):\n${formatted}\n\nPresent these with Indian perspective — analyze implications for India first, then global context. Do NOT just list them; provide brief commentary from India's standpoint.`;
+        }
+      }
+    } catch {}
+  }
+
   let memoryContext = "";
   try {
     const relevantMemories = await memoryEngine.recall(tenantId, userMessage, 10);
@@ -297,7 +318,7 @@ export async function generateAryaResponse(
     : "";
 
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-    { role: "system", content: ARYA_SYSTEM_PROMPT + userPrefs + knowledgeContext + memoryContext + uncertaintyGuidance + voiceInstruction },
+    { role: "system", content: ARYA_SYSTEM_PROMPT + userPrefs + knowledgeContext + newsContext + memoryContext + uncertaintyGuidance + voiceInstruction },
     ...conversationHistory.slice(-20).map(m => ({
       role: m.role as "user" | "assistant",
       content: m.content,
