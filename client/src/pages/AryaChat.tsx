@@ -49,7 +49,12 @@ import {
   CircleCheck,
   Sun,
   Moon,
+  NotebookPen,
+  Smile,
+  Search,
+  MicOff,
 } from "lucide-react";
+import { getStoredUiLanguage, setStoredUiLanguage, getTranslation, type UiLanguage } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
 import RemindersPanel from "@/components/RemindersPanel";
 import { requestNotificationPermission } from "@/lib/push-notifications";
@@ -399,6 +404,10 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
     focusAreas: string[] | null;
     wisdomQuotes: string;
     wantsNewsDigest: boolean;
+    morningBriefingEnabled?: boolean;
+    morningBriefingTime?: string;
+    weeklyReviewEnabled?: boolean;
+    uiLanguage?: string;
   }>({
     queryKey: ["/api/user/preferences"],
     queryFn: async () => {
@@ -414,6 +423,10 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
   const [focus, setFocus] = useState<string[]>([]);
   const [wisdom, setWisdom] = useState("sometimes");
   const [newsDigest, setNewsDigest] = useState(false);
+  const [morningBriefing, setMorningBriefing] = useState(false);
+  const [briefingTime, setBriefingTime] = useState("07:00");
+  const [weeklyReview, setWeeklyReview] = useState(false);
+  const [uiLang, setUiLang] = useState<UiLanguage>("en");
 
   useEffect(() => {
     if (prefs) {
@@ -422,6 +435,11 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
       setFocus(prefs.focusAreas || []);
       setWisdom(prefs.wisdomQuotes || "sometimes");
       setNewsDigest(!!prefs.wantsNewsDigest);
+      setMorningBriefing(!!prefs.morningBriefingEnabled);
+      setBriefingTime(prefs.morningBriefingTime || "07:00");
+      setWeeklyReview(!!prefs.weeklyReviewEnabled);
+      const lang = (prefs.uiLanguage || "en") as UiLanguage;
+      setUiLang(lang);
     }
   }, [prefs]);
 
@@ -439,7 +457,23 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify({ enabled: newsDigest }),
         }),
+        fetch("/api/user/morning-briefing", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ enabled: morningBriefing, time: briefingTime }),
+        }),
+        fetch("/api/user/weekly-review", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ enabled: weeklyReview }),
+        }),
+        fetch("/api/user/ui-language", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ language: uiLang }),
+        }),
       ]);
+      setStoredUiLanguage(uiLang);
       queryClient.invalidateQueries({ queryKey: ["/api/user/preferences"] });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -593,29 +627,75 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
             </div>
           </div>
 
-          <div>
+          <div className="space-y-2">
             <div className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2">News & Updates</div>
-            <button
-              data-testid="toggle-news-digest"
-              type="button"
-              onClick={() => setNewsDigest(v => !v)}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg border transition-all ${
-                newsDigest
-                  ? "bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700"
-                  : "bg-gray-100 dark:bg-slate-700 border-transparent"
-              }`}
+
+            {/* Daily News Digest */}
+            <button data-testid="toggle-news-digest" type="button" onClick={() => setNewsDigest(v => !v)}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg border transition-all ${newsDigest ? "bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700" : "bg-gray-100 dark:bg-slate-700 border-transparent"}`}
             >
               <div className="flex items-center gap-2">
                 <span className="text-base">📰</span>
                 <div className="text-left">
                   <div className="text-xs font-medium text-gray-700 dark:text-gray-300">Daily News Digest</div>
-                  <div className="text-[10px] text-gray-400">India & world headlines, 6-hourly — Indian perspective</div>
+                  <div className="text-[10px] text-gray-400">India & world headlines, 6-hourly</div>
                 </div>
               </div>
               <div className={`w-9 h-5 rounded-full transition-colors relative flex-shrink-0 ${newsDigest ? "bg-amber-400" : "bg-gray-200 dark:bg-slate-600"}`}>
                 <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${newsDigest ? "left-4" : "left-0.5"}`} />
               </div>
             </button>
+
+            {/* Morning Briefing */}
+            <button data-testid="toggle-morning-briefing" type="button" onClick={() => setMorningBriefing(v => !v)}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg border transition-all ${morningBriefing ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-300 dark:border-emerald-700" : "bg-gray-100 dark:bg-slate-700 border-transparent"}`}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-base">☀️</span>
+                <div className="text-left">
+                  <div className="text-xs font-medium text-gray-700 dark:text-gray-300">Morning Briefing</div>
+                  <div className="text-[10px] text-gray-400">Goals + news + motivation at 7 AM IST</div>
+                </div>
+              </div>
+              <div className={`w-9 h-5 rounded-full transition-colors relative flex-shrink-0 ${morningBriefing ? "bg-emerald-500" : "bg-gray-200 dark:bg-slate-600"}`}>
+                <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${morningBriefing ? "left-4" : "left-0.5"}`} />
+              </div>
+            </button>
+
+            {/* Weekly Review */}
+            <button data-testid="toggle-weekly-review" type="button" onClick={() => setWeeklyReview(v => !v)}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg border transition-all ${weeklyReview ? "bg-purple-50 dark:bg-purple-900/20 border-purple-300 dark:border-purple-700" : "bg-gray-100 dark:bg-slate-700 border-transparent"}`}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-base">📊</span>
+                <div className="text-left">
+                  <div className="text-xs font-medium text-gray-700 dark:text-gray-300">Weekly Review</div>
+                  <div className="text-[10px] text-gray-400">Sunday evening progress summary</div>
+                </div>
+              </div>
+              <div className={`w-9 h-5 rounded-full transition-colors relative flex-shrink-0 ${weeklyReview ? "bg-purple-500" : "bg-gray-200 dark:bg-slate-600"}`}>
+                <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${weeklyReview ? "left-4" : "left-0.5"}`} />
+              </div>
+            </button>
+          </div>
+
+          {/* App Language */}
+          <div>
+            <div className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2">App Language</div>
+            <div className="grid grid-cols-2 gap-1.5">
+              {([["en", "English", "🇬🇧"], ["hi", "हिंदी", "🇮🇳"]] as const).map(([code, label, flag]) => (
+                <button key={code} data-testid={`option-lang-${code}`} onClick={() => setUiLang(code)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
+                    uiLang === code
+                      ? "bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-300 dark:border-emerald-700 text-emerald-600 dark:text-emerald-400"
+                      : "bg-gray-100 dark:bg-slate-700 border border-transparent text-gray-500 dark:text-gray-400"
+                  }`}
+                >
+                  <span>{flag}</span>
+                  <span className="text-xs font-medium">{label}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
           <button
@@ -789,6 +869,291 @@ function GoalsPanel({ onClose }: { onClose: () => void }) {
   );
 }
 
+function VoiceNotesPanel({ onClose, token }: { onClose: () => void; token: string }) {
+  const queryClient = useQueryClient();
+  const [search, setSearch] = useState("");
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [transcript, setTranscript] = useState("");
+  const [saving, setSaving] = useState(false);
+  const mediaRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const { data, isLoading } = useQuery<{ notes: any[] }>({
+    queryKey: ["/api/user/voice-notes"],
+    queryFn: async () => {
+      const res = await fetch("/api/user/voice-notes", { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) return { notes: [] };
+      return res.json();
+    },
+  });
+
+  const notes = (data?.notes || []).filter(n =>
+    !search || n.title?.toLowerCase().includes(search.toLowerCase()) || n.transcript?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const deleteNote = useMutation({
+    mutationFn: async (id: string) => {
+      await fetch(`/api/user/voice-notes/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/user/voice-notes"] }),
+  });
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mr = new MediaRecorder(stream);
+      chunksRef.current = [];
+      mr.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      mr.start(100);
+      mediaRef.current = mr;
+      setIsRecording(true);
+      setRecordingTime(0);
+      setTranscript("");
+      timerRef.current = setInterval(() => setRecordingTime(t => t + 1), 1000);
+    } catch { alert("Microphone access required"); }
+  };
+
+  const stopRecording = () => {
+    if (!mediaRef.current) return;
+    const mr = mediaRef.current;
+    const duration = recordingTime;
+    mr.stop();
+    mr.stream.getTracks().forEach(t => t.stop());
+    if (timerRef.current) clearInterval(timerRef.current);
+    setIsRecording(false);
+
+    mr.onstop = async () => {
+      const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64 = (reader.result as string).split(",")[1];
+        setSaving(true);
+        try {
+          const sttRes = await fetch("/api/arya/stt", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ audio: base64, language: "hi-IN" }),
+          });
+          const sttData = await sttRes.json();
+          const text = sttData.transcript || sttData.text || "";
+          if (text.trim()) {
+            setTranscript(text);
+            await fetch("/api/user/voice-notes", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+              body: JSON.stringify({ transcript: text, durationSeconds: duration }),
+            });
+            queryClient.invalidateQueries({ queryKey: ["/api/user/voice-notes"] });
+            setTranscript("");
+          }
+        } catch { }
+        setSaving(false);
+      };
+      reader.readAsDataURL(blob);
+    };
+  };
+
+  const formatDur = (s: number) => s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${s % 60}s`;
+  const formatDate = (d: string) => new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+
+  return (
+    <div className="w-80 sm:w-96 h-full bg-white dark:bg-slate-900 border-l border-gray-200 dark:border-slate-700 flex flex-col" data-testid="panel-voice-notes">
+      <div className="p-3 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <NotebookPen className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+          <span className="text-sm font-semibold text-gray-900 dark:text-white">Voice Notes</span>
+        </div>
+        <button onClick={onClose} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-400" data-testid="button-close-voice-notes">
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div className="p-3 border-b border-gray-100 dark:border-slate-700 space-y-2">
+        <div className="flex gap-2">
+          <div className="flex-1 relative">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-300" />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search notes..."
+              className="w-full pl-7 pr-2 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:outline-none"
+            />
+          </div>
+        </div>
+        <button
+          data-testid="button-record-note"
+          onClick={isRecording ? stopRecording : startRecording}
+          disabled={saving}
+          className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+            isRecording
+              ? "bg-red-500 hover:bg-red-600 text-white border border-red-400"
+              : "bg-gradient-to-r from-violet-500/20 to-violet-600/10 border border-violet-200 dark:border-violet-800 text-violet-600 dark:text-violet-400 hover:from-violet-500/30 hover:to-violet-600/20"
+          }`}
+        >
+          {saving ? (
+            <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving…</>
+          ) : isRecording ? (
+            <><MicOff className="w-3.5 h-3.5" /> Stop &amp; Save ({Math.floor(recordingTime / 60)}:{String(recordingTime % 60).padStart(2, "0")})</>
+          ) : (
+            <><Mic className="w-3.5 h-3.5" /> Record a Note</>
+          )}
+        </button>
+        {isRecording && (
+          <div className="flex items-center gap-1 justify-center">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="w-1 bg-red-400 rounded-full animate-pulse" style={{ height: `${8 + Math.random() * 10}px`, animationDelay: `${i * 0.15}s` }} />
+            ))}
+            <span className="text-[10px] text-red-500 ml-1">Recording…</span>
+          </div>
+        )}
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-violet-500" /></div>
+        ) : notes.length === 0 ? (
+          <div className="text-center py-10 px-3">
+            <NotebookPen className="w-8 h-8 text-gray-200 mx-auto mb-2" />
+            <p className="text-sm text-gray-400">{search ? "No notes match your search" : "No voice notes yet"}</p>
+            <p className="text-xs text-gray-300 mt-1">{search ? "" : "Tap the record button to save a thought"}</p>
+          </div>
+        ) : notes.map((note) => (
+          <div key={note.id} data-testid={`card-voice-note-${note.id}`} className="group flex items-start gap-2 px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-slate-800 border border-gray-100 dark:border-slate-700 hover:border-violet-200 dark:hover:border-violet-800 transition-all">
+            <div className="w-7 h-7 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <Mic className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-xs font-medium text-gray-700 dark:text-gray-200 truncate">{note.title || note.transcript?.slice(0, 40)}</div>
+              <div className="text-[10px] text-gray-400 mt-0.5 line-clamp-2">{note.transcript}</div>
+              <div className="text-[10px] text-gray-300 dark:text-gray-600 mt-1 flex items-center gap-2">
+                <span>{formatDate(note.createdAt)}</span>
+                {note.durationSeconds > 0 && <span>· {formatDur(note.durationSeconds)}</span>}
+              </div>
+            </div>
+            <button
+              onClick={() => deleteNote.mutate(note.id)}
+              data-testid={`button-delete-note-${note.id}`}
+              className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-300 hover:text-red-500 transition-all flex-shrink-0"
+            >
+              <Trash2 className="w-3 h-3" />
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MoodCheckInCard({ token, onComplete }: { token: string; onComplete: () => void }) {
+  const [mood, setMood] = useState<number | null>(null);
+  const [energy, setEnergy] = useState(3);
+  const [note, setNote] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const moods = [
+    { value: 1, emoji: "😞", label: "Rough" },
+    { value: 2, emoji: "😕", label: "Low" },
+    { value: 3, emoji: "😐", label: "Okay" },
+    { value: 4, emoji: "🙂", label: "Good" },
+    { value: 5, emoji: "😊", label: "Great" },
+  ];
+
+  const handleSave = async () => {
+    if (!mood) return;
+    setSaving(true);
+    try {
+      await fetch("/api/user/mood", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ mood, energy, note: note || undefined }),
+      });
+      localStorage.setItem("arya_mood_date", new Date().toDateString());
+      onComplete();
+    } catch { }
+    setSaving(false);
+  };
+
+  return (
+    <motion.div
+      data-testid="card-mood-checkin"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="w-full max-w-md mx-auto mb-4 px-4 py-4 rounded-2xl bg-gradient-to-br from-amber-50/80 to-orange-50/60 dark:from-amber-950/30 dark:to-orange-950/20 border border-amber-200 dark:border-amber-800"
+    >
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
+            <Smile className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+          </div>
+          <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">Daily Check-in</span>
+        </div>
+        <button onClick={onComplete} className="text-gray-300 hover:text-gray-500 dark:hover:text-gray-300 p-1 rounded transition-colors" data-testid="button-skip-checkin">
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">How are you feeling today?</p>
+
+      <div className="flex justify-between mb-3">
+        {moods.map(m => (
+          <button
+            key={m.value}
+            data-testid={`button-mood-${m.value}`}
+            onClick={() => setMood(m.value)}
+            className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all ${
+              mood === m.value
+                ? "bg-amber-100 dark:bg-amber-900/40 ring-2 ring-amber-400 dark:ring-amber-600"
+                : "hover:bg-white/60 dark:hover:bg-slate-800/60"
+            }`}
+          >
+            <span className="text-xl">{m.emoji}</span>
+            <span className="text-[9px] text-gray-500 dark:text-gray-400">{m.label}</span>
+          </button>
+        ))}
+      </div>
+
+      <div className="mb-3">
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-[10px] text-gray-500 dark:text-gray-400 flex items-center gap-1">
+            <Zap className="w-3 h-3 text-amber-500" /> Energy level
+          </span>
+          <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400">
+            {["", "Drained", "Low", "Okay", "Good", "Energized"][energy]}
+          </span>
+        </div>
+        <input
+          type="range" min={1} max={5} value={energy}
+          onChange={e => setEnergy(Number(e.target.value))}
+          data-testid="slider-energy"
+          className="w-full accent-amber-500 h-1.5 rounded"
+        />
+      </div>
+
+      <textarea
+        value={note}
+        onChange={e => setNote(e.target.value)}
+        placeholder="Add a note (optional)…"
+        rows={2}
+        data-testid="input-mood-note"
+        className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-amber-200 dark:border-amber-800 bg-white/60 dark:bg-slate-800/60 text-gray-700 dark:text-gray-300 placeholder-gray-300 resize-none focus:outline-none focus:border-amber-400 mb-2.5"
+      />
+
+      <button
+        onClick={handleSave}
+        disabled={!mood || saving}
+        data-testid="button-save-checkin"
+        className="w-full py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-400 text-white text-xs font-semibold hover:from-amber-400 hover:to-orange-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-1.5"
+      >
+        {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+        {saving ? "Saving…" : "Save Check-in"}
+      </button>
+    </motion.div>
+  );
+}
+
 function InsightsCard({ insights, onDismiss }: { insights: InsightItem[]; onDismiss: (id: string) => void }) {
   if (insights.length === 0) return null;
 
@@ -938,10 +1303,16 @@ export default function AryaChat() {
   const [showGoals, setShowGoals] = useState(false);
   const [showCustomize, setShowCustomize] = useState(false);
   const [showReminders, setShowReminders] = useState(false);
+  const [showNotes, setShowNotes] = useState(false);
   const [showConfidence, setShowConfidence] = useState(true);
   const [pendingImage, setPendingImage] = useState<{ base64: string; previewUrl: string; mimeType: string } | null>(null);
   const [isScanningDoc, setIsScanningDoc] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const [uiLanguage] = useState<UiLanguage>(() => getStoredUiLanguage());
+  const t = (key: string) => getTranslation(uiLanguage, key);
+  const [moodCheckedInToday, setMoodCheckedInToday] = useState(() => {
+    try { return localStorage.getItem("arya_mood_date") === new Date().toDateString(); } catch { return false; }
+  });
   const [betaRestricted, setBetaRestricted] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteCode, setInviteCode] = useState("");
@@ -1285,7 +1656,12 @@ export default function AryaChat() {
     reader.onload = () => {
       const dataUrl = reader.result as string;
       const base64 = dataUrl.split(",")[1];
-      setPendingImage({ base64, previewUrl: dataUrl, mimeType: file.type || "image/jpeg" });
+      const isPdf = file.type === "application/pdf" || file.name.endsWith(".pdf");
+      setPendingImage({
+        base64,
+        previewUrl: isPdf ? `__pdf__:${file.name}` : dataUrl,
+        mimeType: isPdf ? "application/pdf" : (file.type || "image/jpeg"),
+      });
     };
     reader.readAsDataURL(file);
     if (imageInputRef.current) imageInputRef.current.value = "";
@@ -1294,9 +1670,10 @@ export default function AryaChat() {
   const sendWithImage = useCallback(async () => {
     if (!pendingImage || isScanningDoc) return;
 
+    const isPdfAttachment = pendingImage?.mimeType === "application/pdf";
     let convId = activeConversation;
     if (!convId) {
-      const conv = await createConversation.mutateAsync(input.trim() || "📷 Image scan");
+      const conv = await createConversation.mutateAsync(input.trim() || (isPdfAttachment ? "📄 Document scan" : "📷 Image scan"));
       convId = conv.id;
     }
 
@@ -1313,7 +1690,7 @@ export default function AryaChat() {
         messages: [
           ...(old?.messages || []),
           { id: Date.now(), conversationId: convId, role: "user", content: displayMsg, createdAt: new Date().toISOString() },
-          { id: Date.now() + 1, conversationId: convId, role: "assistant", content: "⏳ Reading your image...", createdAt: new Date().toISOString(), isLoading: true },
+          { id: Date.now() + 1, conversationId: convId, role: "assistant", content: isPdfAttachment ? "⏳ Reading your document…" : "⏳ Reading your image…", createdAt: new Date().toISOString(), isLoading: true },
         ],
       })
     );
@@ -1600,7 +1977,7 @@ export default function AryaChat() {
         <div className="p-3 border-b border-gray-200 dark:border-slate-700">
           <div className="flex items-center gap-2 mb-3 px-1">
             <MessageSquare className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            <span className="text-sm font-semibold text-gray-900 dark:text-white">Chat History</span>
+            <span className="text-sm font-semibold text-gray-900 dark:text-white">{t("chat_history")}</span>
             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400 ml-auto">
               {conversations.length}
             </span>
@@ -1615,7 +1992,7 @@ export default function AryaChat() {
             size="sm"
           >
             <Plus className="w-4 h-4 mr-2" />
-            New Chat
+            {t("new_chat")}
           </Button>
         </div>
 
@@ -1628,27 +2005,37 @@ export default function AryaChat() {
             }`}
           >
             <Brain className="w-3 h-3" />
-            Memory
+            {t("memory")}
           </button>
           <button
             data-testid="button-toggle-goals"
-            onClick={() => { setShowGoals(!showGoals); setShowMemory(false); setShowReminders(false); }}
+            onClick={() => { setShowGoals(!showGoals); setShowMemory(false); setShowReminders(false); setShowNotes(false); }}
             className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-medium transition-colors ${
               showGoals ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800' : 'text-gray-400 hover:text-gray-500 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700'
             }`}
           >
             <Target className="w-3 h-3" />
-            Goals
+            {t("goals")}
           </button>
           <button
             data-testid="button-toggle-reminders"
-            onClick={() => { setShowReminders(!showReminders); setShowMemory(false); setShowGoals(false); }}
+            onClick={() => { setShowReminders(!showReminders); setShowMemory(false); setShowGoals(false); setShowNotes(false); }}
             className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-medium transition-colors ${
               showReminders ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800' : 'text-gray-400 hover:text-gray-500 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700'
             }`}
           >
             <Bell className="w-3 h-3" />
-            Alerts
+            {t("alerts")}
+          </button>
+          <button
+            data-testid="button-toggle-notes"
+            onClick={() => { setShowNotes(!showNotes); setShowReminders(false); setShowMemory(false); setShowGoals(false); }}
+            className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-medium transition-colors ${
+              showNotes ? 'bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 border border-violet-200 dark:border-violet-800' : 'text-gray-400 hover:text-gray-500 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700'
+            }`}
+          >
+            <NotebookPen className="w-3 h-3" />
+            {t("notes")}
           </button>
         </div>
 
@@ -1699,8 +2086,8 @@ export default function AryaChat() {
               <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center mx-auto mb-3">
                 <MessageSquare className="w-5 h-5 text-gray-200" />
               </div>
-              <p className="text-muted-foreground text-sm">No conversations yet</p>
-              <p className="text-gray-300 dark:text-gray-600 text-xs mt-1">Start chatting with ARYA!</p>
+              <p className="text-muted-foreground text-sm">{t("no_conversations")}</p>
+              <p className="text-gray-300 dark:text-gray-600 text-xs mt-1">{t("start_chatting")}</p>
             </div>
           )}
         </div>
@@ -1778,7 +2165,7 @@ export default function AryaChat() {
               className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all"
             >
               <LogIn className="w-3.5 h-3.5" />
-              Sign in / Create account
+              {t("sign_in")}
             </button>
           )}
         </div>
@@ -1968,6 +2355,18 @@ export default function AryaChat() {
               <RemindersPanel onClose={() => setShowReminders(false)} />
             </motion.div>
           )}
+          {showNotes && isLoggedIn && token && (
+            <motion.div
+              key="notes-panel"
+              initial={{ x: 384, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 384, opacity: 0 }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              className="absolute right-0 top-0 bottom-0 z-40"
+            >
+              <VoiceNotesPanel onClose={() => setShowNotes(false)} token={token} />
+            </motion.div>
+          )}
         </AnimatePresence>
 
         {insights.length > 0 && !activeConversation && (
@@ -2014,7 +2413,7 @@ export default function AryaChat() {
               transition={{ duration: 0.4, delay: 0.2 }}
               className="text-[10px] uppercase tracking-widest font-bold text-emerald-600 dark:text-emerald-400 mb-3"
             >
-              Your Personal Thinking & Growth Assistant
+              {t("your_pa")}
             </motion.p>
             <motion.p
               initial={{ opacity: 0, y: 10 }}
@@ -2022,7 +2421,7 @@ export default function AryaChat() {
               transition={{ duration: 0.4, delay: 0.3 }}
               className="text-muted-foreground max-w-md mb-5 text-sm md:text-base"
             >
-              Think clearly. Set goals. Stay disciplined. Reflect daily. Grow spiritually & professionally. I'm here to help you become your best self.
+              {t("welcome_desc")}
             </motion.p>
             <div className="flex items-center gap-2 mb-4">
               {!isLoggedIn && (
@@ -2044,6 +2443,13 @@ export default function AryaChat() {
                 Take a Tour
               </button>
             </div>
+            {isLoggedIn && token && !moodCheckedInToday && (
+              <MoodCheckInCard
+                token={token}
+                onComplete={() => setMoodCheckedInToday(true)}
+              />
+            )}
+
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
@@ -2303,8 +2709,7 @@ export default function AryaChat() {
               <input
                 ref={imageInputRef}
                 type="file"
-                accept="image/*"
-                capture="environment"
+                accept="image/*,application/pdf,.pdf"
                 className="hidden"
                 onChange={handleImageSelect}
                 data-testid="input-image-upload"
@@ -2359,11 +2764,18 @@ export default function AryaChat() {
                   {pendingImage && (
                     <div className="flex items-center gap-2 px-1 pt-1.5 pb-1">
                       <div className="relative flex-shrink-0">
-                        <img
-                          src={pendingImage.previewUrl}
-                          alt="Selected"
-                          className="h-12 w-12 rounded-lg object-cover border border-purple-200 dark:border-purple-800"
-                        />
+                        {pendingImage.previewUrl.startsWith("__pdf__:") ? (
+                          <div className="h-12 w-12 rounded-lg border border-purple-200 dark:border-purple-800 bg-red-50 dark:bg-red-950/30 flex flex-col items-center justify-center gap-0.5">
+                            <Paperclip className="w-4 h-4 text-red-500" />
+                            <span className="text-[8px] font-bold text-red-500 uppercase">PDF</span>
+                          </div>
+                        ) : (
+                          <img
+                            src={pendingImage.previewUrl}
+                            alt="Selected"
+                            className="h-12 w-12 rounded-lg object-cover border border-purple-200 dark:border-purple-800"
+                          />
+                        )}
                         <button
                           onClick={() => setPendingImage(null)}
                           className="absolute -top-1 -right-1 bg-gray-800 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] leading-none hover:bg-gray-700"
@@ -2371,7 +2783,11 @@ export default function AryaChat() {
                         >✕</button>
                       </div>
                       <span className="text-xs text-purple-600 dark:text-purple-400 font-medium">
-                        {isScanningDoc ? "Reading image..." : "Image attached — add a question or send"}
+                        {isScanningDoc
+                          ? (pendingImage.mimeType === "application/pdf" ? "Reading document…" : "Reading image…")
+                          : (pendingImage.mimeType === "application/pdf"
+                              ? `PDF: ${pendingImage.previewUrl.replace("__pdf__:", "")} — add a question or send`
+                              : "Image attached — add a question or send")}
                       </span>
                     </div>
                   )}
@@ -2381,7 +2797,7 @@ export default function AryaChat() {
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder={pendingImage ? "Ask about this image (optional)..." : "Ask ARYA anything..."}
+                    placeholder={pendingImage ? t("ask_about_image") : t("ask_anything")}
                     disabled={isStreaming || isScanningDoc}
                     rows={1}
                     className="w-full resize-none bg-transparent border-0 text-gray-900 dark:text-white placeholder:text-muted-foreground text-sm focus:outline-none py-2 max-h-32"

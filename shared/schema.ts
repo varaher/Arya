@@ -390,6 +390,10 @@ export const aryaUsers = pgTable("arya_users", {
   focusAreas: text("focus_areas").array(),
   wisdomQuotes: varchar("wisdom_quotes", { length: 20 }).default("sometimes"),
   wantsNewsDigest: boolean("wants_news_digest").default(false),
+  morningBriefingEnabled: boolean("morning_briefing_enabled").default(false),
+  morningBriefingTime: varchar("morning_briefing_time", { length: 5 }).default("07:00"),
+  weeklyReviewEnabled: boolean("weekly_review_enabled").default(false),
+  uiLanguage: varchar("ui_language", { length: 5 }).default("en"),
   invitesRemaining: integer("invites_remaining").default(3).notNull(),
   lastLoginAt: timestamp("last_login_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -435,7 +439,7 @@ export const aryaVoiceSessions = pgTable("arya_voice_sessions", {
 export const aryaNotifications = pgTable("arya_notifications", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id", { length: 255 }).notNull(),
-  type: varchar("type", { length: 50 }).notNull().$type<'goal_reminder' | 'goal_progress' | 'streak' | 'insight' | 'welcome'>(),
+  type: varchar("type", { length: 50 }).notNull().$type<'goal_reminder' | 'goal_progress' | 'streak' | 'insight' | 'welcome' | 'news_digest' | 'morning_briefing' | 'weekly_review'>(),
   title: varchar("title", { length: 300 }).notNull(),
   message: text("message").notNull(),
   goalId: varchar("goal_id", { length: 255 }),
@@ -664,6 +668,48 @@ export const aryaVoiceQualityLog = pgTable("arya_voice_quality_log", {
 export const insertVoiceQualityLogSchema = createInsertSchema(aryaVoiceQualityLog).omit({ id: true, createdAt: true });
 export type InsertVoiceQualityLog = z.infer<typeof insertVoiceQualityLogSchema>;
 export type VoiceQualityLog = typeof aryaVoiceQualityLog.$inferSelect;
+
+// =============================================
+// MOOD CHECK-INS
+// =============================================
+
+export const aryaMoodCheckins = pgTable("arya_mood_checkins", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull(),
+  mood: integer("mood").notNull(), // 1-5: 1=awful, 2=bad, 3=okay, 4=good, 5=great
+  energy: integer("energy").notNull(), // 1-5: 1=drained, 5=energized
+  note: text("note"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAryaMoodCheckinSchema = createInsertSchema(aryaMoodCheckins).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertAryaMoodCheckin = z.infer<typeof insertAryaMoodCheckinSchema>;
+export type AryaMoodCheckin = typeof aryaMoodCheckins.$inferSelect;
+
+// =============================================
+// VOICE NOTES
+// =============================================
+
+export const aryaVoiceNotes = pgTable("arya_voice_notes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull(),
+  title: varchar("title", { length: 300 }),
+  transcript: text("transcript").notNull(),
+  tags: text("tags").array().default(sql`ARRAY[]::text[]`),
+  durationSeconds: integer("duration_seconds").default(0),
+  language: varchar("language", { length: 10 }).default("en"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAryaVoiceNoteSchema = createInsertSchema(aryaVoiceNotes).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertAryaVoiceNote = z.infer<typeof insertAryaVoiceNoteSchema>;
+export type AryaVoiceNote = typeof aryaVoiceNotes.$inferSelect;
 
 // Re-export chat models
 export * from "./models/chat";

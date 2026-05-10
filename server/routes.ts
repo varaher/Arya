@@ -70,6 +70,8 @@ import {
   aryaUserFeedback,
   aryaReminders,
   aryaPushSubscriptions,
+  aryaMoodCheckins,
+  aryaVoiceNotes,
 } from "@shared/schema";
 import { getVapidPublicKey } from "./arya/reminder-scheduler";
 
@@ -479,6 +481,10 @@ export async function registerRoutes(
         currentWork: aryaUsers.currentWork,
         preferredLanguage: aryaUsers.preferredLanguage,
         wantsNewsDigest: aryaUsers.wantsNewsDigest,
+        morningBriefingEnabled: (aryaUsers as any).morningBriefingEnabled,
+        morningBriefingTime: (aryaUsers as any).morningBriefingTime,
+        weeklyReviewEnabled: (aryaUsers as any).weeklyReviewEnabled,
+        uiLanguage: (aryaUsers as any).uiLanguage,
       }).from(aryaUsers).where(eq(aryaUsers.id, userId)).limit(1);
       if (!user) return res.status(404).json({ error: "User not found" });
       res.json(user);
@@ -1563,6 +1569,135 @@ export async function registerRoutes(
     }
   });
 
+  // ── Morning Briefing ──────────────────────────────────────────────────────
+  app.post("/api/user/morning-briefing", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const { enabled, time } = req.body;
+      await db.update(aryaUsers).set({
+        morningBriefingEnabled: !!enabled,
+        morningBriefingTime: time || "07:00",
+      } as any).where(eq(aryaUsers.id, userId));
+      res.json({ ok: true });
+    } catch {
+      res.status(500).json({ error: "Failed to update morning briefing preference" });
+    }
+  });
+
+  // ── Weekly Review ──────────────────────────────────────────────────────
+  app.post("/api/user/weekly-review", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const { enabled } = req.body;
+      await db.update(aryaUsers).set({ weeklyReviewEnabled: !!enabled } as any).where(eq(aryaUsers.id, userId));
+      res.json({ ok: true });
+    } catch {
+      res.status(500).json({ error: "Failed to update weekly review preference" });
+    }
+  });
+
+  // ── UI Language ──────────────────────────────────────────────────────────
+  app.post("/api/user/ui-language", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const { language } = req.body;
+      if (!["en", "hi"].includes(language)) return res.status(400).json({ error: "Unsupported language" });
+      await db.update(aryaUsers).set({ uiLanguage: language } as any).where(eq(aryaUsers.id, userId));
+      res.json({ ok: true, uiLanguage: language });
+    } catch {
+      res.status(500).json({ error: "Failed to update UI language" });
+    }
+  });
+
+  // ── Mood Check-ins ────────────────────────────────────────────────────────
+  app.post("/api/user/mood", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const { mood, energy, note } = req.body;
+      if (!mood || !energy || mood < 1 || mood > 5 || energy < 1 || energy > 5) {
+        return res.status(400).json({ error: "Mood and energy are required (1-5)" });
+      }
+      const [checkin] = await db.insert(aryaMoodCheckins).values({ userId, mood, energy, note: note || null }).returning();
+      res.json(checkin);
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to save mood check-in" });
+    }
+  });
+
+  app.get("/api/user/mood/today", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const [checkin] = await db.select().from(aryaMoodCheckins)
+        .where(and(eq(aryaMoodCheckins.userId, userId), sql`${aryaMoodCheckins.createdAt} >= ${todayStart}`))
+        .orderBy(desc(aryaMoodCheckins.createdAt))
+        .limit(1);
+      res.json({ checkin: checkin || null, hasCheckedIn: !!checkin });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to get mood check-in" });
+    }
+  });
+
+  app.get("/api/user/mood/history", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const checkins = await db.select().from(aryaMoodCheckins)
+        .where(eq(aryaMoodCheckins.userId, userId))
+        .orderBy(desc(aryaMoodCheckins.createdAt))
+        .limit(30);
+      res.json({ checkins });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to get mood history" });
+    }
+  });
+
+  // ── Voice Notes ────────────────────────────────────────────────────────────
+  app.post("/api/user/voice-notes", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const { transcript, title, tags, durationSeconds, language } = req.body;
+      if (!transcript?.trim()) return res.status(400).json({ error: "Transcript is required" });
+      const autoTitle = title || transcript.slice(0, 60) + (transcript.length > 60 ? "…" : "");
+      const [note] = await db.insert(aryaVoiceNotes).values({
+        userId,
+        transcript: transcript.trim(),
+        title: autoTitle,
+        tags: Array.isArray(tags) ? tags : [],
+        durationSeconds: durationSeconds || 0,
+        language: language || "en",
+      }).returning();
+      res.json(note);
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to save voice note" });
+    }
+  });
+
+  app.get("/api/user/voice-notes", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const notes = await db.select().from(aryaVoiceNotes)
+        .where(eq(aryaVoiceNotes.userId, userId))
+        .orderBy(desc(aryaVoiceNotes.createdAt))
+        .limit(50);
+      res.json({ notes });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to get voice notes" });
+    }
+  });
+
+  app.delete("/api/user/voice-notes/:id", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const { id } = req.params;
+      await db.delete(aryaVoiceNotes)
+        .where(and(eq(aryaVoiceNotes.id, id), eq(aryaVoiceNotes.userId, userId)));
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to delete voice note" });
+    }
+  });
+
   app.post("/api/arya/voice-quality/:logId/rate", optionalUser, async (req: Request, res: Response) => {
     try {
       const { logId } = req.params;
@@ -1577,34 +1712,68 @@ export async function registerRoutes(
 
   app.post("/api/arya/conversations/:id/scan", optionalUser, async (req: Request, res: Response) => {
     try {
-      const conversationId = parseInt(req.params.id);
+      const conversationId = parseInt(req.params.id as string);
       const { image, mimeType = "image/jpeg", question, language } = req.body;
 
-      if (!image) return res.status(400).json({ error: "Image data required" });
-
-      const userQuestion = question?.trim() || "What is in this image? Please explain it clearly and helpfully.";
-      const userMessageForStorage = question?.trim() ? `📷 ${question.trim()}` : "📷 Shared an image";
+      if (!image) return res.status(400).json({ error: "File data required" });
 
       const { openai } = await import("./replit_integrations/audio/client");
-      const visionResponse = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content: `You are ARYA (Augmented Reasoning & Yielding Awareness), a warm, wise personal thinking & growth assistant. When analyzing images and documents, be clear, practical, and compassionate. For medical reports or health documents, explain findings in simple language without causing alarm — be reassuring and suggest consulting a doctor for anything serious. For text documents, summarize key points clearly. For general images, describe and provide relevant insights. Always be encouraging and helpful like a wise friend.`,
-          },
-          {
-            role: "user",
-            content: [
-              { type: "image_url", image_url: { url: `data:${mimeType};base64,${image}`, detail: "high" } as any },
-              { type: "text", text: userQuestion },
-            ],
-          },
-        ],
-        max_tokens: 1200,
-      } as any);
+      const isPdf = mimeType === "application/pdf";
 
-      const aryaResponse = (visionResponse as any).choices?.[0]?.message?.content || "I couldn't read that image clearly. Please try with a clearer photo.";
+      const systemPrompt = `You are ARYA (Augmented Reasoning & Yielding Awareness), a warm, wise personal thinking & growth assistant. When analyzing images and documents, be clear, practical, and compassionate. For medical reports or health documents, explain findings in simple language without causing alarm — be reassuring and suggest consulting a doctor for anything serious. For text documents, summarize key points clearly. For general images, describe and provide relevant insights. Always be encouraging and helpful like a wise friend.`;
+
+      let aryaResponse: string;
+      let userMessageForStorage: string;
+
+      if (isPdf) {
+        // Extract text from PDF using pdf-parse
+        const pdfParse = (await import("pdf-parse")).default;
+        const pdfBuffer = Buffer.from(image, "base64");
+        let pdfText = "";
+        try {
+          const parsed = await pdfParse(pdfBuffer);
+          pdfText = parsed.text?.slice(0, 12000) || "";
+        } catch (e) {
+          console.error("[Scan] PDF parse error:", e);
+        }
+
+        const userQuestion = question?.trim() || "Please summarize this document clearly and helpfully.";
+        userMessageForStorage = question?.trim() ? `📄 ${question.trim()}` : "📄 Shared a PDF document";
+
+        if (!pdfText.trim()) {
+          aryaResponse = "I wasn't able to extract text from that PDF. It may be a scanned/image-only PDF. Please try with a text-based PDF or share a clear photo of the document.";
+        } else {
+          const pdfResponse = await openai.chat.completions.create({
+            model: "gpt-4o",
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: `Here is the content of a PDF document:\n\n${pdfText}\n\n---\n\n${userQuestion}` },
+            ],
+            max_tokens: 1500,
+          } as any);
+          aryaResponse = (pdfResponse as any).choices?.[0]?.message?.content || "I couldn't analyze that document. Please try again.";
+        }
+      } else {
+        // Image vision analysis
+        const userQuestion = question?.trim() || "What is in this image? Please explain it clearly and helpfully.";
+        userMessageForStorage = question?.trim() ? `📷 ${question.trim()}` : "📷 Shared an image";
+
+        const visionResponse = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            { role: "system", content: systemPrompt },
+            {
+              role: "user",
+              content: [
+                { type: "image_url", image_url: { url: `data:${mimeType};base64,${image}`, detail: "high" } as any },
+                { type: "text", text: userQuestion },
+              ],
+            },
+          ],
+          max_tokens: 1200,
+        } as any);
+        aryaResponse = (visionResponse as any).choices?.[0]?.message?.content || "I couldn't read that image clearly. Please try with a clearer photo.";
+      }
 
       await chatStorage.createMessage(conversationId, "user", userMessageForStorage);
       await chatStorage.createMessage(conversationId, "assistant", aryaResponse);
@@ -1622,7 +1791,7 @@ export async function registerRoutes(
       res.json({ userMessage: userMessageForStorage, aryaResponse, translatedResponse, language: language || "en-IN" });
     } catch (error: any) {
       console.error("[SCAN ERROR]", error.message);
-      res.status(500).json({ error: "Failed to analyze image. Please try again." });
+      res.status(500).json({ error: "Failed to analyze file. Please try again." });
     }
   });
 

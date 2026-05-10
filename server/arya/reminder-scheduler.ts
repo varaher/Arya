@@ -3,6 +3,8 @@ import { db } from "../db";
 import { aryaReminders, aryaAppSettings, aryaPushSubscriptions, aryaUsers, aryaNotifications } from "@shared/schema";
 import { eq, and, lte, isNull, or } from "drizzle-orm";
 import { fetchLatestNews, getNewsDigestText } from "./news-service";
+import { sendMorningBriefings } from "./morning-briefing";
+import { sendWeeklyReviews } from "./weekly-review";
 
 let vapidPublicKey: string | null = null;
 let isInitialized = false;
@@ -138,7 +140,11 @@ async function checkAndFireReminders(): Promise<void> {
 
 let schedulerInterval: ReturnType<typeof setInterval> | null = null;
 let newsDigestInterval: ReturnType<typeof setInterval> | null = null;
+let morningBriefingInterval: ReturnType<typeof setInterval> | null = null;
+let weeklyReviewInterval: ReturnType<typeof setInterval> | null = null;
 let lastNewsDigestSent = 0;
+let lastMorningBriefingSent = "";
+let lastWeeklyReviewSent = "";
 
 async function sendNewsDigest(): Promise<void> {
   const now = Date.now();
@@ -172,6 +178,35 @@ async function sendNewsDigest(): Promise<void> {
   }
 }
 
+async function checkMorningBriefing(): Promise<void> {
+  try {
+    const nowIST = new Date(Date.now() + (5.5 * 60 * 60 * 1000)); // UTC+5:30
+    const hour = nowIST.getUTCHours();
+    const dateKey = nowIST.toISOString().slice(0, 10);
+    if (hour !== 7) return; // Only fire at 7 AM IST
+    if (lastMorningBriefingSent === dateKey) return; // Already sent today
+    lastMorningBriefingSent = dateKey;
+    await sendMorningBriefings(sendPushToUser);
+  } catch (err: any) {
+    console.error("[MORNING BRIEFING CHECK]", err.message);
+  }
+}
+
+async function checkWeeklyReview(): Promise<void> {
+  try {
+    const nowIST = new Date(Date.now() + (5.5 * 60 * 60 * 1000)); // UTC+5:30
+    const dayOfWeek = nowIST.getUTCDay(); // 0=Sun
+    const hour = nowIST.getUTCHours();
+    const weekKey = nowIST.toISOString().slice(0, 10);
+    if (dayOfWeek !== 0 || hour !== 20) return; // Only Sunday 8 PM IST
+    if (lastWeeklyReviewSent === weekKey) return;
+    lastWeeklyReviewSent = weekKey;
+    await sendWeeklyReviews(sendPushToUser);
+  } catch (err: any) {
+    console.error("[WEEKLY REVIEW CHECK]", err.message);
+  }
+}
+
 export function startReminderScheduler(): void {
   if (schedulerInterval) return;
   schedulerInterval = setInterval(checkAndFireReminders, 30 * 1000);
@@ -180,16 +215,15 @@ export function startReminderScheduler(): void {
   newsDigestInterval = setInterval(sendNewsDigest, 60 * 60 * 1000); // check every hour, sends at most every 6h
   setTimeout(sendNewsDigest, 5000); // send shortly after startup if due
 
-  console.log("[SCHEDULER] Reminder scheduler started (30s interval)");
+  morningBriefingInterval = setInterval(checkMorningBriefing, 5 * 60 * 1000); // check every 5 min
+  weeklyReviewInterval = setInterval(checkWeeklyReview, 15 * 60 * 1000); // check every 15 min
+
+  console.log("[SCHEDULER] Reminder scheduler started (30s interval) + briefing/review checks active");
 }
 
 export function stopReminderScheduler(): void {
-  if (schedulerInterval) {
-    clearInterval(schedulerInterval);
-    schedulerInterval = null;
-  }
-  if (newsDigestInterval) {
-    clearInterval(newsDigestInterval);
-    newsDigestInterval = null;
-  }
+  if (schedulerInterval) { clearInterval(schedulerInterval); schedulerInterval = null; }
+  if (newsDigestInterval) { clearInterval(newsDigestInterval); newsDigestInterval = null; }
+  if (morningBriefingInterval) { clearInterval(morningBriefingInterval); morningBriefingInterval = null; }
+  if (weeklyReviewInterval) { clearInterval(weeklyReviewInterval); weeklyReviewInterval = null; }
 }
