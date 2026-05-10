@@ -1983,17 +1983,23 @@ export default function AryaChat() {
               className="flex flex-col items-center justify-center h-full text-center px-4"
             >
               <motion.div
-                className="rounded-2xl overflow-hidden bg-slate-900 p-4 mb-4 md:mb-6"
                 data-testid="img-arya-logo"
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5, delay: 0.1 }}
+                className="mb-4 md:mb-6 flex flex-col items-center gap-2"
               >
-                <img
-                  src="/arya-logo-transparent.png"
-                  alt="ARYA"
-                  className="w-40 md:w-56"
-                />
+                <span
+                  className="text-6xl md:text-7xl font-bold tracking-tight leading-none select-none"
+                  style={{ fontFamily: "'Space Grotesk', sans-serif", color: "#059669" }}
+                >
+                  ARYA
+                </span>
+                <span className="flex gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#34d399" }} />
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#059669" }} />
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#065f46" }} />
+                </span>
               </motion.div>
               <motion.p
                 initial={{ opacity: 0, y: 10 }}
@@ -3040,8 +3046,13 @@ function VoiceConversationMode({
         >
           <X className="w-6 h-6" />
         </button>
-        <div className="absolute left-1/2 -translate-x-1/2 w-9 h-9 rounded-lg overflow-hidden bg-slate-900 flex items-center justify-center p-1">
-          <img src="/arya-logo-transparent.png" alt="ARYA" className="w-7 h-7 object-contain" />
+        <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center">
+          <span
+            className="text-xl font-bold tracking-tight select-none"
+            style={{ fontFamily: "'Space Grotesk', sans-serif", color: "#059669" }}
+          >
+            ARYA
+          </span>
         </div>
         {hasHistory && (
           <button
@@ -3350,8 +3361,18 @@ function UserAuthModal({ onClose }: { onClose: () => void }) {
           <X className="w-5 h-5" />
         </button>
         <div className="text-center mb-5">
-          <div className="w-32 mx-auto mb-3 rounded-xl overflow-hidden bg-slate-900 p-2">
-            <img src="/arya-logo-transparent.png" alt="ARYA" className="w-full" />
+          <div className="mb-3 flex flex-col items-center gap-1.5">
+            <span
+              className="text-4xl font-bold tracking-tight leading-none select-none"
+              style={{ fontFamily: "'Space Grotesk', sans-serif", color: "#059669" }}
+            >
+              ARYA
+            </span>
+            <span className="flex gap-1">
+              <span className="w-1 h-1 rounded-full" style={{ backgroundColor: "#34d399" }} />
+              <span className="w-1 h-1 rounded-full" style={{ backgroundColor: "#059669" }} />
+              <span className="w-1 h-1 rounded-full" style={{ backgroundColor: "#065f46" }} />
+            </span>
           </div>
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">{mode === "login" ? "Welcome Back" : "Join ARYA"}</h2>
           <p className="text-xs text-muted-foreground mt-0.5">
@@ -3811,8 +3832,18 @@ function OnboardingModal({ token, onComplete }: { token: string; onComplete: () 
         {step === 0 && (
           <div className="space-y-5" data-testid="onboarding-step-welcome">
             <div className="text-center">
-              <div className="w-28 mx-auto mb-4 rounded-xl overflow-hidden bg-slate-900 p-2">
-                <img src="/arya-logo-transparent.png" alt="ARYA" className="w-full" />
+              <div className="mb-4 flex flex-col items-center gap-2">
+                <span
+                  className="text-5xl font-bold tracking-tight leading-none select-none"
+                  style={{ fontFamily: "'Space Grotesk', sans-serif", color: "#059669" }}
+                >
+                  ARYA
+                </span>
+                <span className="flex gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#34d399" }} />
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#059669" }} />
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#065f46" }} />
+                </span>
               </div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Welcome to ARYA</h2>
               <p className="text-sm text-muted-foreground leading-relaxed">
