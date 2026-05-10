@@ -1270,7 +1270,7 @@ function VoiceNotesPanel({ onClose, token }: { onClose: () => void; token: strin
 
 function DailyQuoteCard({ token }: { token: string | null }) {
   const today = new Date().toDateString();
-  const cacheKey = `arya_quote_${today}`;
+  const cacheKey = `arya_quote_v2_${today}`;
 
   const { data, isLoading } = useQuery<{ quote: string; source: string }>({
     queryKey: ["/api/arya/daily-quote"],
@@ -1306,11 +1306,10 @@ function DailyQuoteCard({ token }: { token: string | null }) {
         border: "1px solid rgba(6,78,59,0.12)",
       }}
     >
-      <div className="absolute top-3 right-4 text-2xl opacity-10 select-none" aria-hidden>ॐ</div>
       {isLoading ? (
         <div className="flex items-center gap-2 py-1">
           <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-600 dark:text-emerald-400" />
-          <span className="text-xs text-gray-400 dark:text-gray-500 italic">Crafting your reflection for today...</span>
+          <span className="text-xs text-gray-400 dark:text-gray-500 italic">Preparing your reflection for today...</span>
         </div>
       ) : data ? (
         <>
@@ -1321,8 +1320,8 @@ function DailyQuoteCard({ token }: { token: string | null }) {
           >
             "{data.quote}"
           </p>
-          <p className="text-[10px] uppercase tracking-widest text-amber-600 dark:text-amber-400 font-semibold" data-testid="text-quote-source">
-            — {data.source}
+          <p className="text-[10px] uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-semibold" data-testid="text-quote-source">
+            — ARYA
           </p>
         </>
       ) : null}

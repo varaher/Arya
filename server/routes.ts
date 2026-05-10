@@ -2121,7 +2121,8 @@ export async function registerRoutes(
       const cacheKey = `${userId}_${today}`;
 
       if (dailyQuoteCache.has(cacheKey)) {
-        return res.json(dailyQuoteCache.get(cacheKey));
+        const cached = dailyQuoteCache.get(cacheKey)!;
+        return res.json({ quote: cached.quote, date: cached.date });
       }
 
       // Fetch user's top memories for personalization
@@ -2146,36 +2147,36 @@ export async function registerRoutes(
         baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
       });
 
-      const prompt = `You are ARYA, a personal thinking and growth assistant deeply rooted in India's civilizational wisdom — the Upanishads, Gita, Yoga Sutras, Chanakya Niti, Ramayana, Mahabharata, Vedas, and great Indian saints and thinkers.
+      const prompt = `You are ARYA — a personal thinking and growth assistant who speaks to ${firstName} like a wise, warm friend. You carry deep knowledge of India's civilizational wisdom: the Upanishads, Gita, Yoga Sutras, Chanakya, the great saints and thinkers — but you never quote or cite them directly. That wisdom simply flows through your words naturally.
 
-Generate ONE deeply personal, uplifting quote or reflection for ${firstName} to start their day. 
+Write ONE original reflection for ${firstName} to begin their day. It should feel like ARYA wrote it personally — not a quote from a book, not a proverb, just a direct, warm, powerful thought addressed to them.
 
-${memoryContext ? `What you know about ${firstName}: ${memoryContext}` : ""}
+${memoryContext ? `What you know about ${firstName}: ${memoryContext}` : "No specific memory yet — write something universally personal and strong."}
 
 Rules:
-- The quote should feel written specifically FOR ${firstName}, referencing their actual goals, struggles, or character if you know them
-- Draw from Bharatiya wisdom — paraphrase, adapt, or be inspired by actual teachings, but make it PERSONAL not generic
-- If you reference a source (Gita, Chanakya, a saint), do it subtly in the attribution — NOT in the quote itself
-- The quote should be 1-3 sentences maximum. Warm, strong, elevating
-- Attribution: a short source (e.g., "Bhagavad Gita 2.47", "Chanakya Niti", "Inspired by Swami Vivekananda", "Ancient Upanishadic wisdom")
-- Never use clichés like "every day is a new beginning" — be specific and profound
+- Address ${firstName} directly if you know things about them — reference their actual situation, goals, or struggles
+- Sound like a trusted advisor speaking warmly, not a scripture or motivational poster
+- 1–3 sentences. No fluff. Profound but accessible
+- NEVER mention Gita, Vedas, Chanakya, or any religious text — let the wisdom be invisible
+- NEVER use clichés ("every day is a new beginning", "you've got this", etc.)
+- The tone should be calm, grounding, and energising at once
 
-Respond ONLY with valid JSON: {"quote": "...", "source": "..."}`;
+Respond ONLY with valid JSON: {"quote": "..."}`;
 
       const response = await openai.chat.completions.create({
         model: "gpt-4.1-mini",
         messages: [{ role: "user", content: prompt }],
-        max_completion_tokens: 200,
+        max_completion_tokens: 150,
         response_format: { type: "json_object" },
       });
 
-      let result = { quote: "You are not the doer — you are the witness, the awareness behind every action. Act with full heart, release the outcome.", source: "Bhagavad Gita 3.27" };
+      let result = { quote: "The clearest mind belongs to the one who acts fully, worries least, and rests in knowing they gave everything they had today." };
       try {
         const parsed = JSON.parse(response.choices[0]?.message?.content || "{}");
-        if (parsed.quote && parsed.source) result = parsed;
+        if (parsed.quote) result = { quote: parsed.quote };
       } catch {}
 
-      const entry = { ...result, date: today };
+      const entry = { quote: result.quote, date: today };
       dailyQuoteCache.set(cacheKey, entry);
 
       // Clear old cache entries (keep last 200)
