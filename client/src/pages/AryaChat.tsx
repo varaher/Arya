@@ -1081,8 +1081,9 @@ export default function AryaChat() {
       });
       if (!res.ok) return;
       const data = await res.json();
-      if (data.audio) {
-        playAudioBase64(data.audio);
+      const audioData = data.audioBase64 || data.audio;
+      if (audioData) {
+        playAudioBase64(audioData);
       }
     } catch (err) {
       console.error("Auto-speak error:", err);
