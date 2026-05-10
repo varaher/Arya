@@ -2,15 +2,40 @@ import { db } from "../db";
 import { aryaUsageBudget, aryaDailyCost } from "@shared/schema";
 import { eq, and, sql, lt } from "drizzle-orm";
 
-const LIMITS = {
-  user: {
-    textChatsPerDay: 30,
-    voiceMinutesPerDay: 20,
-    deepReasoningPerDay: 10,
-    llmCallsPerMinute: 10,
+export type UserPlan = 'free' | 'core' | 'pro';
+
+export const PLAN_LIMITS: Record<UserPlan, {
+  textChatsPerDay: number; voiceMinutesPerDay: number; deepReasoningPerDay: number;
+  llmCallsPerMinute: number; maxGoals: number; memoryRetentionDays: number;
+}> = {
+  free: {
+    textChatsPerDay: 10,
+    voiceMinutesPerDay: 2,
+    deepReasoningPerDay: 2,
+    llmCallsPerMinute: 5,
     maxGoals: 3,
     memoryRetentionDays: 7,
   },
+  core: {
+    textChatsPerDay: 15,
+    voiceMinutesPerDay: 5,
+    deepReasoningPerDay: 5,
+    llmCallsPerMinute: 10,
+    maxGoals: 999,
+    memoryRetentionDays: 30,
+  },
+  pro: {
+    textChatsPerDay: 30,
+    voiceMinutesPerDay: 20,
+    deepReasoningPerDay: 10,
+    llmCallsPerMinute: 15,
+    maxGoals: 999,
+    memoryRetentionDays: 365,
+  },
+};
+
+const LIMITS = {
+  user: PLAN_LIMITS.free,
   anonymous: {
     textChatsPerDay: 5,
     voiceMinutesPerDay: 0,
@@ -101,10 +126,11 @@ export async function checkAndRecordBudget(
   userId: string | null,
   callType: CallType = 'text_chat',
   voiceMinutesUsed: number = 0,
-): Promise<{ allowed: boolean; reason?: string }> {
+  userPlan: UserPlan = 'free',
+): Promise<{ allowed: boolean; reason?: string; upgradeAvailable?: boolean }> {
   const dateKey = getTodayKey();
   const isAnonymous = !userId;
-  const limits = isAnonymous ? LIMITS.anonymous : LIMITS.user;
+  const limits = isAnonymous ? LIMITS.anonymous : (PLAN_LIMITS[userPlan] || PLAN_LIMITS.free);
 
   if (callType === 'voice' && isAnonymous) {
     return { allowed: false, reason: "Please sign in to use voice features." };
@@ -156,17 +182,19 @@ export async function checkAndRecordBudget(
     const b = userBudget[0];
     if (callType === 'text_chat' && b.textChatCount >= limits.textChatsPerDay) {
       await rollbackSystemCount(dateKey);
-      return { allowed: false, reason: isAnonymous
+      return { allowed: false, upgradeAvailable: !isAnonymous, reason: isAnonymous
         ? "You've used your 5 free chats today. Sign up for more access."
-        : "You've reached your daily chat limit (30). Please try again tomorrow." };
+        : `You've reached your daily chat limit (${limits.textChatsPerDay}). Upgrade your plan for more chats.` };
     }
     if (callType === 'voice' && b.voiceMinutes >= limits.voiceMinutesPerDay) {
       await rollbackSystemCount(dateKey);
-      return { allowed: false, reason: "You've used your daily voice limit (20 minutes). Please try again tomorrow." };
+      return { allowed: false, upgradeAvailable: !isAnonymous, reason: isAnonymous
+        ? "Please sign in to use voice features."
+        : `You've used your daily voice limit (${limits.voiceMinutesPerDay} min). Upgrade for more.` };
     }
     if (callType === 'deep_reasoning' && b.deepReasoningCount >= limits.deepReasoningPerDay) {
       await rollbackSystemCount(dateKey);
-      return { allowed: false, reason: "You've reached your daily deep reasoning limit (10). Please try again tomorrow." };
+      return { allowed: false, upgradeAvailable: !isAnonymous, reason: `You've reached your daily deep reasoning limit (${limits.deepReasoningPerDay}). Upgrade to Pro for more.` };
     }
   }
 

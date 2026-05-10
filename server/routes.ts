@@ -60,7 +60,12 @@ import {
   canAcceptMoreUsers,
   getBetaConfig,
 } from "./arya/beta-guard";
-import { checkBudget, checkAndRecordBudget, recordLLMCall, getBudgetStats, getCostDashboard, updateCostCap, getLimits, type CallType } from "./arya/usage-budget";
+import { checkBudget, checkAndRecordBudget, recordLLMCall, getBudgetStats, getCostDashboard, updateCostCap, getLimits, type CallType, type UserPlan } from "./arya/usage-budget";
+import {
+  isRazorpayConfigured, getRazorpayKeyId, createSubscription as createRazorpaySubscription,
+  cancelUserSubscription, verifyPaymentSignature, verifyWebhookSignature,
+  activateUserPlan, handleWebhookEvent, getSubscriptionStatus, PLAN_CONFIG,
+} from "./arya/razorpay-service";
 import {
   aryaGoals,
   aryaGoalSteps,
@@ -73,6 +78,7 @@ import {
   aryaPushSubscriptions,
   aryaMoodCheckins,
   aryaVoiceNotes,
+  aryaSubscriptions,
 } from "@shared/schema";
 import { getVapidPublicKey } from "./arya/reminder-scheduler";
 
@@ -1348,9 +1354,14 @@ export async function registerRoutes(
         }
       }
 
-      const budgetCheck = await checkAndRecordBudget(userId, 'text_chat');
+      let userPlan: UserPlan = 'free';
+      if (userId) {
+        const [u] = await db.select().from(aryaUsers).where(eq(aryaUsers.id, userId)).limit(1);
+        userPlan = ((u as any)?.plan as UserPlan) || 'free';
+      }
+      const budgetCheck = await checkAndRecordBudget(userId, 'text_chat', 0, userPlan);
       if (!budgetCheck.allowed) {
-        return res.status(429).json({ error: budgetCheck.reason });
+        return res.status(429).json({ error: budgetCheck.reason, upgradeAvailable: budgetCheck.upgradeAvailable });
       }
 
       await chatStorage.createMessage(conversationId, "user", content);
@@ -1413,9 +1424,14 @@ export async function registerRoutes(
         }
       }
 
-      const budgetCheck = await checkAndRecordBudget(userId, 'voice');
+      let voiceUserPlan: UserPlan = 'free';
+      if (userId) {
+        const [vu] = await db.select().from(aryaUsers).where(eq(aryaUsers.id, userId)).limit(1);
+        voiceUserPlan = ((vu as any)?.plan as UserPlan) || 'free';
+      }
+      const budgetCheck = await checkAndRecordBudget(userId, 'voice', 0, voiceUserPlan);
       if (!budgetCheck.allowed) {
-        return res.status(429).json({ error: budgetCheck.reason });
+        return res.status(429).json({ error: budgetCheck.reason, upgradeAvailable: budgetCheck.upgradeAvailable });
       }
 
       const rawBuffer = Buffer.from(audio, "base64");
@@ -2567,6 +2583,117 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
       res.json({ success: true });
     } catch (error: any) {
       res.status(500).json({ error: "Failed to update feedback" });
+    }
+  });
+
+  // =============================================
+  // SUBSCRIPTION ROUTES (Razorpay)
+  // =============================================
+
+  app.get("/api/subscription/plans", (_req: Request, res: Response) => {
+    res.json({
+      configured: isRazorpayConfigured(),
+      keyId: getRazorpayKeyId(),
+      plans: {
+        free: { name: "Free", amountInr: 0, chatsPerDay: 10, voiceMinutesPerDay: 2, deepReasoningPerDay: 2, maxGoals: 3 },
+        core: { ...PLAN_CONFIG.core, razorpayPlanId: undefined },
+        pro: { ...PLAN_CONFIG.pro, razorpayPlanId: undefined },
+      },
+    });
+  });
+
+  app.get("/api/subscription/status", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const status = await getSubscriptionStatus(userId);
+      res.json(status || { plan: "free", planExpiresAt: null, isActive: false });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to fetch subscription status" });
+    }
+  });
+
+  app.post("/api/subscription/create", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const { plan } = req.body;
+      if (!plan || !["core", "pro"].includes(plan)) {
+        return res.status(400).json({ error: "Invalid plan. Choose 'core' or 'pro'." });
+      }
+      if (!isRazorpayConfigured()) {
+        return res.status(503).json({ error: "Payment gateway not configured. Contact support." });
+      }
+      const [user] = await db.select().from(aryaUsers).where(eq(aryaUsers.id, userId)).limit(1);
+      const subscription = await createRazorpaySubscription(plan, userId, user?.name, user?.email || undefined);
+      res.json({
+        subscriptionId: subscription.id,
+        plan,
+        keyId: getRazorpayKeyId(),
+        status: subscription.status,
+      });
+    } catch (error: any) {
+      console.error("[SUBSCRIPTION] Create error:", error.message);
+      res.status(500).json({ error: error.message || "Failed to create subscription" });
+    }
+  });
+
+  app.post("/api/subscription/verify", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const { razorpay_payment_id, razorpay_subscription_id, razorpay_signature, plan } = req.body;
+      if (!razorpay_payment_id || !razorpay_subscription_id || !razorpay_signature) {
+        return res.status(400).json({ error: "Missing payment details" });
+      }
+      if (!plan || !["core", "pro"].includes(plan)) {
+        return res.status(400).json({ error: "Invalid plan" });
+      }
+      const valid = verifyPaymentSignature(razorpay_payment_id, razorpay_subscription_id, razorpay_signature);
+      if (!valid) {
+        return res.status(400).json({ error: "Payment verification failed. Contact support." });
+      }
+      await activateUserPlan(userId, plan, razorpay_subscription_id);
+      res.json({ success: true, plan, message: `ARYA ${plan.charAt(0).toUpperCase() + plan.slice(1)} activated!` });
+    } catch (error: any) {
+      console.error("[SUBSCRIPTION] Verify error:", error.message);
+      res.status(500).json({ error: "Verification failed" });
+    }
+  });
+
+  app.post("/api/subscription/cancel", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      await cancelUserSubscription(userId);
+      res.json({ success: true, message: "Subscription cancelled. You'll stay on your plan until the end of the billing period." });
+    } catch (error: any) {
+      console.error("[SUBSCRIPTION] Cancel error:", error.message);
+      res.status(500).json({ error: "Failed to cancel subscription" });
+    }
+  });
+
+  app.post("/api/subscription/webhook", async (req: Request, res: Response) => {
+    try {
+      const signature = req.headers["x-razorpay-signature"] as string;
+      const rawBody = JSON.stringify(req.body);
+      if (process.env.RAZORPAY_WEBHOOK_SECRET) {
+        if (!signature || !verifyWebhookSignature(rawBody, signature)) {
+          console.warn("[RAZORPAY WEBHOOK] Invalid signature");
+          return res.status(400).json({ error: "Invalid webhook signature" });
+        }
+      }
+      const event = req.body?.event;
+      await handleWebhookEvent(event, req.body);
+      res.json({ received: true });
+    } catch (error: any) {
+      console.error("[RAZORPAY WEBHOOK] Error:", error.message);
+      res.status(500).json({ error: "Webhook processing failed" });
+    }
+  });
+
+  app.get("/api/admin/subscriptions", requireAdmin, async (_req: Request, res: Response) => {
+    try {
+      const subs = await db.select().from(aryaSubscriptions).orderBy(desc(aryaSubscriptions.createdAt));
+      res.json({ subscriptions: subs, total: subs.length });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to fetch subscriptions" });
     }
   });
 

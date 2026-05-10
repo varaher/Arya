@@ -395,6 +395,9 @@ export const aryaUsers = pgTable("arya_users", {
   weeklyReviewEnabled: boolean("weekly_review_enabled").default(false),
   uiLanguage: varchar("ui_language", { length: 5 }).default("en"),
   invitesRemaining: integer("invites_remaining").default(3).notNull(),
+  plan: varchar("plan", { length: 20 }).default("free").notNull(),
+  planExpiresAt: timestamp("plan_expires_at"),
+  razorpaySubscriptionId: varchar("razorpay_subscription_id", { length: 255 }),
   lastLoginAt: timestamp("last_login_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -710,6 +713,30 @@ export const insertAryaVoiceNoteSchema = createInsertSchema(aryaVoiceNotes).omit
 });
 export type InsertAryaVoiceNote = z.infer<typeof insertAryaVoiceNoteSchema>;
 export type AryaVoiceNote = typeof aryaVoiceNotes.$inferSelect;
+
+// =============================================
+// SUBSCRIPTIONS
+// =============================================
+
+export const aryaSubscriptions = pgTable("arya_subscriptions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull(),
+  plan: varchar("plan", { length: 20 }).notNull(),
+  status: varchar("status", { length: 30 }).notNull().default("created"),
+  razorpaySubscriptionId: varchar("razorpay_subscription_id", { length: 255 }).unique(),
+  razorpayPaymentId: varchar("razorpay_payment_id", { length: 255 }),
+  amountInr: integer("amount_inr").notNull(),
+  startDate: timestamp("start_date"),
+  endDate: timestamp("end_date"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertAryaSubscriptionSchema = createInsertSchema(aryaSubscriptions).omit({
+  id: true, createdAt: true, updatedAt: true,
+});
+export type InsertAryaSubscription = z.infer<typeof insertAryaSubscriptionSchema>;
+export type AryaSubscription = typeof aryaSubscriptions.$inferSelect;
 
 // Re-export chat models
 export * from "./models/chat";

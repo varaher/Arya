@@ -59,10 +59,13 @@ import {
   RefreshCw,
   Link2,
   Link2Off,
+  Star,
+  Crown,
 } from "lucide-react";
 import { getStoredUiLanguage, setStoredUiLanguage, getTranslation, type UiLanguage } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
 import RemindersPanel from "@/components/RemindersPanel";
+import PricingModal from "@/components/PricingModal";
 import { requestNotificationPermission } from "@/lib/push-notifications";
 
 function FormattedMessage({ content, isUser }: { content: string; isUser?: boolean }) {
@@ -1604,6 +1607,7 @@ export default function AryaChat() {
   const [inviteLoading, setInviteLoading] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [showPricing, setShowPricing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -1848,7 +1852,10 @@ export default function AryaChat() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: "Something went wrong" }));
-        if (errorData.betaRestricted) {
+        if (errorData.upgradeAvailable) {
+        setShowPricing(true);
+      }
+      if (errorData.betaRestricted) {
           setBetaRestricted(true);
           fetch(`/api/arya/conversations/${convId}`, { method: "DELETE" }).catch(() => {});
           setActiveConversation(null);
@@ -2426,6 +2433,19 @@ export default function AryaChat() {
                     transition={{ duration: 0.15 }}
                     className="absolute bottom-full left-0 right-0 mb-1 z-50 bg-card border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl py-2"
                   >
+                    {isLoggedIn && (
+                      <button
+                        data-testid="button-upgrade-plan-sidebar"
+                        onClick={() => { setShowUserMenu(false); setShowPricing(true); }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 font-medium"
+                      >
+                        <Crown className="w-3.5 h-3.5" />
+                        {(user as any)?.plan && (user as any).plan !== "free"
+                          ? `ARYA ${((user as any).plan as string).charAt(0).toUpperCase() + ((user as any).plan as string).slice(1)} — Active`
+                          : "Upgrade Plan"}
+                      </button>
+                    )}
+                    <div className="border-t border-gray-100 dark:border-slate-700 my-1" />
                     <button
                       data-testid="button-my-goals-sidebar"
                       onClick={() => { setShowUserMenu(false); setLocation("/my-goals"); }}
@@ -2565,6 +2585,17 @@ export default function AryaChat() {
                         <div className="text-xs font-medium text-gray-900 dark:text-white">{user?.name}</div>
                         <div className="text-[10px] text-muted-foreground">{user?.phone}</div>
                       </div>
+                      <button
+                        data-testid="button-upgrade-plan"
+                        onClick={() => { setShowUserMenu(false); setShowPricing(true); }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 font-medium"
+                      >
+                        <Crown className="w-3.5 h-3.5" />
+                        {(user as any)?.plan && (user as any).plan !== "free"
+                          ? `ARYA ${((user as any).plan as string).charAt(0).toUpperCase() + ((user as any).plan as string).slice(1)} — Active`
+                          : "Upgrade Plan"}
+                      </button>
+                      <div className="border-t border-gray-100 dark:border-slate-700 my-1" />
                       <button
                         data-testid="button-my-goals"
                         onClick={() => { setShowUserMenu(false); setLocation("/my-goals"); }}
@@ -3299,6 +3330,18 @@ export default function AryaChat() {
             className="fixed inset-0 z-50"
           >
             <QuickStartTutorial token={token} onClose={() => setShowTutorial(false)} onStartChat={(text) => { setShowTutorial(false); sendMessage(text); }} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showPricing && token && (
+          <motion.div key="pricing-modal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="fixed inset-0 z-50">
+            <PricingModal
+              token={token}
+              currentPlan={(user as any)?.plan || "free"}
+              onClose={() => setShowPricing(false)}
+              onUpgradeSuccess={(plan) => { setShowPricing(false); refreshUser?.(); }}
+            />
           </motion.div>
         )}
       </AnimatePresence>
