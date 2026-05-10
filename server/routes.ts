@@ -1433,7 +1433,8 @@ export async function registerRoutes(
           queryForArya = userTranscript;
         }
       } else {
-        userTranscript = await speechToText(audioBuffer, inputFormat);
+        const isoLang = (language || "en-IN").split("-")[0] || "en";
+        userTranscript = await speechToText(audioBuffer, inputFormat, isoLang);
         queryForArya = userTranscript;
         detectedLanguage = "en-IN";
       }
