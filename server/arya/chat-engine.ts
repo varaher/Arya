@@ -155,6 +155,32 @@ export interface AryaResponseMeta {
 
 export { memoryEngine };
 
+function requiresDeepReasoning(message: string, voiceMode: boolean): boolean {
+  if (voiceMode) return false; // Voice is always conversational — never deep reasoning
+
+  // Long messages almost always need fuller thinking
+  if (message.trim().length > 300) return true;
+
+  const deepPatterns = [
+    /\b(analyz|analysi|analys)/i,
+    /\b(compar|evaluat|assess|review in detail)/i,
+    /\b(strategy|strategic|roadmap|framework)\b/i,
+    /\b(pros.*cons|advantages.*disadvantages|trade.?off)\b/i,
+    /\b(business plan|career change|life decision|major decision)\b/i,
+    /\b(explain in detail|in.depth|comprehensive|thorough|complete guide)\b/i,
+    /\b(write.*report|write.*essay|write.*article|draft.*proposal|write.*plan)\b/i,
+    /\b(diagnos|clinical|treatment plan|prognosis|medical report)\b/i,
+    /\b(legal|contract|agreement|clause|liability|compliance)\b/i,
+    /\b(financial plan|investment strategy|portfolio|tax plan)\b/i,
+    /\b(vedic math|sutra|mathematical proof|prove that)\b/i,
+    /\b(philosophy|philosophical|existential|metaphysical|consciousness)\b/i,
+    /\b(research|literature|systematic review|case study)\b/i,
+    /\b(geopolitic|foreign policy|international relations|strategic affairs)\b/i,
+  ];
+
+  return deepPatterns.some(p => p.test(message));
+}
+
 async function getUserPreferenceContext(userId?: string | null): Promise<string> {
   if (!userId) return "";
   try {
@@ -342,11 +368,16 @@ export async function generateAryaResponse(
     { role: "user", content: userMessage },
   ];
 
+  const isDeep = requiresDeepReasoning(userMessage, voiceMode);
+  const selectedModel = isDeep ? "gpt-5.2" : "gpt-4.1-mini";
+
+  console.log(`[ARYA] Model: ${selectedModel} | deep=${isDeep} | voice=${voiceMode} | msg_len=${userMessage.length}`);
+
   const stream = await openai.chat.completions.create({
-    model: "gpt-5.2",
+    model: selectedModel,
     messages,
     stream: true,
-    max_completion_tokens: voiceMode ? 300 : 2048,
+    max_completion_tokens: voiceMode ? 300 : isDeep ? 2048 : 1024,
   });
 
   const meta: AryaResponseMeta = {
@@ -389,7 +420,7 @@ export async function generateAryaResponse(
         shadowResult.match?.cacheEntry?.id || null,
         shadowResult.match?.score || 0,
         'llm',
-        'gpt-5.2',
+        selectedModel,
         Date.now() - startTime
       ).catch(() => {});
     })(),
