@@ -1268,6 +1268,68 @@ function VoiceNotesPanel({ onClose, token }: { onClose: () => void; token: strin
   );
 }
 
+function DailyQuoteCard({ token }: { token: string | null }) {
+  const today = new Date().toDateString();
+  const cacheKey = `arya_quote_${today}`;
+
+  const { data, isLoading } = useQuery<{ quote: string; source: string }>({
+    queryKey: ["/api/arya/daily-quote"],
+    queryFn: async () => {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        try { return JSON.parse(cached); } catch {}
+      }
+      const res = await fetch("/api/arya/daily-quote", {
+        headers: { "x-user-token": token! },
+      });
+      if (!res.ok) throw new Error("failed");
+      const data = await res.json();
+      localStorage.setItem(cacheKey, JSON.stringify(data));
+      return data;
+    },
+    enabled: !!token,
+    staleTime: 1000 * 60 * 60 * 12,
+    retry: false,
+  });
+
+  if (!token) return null;
+
+  return (
+    <motion.div
+      data-testid="card-daily-quote"
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.25 }}
+      className="w-full max-w-md mx-auto mb-5 px-5 py-4 rounded-2xl relative overflow-hidden"
+      style={{
+        background: "linear-gradient(135deg, rgba(6,78,59,0.06) 0%, rgba(245,158,11,0.06) 100%)",
+        border: "1px solid rgba(6,78,59,0.12)",
+      }}
+    >
+      <div className="absolute top-3 right-4 text-2xl opacity-10 select-none" aria-hidden>ॐ</div>
+      {isLoading ? (
+        <div className="flex items-center gap-2 py-1">
+          <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-600 dark:text-emerald-400" />
+          <span className="text-xs text-gray-400 dark:text-gray-500 italic">Crafting your reflection for today...</span>
+        </div>
+      ) : data ? (
+        <>
+          <p
+            className="text-sm md:text-[15px] leading-relaxed text-gray-700 dark:text-gray-200 font-medium mb-2"
+            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+            data-testid="text-daily-quote"
+          >
+            "{data.quote}"
+          </p>
+          <p className="text-[10px] uppercase tracking-widest text-amber-600 dark:text-amber-400 font-semibold" data-testid="text-quote-source">
+            — {data.source}
+          </p>
+        </>
+      ) : null}
+    </motion.div>
+  );
+}
+
 function MoodCheckInCard({ token, onComplete }: { token: string; onComplete: () => void }) {
   const [mood, setMood] = useState<number | null>(null);
   const [energy, setEnergy] = useState(3);
@@ -2678,6 +2740,7 @@ export default function AryaChat() {
             >
               {t("welcome_desc")}
             </motion.p>
+            <DailyQuoteCard token={token} />
             <div className="flex items-center gap-2 mb-4">
               {!isLoggedIn && (
                 <button

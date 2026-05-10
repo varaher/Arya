@@ -25,7 +25,8 @@ import {
   SUPPORTED_LANGUAGES,
   type SarvamLanguageCode,
 } from "./arya/sarvam-service";
-import { QueryRequestSchema, DomainSchema, aryaKnowledge, aryaClinicalRecords, aryaVoiceQualityLog } from "@shared/schema";
+import { QueryRequestSchema, DomainSchema, aryaKnowledge, aryaClinicalRecords, aryaVoiceQualityLog, aryaMemory } from "@shared/schema";
+import OpenAI from "openai";
 import { eq, and, desc, sql, or, isNull, lte } from "drizzle-orm";
 import { db } from "./db";
 import {
@@ -2110,6 +2111,90 @@ export async function registerRoutes(
   // =============================================
 
   // Memory API
+  // Daily personalized quote — cached per user per day
+  const dailyQuoteCache = new Map<string, { quote: string; source: string; date: string }>();
+
+  app.get("/api/arya/daily-quote", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const today = new Date().toDateString();
+      const cacheKey = `${userId}_${today}`;
+
+      if (dailyQuoteCache.has(cacheKey)) {
+        return res.json(dailyQuoteCache.get(cacheKey));
+      }
+
+      // Fetch user's top memories for personalization
+      const [userRow] = await db.select({ name: aryaUsers.name }).from(aryaUsers).where(eq(aryaUsers.id, userId)).limit(1);
+      const firstName = userRow?.name?.split(" ")[0] || "friend";
+
+      const memories = await db.select({
+        category: aryaMemory.category,
+        key: aryaMemory.key,
+        value: aryaMemory.value,
+      }).from(aryaMemory)
+        .where(eq(aryaMemory.tenantId, userId))
+        .orderBy(desc(aryaMemory.accessCount))
+        .limit(12);
+
+      const memoryContext = memories.length > 0
+        ? memories.map(m => `${m.key}: ${m.value}`).join("; ")
+        : "";
+
+      const openai = new OpenAI({
+        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+      });
+
+      const prompt = `You are ARYA, a personal thinking and growth assistant deeply rooted in India's civilizational wisdom — the Upanishads, Gita, Yoga Sutras, Chanakya Niti, Ramayana, Mahabharata, Vedas, and great Indian saints and thinkers.
+
+Generate ONE deeply personal, uplifting quote or reflection for ${firstName} to start their day. 
+
+${memoryContext ? `What you know about ${firstName}: ${memoryContext}` : ""}
+
+Rules:
+- The quote should feel written specifically FOR ${firstName}, referencing their actual goals, struggles, or character if you know them
+- Draw from Bharatiya wisdom — paraphrase, adapt, or be inspired by actual teachings, but make it PERSONAL not generic
+- If you reference a source (Gita, Chanakya, a saint), do it subtly in the attribution — NOT in the quote itself
+- The quote should be 1-3 sentences maximum. Warm, strong, elevating
+- Attribution: a short source (e.g., "Bhagavad Gita 2.47", "Chanakya Niti", "Inspired by Swami Vivekananda", "Ancient Upanishadic wisdom")
+- Never use clichés like "every day is a new beginning" — be specific and profound
+
+Respond ONLY with valid JSON: {"quote": "...", "source": "..."}`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4.1-mini",
+        messages: [{ role: "user", content: prompt }],
+        max_completion_tokens: 200,
+        response_format: { type: "json_object" },
+      });
+
+      let result = { quote: "You are not the doer — you are the witness, the awareness behind every action. Act with full heart, release the outcome.", source: "Bhagavad Gita 3.27" };
+      try {
+        const parsed = JSON.parse(response.choices[0]?.message?.content || "{}");
+        if (parsed.quote && parsed.source) result = parsed;
+      } catch {}
+
+      const entry = { ...result, date: today };
+      dailyQuoteCache.set(cacheKey, entry);
+
+      // Clear old cache entries (keep last 200)
+      if (dailyQuoteCache.size > 200) {
+        const firstKey = dailyQuoteCache.keys().next().value;
+        if (firstKey) dailyQuoteCache.delete(firstKey);
+      }
+
+      res.json(entry);
+    } catch (err: any) {
+      console.error("[DAILY-QUOTE] Error:", err.message);
+      res.json({
+        quote: "Arise, awake and stop not till the goal is reached.",
+        source: "Swami Vivekananda",
+        date: new Date().toDateString(),
+      });
+    }
+  });
+
   app.get("/api/arya/memory", async (req: Request, res: Response) => {
     try {
       const tenantId = (req.query.tenant_id as string) || 'varah';
