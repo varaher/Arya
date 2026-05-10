@@ -3,6 +3,7 @@ import { db } from "../db";
 import { aryaUsers, aryaGoals, aryaNotifications } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
 import { fetchMarketNews, fetchLatestNews } from "./news-service";
+import { getTodayEvents, formatEventsForBriefing } from "./google-calendar";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -36,14 +37,20 @@ export async function generateMorningBriefing(userId: string): Promise<string> {
       ? activeGoals.map(g => `• ${g.title} — ${g.progress}% done, ${g.streakCount} day streak`).join("\n")
       : "No active goals yet.";
 
+    const calendarEvents = await getTodayEvents(userId).catch(() => []);
+    const calendarText = await formatEventsForBriefing(calendarEvents);
+
     const firstName = user?.name?.split(" ")[0] || "friend";
     const now = new Date();
     const day = now.toLocaleDateString("en-IN", { weekday: "long", timeZone: "Asia/Kolkata" });
 
-    const prompt = `Generate a warm, concise morning briefing for ${firstName} on this ${day}. Keep it under 150 words, personal and energizing.
+    const prompt = `Generate a warm, concise morning briefing for ${firstName} on this ${day}. Keep it under 180 words, personal and energizing.
 
 Their active goals:
 ${goalsText}
+
+Today's calendar:
+${calendarText}
 
 Top India news today:
 ${topIndia}
@@ -51,7 +58,7 @@ ${topIndia}
 Market pulse:
 ${topMarket}
 
-Write a natural morning briefing: start with a warm greeting using their name, briefly mention 1-2 relevant news items, remind them of their most important goal with encouragement, and end with one short motivating thought. No bullet points in the final output — write flowing, warm sentences like a personal advisor.`;
+Write a natural morning briefing: start with a warm greeting using their name. If they have meetings today, mention the most important one so they're prepared. Briefly touch on 1 news item. Remind them of their top goal with encouragement. End with one short motivating thought. No bullet points — write flowing, warm sentences like a personal advisor.`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",

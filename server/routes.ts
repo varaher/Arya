@@ -2380,6 +2380,83 @@ export async function registerRoutes(
     }
   });
 
+  // =============================================
+  // GOOGLE CALENDAR ROUTES
+  // =============================================
+
+  app.get("/api/calendar/auth-url", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const { getCalendarAuthUrl } = await import("./arya/google-calendar");
+      const url = getCalendarAuthUrl(userId);
+      res.json({ url });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to generate auth URL. Ensure GOOGLE_CLIENT_SECRET is set." });
+    }
+  });
+
+  app.get("/api/calendar/callback", async (req: Request, res: Response) => {
+    try {
+      const { code, state: userId, error } = req.query as Record<string, string>;
+      if (error) return res.redirect(`/?calendar_error=${error}`);
+      if (!code || !userId) return res.redirect("/?calendar_error=missing_params");
+      const { handleCalendarCallback } = await import("./arya/google-calendar");
+      const success = await handleCalendarCallback(code, userId);
+      res.redirect(success ? "/?calendar_connected=1" : "/?calendar_error=callback_failed");
+    } catch (error: any) {
+      console.error("[CALENDAR] Callback error:", error.message);
+      res.redirect("/?calendar_error=server_error");
+    }
+  });
+
+  app.get("/api/calendar/status", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const { isCalendarConnected } = await import("./arya/google-calendar");
+      const connected = await isCalendarConnected(userId);
+      res.json({ connected });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to check status" });
+    }
+  });
+
+  app.get("/api/calendar/events", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const days = parseInt(req.query.days as string) || 1;
+      const { getTodayEvents, getUpcomingEvents } = await import("./arya/google-calendar");
+      const events = days <= 1 ? await getTodayEvents(userId) : await getUpcomingEvents(userId, days);
+      res.json({ events });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to fetch calendar events" });
+    }
+  });
+
+  app.post("/api/calendar/events", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const { title, startTime, endTime, description, location } = req.body;
+      if (!title || !startTime || !endTime) return res.status(400).json({ error: "title, startTime, endTime are required" });
+      const { createCalendarEvent } = await import("./arya/google-calendar");
+      const event = await createCalendarEvent(userId, title, startTime, endTime, description, location);
+      if (!event) return res.status(500).json({ error: "Failed to create event" });
+      res.json({ event });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to create calendar event" });
+    }
+  });
+
+  app.delete("/api/calendar/disconnect", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const { disconnectCalendar } = await import("./arya/google-calendar");
+      await disconnectCalendar(userId);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to disconnect" });
+    }
+  });
+
   app.get("/api/admin/feedback", requireAdmin, async (req: Request, res: Response) => {
     try {
       const status = req.query.status as string;
