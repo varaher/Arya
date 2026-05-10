@@ -25,7 +25,7 @@ import {
   SUPPORTED_LANGUAGES,
   type SarvamLanguageCode,
 } from "./arya/sarvam-service";
-import { QueryRequestSchema, DomainSchema, aryaKnowledge, aryaClinicalRecords } from "@shared/schema";
+import { QueryRequestSchema, DomainSchema, aryaKnowledge, aryaClinicalRecords, aryaVoiceQualityLog } from "@shared/schema";
 import { eq, and, desc, sql, or, isNull, lte } from "drizzle-orm";
 import { db } from "./db";
 import {
@@ -1506,7 +1506,20 @@ export async function registerRoutes(
         }
       }
 
-      res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
+      let voiceLogId: string | null = null;
+      try {
+        const [logRow] = await db.insert(aryaVoiceQualityLog).values({
+          userId: voiceUserId,
+          conversationId: conversationId || null,
+          language: (detectedLanguage || "en").split("-")[0],
+          transcriptLength: userTranscript.length,
+          wasCjkRejected: false,
+          responseLength: fullResponse.length,
+        }).returning({ id: aryaVoiceQualityLog.id });
+        voiceLogId = logRow?.id || null;
+      } catch {}
+
+      res.write(`data: ${JSON.stringify({ type: "done", logId: voiceLogId })}\n\n`);
       res.end();
     } catch (error: any) {
       console.error("[VOICE ERROR]", error.message || "Unknown error");
@@ -1517,6 +1530,18 @@ export async function registerRoutes(
       } else {
         res.status(500).json({ error: userMessage });
       }
+    }
+  });
+
+  app.post("/api/arya/voice-quality/:logId/rate", optionalUser, async (req: Request, res: Response) => {
+    try {
+      const { logId } = req.params;
+      const { rating } = req.body;
+      if (!logId || (rating !== 1 && rating !== -1)) return res.status(400).json({ error: "Invalid rating" });
+      await db.update(aryaVoiceQualityLog).set({ userRating: rating }).where(eq(aryaVoiceQualityLog.id, logId));
+      res.json({ ok: true });
+    } catch {
+      res.status(500).json({ error: "Failed to save rating" });
     }
   });
 

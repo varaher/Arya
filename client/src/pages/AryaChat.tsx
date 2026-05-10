@@ -878,8 +878,17 @@ export default function AryaChat() {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [showSidebar, setShowSidebar] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState("en-IN");
+  const [selectedLanguage, setSelectedLanguage] = useState(() => {
+    try { return localStorage.getItem("arya_lang") || "hi-IN"; } catch { return "hi-IN"; }
+  });
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
+
+  useEffect(() => {
+    if (!user?.preferredLanguage) return;
+    const lang = user.preferredLanguage;
+    const code = lang === "or" ? "od-IN" : DEFAULT_LANGUAGES.find(l => l.code === `${lang}-IN`) ? `${lang}-IN` : null;
+    if (code) { setSelectedLanguage(code); try { localStorage.setItem("arya_lang", code); } catch {} }
+  }, [user?.preferredLanguage]);
   const [translatedContent, setTranslatedContent] = useState<string | null>(null);
   const [playingAudio, setPlayingAudio] = useState(false);
   const [speakerOn, setSpeakerOn] = useState(() => {
@@ -2528,6 +2537,8 @@ function VoiceConversationMode({
   const [conversationLog, setConversationLog] = useState<{role: string; text: string}[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [audioLevel, setAudioLevel] = useState(0);
+  const [lastVoiceLogId, setLastVoiceLogId] = useState<string | null>(null);
+  const [lastRating, setLastRating] = useState<number | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -2807,6 +2818,7 @@ function VoiceConversationMode({
             }
             if (event.type === "done") {
               setConversationLog(prev => [...prev, { role: "assistant", text: fullContent }]);
+              if (event.logId) { setLastVoiceLogId(event.logId); setLastRating(null); }
               queryClient.invalidateQueries({ queryKey: ["/api/arya/conversations"] });
               if (convId) {
                 queryClient.invalidateQueries({ queryKey: ["/api/arya/conversations", convId] });
@@ -3155,17 +3167,42 @@ function VoiceConversationMode({
             </button>
           </div>
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
-            {conversationLog.map((msg, i) => (
-              <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${
-                  msg.role === "user"
-                    ? "bg-cyan-100 dark:bg-cyan-900/30 text-gray-800 dark:text-gray-100 rounded-br-sm"
-                    : "bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 rounded-bl-sm"
-                }`}>
-                  {msg.text}
+            {conversationLog.map((msg, i) => {
+              const isLastAssistant = msg.role === "assistant" && i === conversationLog.length - 1;
+              return (
+                <div key={i} className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}>
+                  <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${
+                    msg.role === "user"
+                      ? "bg-cyan-100 dark:bg-cyan-900/30 text-gray-800 dark:text-gray-100 rounded-br-sm"
+                      : "bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 rounded-bl-sm"
+                  }`}>
+                    {msg.text}
+                  </div>
+                  {isLastAssistant && lastVoiceLogId && (
+                    <div className="flex gap-1.5 mt-1 ml-1">
+                      <button
+                        data-testid="btn-voice-thumbup"
+                        onClick={() => {
+                          fetch(`/api/arya/voice-quality/${lastVoiceLogId}/rate`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ rating: 1 }) });
+                          setLastRating(1);
+                        }}
+                        title="Good response"
+                        className={`text-xs px-2 py-0.5 rounded-full border transition-colors ${lastRating === 1 ? "border-green-400 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400" : "border-gray-200 dark:border-slate-600 text-gray-400 hover:text-green-500"}`}
+                      >👍</button>
+                      <button
+                        data-testid="btn-voice-thumbdown"
+                        onClick={() => {
+                          fetch(`/api/arya/voice-quality/${lastVoiceLogId}/rate`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ rating: -1 }) });
+                          setLastRating(-1);
+                        }}
+                        title="Poor response"
+                        className={`text-xs px-2 py-0.5 rounded-full border transition-colors ${lastRating === -1 ? "border-red-400 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400" : "border-gray-200 dark:border-slate-600 text-gray-400 hover:text-red-500"}`}
+                      >👎</button>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
             {transcript && phase === "processing" && (
               <div className="flex justify-end">
                 <div className="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm bg-cyan-100 dark:bg-cyan-900/30 text-gray-800 dark:text-gray-100 rounded-br-sm">{transcript}</div>
@@ -3189,6 +3226,7 @@ function UserAuthModal({ onClose }: { onClose: () => void }) {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [signupLang, setSignupLang] = useState("hi");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPw, setShowPw] = useState(false);
@@ -3258,7 +3296,7 @@ function UserAuthModal({ onClose }: { onClose: () => void }) {
         else onClose();
       } else {
         if (!name.trim()) { setError("Please enter your name"); setLoading(false); return; }
-        const r = await signup({ name: name.trim(), phone, password });
+        const r = await signup({ name: name.trim(), phone, password, preferredLanguage: signupLang });
         if (!r.success) setError(r.error || "Signup failed");
         else onClose();
       }
@@ -3303,15 +3341,45 @@ function UserAuthModal({ onClose }: { onClose: () => void }) {
         )}
         <form onSubmit={handleSubmit} className="space-y-3">
           {mode === "signup" && (
-            <input
-              data-testid="modal-input-name"
-              type="text"
-              placeholder="Your Name"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              className="w-full bg-background/50 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white text-sm px-3 py-2.5 placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
-              autoFocus
-            />
+            <>
+              <input
+                data-testid="modal-input-name"
+                type="text"
+                placeholder="Your Name"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                className="w-full bg-background/50 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white text-sm px-3 py-2.5 placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
+                autoFocus
+              />
+              <div>
+                <p className="text-[11px] text-muted-foreground mb-1.5">Preferred language for voice conversations</p>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {[
+                    { code: "hi", label: "हिन्दी", name: "Hindi" },
+                    { code: "en", label: "English", name: "English" },
+                    { code: "ta", label: "தமிழ்", name: "Tamil" },
+                    { code: "te", label: "తెలుగు", name: "Telugu" },
+                    { code: "kn", label: "ಕನ್ನಡ", name: "Kannada" },
+                    { code: "ml", label: "മലയാ", name: "Malayalam" },
+                    { code: "mr", label: "मराठी", name: "Marathi" },
+                    { code: "bn", label: "বাংলা", name: "Bengali" },
+                  ].map(l => (
+                    <button
+                      key={l.code}
+                      type="button"
+                      data-testid={`lang-option-${l.code}`}
+                      onClick={() => setSignupLang(l.code)}
+                      title={l.name}
+                      className={`py-1.5 px-1 rounded-lg text-[11px] font-medium border transition-all ${
+                        signupLang === l.code
+                          ? "border-cyan-400 bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300"
+                          : "border-gray-200 dark:border-slate-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-slate-600"
+                      }`}
+                    >{l.label}</button>
+                  ))}
+                </div>
+              </div>
+            </>
           )}
           <input
             data-testid="modal-input-phone"

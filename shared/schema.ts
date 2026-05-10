@@ -645,5 +645,24 @@ export const aryaAppSettings = pgTable("arya_app_settings", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// =============================================
+// VOICE QUALITY LOG (ML improvement data)
+// =============================================
+
+export const aryaVoiceQualityLog = pgTable("arya_voice_quality_log", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }),
+  conversationId: integer("conversation_id"),
+  language: varchar("language", { length: 10 }).default("en"),
+  transcriptLength: integer("transcript_length").default(0).notNull(),
+  wasCjkRejected: boolean("was_cjk_rejected").default(false).notNull(),
+  responseLength: integer("response_length").default(0).notNull(),
+  userRating: integer("user_rating"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export const insertVoiceQualityLogSchema = createInsertSchema(aryaVoiceQualityLog).omit({ id: true, createdAt: true });
+export type InsertVoiceQualityLog = z.infer<typeof insertVoiceQualityLogSchema>;
+export type VoiceQualityLog = typeof aryaVoiceQualityLog.$inferSelect;
+
 // Re-export chat models
 export * from "./models/chat";

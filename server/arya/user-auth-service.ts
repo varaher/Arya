@@ -4,6 +4,7 @@ import { eq, and } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
 import { OAuth2Client } from "google-auth-library";
+import { sendWelcomeEmail } from "./email-service";
 
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -40,6 +41,10 @@ export async function signupUser(
     title: "Welcome to ARYA!",
     message: `Namaste ${name}! I'm ARYA, your AI companion. You can talk to me using voice in any Indian language. Set your goals and I'll help you achieve them!`,
   });
+
+  if (email) {
+    sendWelcomeEmail(name, email).catch(() => {});
+  }
 
   const token = uuidv4();
   const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
@@ -199,6 +204,10 @@ export async function googleOAuthLogin(idToken: string): Promise<{
       title: "Welcome to ARYA!",
       message: `Welcome ${name}! I'm ARYA, your Personal Thinking & Growth Assistant. Start chatting, set your goals, or try voice in your language!`,
     });
+
+    if (email) {
+      sendWelcomeEmail(name, email).catch(() => {});
+    }
 
     user = newUser;
   }
