@@ -1300,7 +1300,7 @@ function DailyQuoteCard({ token }: { token: string | null }) {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.25 }}
-      className="w-full max-w-md mx-auto mb-5 px-5 py-4 rounded-2xl relative overflow-hidden"
+      className="w-full max-w-md mx-auto mb-3 px-5 py-3.5 rounded-2xl relative overflow-hidden"
       style={{
         background: "linear-gradient(135deg, rgba(6,78,59,0.06) 0%, rgba(245,158,11,0.06) 100%)",
         border: "1px solid rgba(6,78,59,0.12)",
@@ -2695,19 +2695,19 @@ export default function AryaChat() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.4 }}
-            className="flex-1 flex flex-col items-center justify-center text-center px-4 py-6 overflow-y-auto"
+            className="flex-1 flex flex-col items-center justify-start text-center px-4 pt-8 pb-10 overflow-y-auto"
           >
             <motion.div
               data-testid="img-arya-logo"
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="mb-3 flex flex-col items-center gap-2"
+              className="mb-2 flex flex-col items-center gap-1.5"
             >
               <span
                 style={{
                   fontFamily: "'Space Grotesk', sans-serif",
-                  fontSize: "3.5rem",
+                  fontSize: "3rem",
                   fontWeight: 700,
                   letterSpacing: "0.18em",
                   lineHeight: 1,
@@ -2727,7 +2727,7 @@ export default function AryaChat() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.2 }}
-              className="text-[10px] uppercase tracking-widest font-bold text-emerald-600 dark:text-emerald-400 mb-3"
+              className="text-[10px] uppercase tracking-widest font-bold text-emerald-600 dark:text-emerald-400 mb-2"
             >
               {t("your_pa")}
             </motion.p>
@@ -2735,12 +2735,12 @@ export default function AryaChat() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.3 }}
-              className="text-muted-foreground max-w-md mb-5 text-sm md:text-base"
+              className="text-muted-foreground max-w-md mb-3 text-sm md:text-base"
             >
               {t("welcome_desc")}
             </motion.p>
             <DailyQuoteCard token={token} />
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center gap-2 mb-3">
               {!isLoggedIn && (
                 <button
                   data-testid="button-welcome-signin"
