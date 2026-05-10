@@ -10,6 +10,7 @@ import { useLocation } from "wouter";
 import {
   Send,
   Mic,
+  Paperclip,
   Plus,
   Trash2,
   MessageSquare,
@@ -894,6 +895,9 @@ export default function AryaChat() {
   const [showCustomize, setShowCustomize] = useState(false);
   const [showReminders, setShowReminders] = useState(false);
   const [showConfidence, setShowConfidence] = useState(true);
+  const [pendingImage, setPendingImage] = useState<{ base64: string; previewUrl: string; mimeType: string } | null>(null);
+  const [isScanningDoc, setIsScanningDoc] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const [betaRestricted, setBetaRestricted] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteCode, setInviteCode] = useState("");
@@ -1223,6 +1227,82 @@ export default function AryaChat() {
     }
   }, [activeConversation, isStreaming, queryClient, createConversation, speakText]);
 
+  const handleImageSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      const base64 = dataUrl.split(",")[1];
+      setPendingImage({ base64, previewUrl: dataUrl, mimeType: file.type || "image/jpeg" });
+    };
+    reader.readAsDataURL(file);
+    if (imageInputRef.current) imageInputRef.current.value = "";
+  }, []);
+
+  const sendWithImage = useCallback(async () => {
+    if (!pendingImage || isScanningDoc) return;
+
+    let convId = activeConversation;
+    if (!convId) {
+      const conv = await createConversation.mutateAsync(input.trim() || "📷 Image scan");
+      convId = conv.id;
+    }
+
+    const question = input.trim();
+    const displayMsg = question ? `📷 ${question}` : "📷 Shared an image";
+    setInput("");
+    setPendingImage(null);
+    setIsScanningDoc(true);
+
+    queryClient.setQueryData(
+      ["/api/arya/conversations", convId, token],
+      (old: any) => ({
+        ...old,
+        messages: [
+          ...(old?.messages || []),
+          { id: Date.now(), conversationId: convId, role: "user", content: displayMsg, createdAt: new Date().toISOString() },
+          { id: Date.now() + 1, conversationId: convId, role: "assistant", content: "⏳ Reading your image...", createdAt: new Date().toISOString(), isLoading: true },
+        ],
+      })
+    );
+
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["x-user-token"] = token;
+      const res = await fetch(`/api/arya/conversations/${convId}/scan`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ image: pendingImage.base64, mimeType: pendingImage.mimeType, question, language: selectedLanguage }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Scan failed");
+
+      const displayResponse = data.translatedResponse || data.aryaResponse;
+      queryClient.setQueryData(
+        ["/api/arya/conversations", convId, token],
+        (old: any) => ({
+          ...old,
+          messages: (old?.messages || []).filter((m: any) => !m.isLoading).concat([
+            { id: Date.now() + 2, conversationId: convId, role: "assistant", content: displayResponse, createdAt: new Date().toISOString() },
+          ]),
+        })
+      );
+      if (speakerOnRef.current && displayResponse) speakText(displayResponse);
+    } catch (err: any) {
+      queryClient.setQueryData(
+        ["/api/arya/conversations", convId, token],
+        (old: any) => ({
+          ...old,
+          messages: (old?.messages || []).filter((m: any) => !m.isLoading),
+        })
+      );
+    } finally {
+      setIsScanningDoc(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/arya/conversations", convId, token] });
+    }
+  }, [pendingImage, input, activeConversation, isScanningDoc, createConversation, queryClient, token, selectedLanguage, speakText]);
+
   const handleRedeemInvite = useCallback(async () => {
     if (!inviteCode.trim() || !token) return;
     setInviteLoading(true);
@@ -1433,7 +1513,8 @@ export default function AryaChat() {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      sendMessage(input);
+      if (pendingImage) sendWithImage();
+      else sendMessage(input);
     }
   };
 
@@ -2128,6 +2209,27 @@ export default function AryaChat() {
                 {speakerOn ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
               </Button>
 
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={handleImageSelect}
+                data-testid="input-image-upload"
+              />
+              <Button
+                data-testid="button-attach-image"
+                variant="ghost"
+                size="icon"
+                onClick={() => imageInputRef.current?.click()}
+                disabled={isStreaming || isScanningDoc}
+                className="flex-shrink-0 rounded-full h-9 w-9 md:h-10 md:w-10 bg-gradient-to-br from-purple-500/20 to-purple-600/10 text-purple-600 dark:text-purple-400 hover:from-purple-500/30 hover:to-purple-600/20 border border-purple-200 dark:border-purple-800"
+                title="Attach image or take photo"
+              >
+                <Paperclip className="w-4 h-4" />
+              </Button>
+
               <Button
                 data-testid="button-voice"
                 variant="ghost"
@@ -2162,38 +2264,59 @@ export default function AryaChat() {
                   </span>
                 </div>
               ) : (
-                <textarea
-                  ref={inputRef}
-                  data-testid="input-chat"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Ask ARYA anything..."
-                  disabled={isStreaming}
-                  rows={1}
-                  className="flex-1 resize-none bg-transparent border-0 text-gray-900 dark:text-white placeholder:text-muted-foreground text-sm focus:outline-none py-2 max-h-32"
-                  style={{
-                    height: "auto",
-                    minHeight: "2.25rem",
-                    overflow: input.split("\n").length > 4 ? "auto" : "hidden",
-                  }}
-                  onInput={(e) => {
-                    const target = e.target as HTMLTextAreaElement;
-                    target.style.height = "auto";
-                    target.style.height = Math.min(target.scrollHeight, 128) + "px";
-                  }}
-                />
+                <div className="flex-1 flex flex-col min-w-0">
+                  {pendingImage && (
+                    <div className="flex items-center gap-2 px-1 pt-1.5 pb-1">
+                      <div className="relative flex-shrink-0">
+                        <img
+                          src={pendingImage.previewUrl}
+                          alt="Selected"
+                          className="h-12 w-12 rounded-lg object-cover border border-purple-200 dark:border-purple-800"
+                        />
+                        <button
+                          onClick={() => setPendingImage(null)}
+                          className="absolute -top-1 -right-1 bg-gray-800 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] leading-none hover:bg-gray-700"
+                          data-testid="button-remove-image"
+                        >✕</button>
+                      </div>
+                      <span className="text-xs text-purple-600 dark:text-purple-400 font-medium">
+                        {isScanningDoc ? "Reading image..." : "Image attached — add a question or send"}
+                      </span>
+                    </div>
+                  )}
+                  <textarea
+                    ref={inputRef}
+                    data-testid="input-chat"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder={pendingImage ? "Ask about this image (optional)..." : "Ask ARYA anything..."}
+                    disabled={isStreaming || isScanningDoc}
+                    rows={1}
+                    className="w-full resize-none bg-transparent border-0 text-gray-900 dark:text-white placeholder:text-muted-foreground text-sm focus:outline-none py-2 max-h-32"
+                    style={{
+                      height: "auto",
+                      minHeight: "2.25rem",
+                      overflow: input.split("\n").length > 4 ? "auto" : "hidden",
+                    }}
+                    onInput={(e) => {
+                      const target = e.target as HTMLTextAreaElement;
+                      target.style.height = "auto";
+                      target.style.height = Math.min(target.scrollHeight, 128) + "px";
+                    }}
+                  />
+                </div>
               )}
 
               <Button
                 data-testid="button-send"
                 variant="ghost"
                 size="icon"
-                onClick={() => sendMessage(input)}
-                disabled={!input.trim() || isStreaming || isRecording}
+                onClick={() => pendingImage ? sendWithImage() : sendMessage(input)}
+                disabled={(!input.trim() && !pendingImage) || isStreaming || isRecording || isScanningDoc}
                 className="flex-shrink-0 rounded-full h-9 w-9 md:h-10 md:w-10 text-primary hover:bg-primary/10 disabled:opacity-30"
               >
-                {isStreaming ? (
+                {isStreaming || isScanningDoc ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
                 ) : (
                   <Send className="w-5 h-5" />

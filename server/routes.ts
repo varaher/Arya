@@ -1503,6 +1503,57 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/arya/conversations/:id/scan", optionalUser, async (req: Request, res: Response) => {
+    try {
+      const conversationId = parseInt(req.params.id);
+      const { image, mimeType = "image/jpeg", question, language } = req.body;
+
+      if (!image) return res.status(400).json({ error: "Image data required" });
+
+      const userQuestion = question?.trim() || "What is in this image? Please explain it clearly and helpfully.";
+      const userMessageForStorage = question?.trim() ? `📷 ${question.trim()}` : "📷 Shared an image";
+
+      const { openai } = await import("./replit_integrations/audio/client");
+      const visionResponse = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: `You are ARYA (Augmented Reasoning & Yielding Awareness), a warm, wise personal thinking & growth assistant. When analyzing images and documents, be clear, practical, and compassionate. For medical reports or health documents, explain findings in simple language without causing alarm — be reassuring and suggest consulting a doctor for anything serious. For text documents, summarize key points clearly. For general images, describe and provide relevant insights. Always be encouraging and helpful like a wise friend.`,
+          },
+          {
+            role: "user",
+            content: [
+              { type: "image_url", image_url: { url: `data:${mimeType};base64,${image}`, detail: "high" } as any },
+              { type: "text", text: userQuestion },
+            ],
+          },
+        ],
+        max_tokens: 1200,
+      } as any);
+
+      const aryaResponse = (visionResponse as any).choices?.[0]?.message?.content || "I couldn't read that image clearly. Please try with a clearer photo.";
+
+      await chatStorage.createMessage(conversationId, "user", userMessageForStorage);
+      await chatStorage.createMessage(conversationId, "assistant", aryaResponse);
+
+      let translatedResponse = null;
+      if (isIndianLanguage(language) && process.env.SARVAM_API_KEY) {
+        try {
+          const translation = await sarvamTranslate(aryaResponse, "en-IN", language);
+          translatedResponse = translation.translatedText;
+        } catch (e) {
+          console.error("[Scan] Translation error:", e);
+        }
+      }
+
+      res.json({ userMessage: userMessageForStorage, aryaResponse, translatedResponse, language: language || "en-IN" });
+    } catch (error: any) {
+      console.error("[SCAN ERROR]", error.message);
+      res.status(500).json({ error: "Failed to analyze image. Please try again." });
+    }
+  });
+
   app.get("/api/arya/languages", (_req: Request, res: Response) => {
     res.json({ languages: SUPPORTED_LANGUAGES });
   });
