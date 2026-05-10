@@ -2016,6 +2016,32 @@ export default function AryaChat() {
                     <span className="block text-xs mt-0.5">{suggestion.text}</span>
                   </motion.button>
                 ))}
+
+                {/* Talk to ARYA — full-width featured card */}
+                <motion.button
+                  data-testid="button-suggestion-talk"
+                  onClick={() => setShowVoiceMode(true)}
+                  className="col-span-1 sm:col-span-2 text-left px-4 py-3 rounded-xl border border-cyan-200 dark:border-cyan-800/60 bg-gradient-to-r from-cyan-50/80 to-blue-50/60 dark:from-cyan-950/40 dark:to-blue-950/30 hover:from-cyan-50 hover:to-blue-50 dark:hover:from-cyan-950/60 dark:hover:to-blue-950/50 hover:border-cyan-300 dark:hover:border-cyan-700 transition-all group"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.82 }}
+                  whileHover={{ scale: 1.01, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <span className="text-[9px] uppercase tracking-wider font-semibold text-cyan-600 dark:text-cyan-400/70 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 mb-1 flex items-center gap-1">
+                        <Mic className="w-2.5 h-2.5" /> Talk to ARYA
+                      </span>
+                      <span className="block text-xs text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200 mt-0.5">
+                        Speak freely — ARYA listens, thinks, and replies in your language. Hands-free, like talking to your PA.
+                      </span>
+                    </div>
+                    <div className="ml-3 w-8 h-8 rounded-full bg-cyan-100 dark:bg-cyan-900/40 flex items-center justify-center flex-shrink-0 group-hover:bg-cyan-200 dark:group-hover:bg-cyan-800/60 transition-colors">
+                      <Mic className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                    </div>
+                  </div>
+                </motion.button>
               </motion.div>
             </motion.div>
           )}
