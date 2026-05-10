@@ -1435,8 +1435,24 @@ export async function registerRoutes(
       } else {
         const isoLang = (language || "en-IN").split("-")[0] || "en";
         userTranscript = await speechToText(audioBuffer, inputFormat, isoLang);
+        // Safety check: if transcript contains CJK characters (Chinese/Japanese/Korean)
+        // but we expected English or Hindi, the model misdetected the language — discard it
+        const hasCJK = /[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]/.test(userTranscript);
+        if (hasCJK) {
+          console.warn(`[Voice] CJK characters detected in transcript for lang=${isoLang}, discarding: "${userTranscript.slice(0, 50)}"`);
+          userTranscript = "";
+        }
         queryForArya = userTranscript;
         detectedLanguage = "en-IN";
+      }
+
+      if (!queryForArya.trim()) {
+        res.setHeader("Content-Type", "text/event-stream");
+        res.setHeader("Cache-Control", "no-cache");
+        res.setHeader("Connection", "keep-alive");
+        res.write(`data: ${JSON.stringify({ type: "error", content: "I couldn't catch that clearly. Please speak again." })}\n\n`);
+        res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
+        return res.end();
       }
 
       await chatStorage.createMessage(conversationId, "user", userTranscript);

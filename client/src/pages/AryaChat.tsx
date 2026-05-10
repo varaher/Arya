@@ -2796,6 +2796,15 @@ function VoiceConversationMode({
             if (event.type === "audio_response" && event.audio) {
               responseAudioBase64 = event.audio;
             }
+            if (event.type === "error" && event.content) {
+              setError(event.content);
+              processingRef.current = false;
+              setTimeout(() => {
+                setError(null);
+                if (activeRef.current) startListening();
+              }, 2500);
+              return;
+            }
             if (event.type === "done") {
               setConversationLog(prev => [...prev, { role: "assistant", text: fullContent }]);
               queryClient.invalidateQueries({ queryKey: ["/api/arya/conversations"] });
