@@ -9,7 +9,7 @@ import type { Domain } from "@shared/schema";
 import { db } from "../db";
 import { aryaGoals, aryaGoalSteps, aryaNotifications, aryaUsers, aryaReminders } from "@shared/schema";
 import { eq } from "drizzle-orm";
-import { fetchLatestNews, formatNewsForChat } from "./news-service";
+import { fetchLatestNews, fetchMarketNews, formatNewsForChat } from "./news-service";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -269,21 +269,37 @@ export async function generateAryaResponse(
     ? `\n\nRelevant knowledge context (use naturally, do NOT cite or reference):\n${contextPieces.slice(0, 6).join("\n\n")}`
     : "";
 
-  // Inject live news headlines when user is asking about news/current events
+  // Detect query intent for real-time data injection
+  const isMarketQuery = /\b(stock|stocks|share price|nifty|sensex|nse|bse|market|markets|equity|mutual fund|portfolio|invest|trading|trader|ipo|sebi|rupee|dollar|forex|crypto|bitcoin|gold price|silver price|commodity|commodities|sensex today|nifty today|rally|crash|bull|bear|circuit breaker|upper circuit|lower circuit)\b/i.test(userMessage);
+  const isNewsQuery = /\b(news|headlines|latest|today|current events|happening|update|what.*going on|what.*india|what.*world|recent|breaking|just happened)\b/i.test(userMessage);
+  const isTechQuery = /\b(tech news|startup|ai news|artificial intelligence news|launch|product launch|apple|google|microsoft|openai|isro|chandrayaan|gaganyaan)\b/i.test(userMessage);
+
   let newsContext = "";
-  const newsKeywords = /\b(news|headlines|latest|today|current events|happening|update|what.*going on|what.*india|what.*world)\b/i;
-  if (newsKeywords.test(userMessage)) {
+
+  if (isMarketQuery) {
+    // Fetch dedicated market feeds (10-min cache — much fresher than general news)
+    try {
+      const marketHeadlines = await fetchMarketNews();
+      if (marketHeadlines.length > 0) {
+        const formatted = formatNewsForChat(marketHeadlines, undefined, 10);
+        if (formatted) {
+          newsContext = `\n\nLIVE MARKET & FINANCIAL NEWS (refreshed every 10 minutes from ET Markets, Moneycontrol, NDTV Profit):\n${formatted}\n\nUse these to answer the user's question about markets/stocks. Focus on what's relevant to their specific query. Give your analysis — don't just repeat headlines. Note: for live stock prices, advise the user to check NSE/BSE/Moneycontrol directly as prices update every second.`;
+        }
+      }
+    } catch {}
+  } else if (isNewsQuery || isTechQuery) {
+    // Fetch general news
     try {
       const headlines = await fetchLatestNews();
       if (headlines.length > 0) {
-        const category = /\b(business|market|economy|stock)\b/i.test(userMessage) ? "business"
+        const category = isTechQuery ? "tech"
           : /\b(world|global|international|abroad)\b/i.test(userMessage) ? "world"
           : /\b(sport|cricket|football|ipl)\b/i.test(userMessage) ? "sport"
-          : /\b(science|tech|technology|space)\b/i.test(userMessage) ? "science"
+          : /\b(science|space|isro|nasa|discovery|research)\b/i.test(userMessage) ? "science"
           : "india";
-        const formatted = formatNewsForChat(headlines, category, 6);
+        const formatted = formatNewsForChat(headlines, category, 8);
         if (formatted) {
-          newsContext = `\n\nLIVE NEWS HEADLINES (today, from Indian sources — use these to answer current events questions):\n${formatted}\n\nPresent these with Indian perspective — analyze implications for India first, then global context. Do NOT just list them; provide brief commentary from India's standpoint.`;
+          newsContext = `\n\nLIVE NEWS HEADLINES (from Indian sources — refreshed every 30 minutes):\n${formatted}\n\nPresent with Indian perspective — analyze implications for India first, then global context. Provide brief commentary, don't just list headlines.`;
         }
       }
     } catch {}
