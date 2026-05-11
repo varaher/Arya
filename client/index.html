@@ -25,24 +25,49 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+      /* Hide Replit deployment badge — all known patterns */
+      #replit-badge,
+      #replit-badge-container,
+      [data-cy="feedback-button"],
+      [data-testid="replit-badge"],
+      a[href*="replit.com/badge"],
+      iframe[src*="replit.com"],
+      iframe[src*="replit.dev"],
+      div[class*="replit-badge"],
+      div[id*="replit-badge"],
+      div[class*="replitBadge"],
+      div[id*="replitBadge"] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        width: 0 !important;
+        height: 0 !important;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
-      // Remove Replit's injected deployment badge
       (function () {
-        function removeReplitBadge() {
-          // Target by common Replit badge identifiers
-          var selectors = [
-            '#replit-badge',
-            '[data-cy="feedback-button"]',
-            'a[href*="replit.com/badge"]',
-            'iframe[src*="replit.com"]',
-            'div[class*="replit-badge"]',
-            'div[id*="replit-badge"]',
-          ];
-          selectors.forEach(function (sel) {
+        var BADGE_SELECTORS = [
+          '#replit-badge',
+          '#replit-badge-container',
+          '[data-cy="feedback-button"]',
+          '[data-testid="replit-badge"]',
+          'a[href*="replit.com/badge"]',
+          'iframe[src*="replit.com"]',
+          'iframe[src*="replit.dev"]',
+          'div[class*="replit-badge"]',
+          'div[id*="replit-badge"]',
+          'div[class*="replitBadge"]',
+        ];
+
+        function killBadge() {
+          // 1. Known selectors
+          BADGE_SELECTORS.forEach(function (sel) {
             try {
               document.querySelectorAll(sel).forEach(function (el) {
                 el.remove();
@@ -50,25 +75,60 @@
             } catch (e) {}
           });
 
-          // Broader sweep: any fixed-positioned element injected at body level
-          // that contains a link to replit.com
+          // 2. Any fixed/absolute element at body root level that smells like Replit
           try {
-            document.querySelectorAll('body > div').forEach(function (el) {
-              var style = window.getComputedStyle(el);
-              if (style.position === 'fixed') {
-                var html = el.innerHTML || '';
-                if (html.includes('replit') || html.includes('Replit')) {
-                  el.style.setProperty('display', 'none', 'important');
+            document.querySelectorAll('body > *:not(#root):not(script):not(style)').forEach(function (el) {
+              var tag = el.tagName || '';
+              var id = (el.id || '').toLowerCase();
+              var cls = (el.className || '').toLowerCase();
+              var src = (el.getAttribute('src') || '').toLowerCase();
+
+              var looksLikeReplit =
+                id.includes('replit') ||
+                cls.includes('replit') ||
+                src.includes('replit') ||
+                tag === 'IFRAME' && (src.includes('replit') || src.includes('repl.it'));
+
+              if (!looksLikeReplit) {
+                // Check computed style: fixed position in the bottom-right corner
+                var style = window.getComputedStyle(el);
+                if (style.position === 'fixed') {
+                  var bottom = parseInt(style.bottom, 10);
+                  var right = parseInt(style.right, 10);
+                  if (!isNaN(bottom) && !isNaN(right) && bottom < 100 && right < 100) {
+                    // Check innerHTML / outerHTML for Replit markers
+                    var html = (el.outerHTML || '').toLowerCase();
+                    if (html.includes('replit') || html.includes('repl.it')) {
+                      looksLikeReplit = true;
+                    }
+                  }
                 }
+              }
+
+              if (looksLikeReplit) {
+                el.style.setProperty('display', 'none', 'important');
+                el.style.setProperty('visibility', 'hidden', 'important');
+                el.style.setProperty('pointer-events', 'none', 'important');
+                el.style.setProperty('opacity', '0', 'important');
+                try { el.remove(); } catch(e) {}
               }
             });
           } catch (e) {}
         }
 
-        // Run immediately and on every DOM change
-        removeReplitBadge();
-        var observer = new MutationObserver(removeReplitBadge);
-        observer.observe(document.body, { childList: true, subtree: false });
+        // Run immediately
+        killBadge();
+
+        // Run on any DOM mutation (subtree: true catches shadow host insertions)
+        var observer = new MutationObserver(killBadge);
+        observer.observe(document.documentElement, { childList: true, subtree: true });
+
+        // Belt-and-suspenders: poll for 30 seconds after page load
+        var polls = 0;
+        var interval = setInterval(function () {
+          killBadge();
+          if (++polls >= 60) clearInterval(interval);
+        }, 500);
       })();
     </script>
   </body>
