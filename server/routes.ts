@@ -474,6 +474,60 @@ export async function registerRoutes(
   });
 
   // =============================================
+  // USER PROFILE
+  // =============================================
+
+  app.get("/api/user/profile", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const [user] = await db.select({
+        name: aryaUsers.name,
+        email: aryaUsers.email,
+        phone: aryaUsers.phone,
+        age: (aryaUsers as any).age,
+        city: (aryaUsers as any).city,
+        occupation: (aryaUsers as any).occupation,
+        lifeStage: (aryaUsers as any).lifeStage,
+        familySituation: (aryaUsers as any).familySituation,
+        interests: (aryaUsers as any).interests,
+        currentChallenges: (aryaUsers as any).currentChallenges,
+        workingStyle: (aryaUsers as any).workingStyle,
+        currentWork: aryaUsers.currentWork,
+      }).from(aryaUsers).where(eq(aryaUsers.id, userId)).limit(1);
+      if (!user) return res.status(404).json({ error: "User not found" });
+      res.json(user);
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to get profile" });
+    }
+  });
+
+  app.post("/api/user/profile", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const { age, city, occupation, lifeStage, familySituation, interests, currentChallenges, workingStyle } = req.body;
+
+      const updates: any = {};
+      if (age !== undefined) updates.age = age ? Number(age) : null;
+      if (city !== undefined) updates.city = city || null;
+      if (occupation !== undefined) updates.occupation = occupation || null;
+      if (lifeStage !== undefined) updates.lifeStage = lifeStage || null;
+      if (familySituation !== undefined) updates.familySituation = familySituation || null;
+      if (Array.isArray(interests)) updates.interests = interests.filter(Boolean).slice(0, 10);
+      if (currentChallenges !== undefined) updates.currentChallenges = currentChallenges || null;
+      if (workingStyle !== undefined) updates.workingStyle = workingStyle || null;
+
+      if (Object.keys(updates).length === 0) {
+        return res.status(400).json({ error: "No valid fields provided" });
+      }
+
+      await db.update(aryaUsers).set(updates as any).where(eq(aryaUsers.id, userId));
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to save profile" });
+    }
+  });
+
+  // =============================================
   // USER RESPONSE PREFERENCES
   // =============================================
 

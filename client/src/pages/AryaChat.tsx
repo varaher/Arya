@@ -730,6 +730,284 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
   );
 }
 
+const INTEREST_OPTIONS = [
+  "Reading", "Fitness", "Cooking", "Travel", "Music", "Art", "Photography",
+  "Technology", "Gaming", "Meditation", "Yoga", "Writing", "Finance",
+  "Entrepreneurship", "Nature", "Cricket", "Football", "Cinema", "Podcasts",
+];
+
+function UserProfileModal({ token, onClose, userName }: { token: string; onClose: () => void; userName: string }) {
+  const queryClient = useQueryClient();
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [interestInput, setInterestInput] = useState("");
+
+  const [form, setForm] = useState({
+    age: "",
+    city: "",
+    occupation: "",
+    lifeStage: "",
+    familySituation: "",
+    interests: [] as string[],
+    currentChallenges: "",
+    workingStyle: "",
+  });
+
+  const { data: profile, isLoading } = useQuery<any>({
+    queryKey: ["/api/user/profile"],
+    queryFn: async () => {
+      const res = await fetch("/api/user/profile", { headers: { "x-user-token": token } });
+      return res.json();
+    },
+  });
+
+  useEffect(() => {
+    if (profile) {
+      setForm({
+        age: profile.age ? String(profile.age) : "",
+        city: profile.city || "",
+        occupation: profile.occupation || profile.currentWork || "",
+        lifeStage: profile.lifeStage || "",
+        familySituation: profile.familySituation || "",
+        interests: Array.isArray(profile.interests) ? profile.interests : [],
+        currentChallenges: profile.currentChallenges || "",
+        workingStyle: profile.workingStyle || "",
+      });
+    }
+  }, [profile]);
+
+  const toggleInterest = (val: string) => {
+    setForm(f => ({
+      ...f,
+      interests: f.interests.includes(val) ? f.interests.filter(i => i !== val) : [...f.interests, val],
+    }));
+  };
+
+  const addCustomInterest = () => {
+    const v = interestInput.trim();
+    if (v && !form.interests.includes(v) && form.interests.length < 10) {
+      setForm(f => ({ ...f, interests: [...f.interests, v] }));
+      setInterestInput("");
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await fetch("/api/user/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-user-token": token },
+        body: JSON.stringify({ ...form, age: form.age ? Number(form.age) : null }),
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/profile"] });
+      setSaved(true);
+      setTimeout(() => { setSaved(false); onClose(); }, 1000);
+    } catch {}
+    setSaving(false);
+  };
+
+  const btn = (field: keyof typeof form, val: string, label: string) => (
+    <button
+      key={val}
+      data-testid={`profile-option-${field}-${val}`}
+      onClick={() => setForm(f => ({ ...f, [field]: f[field as keyof typeof form] === val ? "" : val }))}
+      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
+        form[field] === val
+          ? "bg-cyan-50 dark:bg-cyan-900/30 border-cyan-300 dark:border-cyan-700 text-cyan-700 dark:text-cyan-300"
+          : "bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-600 text-gray-500 dark:text-gray-400 hover:border-cyan-200 dark:hover:border-cyan-800"
+      }`}
+    >{label}</button>
+  );
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50 p-4">
+      <motion.div
+        initial={{ scale: 0.92, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.92, opacity: 0, y: 20 }}
+        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh]"
+        data-testid="profile-modal"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-slate-700 flex-shrink-0">
+          <div>
+            <h2 className="text-base font-semibold text-gray-900 dark:text-white font-['Space_Grotesk']">My Profile</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">Help ARYA understand you better</p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-400" data-testid="button-close-profile">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+          {isLoading ? (
+            <div className="flex justify-center py-10">
+              <Loader2 className="w-5 h-5 animate-spin text-cyan-500" />
+            </div>
+          ) : (
+            <>
+              {/* About you */}
+              <div>
+                <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">About you</div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-muted-foreground mb-1.5">Age</label>
+                    <input
+                      data-testid="input-profile-age"
+                      type="number"
+                      min={10} max={99}
+                      placeholder="e.g. 28"
+                      value={form.age}
+                      onChange={e => setForm(f => ({ ...f, age: e.target.value }))}
+                      className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl text-sm text-gray-900 dark:text-white px-3 py-2.5 focus:outline-none focus:border-cyan-300 dark:focus:border-cyan-700"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-muted-foreground mb-1.5">City</label>
+                    <input
+                      data-testid="input-profile-city"
+                      type="text"
+                      placeholder="e.g. Mumbai"
+                      value={form.city}
+                      onChange={e => setForm(f => ({ ...f, city: e.target.value }))}
+                      className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl text-sm text-gray-900 dark:text-white px-3 py-2.5 focus:outline-none focus:border-cyan-300 dark:focus:border-cyan-700"
+                    />
+                  </div>
+                </div>
+                <div className="mt-3">
+                  <label className="block text-xs text-muted-foreground mb-1.5">What do you do?</label>
+                  <input
+                    data-testid="input-profile-occupation"
+                    type="text"
+                    placeholder="e.g. Doctor, Software engineer, Student, Business owner…"
+                    value={form.occupation}
+                    onChange={e => setForm(f => ({ ...f, occupation: e.target.value }))}
+                    className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl text-sm text-gray-900 dark:text-white px-3 py-2.5 focus:outline-none focus:border-cyan-300 dark:focus:border-cyan-700"
+                  />
+                </div>
+              </div>
+
+              {/* Life stage */}
+              <div>
+                <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Life stage</div>
+                <div className="flex flex-wrap gap-2">
+                  {btn("lifeStage", "student", "Student")}
+                  {btn("lifeStage", "early_career", "Early career")}
+                  {btn("lifeStage", "professional", "Professional")}
+                  {btn("lifeStage", "entrepreneur", "Entrepreneur")}
+                  {btn("lifeStage", "parent", "Parent")}
+                  {btn("lifeStage", "senior", "Senior professional")}
+                  {btn("lifeStage", "retired", "Retired")}
+                </div>
+              </div>
+
+              {/* Family */}
+              <div>
+                <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Personal life</div>
+                <div className="flex flex-wrap gap-2">
+                  {btn("familySituation", "single", "Single")}
+                  {btn("familySituation", "partnered", "In a relationship")}
+                  {btn("familySituation", "married", "Married")}
+                  {btn("familySituation", "married_with_kids", "Married with kids")}
+                  {btn("familySituation", "single_parent", "Single parent")}
+                </div>
+              </div>
+
+              {/* Working style */}
+              <div>
+                <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">How you work best</div>
+                <div className="flex flex-wrap gap-2">
+                  {btn("workingStyle", "early_bird", "🌅 Early bird")}
+                  {btn("workingStyle", "night_owl", "🌙 Night owl")}
+                  {btn("workingStyle", "structured", "📋 Structured")}
+                  {btn("workingStyle", "flexible", "🌊 Flexible")}
+                </div>
+              </div>
+
+              {/* Interests */}
+              <div>
+                <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
+                  Interests & hobbies
+                  <span className="ml-2 font-normal text-gray-400 normal-case">({form.interests.length}/10 selected)</span>
+                </div>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {INTEREST_OPTIONS.map(opt => (
+                    <button
+                      key={opt}
+                      data-testid={`profile-interest-${opt}`}
+                      onClick={() => toggleInterest(opt)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
+                        form.interests.includes(opt)
+                          ? "bg-cyan-50 dark:bg-cyan-900/30 border-cyan-300 dark:border-cyan-700 text-cyan-700 dark:text-cyan-300"
+                          : "bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-600 text-gray-500 dark:text-gray-400 hover:border-cyan-200 dark:hover:border-cyan-800"
+                      }`}
+                    >{opt}</button>
+                  ))}
+                </div>
+                <div className="flex gap-2 mt-2">
+                  <input
+                    data-testid="input-profile-custom-interest"
+                    type="text"
+                    placeholder="Add your own…"
+                    value={interestInput}
+                    onChange={e => setInterestInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addCustomInterest(); } }}
+                    className="flex-1 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl text-sm text-gray-900 dark:text-white px-3 py-2 focus:outline-none focus:border-cyan-300 dark:focus:border-cyan-700"
+                  />
+                  <button
+                    data-testid="button-add-custom-interest"
+                    onClick={addCustomInterest}
+                    className="px-3 py-2 rounded-xl bg-cyan-50 dark:bg-cyan-900/30 border border-cyan-200 dark:border-cyan-800 text-cyan-600 dark:text-cyan-400 text-xs font-medium hover:bg-cyan-100 dark:hover:bg-cyan-900/50 transition-all"
+                  >Add</button>
+                </div>
+                {form.interests.filter(i => !INTEREST_OPTIONS.includes(i)).length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {form.interests.filter(i => !INTEREST_OPTIONS.includes(i)).map(i => (
+                      <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs bg-cyan-50 dark:bg-cyan-900/30 border border-cyan-300 dark:border-cyan-700 text-cyan-700 dark:text-cyan-300">
+                        {i}
+                        <button onClick={() => setForm(f => ({ ...f, interests: f.interests.filter(x => x !== i) }))} className="hover:text-red-500"><X className="w-3 h-3" /></button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Current challenges */}
+              <div>
+                <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">What are you working through right now?</div>
+                <p className="text-xs text-muted-foreground mb-2">ARYA will be especially tuned in to help you with this.</p>
+                <textarea
+                  data-testid="input-profile-challenges"
+                  rows={3}
+                  placeholder="e.g. Building discipline, managing work-life balance, growing my startup, improving my health…"
+                  value={form.currentChallenges}
+                  onChange={e => setForm(f => ({ ...f, currentChallenges: e.target.value }))}
+                  className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl text-sm text-gray-900 dark:text-white px-3 py-2.5 focus:outline-none focus:border-cyan-300 dark:focus:border-cyan-700 resize-none"
+                />
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-5 py-4 border-t border-gray-100 dark:border-slate-700 flex-shrink-0">
+          <button
+            data-testid="button-save-profile"
+            onClick={handleSave}
+            disabled={saving || isLoading}
+            className="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white text-sm font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <Check className="w-4 h-4" /> : <User className="w-4 h-4" />}
+            {saving ? "Saving…" : saved ? "Saved!" : "Save Profile"}
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 function CalendarPanel({ onClose, token }: { onClose: () => void; token: string }) {
   const [connected, setConnected] = useState<boolean | null>(null);
   const [connecting, setConnecting] = useState(false);
@@ -1619,6 +1897,7 @@ export default function AryaChat() {
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const [showPricing, setShowPricing] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -2468,6 +2747,13 @@ export default function AryaChat() {
                       </button>
                     )}
                     <div className="border-t border-gray-100 dark:border-slate-700 my-1" />
+                    <button
+                      data-testid="button-my-profile-sidebar"
+                      onClick={() => { setShowUserMenu(false); setShowProfile(true); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
+                    >
+                      <User className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" /> My Profile
+                    </button>
                     <button
                       data-testid="button-my-goals-sidebar"
                       onClick={() => { setShowUserMenu(false); setLocation("/my-goals"); }}
@@ -3354,6 +3640,20 @@ export default function AryaChat() {
               const tutorialDone = localStorage.getItem("arya_tutorial_done") === "true";
               if (!tutorialDone) setShowTutorial(true);
             }} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showProfile && token && (
+          <motion.div
+            key="profile-modal"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50"
+          >
+            <UserProfileModal token={token} onClose={() => setShowProfile(false)} userName={user?.name || ""} />
           </motion.div>
         )}
       </AnimatePresence>

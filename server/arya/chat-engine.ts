@@ -192,12 +192,67 @@ async function getUserPreferenceContext(userId?: string | null): Promise<string>
       focusAreas: aryaUsers.focusAreas,
       wisdomQuotes: aryaUsers.wisdomQuotes,
       currentWork: aryaUsers.currentWork,
+      age: (aryaUsers as any).age,
+      city: (aryaUsers as any).city,
+      occupation: (aryaUsers as any).occupation,
+      lifeStage: (aryaUsers as any).lifeStage,
+      familySituation: (aryaUsers as any).familySituation,
+      interests: (aryaUsers as any).interests,
+      currentChallenges: (aryaUsers as any).currentChallenges,
+      workingStyle: (aryaUsers as any).workingStyle,
     }).from(aryaUsers).where(eq(aryaUsers.id, userId)).limit(1);
     if (!user) return "";
 
-    const parts: string[] = ["\n\nUSER PREFERENCES (customize your responses based on these):"];
-    if (user.name) parts.push(`- User's name: ${user.name}`);
-    if (user.currentWork) parts.push(`- Occupation/Work: ${user.currentWork}`);
+    const parts: string[] = ["\n\nUSER PROFILE & PREFERENCES (use these to deeply personalize every response):"];
+    if (user.name) parts.push(`- Name: ${user.name}`);
+    if ((user as any).age) parts.push(`- Age: ${(user as any).age}`);
+    if ((user as any).city) parts.push(`- Location: ${(user as any).city}`);
+    if ((user as any).occupation) parts.push(`- Occupation: ${(user as any).occupation}`);
+    if (user.currentWork) parts.push(`- Current work/role: ${user.currentWork}`);
+
+    const lifeStageMap: Record<string, string> = {
+      student: "student",
+      early_career: "early in their career",
+      professional: "an established professional",
+      entrepreneur: "an entrepreneur",
+      parent: "a parent",
+      senior: "a senior professional",
+      retired: "retired",
+    };
+    if ((user as any).lifeStage && lifeStageMap[(user as any).lifeStage]) {
+      parts.push(`- Life stage: ${lifeStageMap[(user as any).lifeStage]}`);
+    }
+
+    const familyMap: Record<string, string> = {
+      single: "single",
+      partnered: "in a relationship",
+      married: "married",
+      married_with_kids: "married with children",
+      single_parent: "a single parent",
+    };
+    if ((user as any).familySituation && familyMap[(user as any).familySituation]) {
+      parts.push(`- Family situation: ${familyMap[(user as any).familySituation]}`);
+    }
+
+    const workStyleMap: Record<string, string> = {
+      early_bird: "an early bird (most productive in the mornings)",
+      night_owl: "a night owl (most productive late at night)",
+      structured: "someone who thrives on structure and routine",
+      flexible: "someone who prefers flexible, adaptive workflows",
+    };
+    if ((user as any).workingStyle && workStyleMap[(user as any).workingStyle]) {
+      parts.push(`- Working style: ${workStyleMap[(user as any).workingStyle]}`);
+    }
+
+    if ((user as any).interests && Array.isArray((user as any).interests) && (user as any).interests.length > 0) {
+      parts.push(`- Personal interests: ${(user as any).interests.join(", ")}`);
+    }
+    if (user.focusAreas && user.focusAreas.length > 0) {
+      parts.push(`- Focus areas: ${user.focusAreas.join(", ")}. Relate advice to these when relevant.`);
+    }
+    if ((user as any).currentChallenges) {
+      parts.push(`- Currently working through: ${(user as any).currentChallenges}. Be especially helpful and empathetic around these themes.`);
+    }
 
     const styleMap: Record<string, string> = {
       concise: "Keep responses short and to the point. Use bullet points. No unnecessary elaboration.",
@@ -209,17 +264,13 @@ async function getUserPreferenceContext(userId?: string | null): Promise<string>
     }
 
     const toneMap: Record<string, string> = {
-      motivating: "Be energetic, inspiring, and encouraging. Push the user to grow and achieve. Use phrases like 'You've got this' or 'Let's make it happen.'",
-      gentle: "Be soft, patient, and compassionate. Never rush. Acknowledge feelings first. Use calm, reassuring language.",
-      direct: "Be straightforward and no-nonsense. Skip pleasantries and get to the point. Give clear actionable advice.",
-      friendly: "Be warm, casual, and conversational. Like talking to a close friend. Use light humor when appropriate.",
+      motivating: "Be energetic, inspiring, and encouraging. Push the user to grow and achieve.",
+      gentle: "Be soft, patient, and compassionate. Acknowledge feelings first. Use calm, reassuring language.",
+      direct: "Be straightforward and no-nonsense. Skip pleasantries and get to the point.",
+      friendly: "Be warm, casual, and conversational. Like talking to a close friend.",
     };
     if (user.responseTone && toneMap[user.responseTone]) {
       parts.push(`- Tone: ${toneMap[user.responseTone]}`);
-    }
-
-    if (user.focusAreas && user.focusAreas.length > 0) {
-      parts.push(`- Focus areas of interest: ${user.focusAreas.join(", ")}. Relate advice to these areas when relevant.`);
     }
 
     const wisdomMap: Record<string, string> = {
