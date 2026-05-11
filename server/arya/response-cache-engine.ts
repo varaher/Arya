@@ -284,6 +284,21 @@ export class ResponseCacheEngine {
     };
   }
 
+  async incrementServedCount(cacheId: string): Promise<void> {
+    try {
+      await db
+        .update(aryaResponseCache)
+        .set({
+          servedCount: sql`${aryaResponseCache.servedCount} + 1`,
+          lastUsedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(aryaResponseCache.id, cacheId));
+    } catch (err) {
+      console.error("[ResponseCache] incrementServedCount error:", err);
+    }
+  }
+
   async getUserQueryForMessage(messageId: number, conversationId: number): Promise<string | null> {
     try {
       const allMessages = await db

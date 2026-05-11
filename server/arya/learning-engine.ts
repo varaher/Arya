@@ -1,6 +1,12 @@
+import OpenAI from "openai";
 import { db } from "../db";
 import { aryaKnowledgeDrafts, aryaQueryPatterns, aryaKnowledge, AryaKnowledgeDraft, AryaQueryPattern, Domain } from "@shared/schema";
 import { eq, and, desc, sql, gt } from "drizzle-orm";
+
+const openai = new OpenAI({
+  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+});
 
 export interface LearningSignal {
   tenantId: string;
@@ -76,18 +82,47 @@ export class LearningEngine {
 
   private async generateDraft(signal: LearningSignal, normalizedQuery: string): Promise<void> {
     const topic = this.generateTopicFromQuery(signal.query);
-    const content = this.generateDraftContent(signal.query, signal.domain);
+    let content = this.generateDraftContent(signal.query, signal.domain);
+    let confidenceScore = '0.40';
+    let sourceTitle = `Auto-learned from query pattern: "${normalizedQuery}"`;
+
+    try {
+      const completion = await (openai.chat.completions.create as Function)({
+        model: "gpt-4.1-mini",
+        messages: [
+          {
+            role: "system",
+            content: "You are a knowledge base curator for ARYA, an Indian personal AI assistant rooted in Bharatiya wisdom. Generate accurate, helpful, well-structured knowledge entries."
+          },
+          {
+            role: "user",
+            content: `Generate a comprehensive knowledge entry for ARYA's internal knowledge base.\n\nThis topic was detected from repeated user queries: "${signal.query}"\nDomain: ${signal.domain}\n\nWrite a clear, factual, well-organized entry (150–300 words) that ARYA can use to answer similar questions accurately. Include key facts, Indian context where relevant, and practical information. Write in a factual, third-person encyclopaedic style. Do NOT start with phrases like "This entry covers..." — go straight into the content.`
+          }
+        ],
+        max_completion_tokens: 450,
+      });
+
+      const generated = completion?.choices?.[0]?.message?.content;
+      if (generated && generated.length > 80) {
+        content = generated;
+        confidenceScore = '0.65';
+        sourceTitle = `AI-generated from query pattern: "${normalizedQuery}"`;
+        console.log(`[LEARNING] ✅ AI draft generated for gap: "${normalizedQuery.slice(0, 60)}" (${generated.length} chars)`);
+      }
+    } catch (err: any) {
+      console.error("[LEARNING] AI draft generation failed, using placeholder:", err.message);
+    }
 
     await db.insert(aryaKnowledgeDrafts).values({
       tenantId: signal.tenantId,
       domain: signal.domain,
-      topic: topic,
-      content: content,
+      topic,
+      content,
       tags: this.extractTags(signal.query),
       language: signal.language || 'en',
       sourceType: 'self_learned',
-      sourceTitle: `Auto-learned from query pattern: "${normalizedQuery}"`,
-      confidenceScore: '0.40',
+      sourceTitle,
+      confidenceScore,
       learnedFromQuery: signal.query,
       status: 'pending'
     });

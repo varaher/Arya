@@ -1587,6 +1587,7 @@ export default function AryaChat() {
   const [responseConfidence, setResponseConfidence] = useState<number | undefined>();
   const [responseSourcesCount, setResponseSourcesCount] = useState<number | undefined>();
   const [responseMemoryUsed, setResponseMemoryUsed] = useState(false);
+  const [responseFromCache, setResponseFromCache] = useState(false);
   const [showMemory, setShowMemory] = useState(false);
   const [showGoals, setShowGoals] = useState(false);
   const [showCustomize, setShowCustomize] = useState(false);
@@ -1831,6 +1832,7 @@ export default function AryaChat() {
     setResponseConfidence(undefined);
     setResponseSourcesCount(undefined);
     setResponseMemoryUsed(false);
+    setResponseFromCache(false);
 
     queryClient.setQueryData(
       ["/api/arya/conversations", convId],
@@ -1910,6 +1912,7 @@ export default function AryaChat() {
               if (event.confidence !== undefined) setResponseConfidence(event.confidence);
               if (event.sourcesCount !== undefined) setResponseSourcesCount(event.sourcesCount);
               if (event.memoryUsed) setResponseMemoryUsed(true);
+              if (event.fromCache) setResponseFromCache(true);
             }
             if (event.content) {
               fullContent += event.content;
@@ -1944,6 +1947,7 @@ export default function AryaChat() {
       setResponseConfidence(undefined);
       setResponseSourcesCount(undefined);
       setResponseMemoryUsed(false);
+      setResponseFromCache(false);
       queryClient.invalidateQueries({
         queryKey: ["/api/arya/conversations", convId],
       });
@@ -2937,7 +2941,12 @@ export default function AryaChat() {
                   <span className="text-xs font-semibold bg-gradient-to-r from-emerald-500 to-amber-400 bg-clip-text text-transparent">
                     ARYA
                   </span>
-                  {responseMode === "instant" && (
+                  {responseMode === "instant" && responseFromCache && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400 font-medium border border-cyan-200 dark:border-cyan-800 flex items-center gap-0.5">
+                      ⚡ From memory
+                    </span>
+                  )}
+                  {responseMode === "instant" && !responseFromCache && (
                     <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 font-medium border border-amber-200 dark:border-amber-800">
                       Instant
                     </span>

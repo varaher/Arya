@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Brain, TrendingUp, AlertTriangle, CheckCircle, XCircle, Lightbulb, BarChart3, Clock } from "lucide-react";
+import { Brain, TrendingUp, AlertTriangle, CheckCircle, XCircle, Lightbulb, BarChart3, Clock, Zap, Database, Activity } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -22,6 +22,25 @@ interface LearningStats {
     avgConfidence: string;
     isGap: boolean;
     lastSeen: string;
+  }>;
+}
+
+interface CacheStats {
+  totalCached: number;
+  activeCached: number;
+  totalHits: number;
+  totalMisses: number;
+  hitRate: number;
+  avgMatchScore: number;
+  topCachedResponses: Array<{
+    id: string;
+    originalQuery: string;
+    positiveFeedbackCount: number;
+    negativeFeedbackCount: number;
+    servedCount: number;
+    confidenceScore: string;
+    domain: string;
+    updatedAt: string;
   }>;
 }
 
@@ -80,6 +99,17 @@ export default function SelfLearning() {
       const res = await fetch('/api/learning/patterns?tenant_id=varah');
       return res.json();
     }
+  });
+
+  const { data: cacheStats } = useQuery<CacheStats>({
+    queryKey: ['/api/learning/cache/stats'],
+    queryFn: async () => {
+      const res = await fetch('/api/learning/cache/stats?tenant_id=varah', {
+        headers: { 'x-admin-token': localStorage.getItem('arya_admin_token') || '' }
+      });
+      return res.json();
+    },
+    refetchInterval: 15000
   });
 
   const approveMutation = useMutation({
@@ -199,6 +229,70 @@ export default function SelfLearning() {
 
       {activeTab === 'overview' && (
         <div className="space-y-4">
+
+          {/* Cache Performance Card */}
+          <Card className="bg-card/50 border-border/50" data-testid="card-cache-stats">
+            <CardHeader>
+              <CardTitle className="text-lg font-display flex items-center gap-2">
+                <Zap className="w-5 h-5 text-cyan-400" />
+                Response Cache Performance
+                <span className="ml-auto text-xs text-muted-foreground font-normal font-mono">Reduces OpenAI dependency</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                <div className="p-3 rounded-lg bg-black/20 border border-border/30 text-center">
+                  <p className="text-xs text-muted-foreground font-mono">CACHED RESPONSES</p>
+                  <p className="text-2xl font-bold font-mono text-cyan-400 mt-1">{cacheStats?.activeCached ?? '—'}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-black/20 border border-border/30 text-center">
+                  <p className="text-xs text-muted-foreground font-mono">CACHE HIT RATE</p>
+                  <p className={`text-2xl font-bold font-mono mt-1 ${(cacheStats?.hitRate ?? 0) > 30 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                    {cacheStats?.hitRate ?? 0}%
+                  </p>
+                </div>
+                <div className="p-3 rounded-lg bg-black/20 border border-border/30 text-center">
+                  <p className="text-xs text-muted-foreground font-mono">SERVED FROM CACHE</p>
+                  <p className="text-2xl font-bold font-mono text-emerald-400 mt-1">{cacheStats?.totalHits ?? 0}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-black/20 border border-border/30 text-center">
+                  <p className="text-xs text-muted-foreground font-mono">AVG MATCH SCORE</p>
+                  <p className="text-2xl font-bold font-mono text-primary mt-1">
+                    {cacheStats?.avgMatchScore ? (cacheStats.avgMatchScore * 100).toFixed(0) + '%' : '—'}
+                  </p>
+                </div>
+              </div>
+              {cacheStats?.topCachedResponses && cacheStats.topCachedResponses.length > 0 ? (
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground font-mono uppercase mb-2">Top Cached Responses</p>
+                  {cacheStats.topCachedResponses.slice(0, 5).map((entry, idx) => (
+                    <div key={entry.id || idx} className="flex items-center justify-between p-2.5 rounded-lg bg-black/20 border border-border/30" data-testid={`row-cache-${idx}`}>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-white truncate">{entry.originalQuery}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          {entry.domain && <Badge variant="outline" className={domainColor(entry.domain)} style={{fontSize: '10px', padding: '0 4px'}}>{entry.domain}</Badge>}
+                          <span className="text-[10px] text-muted-foreground">
+                            Confidence: {(parseFloat(entry.confidenceScore || '0') * 100).toFixed(0)}%
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right ml-3 shrink-0">
+                        <p className="text-sm font-mono font-bold text-cyan-400">{entry.servedCount ?? 0}×</p>
+                        <p className="text-[10px] text-muted-foreground">served</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-4 text-muted-foreground text-sm">
+                  <Database className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                  <p>No cached responses yet. ARYA auto-caches every good answer it gives.</p>
+                  <p className="text-xs mt-1">After a few conversations, ARYA will start serving repeat questions from memory.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <Card className="bg-card/50 border-border/50">
             <CardHeader>
               <CardTitle className="text-lg font-display flex items-center gap-2">
@@ -240,12 +334,13 @@ export default function SelfLearning() {
               <CardTitle className="text-lg font-display">How Self-Learning Works</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 {[
-                  { step: '1', title: 'Query Tracking', desc: 'Every query is analyzed and its patterns are recorded', icon: BarChart3 },
-                  { step: '2', title: 'Gap Detection', desc: 'Low-confidence or empty results flag knowledge gaps', icon: AlertTriangle },
-                  { step: '3', title: 'Draft Generation', desc: 'Repeated gaps auto-generate knowledge drafts', icon: Lightbulb },
-                  { step: '4', title: 'Expert Review', desc: 'Admins review and promote drafts to published knowledge', icon: CheckCircle },
+                  { step: '1', title: 'Query Tracking', desc: 'Every query is analyzed and patterns are recorded', icon: BarChart3 },
+                  { step: '2', title: 'Gap Detection', desc: 'Low-confidence results flag knowledge gaps for filling', icon: AlertTriangle },
+                  { step: '3', title: 'AI Draft Generation', desc: 'GPT-mini writes real knowledge entries for detected gaps', icon: Lightbulb },
+                  { step: '4', title: 'Expert Review', desc: 'Admins review and promote drafts to the knowledge base', icon: CheckCircle },
+                  { step: '5', title: 'Cache Serving', desc: 'Repeat questions served from memory — no OpenAI call needed', icon: Zap },
                 ].map(item => (
                   <div key={item.step} className="p-4 rounded-lg bg-black/20 border border-border/30 text-center">
                     <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center mx-auto mb-2">

@@ -151,6 +151,7 @@ export interface AryaResponseMeta {
   domainsUsed?: string[];
   sourcesCount?: number;
   memoryUsed?: boolean;
+  fromCache?: boolean;
 }
 
 export { memoryEngine };
@@ -264,7 +265,54 @@ export async function generateAryaResponse(
     };
   }
 
-  const shadowResult = await responseCacheEngine.shadowLookup(tenantId, userMessage);
+  // Detect time-sensitive query types early — these always bypass the cache
+  const isMarketQuery = /\b(stock|stocks|share price|nifty|sensex|nse|bse|market|markets|equity|mutual fund|portfolio|invest|trading|trader|ipo|sebi|rupee|dollar|forex|crypto|bitcoin|gold price|silver price|commodity|commodities|sensex today|nifty today|rally|crash|bull|bear|circuit breaker|upper circuit|lower circuit)\b/i.test(userMessage);
+  const isNewsQuery = /\b(news|headlines|latest|today|current events|happening|update|what.*going on|what.*india|what.*world|recent|breaking|just happened)\b/i.test(userMessage);
+  const isTechQuery = /\b(tech news|startup|ai news|artificial intelligence news|launch|product launch|apple|google|microsoft|openai|isro|chandrayaan|gaganyaan)\b/i.test(userMessage);
+
+  // Personal/contextual queries must always go to LLM (they depend on current memory + prefs)
+  const isPersonalQuery = /\b(my goal|my plan|remind me|what did i|you remember|last time|yesterday|my mood|i told you|we discussed)\b/i.test(userMessage);
+
+  // Bypass cache for time-sensitive, personal, or voice queries
+  const shouldBypassCache = isMarketQuery || isNewsQuery || isTechQuery || isPersonalQuery || voiceMode;
+
+  const cacheResult = await responseCacheEngine.shadowLookup(tenantId, userMessage);
+
+  // ─── ACTIVE CACHE SERVING ────────────────────────────────────────────────────
+  // Threshold 0.45: exact matches (score 1.0 × confidence 0.50) = 0.50 → served
+  // Fuzzy matches need 3-5 reinforcements before confidence is high enough to serve
+  const SERVE_THRESHOLD = 0.45;
+  if (!shouldBypassCache && cacheResult.hit && cacheResult.match && cacheResult.match.score >= SERVE_THRESHOLD) {
+    const cached = cacheResult.match.cacheEntry;
+    const serveTimeMs = Date.now() - startTime;
+
+    responseCacheEngine.incrementServedCount(cached.id).catch(() => {});
+    responseCacheEngine.logMetric(
+      tenantId,
+      responseCacheEngine.normalizeQuery(userMessage),
+      true,
+      cached.id,
+      cacheResult.match.score,
+      'cache',
+      null,
+      serveTimeMs
+    ).catch(() => {});
+
+    console.log(`[ARYA] ⚡ CACHE SERVE — score: ${cacheResult.match.score.toFixed(3)} | "${userMessage.slice(0, 50)}" → cached "${cached.originalQuery.slice(0, 50)}" (${serveTimeMs}ms)`);
+
+    return {
+      meta: { mode: "instant", icon: "⚡", confidence: cacheResult.match.score, domainsUsed: [], sourcesCount: 0, memoryUsed: false, fromCache: true },
+      stream: (async function* () {
+        // Stream word-by-word so it feels natural, not a dump
+        const tokens = cached.responseText.split(/(\s+)/);
+        for (let i = 0; i < tokens.length; i++) {
+          yield tokens[i];
+          if (i % 8 === 0 && i > 0) await new Promise(r => setTimeout(r, 1));
+        }
+      })(),
+    };
+  }
+  // ─────────────────────────────────────────────────────────────────────────────
 
   const orchestrator = new Orchestrator();
   const routing = orchestrator.route(userMessage);
@@ -294,11 +342,6 @@ export async function generateAryaResponse(
   const knowledgeContext = contextPieces.length > 0
     ? `\n\nRelevant knowledge context (use naturally, do NOT cite or reference):\n${contextPieces.slice(0, 6).join("\n\n")}`
     : "";
-
-  // Detect query intent for real-time data injection
-  const isMarketQuery = /\b(stock|stocks|share price|nifty|sensex|nse|bse|market|markets|equity|mutual fund|portfolio|invest|trading|trader|ipo|sebi|rupee|dollar|forex|crypto|bitcoin|gold price|silver price|commodity|commodities|sensex today|nifty today|rally|crash|bull|bear|circuit breaker|upper circuit|lower circuit)\b/i.test(userMessage);
-  const isNewsQuery = /\b(news|headlines|latest|today|current events|happening|update|what.*going on|what.*india|what.*world|recent|breaking|just happened)\b/i.test(userMessage);
-  const isTechQuery = /\b(tech news|startup|ai news|artificial intelligence news|launch|product launch|apple|google|microsoft|openai|isro|chandrayaan|gaganyaan)\b/i.test(userMessage);
 
   let newsContext = "";
 
@@ -413,12 +456,23 @@ export async function generateAryaResponse(
           .catch(err => console.error("[REMINDER DETECT ERROR]", err.message || "Unknown error"));
       }
 
+      // ─── AUTO-CACHE every good LLM response to build ARYA's learned memory ──
+      // Skip time-sensitive, personal, and very short responses
+      if (fullResponse.length > 80 && !shouldBypassCache && !isPersonalQuery) {
+        responseCacheEngine.cacheGoldenResponse(
+          tenantId, userMessage, fullResponse,
+          routing.primaryDomain as Domain,
+          0, conversationId || 0
+        ).catch(err => console.error("[AUTO-CACHE ERROR]", err.message || "Unknown error"));
+      }
+      // ─────────────────────────────────────────────────────────────────────────
+
       responseCacheEngine.logMetric(
         tenantId,
         responseCacheEngine.normalizeQuery(userMessage),
-        shadowResult.hit,
-        shadowResult.match?.cacheEntry?.id || null,
-        shadowResult.match?.score || 0,
+        cacheResult.hit,
+        cacheResult.match?.cacheEntry?.id || null,
+        cacheResult.match?.score || 0,
         'llm',
         selectedModel,
         Date.now() - startTime
