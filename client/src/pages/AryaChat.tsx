@@ -320,19 +320,26 @@ function FeedbackButtons({ messageId, conversationId }: { messageId: number; con
   );
 }
 
-function MemoryPanel({ onClose }: { onClose: () => void }) {
+function MemoryPanel({ onClose, token }: { onClose: () => void; token?: string | null }) {
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery<{ memories: MemoryItem[]; total: number }>({
     queryKey: ["/api/arya/memory"],
     queryFn: async () => {
-      const res = await fetch("/api/arya/memory?tenant_id=varah");
+      const res = await fetch("/api/arya/memory", {
+        headers: token ? { "x-user-token": token } : {},
+      });
+      if (!res.ok) return { memories: [], total: 0 };
       return res.json();
     },
+    enabled: !!token,
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      await fetch(`/api/arya/memory/${id}`, { method: "DELETE" });
+      await fetch(`/api/arya/memory/${id}`, {
+        method: "DELETE",
+        headers: token ? { "x-user-token": token } : {},
+      });
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/arya/memory"] }),
   });
@@ -2674,7 +2681,7 @@ export default function AryaChat() {
               transition={{ type: "spring", damping: 28, stiffness: 300 }}
               className="absolute right-0 top-0 bottom-0 z-40"
             >
-              <MemoryPanel onClose={() => setShowMemory(false)} />
+              <MemoryPanel onClose={() => setShowMemory(false)} token={token} />
             </motion.div>
           )}
           {showGoals && (

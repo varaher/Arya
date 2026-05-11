@@ -180,6 +180,13 @@ Example: [{"category":"identity","key":"name","value":"Rahul","confidence":0.95}
     return true;
   }
 
+  async deleteMemoryForUser(memoryId: string, userId: string): Promise<boolean> {
+    await db.delete(aryaMemory).where(
+      and(eq(aryaMemory.id, memoryId), eq(aryaMemory.tenantId, userId))
+    );
+    return true;
+  }
+
   async addExplicitMemory(
     tenantId: string,
     category: MemoryEntry['category'],

@@ -1376,7 +1376,7 @@ export async function registerRoutes(
       res.setHeader("Cache-Control", "no-cache");
       res.setHeader("Connection", "keep-alive");
 
-      const { stream, meta } = await generateAryaResponse(content, history, tenant_id || "varah", conversationId, userId);
+      const { stream, meta } = await generateAryaResponse(content, history, userId || tenant_id || "varah", conversationId, userId);
       let fullResponse = "";
 
       res.write(`data: ${JSON.stringify({ type: "meta", mode: meta.mode, icon: meta.icon, confidence: meta.confidence, sourcesCount: meta.sourcesCount, memoryUsed: meta.memoryUsed })}\n\n`);
@@ -1498,7 +1498,7 @@ export async function registerRoutes(
       res.write(`data: ${JSON.stringify({ type: "user_transcript", content: userTranscript, language: detectedLanguage })}\n\n`);
 
       const voiceUserId = (req as any).userId || null;
-      const { stream, meta } = await generateAryaResponse(queryForArya, history, tenant_id || "varah", conversationId, voiceUserId, true);
+      const { stream, meta } = await generateAryaResponse(queryForArya, history, voiceUserId || tenant_id || "varah", conversationId, voiceUserId, true);
       let fullResponse = "";
 
       res.write(`data: ${JSON.stringify({ type: "meta", mode: meta.mode, icon: meta.icon })}\n\n`);
@@ -2212,29 +2212,31 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
     }
   });
 
-  app.get("/api/arya/memory", async (req: Request, res: Response) => {
+  app.get("/api/arya/memory", requireUser, async (req: Request, res: Response) => {
     try {
-      const tenantId = (req.query.tenant_id as string) || 'varah';
-      const memories = await memoryEngine.getAll(tenantId);
+      const userId = (req as any).userId as string;
+      const memories = await memoryEngine.getAll(userId);
       res.json({ memories, total: memories.length });
     } catch (error: any) {
       res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
-  app.delete("/api/arya/memory/:id", async (req: Request, res: Response) => {
+  app.delete("/api/arya/memory/:id", requireUser, async (req: Request, res: Response) => {
     try {
-      await memoryEngine.deleteMemory(req.params.id);
+      const userId = (req as any).userId as string;
+      await memoryEngine.deleteMemoryForUser(req.params.id, userId);
       res.json({ success: true });
     } catch (error: any) {
       res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
-  app.post("/api/arya/memory", async (req: Request, res: Response) => {
+  app.post("/api/arya/memory", requireUser, async (req: Request, res: Response) => {
     try {
-      const { tenant_id, category, key, value } = req.body;
-      await memoryEngine.addExplicitMemory(tenant_id || 'varah', category, key, value);
+      const userId = (req as any).userId as string;
+      const { category, key, value } = req.body;
+      await memoryEngine.addExplicitMemory(userId, category, key, value);
       res.status(201).json({ success: true });
     } catch (error: any) {
       res.status(500).json({ error: "Something went wrong. Please try again." });
