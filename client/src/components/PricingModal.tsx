@@ -305,7 +305,10 @@ export default function PricingModal({ onClose, token, currentPlan = "free", onU
           </div>
 
           <p className="text-center text-xs text-muted-foreground mt-5">
-            All plans include GST. Cancel anytime — no questions asked. Secured by Razorpay.
+            All plans include GST. Cancel anytime — no questions asked. Secured by Razorpay.{" "}
+            <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-emerald-600 dark:text-emerald-400 hover:underline">Terms</a>
+            {" "}·{" "}
+            <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-emerald-600 dark:text-emerald-400 hover:underline">Privacy</a>
           </p>
         </div>
       </motion.div>

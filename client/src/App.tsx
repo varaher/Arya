@@ -22,6 +22,8 @@ import NeuralLink from "@/pages/NeuralLink";
 import DeveloperPortal from "@/pages/DeveloperPortal";
 import AdminLogin from "@/pages/AdminLogin";
 import UserGoals from "@/pages/UserGoals";
+import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import TermsAndConditions from "@/pages/TermsAndConditions";
 
 function AdminRoute({ component: Component }: { component: React.ComponentType }) {
   const { isAdmin, isLoading } = useAdminAuth();
@@ -147,6 +149,14 @@ function Router() {
           <AnimatedPage>
             <AdminLayout><AdminRoute component={DeveloperPortal} /></AdminLayout>
           </AnimatedPage>
+        </Route>
+
+        <Route path="/privacy">
+          <AnimatedPage><PrivacyPolicy /></AnimatedPage>
+        </Route>
+
+        <Route path="/terms">
+          <AnimatedPage><TermsAndConditions /></AnimatedPage>
         </Route>
 
         <Route>

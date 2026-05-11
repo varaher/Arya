@@ -1094,7 +1094,8 @@ function GoalsPanel({ onClose }: { onClose: () => void }) {
   );
 }
 
-function VoiceNotesPanel({ onClose, token }: { onClose: () => void; token: string }) {
+function VoiceNotesPanel({ onClose, token, uiLang = "en" }: { onClose: () => void; token: string; uiLang?: UiLanguage }) {
+  const tl = (key: string) => getTranslation(uiLang, key);
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [isRecording, setIsRecording] = useState(false);
@@ -1188,7 +1189,7 @@ function VoiceNotesPanel({ onClose, token }: { onClose: () => void; token: strin
       <div className="p-3 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <NotebookPen className="w-4 h-4 text-violet-600 dark:text-violet-400" />
-          <span className="text-sm font-semibold text-gray-900 dark:text-white">Voice Notes</span>
+          <span className="text-sm font-semibold text-gray-900 dark:text-white">{tl("voice_notes")}</span>
         </div>
         <button onClick={onClose} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-400" data-testid="button-close-voice-notes">
           <X className="w-4 h-4" />
@@ -1222,7 +1223,7 @@ function VoiceNotesPanel({ onClose, token }: { onClose: () => void; token: strin
           ) : isRecording ? (
             <><MicOff className="w-3.5 h-3.5" /> Stop &amp; Save ({Math.floor(recordingTime / 60)}:{String(recordingTime % 60).padStart(2, "0")})</>
           ) : (
-            <><Mic className="w-3.5 h-3.5" /> Record a Note</>
+            <><Mic className="w-3.5 h-3.5" /> {tl("record_note")}</>
           )}
         </button>
         {isRecording && (
@@ -1230,7 +1231,7 @@ function VoiceNotesPanel({ onClose, token }: { onClose: () => void; token: strin
             {[...Array(5)].map((_, i) => (
               <div key={i} className="w-1 bg-red-400 rounded-full animate-pulse" style={{ height: `${8 + Math.random() * 10}px`, animationDelay: `${i * 0.15}s` }} />
             ))}
-            <span className="text-[10px] text-red-500 ml-1">Recording…</span>
+            <span className="text-[10px] text-red-500 ml-1">{tl("recording")}…</span>
           </div>
         )}
       </div>
@@ -1241,8 +1242,8 @@ function VoiceNotesPanel({ onClose, token }: { onClose: () => void; token: strin
         ) : notes.length === 0 ? (
           <div className="text-center py-10 px-3">
             <NotebookPen className="w-8 h-8 text-gray-200 mx-auto mb-2" />
-            <p className="text-sm text-gray-400">{search ? "No notes match your search" : "No voice notes yet"}</p>
-            <p className="text-xs text-gray-300 mt-1">{search ? "" : "Tap the record button to save a thought"}</p>
+            <p className="text-sm text-gray-400">{search ? "No notes match your search" : tl("no_notes")}</p>
+            <p className="text-xs text-gray-300 mt-1">{search ? "" : tl("start_recording")}</p>
           </div>
         ) : notes.map((note) => (
           <div key={note.id} data-testid={`card-voice-note-${note.id}`} className="group flex items-start gap-2 px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-slate-800 border border-gray-100 dark:border-slate-700 hover:border-violet-200 dark:hover:border-violet-800 transition-all">
@@ -1332,7 +1333,8 @@ function DailyQuoteCard({ token }: { token: string | null }) {
   );
 }
 
-function MoodCheckInCard({ token, onComplete }: { token: string; onComplete: () => void }) {
+function MoodCheckInCard({ token, onComplete, uiLang = "en" }: { token: string; onComplete: () => void; uiLang?: UiLanguage }) {
+  const tl = (key: string) => getTranslation(uiLang, key);
   const [mood, setMood] = useState<number | null>(null);
   const [energy, setEnergy] = useState(3);
   const [note, setNote] = useState("");
@@ -1374,14 +1376,14 @@ function MoodCheckInCard({ token, onComplete }: { token: string; onComplete: () 
           <div className="w-7 h-7 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
             <Smile className="w-4 h-4 text-amber-600 dark:text-amber-400" />
           </div>
-          <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">Daily Check-in</span>
+          <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{tl("daily_checkin")}</span>
         </div>
         <button onClick={onComplete} className="text-gray-300 hover:text-gray-500 dark:hover:text-gray-300 p-1 rounded transition-colors" data-testid="button-skip-checkin">
           <X className="w-3.5 h-3.5" />
         </button>
       </div>
 
-      <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">How are you feeling today?</p>
+      <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{tl("how_feeling")}</p>
 
       <div className="flex justify-between mb-3">
         {moods.map(m => (
@@ -1404,7 +1406,7 @@ function MoodCheckInCard({ token, onComplete }: { token: string; onComplete: () 
       <div className="mb-3">
         <div className="flex items-center justify-between mb-1">
           <span className="text-[10px] text-gray-500 dark:text-gray-400 flex items-center gap-1">
-            <Zap className="w-3 h-3 text-amber-500" /> Energy level
+            <Zap className="w-3 h-3 text-amber-500" /> {tl("energy_level")}
           </span>
           <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400">
             {["", "Drained", "Low", "Okay", "Good", "Energized"][energy]}
@@ -1421,7 +1423,7 @@ function MoodCheckInCard({ token, onComplete }: { token: string; onComplete: () 
       <textarea
         value={note}
         onChange={e => setNote(e.target.value)}
-        placeholder="Add a note (optional)…"
+        placeholder={tl("add_note")}
         rows={2}
         data-testid="input-mood-note"
         className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-amber-200 dark:border-amber-800 bg-white/60 dark:bg-slate-800/60 text-gray-700 dark:text-gray-300 placeholder-gray-300 resize-none focus:outline-none focus:border-amber-400 mb-2.5"
@@ -1434,7 +1436,7 @@ function MoodCheckInCard({ token, onComplete }: { token: string; onComplete: () 
         className="w-full py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-400 text-white text-xs font-semibold hover:from-amber-400 hover:to-orange-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-1.5"
       >
         {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-        {saving ? "Saving…" : "Save Check-in"}
+        {saving ? "Saving…" : tl("save_checkin")}
       </button>
     </motion.div>
   );
@@ -2406,6 +2408,14 @@ export default function AryaChat() {
           )}
         </div>
 
+        {/* Desktop sidebar legal links */}
+        <div className="px-3 pb-1 hidden md:flex items-center gap-3 justify-center">
+          <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-[10px] text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Privacy</a>
+          <span className="text-[10px] text-muted-foreground">·</span>
+          <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-[10px] text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Terms</a>
+          <span className="text-[10px] text-muted-foreground">·</span>
+          <span className="text-[10px] text-muted-foreground">© {new Date().getFullYear()} VARAH</span>
+        </div>
         {/* Desktop sidebar footer — user/login */}
         <div className="border-t border-gray-100 dark:border-slate-700 p-2 hidden md:block">
           {isLoggedIn ? (
@@ -2707,7 +2717,7 @@ export default function AryaChat() {
               transition={{ type: "spring", damping: 28, stiffness: 300 }}
               className="absolute right-0 top-0 bottom-0 z-40"
             >
-              <VoiceNotesPanel onClose={() => setShowNotes(false)} token={token} />
+              <VoiceNotesPanel onClose={() => setShowNotes(false)} token={token} uiLang={uiLanguage} />
             </motion.div>
           )}
           {showCalendar && isLoggedIn && token && (
@@ -2803,6 +2813,7 @@ export default function AryaChat() {
               <MoodCheckInCard
                 token={token}
                 onComplete={() => setMoodCheckedInToday(true)}
+                uiLang={uiLanguage}
               />
             )}
 
@@ -4278,6 +4289,14 @@ function UserAuthModal({ onClose }: { onClose: () => void }) {
             {mode === "login" ? <>New here? <span className="text-emerald-600 dark:text-emerald-400">Create account</span></> : <>Have an account? <span className="text-emerald-600 dark:text-emerald-400">Sign in</span></>}
           </button>
         </div>
+        {mode === "signup" && (
+          <p className="text-[10px] text-muted-foreground text-center mt-4 leading-relaxed">
+            By creating an account you agree to our{" "}
+            <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-emerald-600 dark:text-emerald-400 hover:underline">Terms &amp; Conditions</a>
+            {" "}and{" "}
+            <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-emerald-600 dark:text-emerald-400 hover:underline">Privacy Policy</a>.
+          </p>
+        )}
       </div>
     </div>
   );
