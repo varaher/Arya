@@ -833,11 +833,19 @@ function UserProfileModal({ token, onClose, userName }: { token: string; onClose
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-slate-700 flex-shrink-0">
           <div>
             <h2 className="text-base font-semibold text-gray-900 dark:text-white font-['Space_Grotesk']">My Profile</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">Help ARYA understand you better</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Everything here is optional — share what you're comfortable with</p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-400" data-testid="button-close-profile">
             <X className="w-4 h-4" />
           </button>
+        </div>
+
+        {/* Optional nudge banner */}
+        <div className="mx-5 mt-4 px-4 py-3 rounded-xl bg-cyan-50 dark:bg-cyan-900/20 border border-cyan-100 dark:border-cyan-800 flex items-start gap-3 flex-shrink-0">
+          <Sparkles className="w-4 h-4 text-cyan-600 dark:text-cyan-400 flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-cyan-700 dark:text-cyan-300 leading-relaxed">
+            The more ARYA knows about you, the more personal and useful every conversation becomes. Fill in as much or as little as you like — you can always update this later.
+          </p>
         </div>
 
         {/* Body */}
@@ -992,7 +1000,7 @@ function UserProfileModal({ token, onClose, userName }: { token: string; onClose
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-4 border-t border-gray-100 dark:border-slate-700 flex-shrink-0">
+        <div className="px-5 py-4 border-t border-gray-100 dark:border-slate-700 flex-shrink-0 space-y-3">
           <button
             data-testid="button-save-profile"
             onClick={handleSave}
@@ -1002,6 +1010,12 @@ function UserProfileModal({ token, onClose, userName }: { token: string; onClose
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <Check className="w-4 h-4" /> : <User className="w-4 h-4" />}
             {saving ? "Saving…" : saved ? "Saved!" : "Save Profile"}
           </button>
+          <p className="text-center text-[11px] text-muted-foreground">
+            🔒 Your profile is private and used only to personalise your ARYA experience. We never share it. See our{" "}
+            <a href="/terms" target="_blank" className="text-cyan-600 dark:text-cyan-400 hover:underline">Terms</a>{" "}
+            &amp;{" "}
+            <a href="/privacy" target="_blank" className="text-cyan-600 dark:text-cyan-400 hover:underline">Privacy Policy</a>.
+          </p>
         </div>
       </motion.div>
     </div>

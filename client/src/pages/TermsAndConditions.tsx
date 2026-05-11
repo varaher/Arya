@@ -1,7 +1,7 @@
 import { useLocation } from "wouter";
 import { ArrowLeft, FileText } from "lucide-react";
 
-const LAST_UPDATED = "10 May 2025";
+const LAST_UPDATED = "11 May 2026";
 const COMPANY = "VARAH Group";
 const PRODUCT = "ARYA";
 const EMAIL = "support@aryaai.in";
@@ -157,6 +157,35 @@ export default function TermsAndConditions() {
               By using ARYA, you grant us a limited, non-exclusive licence to process and store your content solely for the purpose
               of providing the Service to you. We do not use your content to train AI models or share it with third parties
               except as described in our Privacy Policy.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-3">6A. Optional Personal Profile Data</h2>
+            <p className="text-muted-foreground mb-3">
+              ARYA offers an optional <strong className="text-gray-800 dark:text-gray-300">My Profile</strong> feature that allows you to
+              share personal details to improve the personalisation of your experience. Completing your profile is entirely voluntary —
+              ARYA functions without it.
+            </p>
+            <p className="text-muted-foreground mb-2">The optional profile fields include:</p>
+            <ul className="list-disc list-inside text-muted-foreground space-y-1.5 ml-1 mb-3">
+              <li><strong className="text-gray-800 dark:text-gray-300">Age</strong> — to tailor advice and context appropriately</li>
+              <li><strong className="text-gray-800 dark:text-gray-300">City / Location</strong> — to provide locally relevant suggestions</li>
+              <li><strong className="text-gray-800 dark:text-gray-300">Occupation</strong> — to contextualise career and work-related guidance</li>
+              <li><strong className="text-gray-800 dark:text-gray-300">Life stage</strong> (e.g. student, professional, parent) — to frame advice appropriately</li>
+              <li><strong className="text-gray-800 dark:text-gray-300">Personal life situation</strong> (e.g. single, married) — for context-aware responses</li>
+              <li><strong className="text-gray-800 dark:text-gray-300">Working style</strong> (e.g. early bird, night owl) — to personalise scheduling and productivity advice</li>
+              <li><strong className="text-gray-800 dark:text-gray-300">Interests &amp; hobbies</strong> — to make conversations more relevant and engaging</li>
+              <li><strong className="text-gray-800 dark:text-gray-300">Current challenges</strong> — to focus ARYA's support on what matters most to you right now</li>
+            </ul>
+            <p className="text-muted-foreground">
+              This data is stored securely in your account, used exclusively to personalise your ARYA experience, and is never sold,
+              shared with third parties, or used to train AI models. You may update or delete any profile information at any time from
+              the <strong className="text-gray-800 dark:text-gray-300">My Profile</strong> section in your account menu.
+            </p>
+            <p className="text-muted-foreground mt-2">
+              No government-issued identifiers, financial information, or sensitive personal data (as defined under the Digital
+              Personal Data Protection Act, 2023) are collected through the profile feature.
             </p>
           </section>
 
