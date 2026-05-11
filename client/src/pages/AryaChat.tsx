@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useUserAuth } from "@/lib/user-auth";
 import { useLocation } from "wouter";
 import {
@@ -3026,20 +3027,26 @@ export default function AryaChat() {
           <Card className="bg-white/90 dark:bg-slate-900/90 border-gray-200 dark:border-slate-700 backdrop-blur-sm">
             <div className="flex items-end gap-1.5 md:gap-2 p-2 md:p-3">
               <div className="relative" ref={langMenuRef}>
-                <Button
-                  data-testid="button-language-select"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setShowLanguageMenu(!showLanguageMenu)}
-                  className={`flex-shrink-0 rounded-full h-9 w-9 md:h-10 md:w-10 ${
-                    selectedLanguage !== "en-IN"
-                      ? "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/30"
-                      : "text-muted-foreground hover:text-gray-900 dark:hover:text-white hover:bg-card"
-                  }`}
-                  title={`Voice language: ${currentLang?.name || "English"}`}
-                >
-                  <Globe className="w-4 h-4" />
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      data-testid="button-language-select"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setShowLanguageMenu(!showLanguageMenu)}
+                      className={`flex-shrink-0 rounded-full h-9 w-9 md:h-10 md:w-10 ${
+                        selectedLanguage !== "en-IN"
+                          ? "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/30"
+                          : "text-muted-foreground hover:text-gray-900 dark:hover:text-white hover:bg-card"
+                      }`}
+                    >
+                      <Globe className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs">
+                    Voice language: {currentLang?.name || "English"}
+                  </TooltipContent>
+                </Tooltip>
                 {showLanguageMenu && (
                   <div className="absolute bottom-full left-0 mb-2 w-52 bg-card border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden z-50">
                     <div className="px-3 py-2 border-b border-gray-200 dark:border-slate-700">
@@ -3067,20 +3074,26 @@ export default function AryaChat() {
                 )}
               </div>
 
-              <Button
-                data-testid="button-speaker-toggle"
-                variant="ghost"
-                size="icon"
-                onClick={toggleSpeaker}
-                className={`flex-shrink-0 rounded-full h-9 w-9 md:h-10 md:w-10 ${
-                  speakerOn
-                    ? "text-primary bg-primary/10 hover:bg-primary/20"
-                    : "text-muted-foreground hover:text-gray-900 dark:hover:text-white hover:bg-card"
-                }`}
-                title={speakerOn ? "ARYA will speak responses (tap to mute)" : "Tap to make ARYA speak responses"}
-              >
-                {speakerOn ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    data-testid="button-speaker-toggle"
+                    variant="ghost"
+                    size="icon"
+                    onClick={toggleSpeaker}
+                    className={`flex-shrink-0 rounded-full h-9 w-9 md:h-10 md:w-10 ${
+                      speakerOn
+                        ? "text-primary bg-primary/10 hover:bg-primary/20"
+                        : "text-muted-foreground hover:text-gray-900 dark:hover:text-white hover:bg-card"
+                    }`}
+                  >
+                    {speakerOn ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">
+                  {speakerOn ? "ARYA speaks responses — tap to mute" : "Tap to hear ARYA speak"}
+                </TooltipContent>
+              </Tooltip>
 
               <input
                 ref={imageInputRef}
@@ -3090,29 +3103,41 @@ export default function AryaChat() {
                 onChange={handleImageSelect}
                 data-testid="input-image-upload"
               />
-              <Button
-                data-testid="button-attach-image"
-                variant="ghost"
-                size="icon"
-                onClick={() => imageInputRef.current?.click()}
-                disabled={isStreaming || isScanningDoc}
-                className="flex-shrink-0 rounded-full h-9 w-9 md:h-10 md:w-10 bg-gradient-to-br from-purple-500/20 to-purple-600/10 text-purple-600 dark:text-purple-400 hover:from-purple-500/30 hover:to-purple-600/20 border border-purple-200 dark:border-purple-800"
-                title="Attach image or take photo"
-              >
-                <Paperclip className="w-4 h-4" />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    data-testid="button-attach-image"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => imageInputRef.current?.click()}
+                    disabled={isStreaming || isScanningDoc}
+                    className="flex-shrink-0 rounded-full h-9 w-9 md:h-10 md:w-10 bg-gradient-to-br from-purple-500/20 to-purple-600/10 text-purple-600 dark:text-purple-400 hover:from-purple-500/30 hover:to-purple-600/20 border border-purple-200 dark:border-purple-800"
+                  >
+                    <Paperclip className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">
+                  Attach image or PDF
+                </TooltipContent>
+              </Tooltip>
 
-              <Button
-                data-testid="button-voice"
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowVoiceMode(true)}
-                disabled={isStreaming}
-                className="flex-shrink-0 rounded-full h-9 w-9 md:h-10 md:w-10 bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 text-emerald-600 dark:text-emerald-400 hover:from-emerald-500/30 hover:to-emerald-600/20 border border-emerald-200 dark:border-emerald-800"
-                title="Start voice conversation"
-              >
-                <Mic className="w-5 h-5" />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    data-testid="button-voice"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowVoiceMode(true)}
+                    disabled={isStreaming}
+                    className="flex-shrink-0 rounded-full h-9 w-9 md:h-10 md:w-10 bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 text-emerald-600 dark:text-emerald-400 hover:from-emerald-500/30 hover:to-emerald-600/20 border border-emerald-200 dark:border-emerald-800"
+                  >
+                    <Mic className="w-5 h-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">
+                  Talk to ARYA by voice
+                </TooltipContent>
+              </Tooltip>
 
               {isRecording ? (
                 <div className="flex-1 flex items-center justify-center gap-2 md:gap-3 py-2">
@@ -3362,6 +3387,47 @@ export default function AryaChat() {
               onClose={() => setShowPricing(false)}
               onUpgradeSuccess={(plan) => { setShowPricing(false); refreshUser?.(); }}
             />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ARYA-branded floating help / feedback button */}
+      <AnimatePresence>
+        {!showFeedbackModal && !showTutorial && !showOnboarding && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.2 }}
+            className="fixed bottom-5 right-5 z-40"
+          >
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  data-testid="button-arya-help-fab"
+                  onClick={() => setShowFeedbackModal(true)}
+                  className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 hover:scale-105 active:scale-95 transition-transform group"
+                  aria-label="Report an issue or share feedback"
+                >
+                  <span
+                    style={{
+                      fontFamily: "'Space Grotesk', sans-serif",
+                      fontWeight: 700,
+                      fontSize: "0.85rem",
+                      letterSpacing: "0.05em",
+                      background: "linear-gradient(135deg, #059669, #0d9488)",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                    }}
+                  >
+                    A
+                  </span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="left" className="text-xs">
+                Share feedback or report an issue
+              </TooltipContent>
+            </Tooltip>
           </motion.div>
         )}
       </AnimatePresence>

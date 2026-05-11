@@ -110,4 +110,15 @@
   box-shadow: 0 0 60px rgba(34, 197, 94, 0.12), 0 0 120px rgba(16, 185, 129, 0.06);
 }
 
+/* ── Hide Replit's injected feedback badge ────────────────────────── */
+#replit-badge,
+[data-cy="feedback-button"],
+.replit-ui-theme-root > div[style*="position: fixed"],
+iframe[src*="replit.com/badge"],
+div[class*="replit-badge"] {
+  display: none !important;
+  pointer-events: none !important;
+}
+/* ───────────────────────────────────────────────────────────────────── */
+
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
