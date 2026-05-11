@@ -29,5 +29,47 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Remove Replit's injected deployment badge
+      (function () {
+        function removeReplitBadge() {
+          // Target by common Replit badge identifiers
+          var selectors = [
+            '#replit-badge',
+            '[data-cy="feedback-button"]',
+            'a[href*="replit.com/badge"]',
+            'iframe[src*="replit.com"]',
+            'div[class*="replit-badge"]',
+            'div[id*="replit-badge"]',
+          ];
+          selectors.forEach(function (sel) {
+            try {
+              document.querySelectorAll(sel).forEach(function (el) {
+                el.remove();
+              });
+            } catch (e) {}
+          });
+
+          // Broader sweep: any fixed-positioned element injected at body level
+          // that contains a link to replit.com
+          try {
+            document.querySelectorAll('body > div').forEach(function (el) {
+              var style = window.getComputedStyle(el);
+              if (style.position === 'fixed') {
+                var html = el.innerHTML || '';
+                if (html.includes('replit') || html.includes('Replit')) {
+                  el.style.setProperty('display', 'none', 'important');
+                }
+              }
+            });
+          } catch (e) {}
+        }
+
+        // Run immediately and on every DOM change
+        removeReplitBadge();
+        var observer = new MutationObserver(removeReplitBadge);
+        observer.observe(document.body, { childList: true, subtree: false });
+      })();
+    </script>
   </body>
 </html>
