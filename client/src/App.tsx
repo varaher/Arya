@@ -8,6 +8,7 @@ import { AdminLayout, PublicLayout } from "@/components/layout/Layout";
 import { AdminAuthProvider, useAdminAuth } from "@/lib/admin-auth";
 import { UserAuthProvider } from "@/lib/user-auth";
 import { ThemeProvider } from "@/lib/theme";
+import PWAPrompt from "@/components/PWAPrompt";
 import NotFound from "@/pages/not-found";
 
 import AryaChat from "@/pages/AryaChat";
@@ -177,6 +178,7 @@ function App() {
           <AdminAuthProvider>
             <UserAuthProvider>
               <Toaster />
+              <PWAPrompt />
               <Router />
             </UserAuthProvider>
           </AdminAuthProvider>

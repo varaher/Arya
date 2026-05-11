@@ -1,4 +1,4 @@
-const CACHE_NAME = 'arya-pwa-v2';
+const CACHE_NAME = 'arya-pwa-v3';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
@@ -11,7 +11,9 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
   );
-  self.skipWaiting();
+  // Do NOT call skipWaiting() here.
+  // The app controls when to activate a new version via the SKIP_WAITING message,
+  // so users get a proper "Update available" prompt instead of a silent mid-session swap.
 });
 
 self.addEventListener('activate', (event) => {
@@ -21,6 +23,13 @@ self.addEventListener('activate', (event) => {
     )
   );
   self.clients.claim();
+});
+
+// The React app sends this when the user clicks "Update now"
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('fetch', (event) => {
