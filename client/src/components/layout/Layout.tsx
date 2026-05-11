@@ -22,6 +22,7 @@ import {
   Shield,
   Sun,
   Moon,
+  Users,
 } from "lucide-react";
 
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -32,6 +33,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
   const navItems = [
     { label: "Chat with ARYA", icon: MessageCircle, href: "/" },
     { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
+    { label: "Users & Analytics", icon: Users, href: "/users" },
     { label: "Orchestrator", icon: BrainCircuit, href: "/orchestrator" },
     { label: "Knowledge Base", icon: Database, href: "/knowledge" },
     { label: "Self-Learning", icon: Brain, href: "/learning" },
@@ -86,19 +88,19 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
 
         <nav className="flex-1 p-3 md:p-4 space-y-1 overflow-y-auto">
           {navItems.map((item) => (
-            <Link key={item.href} href={item.href}>
-              <a
-                onClick={onClose}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-200 group",
-                  location === item.href 
-                    ? "bg-primary/10 text-primary border border-primary/20 shadow-sm" 
-                    : "text-muted-foreground hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
-                )}
-              >
-                <item.icon className={cn("w-4 h-4", location === item.href ? "text-primary" : "text-muted-foreground group-hover:text-gray-900 dark:group-hover:text-white")} />
-                {item.label}
-              </a>
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={onClose}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-200 group",
+                location === item.href
+                  ? "bg-primary/10 text-primary border border-primary/20 shadow-sm"
+                  : "text-muted-foreground hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+              )}
+            >
+              <item.icon className={cn("w-4 h-4", location === item.href ? "text-primary" : "text-muted-foreground group-hover:text-gray-900 dark:group-hover:text-white")} />
+              {item.label}
             </Link>
           ))}
         </nav>

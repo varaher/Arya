@@ -25,6 +25,7 @@ import AdminLogin from "@/pages/AdminLogin";
 import UserGoals from "@/pages/UserGoals";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import TermsAndConditions from "@/pages/TermsAndConditions";
+import UserAnalytics from "@/pages/UserAnalytics";
 
 function AdminRoute({ component: Component }: { component: React.ComponentType }) {
   const { isAdmin, isLoading } = useAdminAuth();
@@ -149,6 +150,11 @@ function Router() {
         <Route path="/developers">
           <AnimatedPage>
             <AdminLayout><AdminRoute component={DeveloperPortal} /></AdminLayout>
+          </AnimatedPage>
+        </Route>
+        <Route path="/users">
+          <AnimatedPage>
+            <AdminLayout><AdminRoute component={UserAnalytics} /></AdminLayout>
           </AnimatedPage>
         </Route>
 

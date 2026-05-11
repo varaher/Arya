@@ -2753,6 +2753,103 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
     }
   });
 
+  // ─── Admin: User Analytics ───────────────────────────────────────────────
+
+  app.get("/api/admin/users", requireAdmin, async (_req: Request, res: Response) => {
+    try {
+      const users = await db.execute(sql`
+        SELECT
+          u.id,
+          u.name,
+          u.email,
+          u.phone,
+          u.plan,
+          u.city,
+          u.occupation,
+          u.life_stage,
+          u.ui_language,
+          u.preferred_language,
+          u.is_active,
+          u.onboarding_complete,
+          u.created_at,
+          u.last_login_at,
+          COALESCE(SUM(ub.text_chat_count), 0)::int        AS total_chats,
+          COALESCE(SUM(ub.voice_minutes), 0)::numeric      AS total_voice_minutes,
+          COALESCE(SUM(ub.deep_reasoning_count), 0)::int   AS total_deep_reasoning,
+          COALESCE(SUM(ub.llm_call_count), 0)::int         AS total_llm_calls,
+          COALESCE(SUM(ub.estimated_cost_inr), 0)::numeric AS total_cost_inr,
+          COUNT(DISTINCT g.id)::int                        AS total_goals,
+          COUNT(DISTINCT m.id)::int                        AS total_memories
+        FROM arya_users u
+        LEFT JOIN arya_usage_budget ub ON ub.user_id = u.id AND ub.user_id NOT LIKE '%SYSTEM%' AND ub.user_id NOT LIKE 'anon_%'
+        LEFT JOIN arya_goals g ON g.user_id = u.id
+        LEFT JOIN arya_memory m ON m.tenant_id = 'varah' AND m.conversation_id IS NOT NULL
+        GROUP BY u.id
+        ORDER BY u.created_at DESC
+      `);
+      res.json({ users: users.rows, total: users.rows.length });
+    } catch (error: any) {
+      console.error("[Admin Users]", error.message);
+      res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+
+  app.get("/api/admin/analytics", requireAdmin, async (_req: Request, res: Response) => {
+    try {
+      const [topQueries, featureUsage, cityStats, planStats, recentSignups] = await Promise.all([
+        db.execute(sql`
+          SELECT normalized_query AS query, domain, query_count, avg_confidence, last_seen
+          FROM arya_query_patterns
+          ORDER BY query_count DESC
+          LIMIT 20
+        `),
+        db.execute(sql`
+          SELECT
+            COALESCE(SUM(text_chat_count), 0)::int        AS total_text_chats,
+            COALESCE(SUM(voice_minutes), 0)::numeric      AS total_voice_minutes,
+            COALESCE(SUM(deep_reasoning_count), 0)::int   AS total_deep_reasoning,
+            COALESCE(SUM(llm_call_count), 0)::int         AS total_llm_calls,
+            COALESCE(SUM(estimated_cost_inr), 0)::numeric AS total_cost_inr,
+            COUNT(DISTINCT date_key)::int                 AS active_days
+          FROM arya_usage_budget
+          WHERE user_id NOT LIKE '%SYSTEM%' AND user_id NOT LIKE 'anon_%'
+        `),
+        db.execute(sql`
+          SELECT city, COUNT(*)::int AS user_count
+          FROM arya_users
+          WHERE city IS NOT NULL AND city != ''
+          GROUP BY city
+          ORDER BY user_count DESC
+          LIMIT 10
+        `),
+        db.execute(sql`
+          SELECT plan, COUNT(*)::int AS count
+          FROM arya_users
+          GROUP BY plan
+          ORDER BY count DESC
+        `),
+        db.execute(sql`
+          SELECT DATE(created_at) AS day, COUNT(*)::int AS signups
+          FROM arya_users
+          WHERE created_at > NOW() - INTERVAL '30 days'
+          GROUP BY day
+          ORDER BY day ASC
+        `),
+      ]);
+
+      res.json({
+        topQueries: topQueries.rows,
+        featureUsage: featureUsage.rows[0] || {},
+        cityStats: cityStats.rows,
+        planStats: planStats.rows,
+        recentSignups: recentSignups.rows,
+      });
+    } catch (error: any) {
+      console.error("[Admin Analytics]", error.message);
+      res.status(500).json({ error: "Failed to fetch analytics" });
+    }
+  });
+
   // Tutorial completion tracking
   app.post("/api/user/tutorial-complete", async (req: Request, res: Response) => {
     try {
