@@ -62,6 +62,7 @@ import {
   Link2Off,
   Star,
   Crown,
+  Users,
 } from "lucide-react";
 import { getStoredUiLanguage, setStoredUiLanguage, getTranslation, type UiLanguage } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
@@ -4913,6 +4914,16 @@ const TUTORIAL_STEPS = [
     tip: "Profile menu → Customize ARYA — takes 2 minutes and makes a meaningful difference in how useful ARYA feels",
   },
   {
+    title: "The ARYA Community",
+    description: "You're not alone in this. The ARYA Growth Community is a space where members take weekly challenges together, share their progress, and cheer each other on. Every week, ARYA generates a new challenge based on what the community needs most.",
+    icon: Users,
+    iconColor: "text-cyan-600 dark:text-cyan-400",
+    iconBg: "bg-cyan-100 dark:bg-cyan-900/30 border-cyan-300 dark:border-cyan-700",
+    tip: "Visit /community to join as a founding member — free forever for early members",
+    link: "/community",
+    linkLabel: "Visit the Community →",
+  },
+  {
     title: "You're ready",
     description: "ARYA works best when you show up every day — even just one question or reflection. Small daily conversations build clarity, habits, and real growth over time. Start whenever you're ready.",
     icon: Zap,
@@ -4989,12 +5000,26 @@ function QuickStartTutorial({ onClose, onStartChat, token }: { onClose: () => vo
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-gray-100 dark:bg-slate-700 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 mb-6"
+            className="bg-gray-100 dark:bg-slate-700 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 mb-4"
           >
             <div className="flex items-start gap-2">
               <Lightbulb className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
               <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">{current.tip}</p>
             </div>
+          </motion.div>
+        )}
+
+        {(current as any).link && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mb-6">
+            <a
+              href={(current as any).link}
+              onClick={handleClose}
+              data-testid="tutorial-button-community-link"
+              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 text-white text-sm font-semibold hover:from-cyan-600 hover:to-purple-700 transition-all"
+            >
+              <Users className="w-4 h-4" />
+              {(current as any).linkLabel}
+            </a>
           </motion.div>
         )}
 

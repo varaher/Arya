@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Users, Flame, CheckCircle2, Trophy, Heart, Zap, ChevronRight,
   X, ChevronDown, Send, Calendar, Star, ArrowRight, Sparkles,
-  MessageCircle, ThumbsUp, Target, Clock
+  MessageCircle, ThumbsUp, Target, Clock, Copy, Check as CheckIcon, Link2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -430,6 +430,58 @@ function PostCard({ post, token, currentUserId }: { post: Post; token: string | 
   );
 }
 
+// ─── Shareable Link Card ──────────────────────────────────────────────────────
+function ShareableLinkCard() {
+  const { toast } = useToast();
+  const [copied, setCopied] = useState(false);
+  const communityUrl = "https://aryaai.in/community";
+
+  const copyLink = () => {
+    navigator.clipboard.writeText(communityUrl).then(() => {
+      setCopied(true);
+      toast({ title: "Link copied!", description: "Paste it anywhere to share the ARYA Community." });
+      setTimeout(() => setCopied(false), 2500);
+    });
+  };
+
+  return (
+    <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
+      <div className="bg-white dark:bg-slate-800/60 rounded-2xl border border-gray-100 dark:border-slate-700/60 p-5 shadow-sm">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-8 h-8 rounded-xl bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center">
+            <Link2 className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-sm text-gray-900 dark:text-white">Share this page</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Add this link to your website, WhatsApp, or anywhere</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 bg-gray-50 dark:bg-slate-700/60 rounded-xl p-3 border border-gray-200 dark:border-slate-600">
+          <span className="flex-1 text-sm text-gray-700 dark:text-gray-300 font-mono truncate select-all" data-testid="text-community-url">
+            {communityUrl}
+          </span>
+          <button
+            data-testid="button-copy-link"
+            onClick={copyLink}
+            className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all
+              ${copied
+                ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
+                : "bg-cyan-500 hover:bg-cyan-600 text-white"
+              }`}
+          >
+            {copied ? <><CheckIcon className="w-3.5 h-3.5" /> Copied!</> : <><Copy className="w-3.5 h-3.5" /> Copy</>}
+          </button>
+        </div>
+
+        <p className="text-xs text-gray-400 dark:text-gray-500 mt-2.5">
+          Anyone who opens this link will see the community page. They'll need to sign into ARYA to join or post.
+        </p>
+      </div>
+    </motion.section>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function Community() {
   const { toast } = useToast();
@@ -782,6 +834,9 @@ export default function Community() {
             ))}
           </div>
         </motion.section>
+
+        {/* ── Shareable Link ───────────────────────────────────────────────── */}
+        <ShareableLinkCard />
 
         {/* ── Bottom CTA ────────────────────────────────────────────────────── */}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
