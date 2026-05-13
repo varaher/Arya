@@ -27,7 +27,7 @@ import {
 } from "./arya/sarvam-service";
 import { QueryRequestSchema, DomainSchema, aryaKnowledge, aryaClinicalRecords, aryaVoiceQualityLog, aryaMemory } from "@shared/schema";
 import OpenAI from "openai";
-import { eq, and, desc, sql, or, isNull, lte } from "drizzle-orm";
+import { eq, and, desc, sql, or, isNull, lte, inArray } from "drizzle-orm";
 import { db } from "./db";
 import {
   createApiKey,
@@ -79,6 +79,10 @@ import {
   aryaMoodCheckins,
   aryaVoiceNotes,
   aryaSubscriptions,
+  aryaCommunityMembers,
+  aryaCommunityChallenge,
+  aryaCommunityPosts,
+  aryaCommunityReactions,
 } from "@shared/schema";
 import { getVapidPublicKey } from "./arya/reminder-scheduler";
 
@@ -2866,6 +2870,201 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
       res.json({ success: true });
     } catch (error: any) {
       res.status(500).json({ error: "Something went wrong" });
+    }
+  });
+
+  // ============================================================
+  // COMMUNITY ROUTES
+  // ============================================================
+
+  // Public stats
+  app.get("/api/community/stats", async (_req: Request, res: Response) => {
+    try {
+      const [{ memberCount }] = await db.select({ memberCount: sql<number>`count(*)::int` }).from(aryaCommunityMembers);
+      const [{ postCount }] = await db.select({ postCount: sql<number>`count(*)::int` }).from(aryaCommunityPosts);
+      res.json({ memberCount, postCount });
+    } catch {
+      res.json({ memberCount: 0, postCount: 0 });
+    }
+  });
+
+  // Join community (founding member form) — no auth required
+  app.post("/api/community/join", async (req: Request, res: Response) => {
+    try {
+      const {
+        name, email, whatsapp, profession, countryCity,
+        growthGoals, currentChallenges, expectations, growthReflection,
+        communityParticipation, habitTracking, improvementIdeas, foundingReason,
+        consentUpdates, consentAi,
+      } = req.body;
+      if (!name || !email) return res.status(400).json({ error: "Name and email are required" });
+
+      // Optionally link to ARYA user
+      let userId: string | undefined;
+      const authHeader = req.headers.authorization;
+      if (authHeader?.startsWith("Bearer ")) {
+        try {
+          const session = await verifySession(authHeader.split(" ")[1]);
+          if (session) userId = session.id;
+        } catch {}
+      }
+
+      const [member] = await db.insert(aryaCommunityMembers).values({
+        name, email, whatsapp, profession, countryCity,
+        growthGoals: growthGoals ?? [],
+        currentChallenges, expectations, growthReflection,
+        communityParticipation: communityParticipation ?? [],
+        habitTracking: habitTracking ?? [],
+        improvementIdeas, foundingReason,
+        consentUpdates: !!consentUpdates,
+        consentAi: !!consentAi,
+        userId,
+      }).onConflictDoNothing().returning();
+
+      res.json({ success: true, member });
+    } catch (err: any) {
+      if (err.message?.includes("unique")) return res.status(409).json({ error: "You're already a member!" });
+      res.status(500).json({ error: "Failed to join community" });
+    }
+  });
+
+  // Get current active challenge — public
+  app.get("/api/community/challenge", async (_req: Request, res: Response) => {
+    try {
+      const { getCurrentChallenge } = await import("./arya/community-challenge");
+      const challenge = await getCurrentChallenge();
+      if (!challenge) return res.status(404).json({ error: "No active challenge" });
+      res.json(challenge);
+    } catch {
+      res.status(500).json({ error: "Failed to fetch challenge" });
+    }
+  });
+
+  // Get community posts — public, reactions enriched if logged in
+  app.get("/api/community/posts", async (req: Request, res: Response) => {
+    try {
+      let userId: string | null = null;
+      const authHeader = req.headers.authorization;
+      if (authHeader?.startsWith("Bearer ")) {
+        try {
+          const session = await verifySession(authHeader.split(" ")[1]);
+          if (session) userId = session.id;
+        } catch {}
+      }
+
+      const posts = await db
+        .select()
+        .from(aryaCommunityPosts)
+        .orderBy(desc(aryaCommunityPosts.createdAt))
+        .limit(50);
+
+      if (!userId) return res.json(posts.map((p) => ({ ...p, userReaction: null })));
+
+      // Enrich with user reactions
+      const postIds = posts.map((p) => p.id);
+      const reactions = postIds.length
+        ? await db.select().from(aryaCommunityReactions).where(
+            and(
+              eq(aryaCommunityReactions.userId, userId),
+              inArray(aryaCommunityReactions.postId, postIds)
+            )
+          )
+        : [];
+
+      const reactionMap = new Map(reactions.map((r) => [r.postId, r.reactionType]));
+      res.json(posts.map((p) => ({ ...p, userReaction: reactionMap.get(p.id) ?? null })));
+    } catch {
+      res.status(500).json({ error: "Failed to fetch posts" });
+    }
+  });
+
+  // Create community post — requires user auth
+  app.post("/api/community/posts", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId as string;
+      const [user] = await db.select({ name: aryaUsers.name }).from(aryaUsers).where(eq(aryaUsers.id, userId)).limit(1);
+      if (!user) return res.status(401).json({ error: "User not found" });
+
+      const { content, challengeId, dayNumber, isCompleted } = req.body;
+      if (!content?.trim()) return res.status(400).json({ error: "Content required" });
+
+      const [post] = await db.insert(aryaCommunityPosts).values({
+        userId, userName: user.name,
+        content: content.trim().slice(0, 2000),
+        challengeId: challengeId ?? null,
+        dayNumber: dayNumber ?? null,
+        isCompleted: !!isCompleted,
+        reactionCount: 0,
+      }).returning();
+
+      // Increment challenge participant count
+      if (challengeId) {
+        await db.update(aryaCommunityChallenge)
+          .set({ participantCount: sql`${aryaCommunityChallenge.participantCount} + 1` })
+          .where(eq(aryaCommunityChallenge.id, challengeId));
+        if (isCompleted) {
+          await db.update(aryaCommunityChallenge)
+            .set({ completedCount: sql`${aryaCommunityChallenge.completedCount} + 1` })
+            .where(eq(aryaCommunityChallenge.id, challengeId));
+        }
+      }
+
+      res.json(post);
+    } catch {
+      res.status(500).json({ error: "Failed to create post" });
+    }
+  });
+
+  // React to a post — toggle reaction
+  app.post("/api/community/posts/:id/react", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId as string;
+      const postId = req.params.id;
+      const reactionType = req.body.reactionType ?? "cheer";
+
+      const [existing] = await db.select().from(aryaCommunityReactions)
+        .where(and(eq(aryaCommunityReactions.postId, postId), eq(aryaCommunityReactions.userId, userId)))
+        .limit(1);
+
+      if (existing) {
+        await db.delete(aryaCommunityReactions)
+          .where(and(eq(aryaCommunityReactions.postId, postId), eq(aryaCommunityReactions.userId, userId)));
+        await db.update(aryaCommunityPosts)
+          .set({ reactionCount: sql`GREATEST(${aryaCommunityPosts.reactionCount} - 1, 0)` })
+          .where(eq(aryaCommunityPosts.id, postId));
+        const [updated] = await db.select({ reactionCount: aryaCommunityPosts.reactionCount }).from(aryaCommunityPosts).where(eq(aryaCommunityPosts.id, postId)).limit(1);
+        return res.json({ reacted: false, reactionCount: updated.reactionCount });
+      } else {
+        await db.insert(aryaCommunityReactions).values({ postId, userId, reactionType });
+        await db.update(aryaCommunityPosts)
+          .set({ reactionCount: sql`${aryaCommunityPosts.reactionCount} + 1` })
+          .where(eq(aryaCommunityPosts.id, postId));
+        const [updated] = await db.select({ reactionCount: aryaCommunityPosts.reactionCount }).from(aryaCommunityPosts).where(eq(aryaCommunityPosts.id, postId)).limit(1);
+        return res.json({ reacted: true, reactionCount: updated.reactionCount });
+      }
+    } catch {
+      res.status(500).json({ error: "Failed to react" });
+    }
+  });
+
+  // Admin: view community members
+  app.get("/api/admin/community/members", requireAdmin, async (_req: Request, res: Response) => {
+    try {
+      const members = await db.select().from(aryaCommunityMembers).orderBy(desc(aryaCommunityMembers.createdAt)).limit(500);
+      res.json({ members, total: members.length });
+    } catch {
+      res.status(500).json({ error: "Failed to fetch members" });
+    }
+  });
+
+  // Admin: manually trigger challenge generation
+  app.post("/api/admin/community/generate-challenge", requireAdmin, async (_req: Request, res: Response) => {
+    try {
+      const { generateWeeklyChallenge } = await import("./arya/community-challenge");
+      const generated = await generateWeeklyChallenge();
+      res.json({ success: generated, message: generated ? "New challenge generated" : "Active challenge already exists — archive it first" });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
     }
   });
 

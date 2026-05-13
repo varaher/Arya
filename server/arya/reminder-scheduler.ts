@@ -142,9 +142,11 @@ let schedulerInterval: ReturnType<typeof setInterval> | null = null;
 let newsDigestInterval: ReturnType<typeof setInterval> | null = null;
 let morningBriefingInterval: ReturnType<typeof setInterval> | null = null;
 let weeklyReviewInterval: ReturnType<typeof setInterval> | null = null;
+let weeklyChallengeInterval: ReturnType<typeof setInterval> | null = null;
 let lastNewsDigestSent = 0;
 let lastMorningBriefingSent = "";
 let lastWeeklyReviewSent = "";
+let lastWeeklyChallengeSent = "";
 
 async function sendNewsDigest(): Promise<void> {
   const now = Date.now();
@@ -207,6 +209,23 @@ async function checkWeeklyReview(): Promise<void> {
   }
 }
 
+async function checkWeeklyChallenge(): Promise<void> {
+  try {
+    const nowIST = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+    const dayOfWeek = nowIST.getUTCDay(); // 1 = Monday
+    const hour = nowIST.getUTCHours();
+    const weekKey = nowIST.toISOString().slice(0, 10);
+    if (dayOfWeek !== 1 || hour !== 6) return; // Only Monday 6 AM IST
+    if (lastWeeklyChallengeSent === weekKey) return;
+    lastWeeklyChallengeSent = weekKey;
+    const { generateWeeklyChallenge } = await import("./community-challenge");
+    const generated = await generateWeeklyChallenge();
+    if (generated) console.log("[COMMUNITY] Weekly challenge generated via scheduler");
+  } catch (err: any) {
+    console.error("[WEEKLY CHALLENGE CHECK]", err.message);
+  }
+}
+
 export function startReminderScheduler(): void {
   if (schedulerInterval) return;
   schedulerInterval = setInterval(checkAndFireReminders, 30 * 1000);
@@ -217,8 +236,12 @@ export function startReminderScheduler(): void {
 
   morningBriefingInterval = setInterval(checkMorningBriefing, 5 * 60 * 1000); // check every 5 min
   weeklyReviewInterval = setInterval(checkWeeklyReview, 15 * 60 * 1000); // check every 15 min
+  weeklyChallengeInterval = setInterval(checkWeeklyChallenge, 15 * 60 * 1000); // check every 15 min
 
-  console.log("[SCHEDULER] Reminder scheduler started (30s interval) + briefing/review checks active");
+  // Seed an initial challenge if none exists
+  import("./community-challenge").then(({ seedInitialChallenge }) => seedInitialChallenge()).catch(() => {});
+
+  console.log("[SCHEDULER] Reminder scheduler started (30s interval) + briefing/review/challenge checks active");
 }
 
 export function stopReminderScheduler(): void {
@@ -226,4 +249,5 @@ export function stopReminderScheduler(): void {
   if (newsDigestInterval) { clearInterval(newsDigestInterval); newsDigestInterval = null; }
   if (morningBriefingInterval) { clearInterval(morningBriefingInterval); morningBriefingInterval = null; }
   if (weeklyReviewInterval) { clearInterval(weeklyReviewInterval); weeklyReviewInterval = null; }
+  if (weeklyChallengeInterval) { clearInterval(weeklyChallengeInterval); weeklyChallengeInterval = null; }
 }

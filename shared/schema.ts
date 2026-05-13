@@ -746,5 +746,76 @@ export const insertAryaSubscriptionSchema = createInsertSchema(aryaSubscriptions
 export type InsertAryaSubscription = z.infer<typeof insertAryaSubscriptionSchema>;
 export type AryaSubscription = typeof aryaSubscriptions.$inferSelect;
 
+// =============================================
+// COMMUNITY
+// =============================================
+
+export const aryaCommunityMembers = pgTable("arya_community_members", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 200 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  whatsapp: varchar("whatsapp", { length: 20 }),
+  profession: varchar("profession", { length: 100 }),
+  countryCity: varchar("country_city", { length: 200 }),
+  growthGoals: text("growth_goals").array().default(sql`ARRAY[]::text[]`),
+  currentChallenges: text("current_challenges"),
+  expectations: text("expectations"),
+  growthReflection: text("growth_reflection"),
+  communityParticipation: text("community_participation").array().default(sql`ARRAY[]::text[]`),
+  habitTracking: text("habit_tracking").array().default(sql`ARRAY[]::text[]`),
+  improvementIdeas: text("improvement_ideas"),
+  foundingReason: text("founding_reason"),
+  consentUpdates: boolean("consent_updates").default(false),
+  consentAi: boolean("consent_ai").default(false),
+  userId: varchar("user_id", { length: 255 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export const insertAryaCommunityMemberSchema = createInsertSchema(aryaCommunityMembers).omit({ id: true, createdAt: true });
+export type InsertAryaCommunityMember = z.infer<typeof insertAryaCommunityMemberSchema>;
+export type AryaCommunityMember = typeof aryaCommunityMembers.$inferSelect;
+
+export const aryaCommunityChallenge = pgTable("arya_community_challenges", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  weekStart: timestamp("week_start").notNull(),
+  title: varchar("title", { length: 300 }).notNull(),
+  description: text("description").notNull(),
+  dailyTasks: text("daily_tasks").array().default(sql`ARRAY[]::text[]`),
+  durationDays: integer("duration_days").default(7),
+  status: varchar("status", { length: 20 }).default("active"),
+  generatedBy: varchar("generated_by", { length: 20 }).default("arya"),
+  participantCount: integer("participant_count").default(0),
+  completedCount: integer("completed_count").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export const insertAryaCommunityChallengeSchema = createInsertSchema(aryaCommunityChallenge).omit({ id: true, createdAt: true });
+export type InsertAryaCommunityChallenge = z.infer<typeof insertAryaCommunityChallengeSchema>;
+export type AryaCommunityChallenge = typeof aryaCommunityChallenge.$inferSelect;
+
+export const aryaCommunityPosts = pgTable("arya_community_posts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull(),
+  userName: varchar("user_name", { length: 200 }).notNull(),
+  challengeId: varchar("challenge_id", { length: 255 }),
+  content: text("content").notNull(),
+  dayNumber: integer("day_number"),
+  isCompleted: boolean("is_completed").default(false),
+  reactionCount: integer("reaction_count").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export const insertAryaCommunityPostSchema = createInsertSchema(aryaCommunityPosts).omit({ id: true, createdAt: true });
+export type InsertAryaCommunityPost = z.infer<typeof insertAryaCommunityPostSchema>;
+export type AryaCommunityPost = typeof aryaCommunityPosts.$inferSelect;
+
+export const aryaCommunityReactions = pgTable("arya_community_reactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  postId: varchar("post_id", { length: 255 }).notNull(),
+  userId: varchar("user_id", { length: 255 }).notNull(),
+  reactionType: varchar("reaction_type", { length: 20 }).default("cheer"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export const insertAryaCommunityReactionSchema = createInsertSchema(aryaCommunityReactions).omit({ id: true, createdAt: true });
+export type InsertAryaCommunityReaction = z.infer<typeof insertAryaCommunityReactionSchema>;
+export type AryaCommunityReaction = typeof aryaCommunityReactions.$inferSelect;
+
 // Re-export chat models
 export * from "./models/chat";
