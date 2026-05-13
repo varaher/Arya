@@ -1,0 +1,101 @@
+ARYA Founding Community Form
+Header Section
+Welcome to the ARYA Growth Community
+Become part of a movement focused on clarity, growth, discipline, and transformation.
+ARYA is more than an AI assistant — it is a companion designed to help people think clearly, grow consistently, and move forward in life.
+Personal Information
+Full Name
+[ Text Field ]
+Email Address
+[ Email Field ]
+WhatsApp Number
+[ Phone Number Field ]
+Profession
+[ Dropdown / Text Field ]
+Examples:
+Student
+Doctor
+Entrepreneur
+Employee
+Creator
+Teacher
+Homemaker
+Freelancer
+Other
+Country / City
+[ Text Field ]
+Your Growth Goals
+What areas would you like ARYA to help you with?
+(Select all that apply)
+☐ Productivity & Focus
+☐ Mental Clarity
+☐ Emotional Support
+☐ Career Growth
+☐ Business & Leadership
+☐ Fitness & Wellness
+☐ Habit Building
+☐ Motivation & Discipline
+☐ Learning & Skill Growth
+☐ Time Management
+☐ Confidence Building
+☐ Daily Planning
+☐ Stress Management
+☐ Relationships & Communication
+☐ Emergency Medicine / Medical Learning
+☐ Other: _________
+Your Current Challenges
+What challenge are you currently facing in life?
+[ Long Text Box ]
+Example Placeholder: “Lack of consistency, overthinking, stress, procrastination, burnout, difficulty focusing…”
+Expectations from ARYA
+What do you expect ARYA to help you achieve?
+[ Long Text Box ]
+Example Placeholder: “Better discipline, emotional clarity, structured thinking, improved productivity…”
+Growth Reflection
+What does “personal growth” mean to you?
+[ Long Text Box ]
+Community Participation
+Would you like to:
+☐ Join the ARYA WhatsApp Community
+☐ Join the ARYA Telegram Community
+☐ Become an Early Beta Tester
+☐ Share feedback to improve ARYA
+☐ Share my growth story in the future
+☐ Participate in ARYA challenges & streaks
+ARYA Growth Tracker (Future Feature)
+Which habits would you like ARYA to track for you?
+☐ Daily Focus
+☐ Reading
+☐ Fitness
+☐ Meditation
+☐ Sleep
+☐ Journaling
+☐ Learning
+☐ Emotional Well-being
+☐ Productivity
+☐ Other: _________
+“How Helpful Was ARYA?” (Future Feedback System)
+How do you think ARYA could improve your life?
+[ Long Text Box ]
+Founding Circle Access
+Why would you like to become part of the ARYA Founding Circle?
+[ Long Text Box ]
+Consent Section
+☐ I agree to receive updates, beta access, and community announcements from ARYA.
+☐ I understand that ARYA is an AI-powered assistant designed for guidance, productivity, and growth support.
+Submit Button
+🚀 Become an Early Member
+Success Message After Submission
+Welcome to the ARYA Founding Community 🌱
+You are now part of a growing movement focused on:
+Clarity
+Growth
+Discipline
+Better thinking
+Better living
+You’ll soon receive: ✅ Early access updates
+✅ Community invites
+✅ Beta testing opportunities
+✅ Growth challenges
+✅ ARYA feature updates
+“Small consistent steps create extraordinary transformations.”
