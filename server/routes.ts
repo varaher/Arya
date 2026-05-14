@@ -550,6 +550,10 @@ export async function registerRoutes(
         morningBriefingTime: (aryaUsers as any).morningBriefingTime,
         weeklyReviewEnabled: (aryaUsers as any).weeklyReviewEnabled,
         uiLanguage: (aryaUsers as any).uiLanguage,
+        reflectionShareEnabled: (aryaUsers as any).reflectionShareEnabled,
+        reflectionShareName: (aryaUsers as any).reflectionShareName,
+        reflectionShareContact: (aryaUsers as any).reflectionShareContact,
+        reflectionSharePaused: (aryaUsers as any).reflectionSharePaused,
       }).from(aryaUsers).where(eq(aryaUsers.id, userId)).limit(1);
       if (!user) return res.status(404).json({ error: "User not found" });
       res.json(user);
@@ -3118,6 +3122,59 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
       res.json({ success: generated, message: generated ? "New challenge generated" : "Active challenge already exists — archive it first" });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
+    }
+  });
+
+  // =============================================
+  // REFLECTION SHARE — user settings + public page
+  // =============================================
+
+  app.get("/api/user/reflection-share", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const [user] = await db.select({
+        reflectionShareEnabled: (aryaUsers as any).reflectionShareEnabled,
+        reflectionShareName: (aryaUsers as any).reflectionShareName,
+        reflectionShareContact: (aryaUsers as any).reflectionShareContact,
+        reflectionSharePaused: (aryaUsers as any).reflectionSharePaused,
+      }).from(aryaUsers).where(eq(aryaUsers.id, userId)).limit(1);
+      if (!user) return res.status(404).json({ error: "User not found" });
+      res.json(user);
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to get reflection share settings" });
+    }
+  });
+
+  app.post("/api/user/reflection-share", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const { enabled, name, contact, paused } = req.body;
+      await db.update(aryaUsers).set({
+        reflectionShareEnabled: !!enabled,
+        reflectionShareName: typeof name === "string" ? name.trim().slice(0, 255) || null : null,
+        reflectionShareContact: typeof contact === "string" ? contact.trim().slice(0, 255) || null : null,
+        reflectionSharePaused: !!paused,
+      } as any).where(eq(aryaUsers.id, userId));
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to save reflection share settings" });
+    }
+  });
+
+  // Also include reflection share fields in the preferences endpoint
+  // (the GET /api/user/preferences already serves the panel, we patch it via the above)
+
+  // Public reflection page — no auth required
+  app.get("/api/reflection/:token", async (req: Request, res: Response) => {
+    try {
+      const { token } = req.params;
+      if (!token || token.length < 16) return res.status(400).json({ error: "Invalid token" });
+      const { getReflectionByToken } = await import("./arya/reflection-share");
+      const data = await getReflectionByToken(token);
+      if (!data) return res.status(404).json({ error: "Reflection not found" });
+      res.json(data);
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to load reflection" });
     }
   });
 

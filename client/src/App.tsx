@@ -27,6 +27,7 @@ import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import TermsAndConditions from "@/pages/TermsAndConditions";
 import UserAnalytics from "@/pages/UserAnalytics";
 import Community from "@/pages/Community";
+import ReflectionPage from "@/pages/ReflectionPage";
 
 function AdminRoute({ component: Component }: { component: React.ComponentType }) {
   const { isAdmin, isLoading } = useAdminAuth();
@@ -106,6 +107,10 @@ function Router() {
           <AnimatedPage>
             <PublicLayout><UserGoals /></PublicLayout>
           </AnimatedPage>
+        </Route>
+
+        <Route path="/reflection/:token">
+          <ReflectionPage />
         </Route>
 
         <Route path="/dashboard">

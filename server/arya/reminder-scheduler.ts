@@ -7,6 +7,7 @@ import { sendMorningBriefings } from "./morning-briefing";
 import { sendWeeklyReviews } from "./weekly-review";
 import { checkSilentUsers } from "./silence-detection";
 import { sendYourPatterns } from "./patterns-engine";
+import { generateWeeklyReflectionShares } from "./reflection-share";
 
 let vapidPublicKey: string | null = null;
 let isInitialized = false;
@@ -210,6 +211,8 @@ async function checkWeeklyReview(): Promise<void> {
     if (lastWeeklyReviewSent === weekKey) return;
     lastWeeklyReviewSent = weekKey;
     await sendWeeklyReviews(sendPushToUser);
+    // Also generate reflection share links for users who opted in
+    await generateWeeklyReflectionShares(sendPushToUser);
   } catch (err: any) {
     console.error("[WEEKLY REVIEW CHECK]", err.message);
   }

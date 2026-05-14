@@ -408,6 +408,10 @@ export const aryaUsers = pgTable("arya_users", {
   razorpaySubscriptionId: varchar("razorpay_subscription_id", { length: 255 }),
   futureYouLetter: text("future_you_letter"),
   futureYouLetterDate: timestamp("future_you_letter_date"),
+  reflectionShareName: varchar("reflection_share_name", { length: 255 }),
+  reflectionShareContact: varchar("reflection_share_contact", { length: 255 }),
+  reflectionShareEnabled: boolean("reflection_share_enabled").default(false),
+  reflectionSharePaused: boolean("reflection_share_paused").default(false),
   lastLoginAt: timestamp("last_login_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

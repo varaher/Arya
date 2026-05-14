@@ -504,6 +504,10 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
   const [briefingTime, setBriefingTime] = useState("07:00");
   const [weeklyReview, setWeeklyReview] = useState(false);
   const [uiLang, setUiLang] = useState<UiLanguage>("en");
+  const [shareEnabled, setShareEnabled] = useState(false);
+  const [shareName, setShareName] = useState("");
+  const [shareContact, setShareContact] = useState("");
+  const [sharePaused, setSharePaused] = useState(false);
 
   useEffect(() => {
     if (prefs) {
@@ -517,6 +521,10 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
       setWeeklyReview(!!prefs.weeklyReviewEnabled);
       const lang = (prefs.uiLanguage || "en") as UiLanguage;
       setUiLang(lang);
+      setShareEnabled(!!(prefs as any).reflectionShareEnabled);
+      setShareName((prefs as any).reflectionShareName || "");
+      setShareContact((prefs as any).reflectionShareContact || "");
+      setSharePaused(!!(prefs as any).reflectionSharePaused);
     }
   }, [prefs]);
 
@@ -548,6 +556,11 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
           method: "POST",
           headers: { "Content-Type": "application/json", "x-user-token": token },
           body: JSON.stringify({ language: uiLang }),
+        }),
+        fetch("/api/user/reflection-share", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-user-token": token },
+          body: JSON.stringify({ enabled: shareEnabled, name: shareName, contact: shareContact, paused: sharePaused }),
         }),
       ]);
       setStoredUiLanguage(uiLang);
@@ -754,6 +767,69 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
                 <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${weeklyReview ? "left-4" : "left-0.5"}`} />
               </div>
             </button>
+          </div>
+
+          {/* Share your week */}
+          <div className="border border-gray-100 dark:border-slate-700 rounded-xl p-4 space-y-3">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <div className="text-xs font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-1.5">
+                  <span>🤝</span> Share your week with someone
+                </div>
+                <div className="text-[10px] text-gray-400 mt-0.5 leading-snug">
+                  Every Sunday, ARYA generates a private reflection — your wins, your struggles, your focus. You choose one person to share it with. They get a simple read-only link. No app needed.
+                </div>
+              </div>
+              <button
+                data-testid="toggle-reflection-share"
+                type="button"
+                onClick={() => setShareEnabled(v => !v)}
+                className="flex-shrink-0"
+              >
+                <div className={`w-9 h-5 rounded-full transition-colors relative ${shareEnabled ? "bg-emerald-500" : "bg-gray-200 dark:bg-slate-600"}`}>
+                  <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${shareEnabled ? "left-4" : "left-0.5"}`} />
+                </div>
+              </button>
+            </div>
+
+            {shareEnabled && (
+              <div className="space-y-2 pt-1">
+                <div>
+                  <label className="text-[10px] text-gray-500 dark:text-gray-400 font-medium mb-1 block">Their name</label>
+                  <input
+                    data-testid="input-share-name"
+                    type="text"
+                    value={shareName}
+                    onChange={e => setShareName(e.target.value)}
+                    placeholder="e.g. Priya, Dad, Rohit"
+                    className="w-full rounded-lg border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-800 text-xs text-gray-800 dark:text-gray-200 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-emerald-400 placeholder:text-gray-400"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-gray-500 dark:text-gray-400 font-medium mb-1 block">Their phone or email (so you remember who it's for)</label>
+                  <input
+                    data-testid="input-share-contact"
+                    type="text"
+                    value={shareContact}
+                    onChange={e => setShareContact(e.target.value)}
+                    placeholder="WhatsApp number or email"
+                    className="w-full rounded-lg border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-800 text-xs text-gray-800 dark:text-gray-200 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-emerald-400 placeholder:text-gray-400"
+                  />
+                </div>
+                <button
+                  data-testid="toggle-share-paused"
+                  type="button"
+                  onClick={() => setSharePaused(v => !v)}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg border text-xs transition-all ${sharePaused ? "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700 text-amber-700 dark:text-amber-400" : "bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-600 text-gray-500"}`}
+                >
+                  <span>{sharePaused ? "⏸ Sharing paused this week" : "✓ Sharing active every Sunday"}</span>
+                  <span className="text-[10px]">{sharePaused ? "Tap to resume" : "Tap to pause"}</span>
+                </button>
+                <p className="text-[10px] text-gray-400 leading-relaxed">
+                  Each Sunday, ARYA will generate your reflection and show you a link to share — you always choose whether to send it that week.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* App Language */}
