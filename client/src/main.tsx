@@ -23,8 +23,15 @@ if ('serviceWorker' in navigator) {
         });
       });
 
-      // Poll for updates every 60 minutes while the tab stays open
-      setInterval(() => reg.update().catch(() => {}), 60 * 60 * 1000);
+      // Poll for updates every 30 minutes while the tab stays open
+      setInterval(() => reg.update().catch(() => {}), 30 * 60 * 1000);
+
+      // Also check for updates whenever the user comes back to the app
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          reg.update().catch(() => {});
+        }
+      });
 
     }).catch(() => {});
 

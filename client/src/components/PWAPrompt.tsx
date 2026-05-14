@@ -5,8 +5,11 @@ import { Download, RefreshCw, X } from "lucide-react";
 type PromptMode = "install" | "update" | null;
 
 function isRunningAsStandalone(): boolean {
+  // Cover all PWA display modes across Android Chrome, Samsung Internet, iOS Safari
   return (
     window.matchMedia("(display-mode: standalone)").matches ||
+    window.matchMedia("(display-mode: minimal-ui)").matches ||
+    window.matchMedia("(display-mode: fullscreen)").matches ||
     (window.navigator as any).standalone === true
   );
 }
