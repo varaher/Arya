@@ -308,7 +308,32 @@ export default function PricingModal({ onClose, token, currentPlan = "free", onU
             })}
           </div>
 
-          <p className="text-center text-xs text-muted-foreground mt-5">
+          <div className="mt-6 rounded-2xl border border-emerald-100 dark:border-emerald-900/40 bg-emerald-50/60 dark:bg-emerald-950/20 px-5 py-4">
+            <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 text-center mb-3 uppercase tracking-wider">Your data promise</p>
+            <div className="grid grid-cols-3 gap-3 text-center">
+              <div>
+                <div className="text-lg mb-1">🇮🇳</div>
+                <p className="text-xs font-medium text-gray-800 dark:text-gray-200 leading-tight">Stored in India</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">Your data never leaves Indian servers</p>
+              </div>
+              <div>
+                <div className="text-lg mb-1">🔒</div>
+                <p className="text-xs font-medium text-gray-800 dark:text-gray-200 leading-tight">You own it</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">We never sell or train on your data</p>
+              </div>
+              <div>
+                <div className="text-lg mb-1">🗑️</div>
+                <p className="text-xs font-medium text-gray-800 dark:text-gray-200 leading-tight">Delete anytime</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">Erase memory, notes, or your full account</p>
+              </div>
+            </div>
+            <p className="text-center text-[10px] text-muted-foreground mt-3">
+              Compliant with India's{" "}
+              <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-emerald-600 dark:text-emerald-400 hover:underline">Digital Personal Data Protection Act 2023</a>
+            </p>
+          </div>
+
+          <p className="text-center text-xs text-muted-foreground mt-4">
             All plans include GST. Cancel anytime — no questions asked. Secured by Razorpay.{" "}
             <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-emerald-600 dark:text-emerald-400 hover:underline">Terms</a>
             {" "}·{" "}

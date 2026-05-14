@@ -2280,6 +2280,19 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
     }
   });
 
+  app.delete("/api/arya/memory", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId as string;
+      const { db } = await import("./db");
+      const { aryaMemory } = await import("@shared/schema");
+      const { eq } = await import("drizzle-orm");
+      await db.delete(aryaMemory).where(eq(aryaMemory.tenantId, userId));
+      res.json({ success: true, message: "All memory cleared" });
+    } catch (error: any) {
+      res.status(500).json({ error: "Something went wrong. Please try again." });
+    }
+  });
+
   app.delete("/api/arya/memory/:id", requireUser, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).userId as string;

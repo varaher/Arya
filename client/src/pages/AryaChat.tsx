@@ -323,6 +323,8 @@ function FeedbackButtons({ messageId, conversationId }: { messageId: number; con
 
 function MemoryPanel({ onClose, token }: { onClose: () => void; token?: string | null }) {
   const queryClient = useQueryClient();
+  const [confirmClearAll, setConfirmClearAll] = useState(false);
+
   const { data, isLoading } = useQuery<{ memories: MemoryItem[]; total: number }>({
     queryKey: ["/api/arya/memory"],
     queryFn: async () => {
@@ -345,6 +347,19 @@ function MemoryPanel({ onClose, token }: { onClose: () => void; token?: string |
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/arya/memory"] }),
   });
 
+  const clearAllMutation = useMutation({
+    mutationFn: async () => {
+      await fetch("/api/arya/memory", {
+        method: "DELETE",
+        headers: token ? { "x-user-token": token } : {},
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/arya/memory"] });
+      setConfirmClearAll(false);
+    },
+  });
+
   const memories = data?.memories || [];
   const grouped: Record<string, MemoryItem[]> = {};
   for (const m of memories) {
@@ -365,20 +380,27 @@ function MemoryPanel({ onClose, token }: { onClose: () => void; token?: string |
       <div className="p-3 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Brain className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-          <span className="text-sm font-semibold text-gray-900 dark:text-white">ARYA's Memory</span>
+          <span className="text-sm font-semibold text-gray-900 dark:text-white">Your Memory</span>
           <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">{memories.length}</span>
         </div>
         <button onClick={onClose} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-400">
           <X className="w-4 h-4" />
         </button>
       </div>
+
+      <div className="px-3 py-2 bg-purple-50/60 dark:bg-purple-950/20 border-b border-purple-100 dark:border-purple-900/30">
+        <p className="text-[10px] text-purple-700 dark:text-purple-400 leading-relaxed">
+          🔒 <strong>This is your memory, not ours.</strong> ARYA uses it to know you better. You can delete any entry or clear everything at any time.
+        </p>
+      </div>
+
       <div className="flex-1 overflow-y-auto p-3 space-y-4">
         {isLoading && <div className="flex items-center justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-purple-600 dark:text-purple-400" /></div>}
         {!isLoading && memories.length === 0 && (
           <div className="text-center py-8">
-            <Brain className="w-8 h-8 text-gray-900 dark:text-white/10 mx-auto mb-2" />
+            <Brain className="w-8 h-8 text-gray-300 dark:text-white/10 mx-auto mb-2" />
             <p className="text-sm text-gray-400">No memories yet</p>
-            <p className="text-xs text-gray-200 mt-1">Chat with ARYA to build memory</p>
+            <p className="text-xs text-gray-400 mt-1">ARYA builds memory as you chat</p>
           </div>
         )}
         {Object.entries(grouped).map(([category, items]) => (
@@ -407,6 +429,43 @@ function MemoryPanel({ onClose, token }: { onClose: () => void; token?: string |
           </div>
         ))}
       </div>
+
+      {memories.length > 0 && (
+        <div className="p-3 border-t border-gray-200 dark:border-slate-700">
+          {confirmClearAll ? (
+            <div className="rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 p-3">
+              <p className="text-xs text-red-700 dark:text-red-300 font-medium mb-2">Clear all {memories.length} memories? This can't be undone.</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => clearAllMutation.mutate()}
+                  disabled={clearAllMutation.isPending}
+                  className="flex-1 py-1.5 rounded-lg bg-red-500 hover:bg-red-600 text-white text-xs font-medium transition-colors"
+                  data-testid="button-confirm-clear-all-memory"
+                >
+                  {clearAllMutation.isPending ? "Clearing…" : "Yes, clear all"}
+                </button>
+                <button
+                  onClick={() => setConfirmClearAll(false)}
+                  className="flex-1 py-1.5 rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 text-xs font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmClearAll(true)}
+              className="w-full py-2 rounded-xl border border-red-200 dark:border-red-900 text-red-500 dark:text-red-400 text-xs font-medium hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+              data-testid="button-clear-all-memory"
+            >
+              Clear all memory
+            </button>
+          )}
+          <p className="text-center text-[10px] text-muted-foreground mt-2">
+            <a href="/privacy" target="_blank" rel="noopener noreferrer" className="hover:underline text-purple-500">Your data rights & privacy →</a>
+          </p>
+        </div>
+      )}
     </div>
   );
 }
