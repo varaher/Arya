@@ -12,6 +12,7 @@ const PLANS = [
     id: "free",
     name: "Free",
     price: 0,
+    tagline: "Start your journey with ARYA.",
     icon: Zap,
     iconColor: "text-gray-500",
     iconBg: "bg-gray-100 dark:bg-slate-700",
@@ -32,6 +33,7 @@ const PLANS = [
     id: "core",
     name: "Core",
     price: 349,
+    tagline: "For people building consistency and clarity.",
     icon: Star,
     iconColor: "text-emerald-600 dark:text-emerald-400",
     iconBg: "bg-emerald-100 dark:bg-emerald-900/30",
@@ -54,6 +56,7 @@ const PLANS = [
     id: "pro",
     name: "Pro",
     price: 549,
+    tagline: "For deep thinkers, creators, and ambitious minds.",
     icon: Crown,
     iconColor: "text-amber-600 dark:text-amber-400",
     iconBg: "bg-amber-100 dark:bg-amber-900/30",
@@ -255,7 +258,8 @@ export default function PricingModal({ onClose, token, currentPlan = "free", onU
                     <Icon className={`w-5 h-5 ${plan.iconColor}`} />
                   </div>
 
-                  <h3 className="text-base font-bold text-gray-900 dark:text-white mb-1">{plan.name}</h3>
+                  <h3 className="text-base font-bold text-gray-900 dark:text-white mb-0.5">{plan.name}</h3>
+                  <p className="text-xs text-muted-foreground italic mb-3 leading-snug">{plan.tagline}</p>
                   <div className="flex items-baseline gap-1 mb-4">
                     {plan.price === 0 ? (
                       <span className="text-2xl font-bold text-gray-900 dark:text-white">Free</span>
