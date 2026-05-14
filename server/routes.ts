@@ -588,6 +588,46 @@ export async function registerRoutes(
   });
 
   // =============================================
+  // FUTURE YOU LETTER
+  // =============================================
+
+  app.get("/api/user/future-letter", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const [user] = await db.select({
+        futureYouLetter: (aryaUsers as any).futureYouLetter,
+        futureYouLetterDate: (aryaUsers as any).futureYouLetterDate,
+      }).from(aryaUsers).where(eq(aryaUsers.id, userId)).limit(1);
+      if (!user) return res.status(404).json({ error: "User not found" });
+      res.json({
+        letter: (user as any).futureYouLetter || null,
+        writtenAt: (user as any).futureYouLetterDate || null,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to get future letter" });
+    }
+  });
+
+  app.post("/api/user/future-letter", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const { letter } = req.body;
+      if (!letter || typeof letter !== "string" || letter.trim().length < 20) {
+        return res.status(400).json({ error: "Letter must be at least 20 characters" });
+      }
+      await db.update(aryaUsers)
+        .set({
+          futureYouLetter: letter.trim().slice(0, 3000),
+          futureYouLetterDate: new Date(),
+        } as any)
+        .where(eq(aryaUsers.id, userId));
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to save future letter" });
+    }
+  });
+
+  // =============================================
   // USER INVITE CODE GENERATION
   // =============================================
 

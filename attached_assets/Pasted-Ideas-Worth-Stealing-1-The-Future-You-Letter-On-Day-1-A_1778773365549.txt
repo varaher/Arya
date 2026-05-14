@@ -1,0 +1,18 @@
+Ideas Worth Stealing
+1. The "Future You" Letter
+On Day 1, ARYA helps the user write a letter from their future self — 6 months from now — describing the life they want. Then ARYA reads it back to them at unexpected moments. Not as a reminder. As a voice. This creates emotional anchoring that no habit tracker has ever cracked.
+2. The Streak isn't the point — the Story is
+Instead of a streak counter (everyone does this, everyone burns out), ARYA builds a narrative. Every Sunday review doesn't just say "you hit 4/7 goals." It says: "This was the week you decided to stop apologizing in meetings. Here's what changed." People don't protect streaks. They protect their story.
+3. Silence Detection
+If a user goes quiet for 3 days, most apps send a push notification. ARYA instead sends one message: "You've been quiet. No pressure — but I noticed." Just that. No CTA. No reminder of features. This mirrors what a real friend does and the open rate on this type of message is reportedly extremely high in similar experiments.
+4. The "One Person" Network Effect
+Let users share a single weekly reflection — anonymized — with one person they choose. Not social media. Just one. A spouse, a friend, a mentor. That person gets a read-only window into your growth. Now ARYA has a relationship outside your phone, and that person becomes a retention mechanism you don't control.
+5. Voice Memory Flashbacks
+If they've recorded voice notes, ARYA plays one back from 30 or 60 days ago — their own voice, their own words — before the weekly review. Hearing yourself from the past is viscerally different from reading a summary. Nobody has done this well yet.
+6. The Hard Conversation Rehearsal
+Before a difficult conversation — with a boss, a parent, a partner — ARYA role-plays it with them. After, it checks in: "How did it go?" This creates a before-and-after loop that makes ARYA feel genuinely useful in real life moments, not just in the app.
+7. "Your Patterns" — the Insight Nobody Else Can Give You
+After 30 days, ARYA tells you something true and specific: "You make your best decisions on Tuesday mornings. You spiral most on Sunday nights." No other app has enough context to say this. This is your moat — and it's the reason someone renews for month 2.
+The Underlying Principle
+Most apps retain through obligation — streaks, reminders, FOMO.
+ARYA should retain through identity — people stay because leaving feels like abandoning a version of themselves they're becoming.

@@ -406,6 +406,8 @@ export const aryaUsers = pgTable("arya_users", {
   plan: varchar("plan", { length: 20 }).default("free").notNull(),
   planExpiresAt: timestamp("plan_expires_at"),
   razorpaySubscriptionId: varchar("razorpay_subscription_id", { length: 255 }),
+  futureYouLetter: text("future_you_letter"),
+  futureYouLetterDate: timestamp("future_you_letter_date"),
   lastLoginAt: timestamp("last_login_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -450,7 +452,7 @@ export const aryaVoiceSessions = pgTable("arya_voice_sessions", {
 export const aryaNotifications = pgTable("arya_notifications", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id", { length: 255 }).notNull(),
-  type: varchar("type", { length: 50 }).notNull().$type<'goal_reminder' | 'goal_progress' | 'streak' | 'insight' | 'welcome' | 'news_digest' | 'morning_briefing' | 'weekly_review'>(),
+  type: varchar("type", { length: 50 }).notNull().$type<'goal_reminder' | 'goal_progress' | 'streak' | 'insight' | 'welcome' | 'news_digest' | 'morning_briefing' | 'weekly_review' | 'silence_check' | 'future_letter' | 'your_patterns'>(),
   title: varchar("title", { length: 300 }).notNull(),
   message: text("message").notNull(),
   goalId: varchar("goal_id", { length: 255 }),

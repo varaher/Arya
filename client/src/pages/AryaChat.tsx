@@ -1972,6 +1972,10 @@ export default function AryaChat() {
   const [showTutorial, setShowTutorial] = useState(false);
   const [showPricing, setShowPricing] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [showFutureLetter, setShowFutureLetter] = useState(false);
+  const [futureLetterDraft, setFutureLetterDraft] = useState("");
+  const [futureLetterSaving, setFutureLetterSaving] = useState(false);
+  const [futureLetterSaved, setFutureLetterSaved] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -1980,6 +1984,17 @@ export default function AryaChat() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const langMenuRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
+
+  const { data: futureLetterData } = useQuery<{ letter: string | null; writtenAt: string | null }>({
+    queryKey: ["/api/user/future-letter", token],
+    queryFn: async () => {
+      if (!token) return { letter: null, writtenAt: null };
+      const res = await fetch("/api/user/future-letter", { headers: { "x-user-token": token } });
+      if (!res.ok) return { letter: null, writtenAt: null };
+      return res.json();
+    },
+    enabled: !!token && isLoggedIn,
+  });
 
   const { data: conversations = [] } = useQuery<Conversation[]>({
     queryKey: ["/api/arya/conversations", token],
@@ -2058,6 +2073,18 @@ export default function AryaChat() {
       setShowOnboarding(true);
     }
   }, [isLoggedIn, user]);
+
+  // Show Future You Letter prompt once after onboarding is complete, if no letter written yet
+  useEffect(() => {
+    if (!isLoggedIn || !user?.onboardingComplete) return;
+    if (futureLetterData === undefined) return; // still loading
+    if (futureLetterData?.letter) return; // already written
+    const dismissed = (() => { try { return localStorage.getItem("arya_future_letter_dismissed"); } catch { return null; } })();
+    if (dismissed) return; // user chose "later"
+    // Delay slightly so it doesn't clash with tutorial
+    const timer = setTimeout(() => setShowFutureLetter(true), 2500);
+    return () => clearTimeout(timer);
+  }, [isLoggedIn, user?.onboardingComplete, futureLetterData]);
 
   // Refresh conversations when login state changes so each user sees only their own
   useEffect(() => {
@@ -3768,6 +3795,128 @@ export default function AryaChat() {
               onClose={() => setShowPricing(false)}
               onUpgradeSuccess={(plan) => { setShowPricing(false); refreshUser?.(); }}
             />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Future You Letter modal */}
+      <AnimatePresence>
+        {showFutureLetter && isLoggedIn && (
+          <motion.div
+            key="future-letter-modal"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 16 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 16 }}
+              transition={{ duration: 0.25 }}
+              className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden"
+            >
+              {/* Header */}
+              <div className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-slate-700">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-full bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-xl">✉️</span>
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white leading-snug">
+                      A letter to your future self
+                    </h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                      Imagine it's 6 months from now. You've grown. Write a letter <em>from that version of you</em> — to who you are today.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Body */}
+              <div className="px-6 py-5">
+                {futureLetterSaved ? (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="text-center py-6"
+                  >
+                    <div className="text-4xl mb-3">🌱</div>
+                    <p className="font-medium text-gray-800 dark:text-gray-200 mb-1">Letter saved.</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">I'll read it back to you when the moment is right.</p>
+                  </motion.div>
+                ) : (
+                  <>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mb-2 italic">Start with "Dear [your name]..." — let it flow naturally.</p>
+                    <textarea
+                      data-testid="input-future-letter"
+                      value={futureLetterDraft}
+                      onChange={e => setFutureLetterDraft(e.target.value)}
+                      placeholder={`Dear ${user?.name?.split(" ")[0] || "friend"},\n\nSix months from now, you finally...`}
+                      rows={8}
+                      className="w-full rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-800 text-sm text-gray-800 dark:text-gray-200 p-3 resize-none focus:outline-none focus:ring-2 focus:ring-amber-400/50 placeholder:text-gray-400 dark:placeholder:text-gray-600 leading-relaxed"
+                    />
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5 text-right">
+                      {futureLetterDraft.length} / 3000
+                    </p>
+                  </>
+                )}
+              </div>
+
+              {/* Footer */}
+              {!futureLetterSaved && (
+                <div className="px-6 pb-6 flex gap-3 justify-end">
+                  <button
+                    data-testid="button-future-letter-later"
+                    onClick={() => {
+                      try { localStorage.setItem("arya_future_letter_dismissed", new Date().toDateString()); } catch {}
+                      setShowFutureLetter(false);
+                    }}
+                    className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                  >
+                    Maybe later
+                  </button>
+                  <button
+                    data-testid="button-future-letter-save"
+                    disabled={futureLetterDraft.trim().length < 20 || futureLetterSaving}
+                    onClick={async () => {
+                      if (!token || futureLetterDraft.trim().length < 20) return;
+                      setFutureLetterSaving(true);
+                      try {
+                        const res = await fetch("/api/user/future-letter", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json", "x-user-token": token },
+                          body: JSON.stringify({ letter: futureLetterDraft }),
+                        });
+                        if (res.ok) {
+                          setFutureLetterSaved(true);
+                          queryClient.invalidateQueries({ queryKey: ["/api/user/future-letter"] });
+                          setTimeout(() => setShowFutureLetter(false), 2200);
+                        }
+                      } finally {
+                        setFutureLetterSaving(false);
+                      }
+                    }}
+                    className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium transition-colors flex items-center gap-2"
+                  >
+                    {futureLetterSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                    {futureLetterSaving ? "Saving…" : "Save this letter"}
+                  </button>
+                </div>
+              )}
+              {futureLetterSaved && (
+                <div className="px-6 pb-6 flex justify-center">
+                  <button
+                    data-testid="button-future-letter-close"
+                    onClick={() => setShowFutureLetter(false)}
+                    className="px-5 py-2 rounded-xl bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200 text-sm font-medium hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              )}
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

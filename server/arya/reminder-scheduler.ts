@@ -5,6 +5,8 @@ import { eq, and, lte, isNull, or } from "drizzle-orm";
 import { fetchLatestNews, getNewsDigestText } from "./news-service";
 import { sendMorningBriefings } from "./morning-briefing";
 import { sendWeeklyReviews } from "./weekly-review";
+import { checkSilentUsers } from "./silence-detection";
+import { sendYourPatterns } from "./patterns-engine";
 
 let vapidPublicKey: string | null = null;
 let isInitialized = false;
@@ -143,10 +145,14 @@ let newsDigestInterval: ReturnType<typeof setInterval> | null = null;
 let morningBriefingInterval: ReturnType<typeof setInterval> | null = null;
 let weeklyReviewInterval: ReturnType<typeof setInterval> | null = null;
 let weeklyChallengeInterval: ReturnType<typeof setInterval> | null = null;
+let silenceDetectionInterval: ReturnType<typeof setInterval> | null = null;
+let patternsInterval: ReturnType<typeof setInterval> | null = null;
 let lastNewsDigestSent = 0;
 let lastMorningBriefingSent = "";
 let lastWeeklyReviewSent = "";
 let lastWeeklyChallengeSent = "";
+let lastSilenceCheckSent = "";
+let lastPatternsSent = "";
 
 async function sendNewsDigest(): Promise<void> {
   const now = Date.now();
@@ -209,6 +215,35 @@ async function checkWeeklyReview(): Promise<void> {
   }
 }
 
+async function checkSilenceDetection(): Promise<void> {
+  try {
+    const nowIST = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+    const hour = nowIST.getUTCHours();
+    const dateKey = nowIST.toISOString().slice(0, 10);
+    if (hour !== 18) return; // Only run at 6 PM IST daily
+    if (lastSilenceCheckSent === dateKey) return;
+    lastSilenceCheckSent = dateKey;
+    await checkSilentUsers(sendPushToUser);
+  } catch (err: any) {
+    console.error("[SILENCE CHECK]", err.message);
+  }
+}
+
+async function checkPatterns(): Promise<void> {
+  try {
+    const nowIST = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+    const dayOfMonth = nowIST.getUTCDate();
+    const hour = nowIST.getUTCHours();
+    const monthKey = nowIST.toISOString().slice(0, 7); // YYYY-MM
+    if (dayOfMonth !== 1 || hour !== 10) return; // 1st of each month at 10 AM IST
+    if (lastPatternsSent === monthKey) return;
+    lastPatternsSent = monthKey;
+    await sendYourPatterns(sendPushToUser);
+  } catch (err: any) {
+    console.error("[PATTERNS CHECK]", err.message);
+  }
+}
+
 async function checkWeeklyChallenge(): Promise<void> {
   try {
     const nowIST = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
@@ -237,11 +272,13 @@ export function startReminderScheduler(): void {
   morningBriefingInterval = setInterval(checkMorningBriefing, 5 * 60 * 1000); // check every 5 min
   weeklyReviewInterval = setInterval(checkWeeklyReview, 15 * 60 * 1000); // check every 15 min
   weeklyChallengeInterval = setInterval(checkWeeklyChallenge, 15 * 60 * 1000); // check every 15 min
+  silenceDetectionInterval = setInterval(checkSilenceDetection, 30 * 60 * 1000); // check every 30 min
+  patternsInterval = setInterval(checkPatterns, 60 * 60 * 1000); // check every hour
 
   // Seed an initial challenge if none exists
   import("./community-challenge").then(({ seedInitialChallenge }) => seedInitialChallenge()).catch(() => {});
 
-  console.log("[SCHEDULER] Reminder scheduler started (30s interval) + briefing/review/challenge checks active");
+  console.log("[SCHEDULER] Reminder scheduler started — briefing/review/challenge/silence/patterns active");
 }
 
 export function stopReminderScheduler(): void {
@@ -250,4 +287,6 @@ export function stopReminderScheduler(): void {
   if (morningBriefingInterval) { clearInterval(morningBriefingInterval); morningBriefingInterval = null; }
   if (weeklyReviewInterval) { clearInterval(weeklyReviewInterval); weeklyReviewInterval = null; }
   if (weeklyChallengeInterval) { clearInterval(weeklyChallengeInterval); weeklyChallengeInterval = null; }
+  if (silenceDetectionInterval) { clearInterval(silenceDetectionInterval); silenceDetectionInterval = null; }
+  if (patternsInterval) { clearInterval(patternsInterval); patternsInterval = null; }
 }
