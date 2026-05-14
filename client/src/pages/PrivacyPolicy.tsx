@@ -38,13 +38,13 @@ export default function PrivacyPolicy() {
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-emerald-100 dark:border-emerald-900">
-              <div className="text-2xl mb-2">🇮🇳</div>
-              <p className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Stored in India</p>
-              <p className="text-xs text-muted-foreground">Your conversations, goals, memory, and notes are stored on servers located in India. Your data does not leave Indian jurisdiction.</p>
+              <div className="text-2xl mb-2">🔐</div>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Encrypted always</p>
+              <p className="text-xs text-muted-foreground">All data is encrypted at rest and in transit over HTTPS/TLS. Your conversations, memory, and notes are never stored in plain text.</p>
             </div>
             <div className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-emerald-100 dark:border-emerald-900">
-              <div className="text-2xl mb-2">🔒</div>
-              <p className="text-sm font-semibold text-gray-900 dark:text-white mb-1">You own it</p>
+              <div className="text-2xl mb-2">🚫</div>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Never sold or shared</p>
               <p className="text-xs text-muted-foreground">We never sell your personal data. We never use your conversations to train AI models. Your data exists only to serve you.</p>
             </div>
             <div className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-emerald-100 dark:border-emerald-900">
@@ -176,7 +176,7 @@ export default function PrivacyPolicy() {
                   </tr>
                   <tr>
                     <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-300">Replit / Neon</td>
-                    <td className="px-4 py-3">Hosting &amp; PostgreSQL database</td>
+                    <td className="px-4 py-3">Hosting &amp; PostgreSQL database (US-based servers, Google Cloud Platform)</td>
                     <td className="px-4 py-3">All stored data (encrypted at rest and in transit)</td>
                   </tr>
                 </tbody>

@@ -312,13 +312,13 @@ export default function PricingModal({ onClose, token, currentPlan = "free", onU
             <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 text-center mb-3 uppercase tracking-wider">Your data promise</p>
             <div className="grid grid-cols-3 gap-3 text-center">
               <div>
-                <div className="text-lg mb-1">🇮🇳</div>
-                <p className="text-xs font-medium text-gray-800 dark:text-gray-200 leading-tight">Stored in India</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">Your data never leaves Indian servers</p>
+                <div className="text-lg mb-1">🔐</div>
+                <p className="text-xs font-medium text-gray-800 dark:text-gray-200 leading-tight">Encrypted</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">At rest and in transit, always</p>
               </div>
               <div>
-                <div className="text-lg mb-1">🔒</div>
-                <p className="text-xs font-medium text-gray-800 dark:text-gray-200 leading-tight">You own it</p>
+                <div className="text-lg mb-1">🚫</div>
+                <p className="text-xs font-medium text-gray-800 dark:text-gray-200 leading-tight">Never sold</p>
                 <p className="text-[10px] text-muted-foreground mt-0.5">We never sell or train on your data</p>
               </div>
               <div>
