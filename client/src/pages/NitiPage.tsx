@@ -212,7 +212,7 @@ export default function NitiPage() {
 
   useEffect(() => {
     if (!token) return;
-    fetch("/api/niti/profile", { headers: { Authorization: `Bearer ${token}` } })
+    fetch("/api/niti/profile", { headers: { "x-user-token": token } })
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (!data?.nitiEnabled) return;
@@ -242,7 +242,7 @@ export default function NitiPage() {
   const loadSessions = useCallback(async () => {
     if (!token) return;
     try {
-      const r = await fetch("/api/niti/sessions", { headers: { Authorization: `Bearer ${token}` } });
+      const r = await fetch("/api/niti/sessions", { headers: { "x-user-token": token } });
       if (r.ok) setSessions(await r.json());
     } catch {}
   }, [token]);
@@ -261,7 +261,7 @@ export default function NitiPage() {
   const loadPortfolio = useCallback(async () => {
     if (!token) return;
     try {
-      const r = await fetch("/api/niti/portfolio", { headers: { Authorization: `Bearer ${token}` } });
+      const r = await fetch("/api/niti/portfolio", { headers: { "x-user-token": token } });
       if (r.ok) setPortfolio(await r.json());
     } catch {}
   }, [token]);
@@ -271,7 +271,7 @@ export default function NitiPage() {
     try {
       const r = await fetch("/api/niti/market/ask", {
         method: "POST",
-        headers: { Authorization: `Bearer ${token || ""}`, "Content-Type": "application/json" },
+        headers: { "x-user-token": token || "", "Content-Type": "application/json" },
         body: JSON.stringify({ topic, businessChallenge: bizChallenge, businessType: bizType }),
       });
       const data = await r.json();
@@ -287,7 +287,7 @@ export default function NitiPage() {
     try {
       const r = await fetch("/api/niti/portfolio", {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        headers: { "x-user-token": token, "Content-Type": "application/json" },
         body: JSON.stringify({
           name: holdingForm.name,
           assetType: holdingForm.assetType,
@@ -308,7 +308,7 @@ export default function NitiPage() {
   const deleteHolding = async (id: number) => {
     if (!token) return;
     try {
-      await fetch(`/api/niti/portfolio/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+      await fetch(`/api/niti/portfolio/${id}`, { method: "DELETE", headers: { "x-user-token": token } });
       setPortfolio(prev => prev.filter(h => h.id !== id));
     } catch {}
   };
@@ -319,7 +319,7 @@ export default function NitiPage() {
     try {
       await fetch("/api/niti/setup", {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        headers: { "x-user-token": token, "Content-Type": "application/json" },
         body: JSON.stringify({ businessType: bizType, businessStage: bizStage, businessRole: bizRole, businessChallenge: bizChallenge, businessFocusAreas: focusAreas }),
       });
       await loadSessions();
@@ -336,7 +336,7 @@ export default function NitiPage() {
     try {
       const r = await fetch("/api/niti/sessions", {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        headers: { "x-user-token": token, "Content-Type": "application/json" },
         body: JSON.stringify({ sessionType }),
       });
       const data = await r.json();
@@ -363,7 +363,7 @@ export default function NitiPage() {
     try {
       const r = await fetch(`/api/niti/sessions/${currentSession.id}/message`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        headers: { "x-user-token": token, "Content-Type": "application/json" },
         body: JSON.stringify({ content: text }),
       });
       const data = await r.json();
@@ -409,8 +409,8 @@ export default function NitiPage() {
             <div key={key} style={{ background: N.surface2, border: `1px solid ${N.border}`, borderLeft: `3px solid ${p.color}`, borderRadius: "0 10px 10px 0", padding: "12px 16px", display: "flex", alignItems: "center", gap: 14 }}>
               <span style={{ fontSize: 22, lineHeight: 1 }}>{p.emoji}</span>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, color: N.cream, fontWeight: 600 }}>{p.name}</div>
-                <div style={{ fontSize: 11, color: N.steel, marginTop: 2 }}>{p.domain} · <span style={{ color: p.color }}>{p.text}</span></div>
+                <div style={{ fontSize: 13, color: N.cream, fontWeight: 600 }}>{p.domain}</div>
+                <div style={{ fontSize: 11, color: p.color, marginTop: 2 }}>{p.text}</div>
               </div>
             </div>
           ))}
@@ -683,7 +683,6 @@ export default function NitiPage() {
               <Icon size={20} color={phil.color} />
               <div style={{ fontSize: 13, color: N.cream, fontWeight: 600, lineHeight: 1.3 }}>{label}</div>
               <div style={{ fontSize: 11, color: N.steel, lineHeight: 1.4 }}>{desc}</div>
-              <div style={{ fontSize: 10, color: phil.color, letterSpacing: "0.05em" }}>{phil.emoji} {phil.name}</div>
             </button>
           );
         })}
