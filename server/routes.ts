@@ -25,7 +25,7 @@ import {
   SUPPORTED_LANGUAGES,
   type SarvamLanguageCode,
 } from "./arya/sarvam-service";
-import { QueryRequestSchema, DomainSchema, aryaKnowledge, aryaClinicalRecords, aryaVoiceQualityLog, aryaMemory, aryaNitiSessions, aryaNitiMessages } from "@shared/schema";
+import { QueryRequestSchema, DomainSchema, aryaKnowledge, aryaClinicalRecords, aryaVoiceQualityLog, aryaMemory, aryaNitiSessions, aryaNitiMessages, aryaPortfolioHoldings } from "@shared/schema";
 import OpenAI from "openai";
 import { eq, and, desc, sql, or, isNull, lte, inArray } from "drizzle-orm";
 import { db } from "./db";
@@ -3488,6 +3488,88 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
     } catch (err: any) {
       console.error("[Niti] message error:", err);
       res.status(500).json({ error: "Failed to process message" });
+    }
+  });
+
+  // ── Market Lens ────────────────────────────────────────────
+  app.get("/api/niti/market/indices", async (_req: Request, res: Response) => {
+    try {
+      const { getMarketIndices } = await import("./arya/market-lens");
+      res.json(getMarketIndices());
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to load indices" });
+    }
+  });
+
+  app.get("/api/niti/market/news", async (_req: Request, res: Response) => {
+    try {
+      const { getMarketNews } = await import("./arya/market-lens");
+      res.json(getMarketNews());
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to load news" });
+    }
+  });
+
+  app.post("/api/niti/market/ask", optionalUser, async (req: Request, res: Response) => {
+    try {
+      const { topic, businessType, businessChallenge } = req.body;
+      if (!topic?.trim()) return res.status(400).json({ error: "topic required" });
+      const { askAryaAboutMarket } = await import("./arya/market-lens");
+      const response = await askAryaAboutMarket(topic, businessType, businessChallenge);
+      res.json(response);
+    } catch (err: any) {
+      console.error("[Market] ask error:", err);
+      res.status(500).json({ error: "Failed to process question" });
+    }
+  });
+
+  // ── Portfolio Holdings ─────────────────────────────────────
+  app.get("/api/niti/portfolio", optionalUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).aryaUser?.id;
+      if (!userId) return res.json([]);
+      const holdings = await db.select().from(aryaPortfolioHoldings)
+        .where(eq(aryaPortfolioHoldings.userId, userId))
+        .orderBy(desc(aryaPortfolioHoldings.createdAt));
+      res.json(holdings);
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to load portfolio" });
+    }
+  });
+
+  app.post("/api/niti/portfolio", optionalUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).aryaUser?.id;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const { name, ticker, assetType, quantity, avgPrice, notes } = req.body;
+      if (!name?.trim()) return res.status(400).json({ error: "name required" });
+      const [holding] = await db.insert(aryaPortfolioHoldings).values({
+        userId,
+        name: name.trim(),
+        ticker: ticker?.trim() || null,
+        assetType: assetType || "Stock",
+        quantity: String(parseFloat(quantity) || 0),
+        avgPrice: String(parseFloat(avgPrice) || 0),
+        notes: notes?.trim() || null,
+      }).returning();
+      res.json(holding);
+    } catch (err: any) {
+      console.error("[Portfolio] add error:", err);
+      res.status(500).json({ error: "Failed to add holding" });
+    }
+  });
+
+  app.delete("/api/niti/portfolio/:id", optionalUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).aryaUser?.id;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const holdingId = parseInt(req.params.id);
+      if (isNaN(holdingId)) return res.status(400).json({ error: "Invalid id" });
+      await db.delete(aryaPortfolioHoldings)
+        .where(and(eq(aryaPortfolioHoldings.id, holdingId), eq(aryaPortfolioHoldings.userId, userId)));
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to delete holding" });
     }
   });
 

@@ -463,6 +463,20 @@ export const insertNitiMessageSchema = createInsertSchema(aryaNitiMessages).omit
 export type NitiSession = typeof aryaNitiSessions.$inferSelect;
 export type NitiMessage = typeof aryaNitiMessages.$inferSelect;
 
+export const aryaPortfolioHoldings = pgTable("arya_portfolio_holdings", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 36 }).notNull().references(() => aryaUsers.id, { onDelete: "cascade" }),
+  name: varchar("name", { length: 255 }).notNull(),
+  ticker: varchar("ticker", { length: 50 }),
+  assetType: varchar("asset_type", { length: 30 }).default("Stock"),
+  quantity: decimal("quantity", { precision: 15, scale: 4 }).default("0"),
+  avgPrice: decimal("avg_price", { precision: 15, scale: 2 }).default("0"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+export type PortfolioHolding = typeof aryaPortfolioHoldings.$inferSelect;
+
 export const insertAryaUserSchema = createInsertSchema(aryaUsers).omit({
   id: true,
   createdAt: true,
