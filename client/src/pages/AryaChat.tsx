@@ -2016,19 +2016,14 @@ export default function AryaChat() {
 
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
-    let refreshing = false;
-    navigator.serviceWorker.ready.then(reg => {
-      if (reg.waiting) { setUpdateAvailable(true); }
-      reg.addEventListener("updatefound", () => {
-        const sw = reg.installing;
-        if (sw) sw.addEventListener("statechange", () => {
-          if (sw.state === "installed" && navigator.serviceWorker.controller) setUpdateAvailable(true);
-        });
-      });
+    // main.tsx already fires 'sw-update-ready' — just listen for it
+    const onUpdateReady = () => setUpdateAvailable(true);
+    window.addEventListener("sw-update-ready", onUpdateReady);
+    // Also catch the case where a SW was already waiting before this component mounted
+    navigator.serviceWorker.getRegistration().then(reg => {
+      if (reg?.waiting) setUpdateAvailable(true);
     });
-    navigator.serviceWorker.addEventListener("controllerchange", () => {
-      if (!refreshing) { refreshing = true; window.location.reload(); }
-    });
+    return () => window.removeEventListener("sw-update-ready", onUpdateReady);
   }, []);
 
   const handleAppUpdate = async () => {

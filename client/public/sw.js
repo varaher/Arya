@@ -1,4 +1,4 @@
-const CACHE_NAME = 'arya-pwa-v4';
+const CACHE_NAME = 'arya-pwa-v5';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
