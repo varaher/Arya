@@ -19,40 +19,91 @@ The project is structured as a monorepo with a React frontend, an Express backen
 -   **Framework:** React 18 with TypeScript.
 -   **UI/UX:** shadcn/ui (New York style), Radix UI, Tailwind CSS v4 (light/bright theme: white backgrounds, gray text, cyan/amber/purple accents), Space Grotesk (headings), Inter (body), JetBrains Mono (code).
 -   **PWA:** Installable on mobile, with manifest, service worker, and app icons.
--   **Key Pages:** Public conversational chat, user goals management, and admin-only dashboards for orchestrator, knowledge base, self-learning engine, neural link explorer, clinical processing, patient monitoring, API playground, and developer portal.
--   **User Authentication:** Name/email/phone/password signup, JWT-like session tokens (30-day TTL) stored in localStorage.
+-   **Key Pages:**
+    -   `/` — Main chat (AryaChat.tsx) — public and admin views
+    -   `/my-goals` — User goals management
+    -   `/privacy-control` — Right to Forget / DPDP Act 2023 data management
+    -   `/privacy`, `/terms` — Legal pages
+    -   `/community` — Community challenges and posts
+    -   `/reflection/:token` — Shared weekly reflection (public)
+    -   Admin-only: `/dashboard`, `/orchestrator`, `/knowledge`, `/ermate`, `/erprana`, `/self-learning`, `/neural-link`, `/api-playground`, `/developer`, `/user-analytics`
+-   **User Authentication:** Name/email/phone/password signup, JWT-like session tokens (30-day TTL) stored in localStorage. Google OAuth also supported.
 -   **Admin Authentication:** Password-based, in-memory session tokens.
 -   **Notifications:** Bell icon for unread count and list of notifications.
--   **User Customization:** Users can set response length, conversation tone, focus areas, and wisdom/quotes preference.
+-   **User Customization (Customize panel):** Response length, conversation tone, focus areas, wisdom/quotes toggle, news toggle, morning briefing toggle + time picker, weekly review toggle, app language (English / हिंदी).
+-   **Multilingual UI:** Full English + Hindi UI via `client/src/lib/i18n.ts`. `getTranslation(lang, key)` / `getStoredUiLanguage()` / `setStoredUiLanguage()`. Applied across sidebar, chat, mood card, voice notes panel, and customize panel.
+-   **Theme:** Light/dark toggle. `ThemeProvider` in `client/src/lib/theme.tsx`, stored in localStorage. `[data-theme="dark"]` on `<html>`, Tailwind v4 `@custom-variant dark`.
 
 ### Backend
 
 -   **Framework:** Express.js on Node.js with TypeScript.
--   **User Auth Service:** Handles signup (bcrypt hashing), login, session verification, and profile management.
--   **Core Components:**
-    -   **Orchestrator:** Routes queries to knowledge domains based on intent and context.
-    -   **Knowledge Retriever:** Fetches knowledge units from PostgreSQL.
-    -   **Medical Engine:** Provides deterministic NLP parsing for clinical transcripts.
-    -   **Self-Learning Engine:** Identifies knowledge gaps and auto-generates drafts.
-    -   **Neural Link Engine:** Discovers cross-domain connections for insights.
-    -   **Smart Commands:** Handles instant, local commands without AI API calls.
-    -   **Goal Detection in Chat:** Detects goal-setting intent post-response via pattern matching and GPT-4.1-mini, auto-creating structured goals.
--   **AI Architecture:** Hybrid approach combining local processing for instant commands ("Alexa Mode"), deep reasoning with GPT-5.2 and RAG, and creative tasks using GPT.
--   **Smart Capabilities:** Persistent memory, goal and plan management, self-reflection via user feedback, proactive insights, and confidence scoring.
--   **Notifications System:** Generates notifications for welcome, goal creation, progress, streaks, and reminders.
--   **Database:** PostgreSQL with Drizzle ORM. Key tables include `arya_knowledge`, `arya_goals`, `arya_users`, `arya_notifications`, and tables for memory, usage, and caching.
--   **Multi-Tenancy:** Implemented via `tenant_id` and validation middleware.
--   **Learning Loop:** `ResponseCacheEngine` for golden response caching, similarity matching, and shadow-mode cache lookup to reduce LLM dependency.
--   **Usage & Cost Management:** Granular usage tracking, daily cost estimation, rate limiting, and cost cap enforcement. Beta mode with invite-only access and user caps.
+-   **User Auth Service:** Signup (bcrypt hashing), login, session verification, profile management, Google OAuth login (`server/arya/user-auth-service.ts`).
+-   **Core AI Components:**
+    -   **Orchestrator** (`orchestrator.ts`): Routes queries to knowledge domains based on intent and context.
+    -   **Knowledge Retriever** (`knowledge-retriever.ts`): Fetches knowledge units from PostgreSQL with RAG.
+    -   **Medical Engine** (`medical-engine.ts`): Deterministic NLP parsing for clinical transcripts.
+    -   **Self-Learning Engine** (`learning-engine.ts`): Identifies knowledge gaps, auto-generates drafts.
+    -   **Neural Link Engine** (`neural-link-engine.ts`): Discovers cross-domain connections for insights.
+    -   **Smart Commands** (`smart-commands.ts`): Instant local commands without LLM API calls ("Alexa Mode").
+    -   **Goal Detection in Chat:** Detects goal-setting intent post-response via pattern matching and GPT-4o-mini, auto-creating structured goals.
+    -   **Memory Engine** (`memory-engine.ts`): Persistent user memory, cross-session context.
+    -   **Patterns Engine** (`patterns-engine.ts`): Detects behavioral patterns over time.
+    -   **Silence Detection** (`silence-detection.ts`): Detects inactivity and sends re-engagement nudges.
+    -   **Response Cache Engine** (`response-cache-engine.ts`): Golden response caching, similarity matching, shadow-mode lookup to reduce LLM dependency.
+-   **Retention & Engagement Services:**
+    -   **Morning Briefing** (`morning-briefing.ts`): Daily personalized briefing — active goals + news + motivational line, sent as a notification. Triggered by scheduler for users with `morningBriefingEnabled = true`.
+    -   **Weekly Review** (`weekly-review.ts`): Sunday GPT-generated narrative review woven from goals, memory, and voice flashback (notes from 28–62 days prior). Sent as notification.
+    -   **Hard Conversation Rehearsal** (`rehearsal.ts`): ARYA plays a persona (boss, parent, investor, etc.) so users can practise difficult conversations. Conversations enter `rehearsal` mode with `rehearsalPersona` + `rehearsalExchangeCount` tracked on the conversations table. POST `/api/arya/conversations/:id/start-rehearsal`, `/rehearsal-feedback`.
+    -   **Community Challenges** (`community-challenge.ts`): Shared weekly challenges, community posts, reactions.
+    -   **Reflection Share** (`reflection-share.ts`): Tokenised public links for sharing weekly reflections.
+-   **Scheduler** (`reminder-scheduler.ts`): Manages all background tasks — morning briefings (every 5 min check), weekly reviews (every 15 min check), community challenges, silence detection, pattern analysis.
+-   **Notifications System:** Types include welcome, goal_created, progress, streak, reminder, morning_briefing, weekly_review, community_challenge, pattern_insight, silence_nudge.
+-   **Document & Image Analysis:** `POST /api/arya/conversations/:id/scan` — accepts base64 file + mimeType + question. Images → GPT-4o vision. PDFs → pdf-parse text extraction → GPT-4o. Response optionally translated via Sarvam.
+-   **Google Calendar** (`google-calendar.ts`): OAuth 2.0 flow. Routes: `GET /api/calendar/auth-url`, `GET /api/calendar/callback`, `GET /api/calendar/status`, `GET /api/calendar/events`, `DELETE /api/calendar/disconnect`. CalendarPanel component in AryaChat.
+-   **Mood Check-ins:** `POST /api/user/mood` (mood + energy + note), `GET /api/user/mood/today`, `GET /api/user/mood/history`. Stored in `arya_mood_checkins`. MoodCheckInCard shown once daily in welcome screen.
+-   **Voice Notes:** `POST /api/user/voice-notes`, `GET /api/user/voice-notes`, `DELETE /api/user/voice-notes/:id`. Stored in `arya_voice_notes`. VoiceNotesPanel in sidebar Notes tab.
+-   **Right to Forget / Privacy Control** (`forget-me-service.ts`): DPDP Act 2023 compliance. Three deletion paths — selective (by category), period (date range), full reset. All operations logged to `arya_deletion_audit` (records THAT a deletion happened, never WHAT). Routes: `GET /api/user/data-summary`, `DELETE /api/user/forget/selective`, `/period`, `/all`.
+-   **Usage & Cost Management:** Granular usage tracking, daily cost estimation, rate limiting, cost cap enforcement (`usage-budget.ts`). Beta mode with invite-only access and user caps (`beta-guard.ts`).
+-   **Multi-Tenancy:** `tenant_id` and validation middleware throughout.
+
+### Database
+
+PostgreSQL with Drizzle ORM (`shared/schema.ts` + `shared/models/chat.ts`).
+
+Key tables:
+-   `arya_users` — accounts, prefs, morning briefing settings, weekly review toggle, UI language, Google Calendar tokens, plan (free/core/pro)
+-   `conversations`, `messages` — chat model (chat.ts). Columns for `mode` (normal/rehearsal), `rehearsalPersona`, `rehearsalExchangeCount`
+-   `arya_knowledge`, `arya_memory` — knowledge base and user memory
+-   `arya_goals`, `arya_goal_steps` — goal management with steps
+-   `arya_notifications` — all notification types
+-   `arya_mood_checkins` — daily mood + energy + note
+-   `arya_voice_notes` — transcribed voice notes
+-   `arya_reminders` — user-set reminders with recurrence
+-   `arya_user_feedback` — bug/feature reports from users
+-   `arya_deletion_audit` — DPDP Act compliance log (userId, deletionType, categories[], recordsDeleted, timestamps only — no personal content)
+-   `arya_reflection_shares` — tokenised weekly reflection share links (raw SQL, not in Drizzle schema)
+-   `arya_community_posts`, `arya_community_reactions` — community features
+-   `arya_response_cache`, `arya_usage_budget`, `arya_api_keys`, `arya_voice_sessions`, etc.
 
 ## External Dependencies
 
 -   **PostgreSQL:** Primary database.
--   **Sarvam.ai:** Used for Indian language Speech-to-Text (STT), Text-to-Speech (TTS), and Translation services.
--   **OpenAI (via Replit AI Integrations):** Provides LLM capabilities (gpt-5.2, gpt-4o-mini-transcribe) for conversational responses and voice transcription.
--   **Framer Motion:** Provides animated transitions — page transitions, panel slide-in/out, modal animations, chat message entrances, welcome screen staggered reveal, user menu dropdown, and mobile sidebar overlay fade.
+-   **Sarvam.ai** (`SARVAM_API_KEY`): Indian language STT, TTS, and translation (11 languages).
+-   **OpenAI (via Replit AI Integrations):** LLM capabilities — gpt-4o for vision/analysis, gpt-4o-mini for goal detection and summaries. Accessed via `process.env.AI_INTEGRATIONS_OPENAI_API_KEY` and `AI_INTEGRATIONS_OPENAI_BASE_URL`.
+-   **Google OAuth** (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`): User login + Calendar access.
+-   **Framer Motion:** Animated transitions throughout — page transitions, panel slide-in/out, modals, chat messages, welcome screen staggered reveal, user menu dropdown, mobile sidebar overlay.
+-   **Razorpay** (`RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_PLAN_ID_CORE`, `RAZORPAY_PLAN_ID_PRO`, `RAZORPAY_WEBHOOK_SECRET`): Subscription billing for Core and Pro plans.
 
-### Recent Changes
--   **Quick Start Tutorial:** 7-step guided walkthrough for new users covering chat, voice, goals, memory, and customization. Auto-triggers after onboarding, accessible from user menu and welcome screen "Take a Tour" button. Completion persisted via API + localStorage.
--   **Feedback/Issue Reporting:** Users can report issues via "Report Issue" in user menu. Categories: bug, feature request, content quality, performance, other. Stored in `arya_user_feedback` table. Admin endpoints for listing and managing feedback.
--   **Theme Toggle (Light/Dark):** Users can switch between light and dark themes. ThemeProvider in `client/src/lib/theme.tsx` stores preference in localStorage. CSS variables swap via `[data-theme="dark"]` on `<html>`. Tailwind v4 `@custom-variant dark` enables `dark:` class prefix throughout. Toggle button available in chat header and admin sidebar. Logo wrapped in dark container since original image lacks true transparency.
+## Key Files
+
+-   `client/src/pages/AryaChat.tsx` — Main chat UI (~5800 lines). Contains: VoiceNotesPanel, MoodCheckInCard, CalendarPanel, CustomizePanel, RehearsalSetupPanel, all sidebar panels, welcome screen.
+-   `client/src/pages/PrivacyControlPage.tsx` — Right to Forget multi-step UI (3 deletion paths, typed confirmation, receipt screen).
+-   `client/src/lib/i18n.ts` — English + Hindi translations, getTranslation/getStoredUiLanguage/setStoredUiLanguage.
+-   `server/routes.ts` — All API routes (~3300 lines).
+-   `server/arya/forget-me-service.ts` — Data deletion service (getDataSummary, forgetSelective, forgetPeriod, forgetAll, logDeletion).
+-   `server/arya/rehearsal.ts` — Hard Conversation Rehearsal service.
+-   `server/arya/morning-briefing.ts` — Daily briefing generation.
+-   `server/arya/weekly-review.ts` — Sunday weekly review with voice flashback.
+-   `server/arya/reminder-scheduler.ts` — Central background task scheduler.
+-   `shared/schema.ts` — Drizzle schema for all tables.
+-   `shared/models/chat.ts` — conversations + messages tables.
