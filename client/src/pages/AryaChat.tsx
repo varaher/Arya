@@ -2000,6 +2000,7 @@ export default function AryaChat() {
   const [showUserAuth, setShowUserAuth] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
   const [showVoiceMode, setShowVoiceMode] = useState(false);
   const [activeConversation, setActiveConversation] = useState<number | null>(null);
   const [input, setInput] = useState("");
@@ -2012,6 +2013,29 @@ export default function AryaChat() {
     try { return localStorage.getItem("arya_lang") || "hi-IN"; } catch { return "hi-IN"; }
   });
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
+
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    let refreshing = false;
+    navigator.serviceWorker.ready.then(reg => {
+      if (reg.waiting) { setUpdateAvailable(true); }
+      reg.addEventListener("updatefound", () => {
+        const sw = reg.installing;
+        if (sw) sw.addEventListener("statechange", () => {
+          if (sw.state === "installed" && navigator.serviceWorker.controller) setUpdateAvailable(true);
+        });
+      });
+    });
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (!refreshing) { refreshing = true; window.location.reload(); }
+    });
+  }, []);
+
+  const handleAppUpdate = async () => {
+    const reg = await navigator.serviceWorker.getRegistration();
+    if (reg?.waiting) reg.waiting.postMessage({ type: "SKIP_WAITING" });
+    else window.location.reload();
+  };
 
   useEffect(() => {
     if (!user?.preferredLanguage) return;
@@ -3031,13 +3055,6 @@ export default function AryaChat() {
                       <HelpCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /> Quick Tutorial
                     </button>
                     <button
-                      data-testid="button-vedic-lens-sidebar"
-                      onClick={() => { setShowUserMenu(false); setLocation("/vedic-lens"); }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
-                    >
-                      <Sparkles className="w-3.5 h-3.5 text-amber-500" /> ✦ Vedic Lens
-                    </button>
-                    <button
                       data-testid="button-niti-sidebar"
                       onClick={() => { setShowUserMenu(false); setLocation("/niti"); }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
@@ -3051,6 +3068,17 @@ export default function AryaChat() {
                     >
                       <CalendarDays className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" /> 📋 Sunday Review
                     </button>
+                    {updateAvailable && (
+                      <button
+                        data-testid="button-update-app-sidebar"
+                        onClick={() => { setShowUserMenu(false); handleAppUpdate(); }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 font-medium"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" style={{ animationDuration: "2s" }} />
+                        <span>Update available</span>
+                        <span className="ml-auto w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      </button>
+                    )}
                     <button
                       data-testid="button-report-issue-sidebar"
                       onClick={() => { setShowUserMenu(false); setShowFeedbackModal(true); }}
@@ -3210,13 +3238,6 @@ export default function AryaChat() {
                         <HelpCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /> Quick Tutorial
                       </button>
                       <button
-                        data-testid="button-vedic-lens"
-                        onClick={() => { setShowUserMenu(false); setLocation("/vedic-lens"); }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
-                      >
-                        <Sparkles className="w-3.5 h-3.5 text-amber-500" /> ✦ Vedic Lens
-                      </button>
-                      <button
                         data-testid="button-niti"
                         onClick={() => { setShowUserMenu(false); setLocation("/niti"); }}
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
@@ -3230,6 +3251,17 @@ export default function AryaChat() {
                       >
                         <CalendarDays className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" /> 📋 Sunday Review
                       </button>
+                      {updateAvailable && (
+                        <button
+                          data-testid="button-update-app"
+                          onClick={() => { setShowUserMenu(false); handleAppUpdate(); }}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-xs text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 font-medium"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" style={{ animationDuration: "2s" }} />
+                          <span>Update available</span>
+                          <span className="ml-auto w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        </button>
+                      )}
                       <button
                         data-testid="button-report-issue"
                         onClick={() => { setShowUserMenu(false); setShowFeedbackModal(true); }}
