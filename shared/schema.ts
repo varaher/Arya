@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, uuid, timestamp, integer, jsonb, decimal, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, uuid, timestamp, integer, jsonb, decimal, boolean, serial } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -422,8 +422,46 @@ export const aryaUsers = pgTable("arya_users", {
   nakshatra: varchar("nakshatra", { length: 50 }),
   dashaLord: varchar("dasha_lord", { length: 30 }),
   dashaYearsLeft: varchar("dasha_years_left", { length: 10 }),
+  nitiEnabled: boolean("niti_enabled").default(false),
+  businessType: varchar("business_type", { length: 50 }),
+  businessStage: varchar("business_stage", { length: 50 }),
+  businessRole: varchar("business_role", { length: 50 }),
+  businessChallenge: text("business_challenge"),
+  businessFocusAreas: text("business_focus_areas").array(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+// =============================================
+// NITI — THE WISDOM COUNCIL
+// =============================================
+
+export const aryaNitiSessions = pgTable("arya_niti_sessions", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 36 }).notNull().references(() => aryaUsers.id, { onDelete: "cascade" }),
+  sessionType: varchar("session_type", { length: 30 }).notNull(),
+  title: varchar("title", { length: 255 }),
+  status: varchar("status", { length: 20 }).default("active"),
+  philosopher: varchar("philosopher", { length: 30 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const aryaNitiMessages = pgTable("arya_niti_messages", {
+  id: serial("id").primaryKey(),
+  sessionId: integer("session_id").notNull().references(() => aryaNitiSessions.id, { onDelete: "cascade" }),
+  role: varchar("role", { length: 10 }).notNull(),
+  content: text("content").notNull(),
+  philosopher: varchar("philosopher", { length: 30 }),
+  source: text("source"),
+  followUps: jsonb("follow_ups"),
+  pushQuestion: text("push_question"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertNitiSessionSchema = createInsertSchema(aryaNitiSessions).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertNitiMessageSchema = createInsertSchema(aryaNitiMessages).omit({ id: true, createdAt: true });
+export type NitiSession = typeof aryaNitiSessions.$inferSelect;
+export type NitiMessage = typeof aryaNitiMessages.$inferSelect;
 
 export const insertAryaUserSchema = createInsertSchema(aryaUsers).omit({
   id: true,

@@ -25,7 +25,7 @@ import {
   SUPPORTED_LANGUAGES,
   type SarvamLanguageCode,
 } from "./arya/sarvam-service";
-import { QueryRequestSchema, DomainSchema, aryaKnowledge, aryaClinicalRecords, aryaVoiceQualityLog, aryaMemory } from "@shared/schema";
+import { QueryRequestSchema, DomainSchema, aryaKnowledge, aryaClinicalRecords, aryaVoiceQualityLog, aryaMemory, aryaNitiSessions, aryaNitiMessages } from "@shared/schema";
 import OpenAI from "openai";
 import { eq, and, desc, sql, or, isNull, lte, inArray } from "drizzle-orm";
 import { db } from "./db";
@@ -89,6 +89,7 @@ import { conversations } from "@shared/models/chat";
 import { streamRehearsalResponse, generateRehearsalFeedback } from "./arya/rehearsal";
 import { getDataSummary, forgetSelective, forgetPeriod, forgetAll } from "./arya/forget-me-service";
 import { computeKundliProfile, generateVedicBriefing } from "./arya/vedic-lens";
+import { createNitiSession, addNitiMessage } from "./arya/niti";
 
 const retriever = new KnowledgeRetriever();
 const medicalEngine = new MedicalEngine();
@@ -3399,6 +3400,96 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
 
   // Also include reflection share fields in the preferences endpoint
   // (the GET /api/user/preferences already serves the panel, we patch it via the above)
+
+  // ─────────────────────────────────────────────────────────
+  // NITI — THE WISDOM COUNCIL
+  // ─────────────────────────────────────────────────────────
+
+  app.get("/api/niti/profile", optionalUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).aryaUser?.id;
+      if (!userId) return res.json({ nitiEnabled: false });
+      const [user] = await db.select({
+        nitiEnabled: aryaUsers.nitiEnabled,
+        businessType: aryaUsers.businessType,
+        businessStage: aryaUsers.businessStage,
+        businessRole: aryaUsers.businessRole,
+        businessChallenge: aryaUsers.businessChallenge,
+        businessFocusAreas: aryaUsers.businessFocusAreas,
+      }).from(aryaUsers).where(eq(aryaUsers.id, userId)).limit(1);
+      res.json(user || { nitiEnabled: false });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to load Niti profile" });
+    }
+  });
+
+  app.post("/api/niti/setup", optionalUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).aryaUser?.id;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const { businessType, businessStage, businessRole, businessChallenge, businessFocusAreas } = req.body;
+      await db.update(aryaUsers).set({
+        nitiEnabled: true,
+        businessType: businessType || null,
+        businessStage: businessStage || null,
+        businessRole: businessRole || null,
+        businessChallenge: businessChallenge || null,
+        businessFocusAreas: Array.isArray(businessFocusAreas) ? businessFocusAreas : [],
+      }).where(eq(aryaUsers.id, userId));
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to save Niti setup" });
+    }
+  });
+
+  app.post("/api/niti/sessions", optionalUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).aryaUser?.id;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const { sessionType } = req.body;
+      if (!sessionType) return res.status(400).json({ error: "sessionType required" });
+      const result = await createNitiSession(userId, sessionType);
+      res.json(result);
+    } catch (err: any) {
+      console.error("[Niti] create session error:", err);
+      res.status(500).json({ error: "Failed to create Niti session" });
+    }
+  });
+
+  app.get("/api/niti/sessions", optionalUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).aryaUser?.id;
+      if (!userId) return res.json([]);
+      const sessions = await db.select().from(aryaNitiSessions)
+        .where(eq(aryaNitiSessions.userId, userId))
+        .orderBy(desc(aryaNitiSessions.updatedAt))
+        .limit(20);
+      res.json(sessions);
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to load sessions" });
+    }
+  });
+
+  app.post("/api/niti/sessions/:id/message", optionalUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).aryaUser?.id;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const sessionId = parseInt(req.params.id);
+      if (isNaN(sessionId)) return res.status(400).json({ error: "Invalid session id" });
+      const { content } = req.body;
+      if (!content?.trim()) return res.status(400).json({ error: "content required" });
+      const [session] = await db.select({ sessionType: aryaNitiSessions.sessionType })
+        .from(aryaNitiSessions)
+        .where(and(eq(aryaNitiSessions.id, sessionId), eq(aryaNitiSessions.userId, userId)))
+        .limit(1);
+      if (!session) return res.status(404).json({ error: "Session not found" });
+      const response = await addNitiMessage(sessionId, userId, content, session.sessionType);
+      res.json(response);
+    } catch (err: any) {
+      console.error("[Niti] message error:", err);
+      res.status(500).json({ error: "Failed to process message" });
+    }
+  });
 
   // Public reflection page — no auth required
   app.get("/api/reflection/:token", async (req: Request, res: Response) => {

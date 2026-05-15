@@ -30,6 +30,7 @@ import Community from "@/pages/Community";
 import ReflectionPage from "@/pages/ReflectionPage";
 import PrivacyControlPage from "@/pages/PrivacyControlPage";
 import VedicLensPage from "@/pages/VedicLensPage";
+import NitiPage from "@/pages/NitiPage";
 
 function AdminRoute({ component: Component }: { component: React.ComponentType }) {
   const { isAdmin, isLoading } = useAdminAuth();
@@ -180,6 +181,10 @@ function Router() {
 
         <Route path="/vedic-lens">
           <VedicLensPage />
+        </Route>
+
+        <Route path="/niti">
+          <NitiPage />
         </Route>
 
         <Route path="/terms">

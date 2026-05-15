@@ -3033,6 +3033,13 @@ export default function AryaChat() {
                       <Sparkles className="w-3.5 h-3.5 text-amber-500" /> ✦ Vedic Lens
                     </button>
                     <button
+                      data-testid="button-niti-sidebar"
+                      onClick={() => { setShowUserMenu(false); setLocation("/niti"); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
+                    >
+                      <Briefcase className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-500" /> ✦ Niti — Business Wisdom
+                    </button>
+                    <button
                       data-testid="button-report-issue-sidebar"
                       onClick={() => { setShowUserMenu(false); setShowFeedbackModal(true); }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
@@ -3195,6 +3202,13 @@ export default function AryaChat() {
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                       >
                         <Sparkles className="w-3.5 h-3.5 text-amber-500" /> ✦ Vedic Lens
+                      </button>
+                      <button
+                        data-testid="button-niti"
+                        onClick={() => { setShowUserMenu(false); setLocation("/niti"); }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
+                      >
+                        <Briefcase className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-500" /> ✦ Niti — Business Wisdom
                       </button>
                       <button
                         data-testid="button-report-issue"
