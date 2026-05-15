@@ -66,7 +66,7 @@ import {
   Theater,
   Trophy,
 } from "lucide-react";
-import { getStoredUiLanguage, setStoredUiLanguage, getTranslation, type UiLanguage } from "@/lib/i18n";
+import { getStoredUiLanguage, setStoredUiLanguage, getTranslation, LANGUAGE_OPTIONS, type UiLanguage } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
 import RemindersPanel from "@/components/RemindersPanel";
 import PricingModal from "@/components/PricingModal";
@@ -837,17 +837,17 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
           {/* App Language */}
           <div>
             <div className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2">App Language</div>
-            <div className="grid grid-cols-2 gap-1.5">
-              {([["en", "English", "🇬🇧"], ["hi", "हिंदी", "🇮🇳"]] as const).map(([code, label, flag]) => (
+            <div className="grid grid-cols-3 gap-1.5">
+              {LANGUAGE_OPTIONS.map(({ code, native, flag }) => (
                 <button key={code} data-testid={`option-lang-${code}`} onClick={() => setUiLang(code)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
+                  className={`flex flex-col items-center gap-0.5 px-2 py-2.5 rounded-lg transition-all ${
                     uiLang === code
                       ? "bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-300 dark:border-emerald-700 text-emerald-600 dark:text-emerald-400"
                       : "bg-gray-100 dark:bg-slate-700 border border-transparent text-gray-500 dark:text-gray-400"
                   }`}
                 >
-                  <span>{flag}</span>
-                  <span className="text-xs font-medium">{label}</span>
+                  <span className="text-base leading-none">{flag}</span>
+                  <span className="text-[11px] font-medium leading-tight text-center">{native}</span>
                 </button>
               ))}
             </div>
