@@ -63,6 +63,8 @@ import {
   Star,
   Crown,
   Users,
+  Theater,
+  Trophy,
 } from "lucide-react";
 import { getStoredUiLanguage, setStoredUiLanguage, getTranslation, type UiLanguage } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
@@ -2052,6 +2054,13 @@ export default function AryaChat() {
   const [futureLetterDraft, setFutureLetterDraft] = useState("");
   const [futureLetterSaving, setFutureLetterSaving] = useState(false);
   const [futureLetterSaved, setFutureLetterSaved] = useState(false);
+  const [showRehearsalSetup, setShowRehearsalSetup] = useState(false);
+  const [rehearsalPerson, setRehearsalPerson] = useState("");
+  const [rehearsalSituation, setRehearsalSituation] = useState("");
+  const [rehearsalLoading, setRehearsalLoading] = useState(false);
+  const [rehearsalFeedbackOpen, setRehearsalFeedbackOpen] = useState(false);
+  const [rehearsalFeedback, setRehearsalFeedback] = useState("");
+  const [rehearsalFeedbackLoading, setRehearsalFeedbackLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -2082,7 +2091,7 @@ export default function AryaChat() {
     },
   });
 
-  const { data: conversationData } = useQuery<{ messages: Message[] }>({
+  const { data: conversationData } = useQuery<{ messages: Message[]; mode?: string; rehearsalPersona?: string }>({
     queryKey: ["/api/arya/conversations", activeConversation, token],
     queryFn: async () => {
       if (!activeConversation) return { messages: [] };
@@ -2093,6 +2102,9 @@ export default function AryaChat() {
     },
     enabled: !!activeConversation,
   });
+
+  const isRehearsalMode = conversationData?.mode === "rehearsal";
+  const rehearsalPersonaName = conversationData?.rehearsalPersona?.split("|||")[0] || "";
 
   const { data: insightsData } = useQuery<{ insights: InsightItem[] }>({
     queryKey: ["/api/arya/insights"],
@@ -2143,6 +2155,67 @@ export default function AryaChat() {
       queryClient.invalidateQueries({ queryKey: ["/api/arya/conversations"] });
     },
   });
+
+  const startRehearsal = async () => {
+    if (!rehearsalPerson.trim() || rehearsalLoading) return;
+    setRehearsalLoading(true);
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["x-user-token"] = token;
+      const convRes = await fetch("/api/arya/conversations", {
+        method: "POST", headers,
+        body: JSON.stringify({ title: `Rehearsal: ${rehearsalPerson.slice(0, 40)}` }),
+      });
+      const conv = await convRes.json();
+      if (!conv?.id) throw new Error("Could not create conversation");
+      setActiveConversation(conv.id);
+
+      const startRes = await fetch(`/api/arya/conversations/${conv.id}/start-rehearsal`, {
+        method: "POST", headers,
+        body: JSON.stringify({ persona: rehearsalPerson, situation: rehearsalSituation }),
+      });
+      const startData = await startRes.json();
+
+      if (startData.setupMessage) {
+        queryClient.setQueryData(
+          ["/api/arya/conversations", conv.id, token],
+          (old: any) => ({
+            ...(old || {}),
+            mode: "rehearsal",
+            rehearsalPersona: `${rehearsalPerson}|||${rehearsalSituation}`,
+            messages: [
+              ...((old as any)?.messages || []),
+              { id: Date.now(), conversationId: conv.id, role: "assistant", content: startData.setupMessage, createdAt: new Date().toISOString() },
+            ],
+          })
+        );
+      }
+
+      setShowRehearsalSetup(false);
+      setRehearsalPerson("");
+      setRehearsalSituation("");
+      queryClient.invalidateQueries({ queryKey: ["/api/arya/conversations"] });
+    } catch { } finally {
+      setRehearsalLoading(false);
+    }
+  };
+
+  const getRehearsalFeedback = async () => {
+    if (!activeConversation || rehearsalFeedbackLoading) return;
+    setRehearsalFeedbackLoading(true);
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["x-user-token"] = token;
+      const res = await fetch(`/api/arya/conversations/${activeConversation}/rehearsal-feedback`, { method: "POST", headers });
+      const data = await res.json();
+      if (data.error) { alert(data.error); return; }
+      setRehearsalFeedback(data.feedback || "");
+      setRehearsalFeedbackOpen(true);
+      queryClient.invalidateQueries({ queryKey: ["/api/arya/conversations", activeConversation, token] });
+    } catch { } finally {
+      setRehearsalFeedbackLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (isLoggedIn && user && user.onboardingComplete === false) {
@@ -3322,6 +3395,87 @@ export default function AryaChat() {
                 </motion.button>
               ))}
 
+              {/* Rehearse a tough conversation — full-width chip */}
+              <motion.button
+                data-testid="button-suggestion-rehearse"
+                onClick={() => setShowRehearsalSetup(v => !v)}
+                className="col-span-1 sm:col-span-2 text-left px-3 md:px-4 py-2.5 md:py-3 rounded-xl border border-violet-200 dark:border-violet-800/60 bg-gradient-to-r from-violet-50/80 to-purple-50/60 dark:from-violet-950/40 dark:to-purple-950/30 hover:from-violet-100 hover:to-purple-50 dark:hover:from-violet-950/60 dark:hover:to-purple-950/50 hover:border-violet-300 dark:hover:border-violet-700 transition-all group"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.78 }}
+                whileHover={{ scale: 1.01, y: -2 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <span className="text-[9px] uppercase tracking-wider font-semibold text-violet-600 dark:text-violet-400/80 group-hover:text-violet-600 dark:group-hover:text-violet-400 mb-1 flex items-center gap-1">
+                      <Theater className="w-2.5 h-2.5" /> Rehearse
+                    </span>
+                    <span className="block text-xs text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200 mt-0.5">
+                      Practise a tough conversation before it happens — ARYA plays the other person
+                    </span>
+                  </div>
+                  <div className="ml-3 w-8 h-8 rounded-full bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center flex-shrink-0 group-hover:bg-violet-200 dark:group-hover:bg-violet-800/60 transition-colors">
+                    <Theater className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                  </div>
+                </div>
+              </motion.button>
+
+              {/* Rehearsal setup panel */}
+              <AnimatePresence>
+                {showRehearsalSetup && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -8, scale: 0.98 }}
+                    transition={{ duration: 0.2 }}
+                    className="col-span-1 sm:col-span-2 rounded-xl border border-violet-300 dark:border-violet-700 bg-white dark:bg-slate-900 p-4 shadow-md"
+                    data-testid="panel-rehearsal-setup"
+                  >
+                    <div className="flex items-center gap-2 mb-3">
+                      <Theater className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                      <span className="text-sm font-semibold text-violet-700 dark:text-violet-300">Set up your rehearsal</span>
+                      <button onClick={() => setShowRehearsalSetup(false)} className="ml-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Who are you talking to?</label>
+                        <input
+                          data-testid="input-rehearsal-person"
+                          type="text"
+                          value={rehearsalPerson}
+                          onChange={e => setRehearsalPerson(e.target.value)}
+                          placeholder="e.g. my manager, my partner, my father"
+                          className="w-full text-sm rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-3 py-2 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">What's the conversation about? <span className="text-gray-400">(optional)</span></label>
+                        <input
+                          data-testid="input-rehearsal-situation"
+                          type="text"
+                          value={rehearsalSituation}
+                          onChange={e => setRehearsalSituation(e.target.value)}
+                          placeholder="e.g. asking for a raise, setting a boundary, delivering difficult feedback"
+                          className="w-full text-sm rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-3 py-2 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400"
+                        />
+                      </div>
+                      <Button
+                        data-testid="button-start-rehearsal"
+                        onClick={startRehearsal}
+                        disabled={!rehearsalPerson.trim() || rehearsalLoading}
+                        className="w-full bg-violet-600 hover:bg-violet-700 text-white text-sm py-2 rounded-lg"
+                      >
+                        {rehearsalLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Theater className="w-4 h-4 mr-2" />}
+                        {rehearsalLoading ? "Starting..." : "Start Rehearsal"}
+                      </Button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               {/* Talk to ARYA — full-width featured card */}
               <motion.button
                 data-testid="button-suggestion-talk"
@@ -3350,6 +3504,34 @@ export default function AryaChat() {
             </motion.div>
           </motion.div>
         )}
+
+        {/* Rehearsal mode banner */}
+        <AnimatePresence>
+          {isRehearsalMode && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              className="mx-2 sm:mx-4 mt-2 px-3 py-2 rounded-xl bg-violet-50 dark:bg-violet-950/40 border border-violet-200 dark:border-violet-800 flex items-center gap-2"
+              data-testid="banner-rehearsal-mode"
+            >
+              <Theater className="w-4 h-4 text-violet-600 dark:text-violet-400 flex-shrink-0" />
+              <span className="text-xs text-violet-700 dark:text-violet-300 flex-1">
+                <span className="font-semibold">Rehearsal mode</span>
+                {rehearsalPersonaName && <> — ARYA is playing <em>{rehearsalPersonaName}</em></>}
+              </span>
+              <button
+                data-testid="button-get-rehearsal-feedback"
+                onClick={getRehearsalFeedback}
+                disabled={rehearsalFeedbackLoading}
+                className="flex items-center gap-1 text-xs font-medium bg-violet-600 hover:bg-violet-700 text-white px-2.5 py-1 rounded-lg transition-colors"
+              >
+                {rehearsalFeedbackLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trophy className="w-3 h-3" />}
+                Get feedback
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className={`overflow-y-auto px-2 sm:px-4 py-3 md:py-4 space-y-3 md:space-y-4 ${(!activeConversation && messages.length === 0 && !streamingContent) ? "hidden" : "flex-1"}`} data-testid="list-messages">
           {messages.map((msg, msgIndex) => (
@@ -3871,6 +4053,68 @@ export default function AryaChat() {
               onClose={() => setShowPricing(false)}
               onUpgradeSuccess={(plan) => { setShowPricing(false); refreshUser?.(); }}
             />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Rehearsal Feedback modal */}
+      <AnimatePresence>
+        {rehearsalFeedbackOpen && (
+          <motion.div
+            key="rehearsal-feedback-modal"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            onClick={() => setRehearsalFeedbackOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 16 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 16 }}
+              transition={{ duration: 0.22 }}
+              className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-violet-100 dark:border-violet-900 overflow-hidden"
+              onClick={e => e.stopPropagation()}
+              data-testid="modal-rehearsal-feedback"
+            >
+              <div className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-slate-700">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-full bg-violet-50 dark:bg-violet-900/30 flex items-center justify-center flex-shrink-0">
+                    <Trophy className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">ARYA's Coaching Feedback</h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">How your rehearsal went — and what to carry into the real conversation</p>
+                  </div>
+                  <button onClick={() => setRehearsalFeedbackOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mt-0.5">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+              <div className="px-6 py-5 max-h-[60vh] overflow-y-auto">
+                <div className="prose-arya text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+                  {rehearsalFeedback}
+                </div>
+              </div>
+              <div className="px-6 pb-5 pt-3 border-t border-gray-100 dark:border-slate-700 flex gap-3">
+                <Button
+                  onClick={() => { setRehearsalFeedbackOpen(false); setActiveConversation(null); }}
+                  variant="outline"
+                  className="flex-1 text-sm"
+                  data-testid="button-rehearsal-done"
+                >
+                  Done — back to ARYA
+                </Button>
+                <Button
+                  onClick={() => setRehearsalFeedbackOpen(false)}
+                  className="flex-1 text-sm bg-violet-600 hover:bg-violet-700 text-white"
+                  data-testid="button-rehearsal-see-chat"
+                >
+                  See full conversation
+                </Button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

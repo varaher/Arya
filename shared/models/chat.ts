@@ -7,6 +7,9 @@ export const conversations = pgTable("conversations", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
   userId: text("user_id"),
+  mode: text("mode").default("normal").notNull(),
+  rehearsalPersona: text("rehearsal_persona"),
+  rehearsalExchangeCount: integer("rehearsal_exchange_count").default(0).notNull(),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 

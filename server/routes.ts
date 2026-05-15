@@ -85,6 +85,8 @@ import {
   aryaCommunityReactions,
 } from "@shared/schema";
 import { getVapidPublicKey } from "./arya/reminder-scheduler";
+import { conversations } from "@shared/models/chat";
+import { streamRehearsalResponse, generateRehearsalFeedback } from "./arya/rehearsal";
 
 const retriever = new KnowledgeRetriever();
 const medicalEngine = new MedicalEngine();
@@ -1435,6 +1437,82 @@ export async function registerRoutes(
     }
   });
 
+  // Start a rehearsal conversation — ARYA plays a persona so the user can practise
+  app.post("/api/arya/conversations/:id/start-rehearsal", optionalUser, async (req: Request, res: Response) => {
+    try {
+      const conversationId = parseInt(req.params.id);
+      const { persona, situation } = req.body;
+      const userId = (req as any).userId || null;
+
+      if (!persona?.trim()) {
+        return res.status(400).json({ error: "persona is required" });
+      }
+
+      const conv = await chatStorage.getConversation(conversationId);
+      if (!conv) return res.status(404).json({ error: "Conversation not found" });
+      if (conv.userId && conv.userId !== userId) return res.status(403).json({ error: "Access denied" });
+
+      await db.update(conversations)
+        .set({
+          mode: "rehearsal",
+          rehearsalPersona: `${persona.trim()}|||${(situation || "").trim()}`,
+          rehearsalExchangeCount: 0,
+        })
+        .where(eq(conversations.id, conversationId));
+
+      const setupMessage = `Ready. I'm stepping into the role of ${persona.trim()}. Take a breath — then say whatever you'd actually say when this conversation begins. I'll respond as them.\n\n*(Type 'feedback' at any time to step out and get coaching on how it's going.)*`;
+
+      await chatStorage.createMessage(conversationId, "assistant", setupMessage);
+
+      res.json({ ok: true, setupMessage });
+    } catch (error: any) {
+      res.status(500).json({ error: "Something went wrong. Please try again." });
+    }
+  });
+
+  // Get coaching feedback for a rehearsal conversation + exit rehearsal mode
+  app.post("/api/arya/conversations/:id/rehearsal-feedback", optionalUser, async (req: Request, res: Response) => {
+    try {
+      const conversationId = parseInt(req.params.id);
+      const userId = (req as any).userId || null;
+
+      const conv = await chatStorage.getConversation(conversationId);
+      if (!conv) return res.status(404).json({ error: "Conversation not found" });
+      if (conv.userId && conv.userId !== userId) return res.status(403).json({ error: "Access denied" });
+
+      const personaData = (((conv as any).rehearsalPersona) || "|||").split("|||");
+      const persona = personaData[0] || "the other person";
+      const situation = personaData[1] || "this conversation";
+
+      const allMessages = await chatStorage.getMessagesByConversation(conversationId);
+      const convoMessages = allMessages.slice(1).map(m => ({
+        role: m.role as "user" | "assistant",
+        content: m.content,
+      }));
+
+      if (convoMessages.length < 2) {
+        return res.status(400).json({ error: "Have a few exchanges first, then get feedback." });
+      }
+
+      const feedback = await generateRehearsalFeedback(convoMessages, {
+        persona,
+        situation,
+        exchangeCount: convoMessages.length,
+      });
+
+      const feedbackMessage = `---\n**ARYA's Coaching Feedback**\n\n${feedback}`;
+      await chatStorage.createMessage(conversationId, "assistant", feedbackMessage);
+
+      await db.update(conversations)
+        .set({ mode: "reviewed" })
+        .where(eq(conversations.id, conversationId));
+
+      res.json({ ok: true, feedback });
+    } catch (error: any) {
+      res.status(500).json({ error: "Something went wrong. Please try again." });
+    }
+  });
+
   // Text chat: send message, get streaming AI response with knowledge context
   app.post("/api/arya/conversations/:id/messages", optionalUser, async (req: Request, res: Response) => {
     try {
@@ -1477,6 +1555,32 @@ export async function registerRoutes(
       res.setHeader("Content-Type", "text/event-stream");
       res.setHeader("Cache-Control", "no-cache");
       res.setHeader("Connection", "keep-alive");
+
+      // Intercept rehearsal conversations — ARYA responds as the persona
+      const convMeta = await chatStorage.getConversation(conversationId);
+      if (convMeta && (convMeta as any).mode === "rehearsal") {
+        const personaData = (((convMeta as any).rehearsalPersona) || "|||").split("|||");
+        const persona = personaData[0] || "the other person";
+        const situation = personaData[1] || "";
+        const exchangeCount = ((convMeta as any).rehearsalExchangeCount || 0);
+
+        await db.update(conversations)
+          .set({ rehearsalExchangeCount: exchangeCount + 1 })
+          .where(eq(conversations.id, conversationId));
+
+        res.write(`data: ${JSON.stringify({ type: "meta", mode: "rehearsal", icon: "🎭" })}\n\n`);
+
+        let fullResponse = "";
+        for await (const chunk of streamRehearsalResponse(content, history, { persona, situation, exchangeCount })) {
+          fullResponse += chunk;
+          res.write(`data: ${JSON.stringify({ content: chunk })}\n\n`);
+        }
+
+        await chatStorage.createMessage(conversationId, "assistant", fullResponse);
+        res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+        res.end();
+        return;
+      }
 
       const { stream, meta } = await generateAryaResponse(content, history, userId || tenant_id || "varah", conversationId, userId);
       let fullResponse = "";

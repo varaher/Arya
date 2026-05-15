@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 import { db } from "../db";
-import { aryaUsers, aryaGoals, aryaNotifications, aryaMoodCheckins } from "@shared/schema";
-import { eq, and, gte } from "drizzle-orm";
+import { aryaUsers, aryaGoals, aryaNotifications, aryaMoodCheckins, aryaVoiceNotes } from "@shared/schema";
+import { eq, and, gte, lte, sql } from "drizzle-orm";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -53,6 +53,28 @@ export async function generateWeeklyReview(userId: string): Promise<string> {
       ? `\nThe letter they once wrote about who they want to become:\n"${((user as any).futureYouLetter as string).slice(0, 350)}"`
       : "";
 
+    // Voice flashback: pick one note from 28–62 days ago
+    const daysAgo28 = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000);
+    const daysAgo62 = new Date(Date.now() - 62 * 24 * 60 * 60 * 1000);
+    const flashbackNotes = await db.select({
+      transcript: aryaVoiceNotes.transcript,
+      title: aryaVoiceNotes.title,
+      createdAt: aryaVoiceNotes.createdAt,
+    }).from(aryaVoiceNotes)
+      .where(and(
+        eq(aryaVoiceNotes.userId, userId),
+        gte(aryaVoiceNotes.createdAt, daysAgo62),
+        lte(aryaVoiceNotes.createdAt, daysAgo28),
+      )).limit(5);
+
+    let flashbackContext = "";
+    if (flashbackNotes.length > 0) {
+      const note = flashbackNotes[Math.floor(Math.random() * flashbackNotes.length)];
+      const daysAgo = Math.round((Date.now() - note.createdAt.getTime()) / (24 * 60 * 60 * 1000));
+      const excerpt = note.transcript.slice(0, 200);
+      flashbackContext = `\nFrom a voice note they recorded ${daysAgo} days ago:\n"${excerpt}${note.transcript.length > 200 ? "..." : ""}"`;
+    }
+
     const prompt = `You are ARYA — ${firstName}'s personal thinking partner. Write their Sunday weekly review. Under 200 words. Write it as a STORY, not a report.
 
 NEVER say "you completed X out of Y goals." NEVER use bullet points. This is a letter.
@@ -68,11 +90,13 @@ Goals: ${goalsText}
 ${completedText ? `Completed: ${completedText}` : ""}
 Mood: ${moodText}
 ${futureLetterContext}
+${flashbackContext}
 
 Rules:
 - Name their goals by actual title
 - Reference their mood data if meaningful
 - If they wrote a future letter, echo one phrase back — briefly, not loudly
+- If a voice flashback is present, open with it: "About a month ago, you said: '[short quote]'. Look at where you are now." Then continue the review.
 - End with exactly ONE sentence they'll carry into the week. Make it true, not motivational-poster true.`;
 
     const response = await openai.chat.completions.create({
