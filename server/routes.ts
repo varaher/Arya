@@ -466,18 +466,62 @@ export async function registerRoutes(
   app.post("/api/user/onboarding", requireUser, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).userId;
-      const { preferredLanguage, currentWork, wantsDailyReminder, voiceEnabled } = req.body;
+      const {
+        preferredLanguage, currentWork, wantsDailyReminder, voiceEnabled,
+        name, focusAreas, futureLetter, accountName, accountPhone,
+        morningBriefingEnabled, morningBriefingTime, uiLanguage, weeklyReviewEnabled,
+      } = req.body;
 
-      await db.update(aryaUsers).set({
-        preferredLanguage: preferredLanguage || "en",
+      const updates: Record<string, any> = {
+        preferredLanguage: preferredLanguage || uiLanguage || "en",
         currentWork: currentWork || null,
         wantsDailyReminder: wantsDailyReminder ?? false,
         voiceEnabled: voiceEnabled ?? true,
         onboardingComplete: true,
-      }).where(eq(aryaUsers.id, userId));
+      };
+
+      if (name?.trim())         updates.name = name.trim();
+      if (Array.isArray(focusAreas) && focusAreas.length) updates.focusAreas = focusAreas;
+      if (futureLetter?.trim()) {
+        const futureDate = new Date();
+        futureDate.setMonth(futureDate.getMonth() + 6);
+        updates.futureYouLetter     = futureLetter.trim();
+        updates.futureYouLetterDate = futureDate;
+      }
+      if (accountName?.trim())  updates.reflectionShareName    = accountName.trim();
+      if (accountPhone?.trim()) updates.reflectionShareContact = accountPhone.trim();
+      if (morningBriefingEnabled !== undefined) updates.morningBriefingEnabled = !!morningBriefingEnabled;
+      if (morningBriefingTime)  updates.morningBriefingTime = morningBriefingTime;
+      if (uiLanguage)           updates.uiLanguage = uiLanguage;
+      if (weeklyReviewEnabled !== undefined) updates.weeklyReviewEnabled = !!weeklyReviewEnabled;
+
+      await db.update(aryaUsers).set(updates).where(eq(aryaUsers.id, userId));
+
+      // Seed memory with focus areas and future letter for AI context
+      if (Array.isArray(focusAreas) && focusAreas.length) {
+        await db.insert(aryaMemory).values({
+          tenantId: userId,
+          category: "preference",
+          key: "focus_areas",
+          value: focusAreas.join(", "),
+          source: "explicit",
+          confidence: "1.00",
+        }).catch(() => {});
+      }
+      if (futureLetter?.trim()) {
+        await db.insert(aryaMemory).values({
+          tenantId: userId,
+          category: "context",
+          key: "future_you_letter",
+          value: futureLetter.trim().slice(0, 1000),
+          source: "explicit",
+          confidence: "1.00",
+        }).catch(() => {});
+      }
 
       res.json({ success: true });
     } catch (error: any) {
+      console.error("[Onboarding]", error.message);
       res.status(500).json({ error: "Failed to save onboarding preferences" });
     }
   });

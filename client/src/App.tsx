@@ -6,7 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AdminLayout, PublicLayout } from "@/components/layout/Layout";
 import { AdminAuthProvider, useAdminAuth } from "@/lib/admin-auth";
-import { UserAuthProvider } from "@/lib/user-auth";
+import { UserAuthProvider, useUserAuth } from "@/lib/user-auth";
 import { ThemeProvider } from "@/lib/theme";
 import PWAPrompt from "@/components/PWAPrompt";
 import NotFound from "@/pages/not-found";
@@ -32,6 +32,15 @@ import PrivacyControlPage from "@/pages/PrivacyControlPage";
 import VedicLensPage from "@/pages/VedicLensPage";
 import NitiPage from "@/pages/NitiPage";
 import WeeklyReviewPage from "@/pages/WeeklyReviewPage";
+import OnboardingFlow from "@/pages/OnboardingFlow";
+
+function OnboardingGuard({ children }: { children: React.ReactNode }) {
+  const { user, isLoading, refreshUser } = useUserAuth();
+  if (!isLoading && user && user.onboardingComplete === false) {
+    return <OnboardingFlow onComplete={refreshUser} />;
+  }
+  return <>{children}</>;
+}
 
 function AdminRoute({ component: Component }: { component: React.ComponentType }) {
   const { isAdmin, isLoading } = useAdminAuth();
@@ -215,7 +224,9 @@ function App() {
             <UserAuthProvider>
               <Toaster />
               <PWAPrompt />
-              <Router />
+              <OnboardingGuard>
+                <Router />
+              </OnboardingGuard>
             </UserAuthProvider>
           </AdminAuthProvider>
         </TooltipProvider>
