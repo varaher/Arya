@@ -3040,6 +3040,13 @@ export default function AryaChat() {
                       <Briefcase className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-500" /> ✦ Niti — Business Wisdom
                     </button>
                     <button
+                      data-testid="button-weekly-review-sidebar"
+                      onClick={() => { setShowUserMenu(false); setLocation("/review"); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
+                    >
+                      <CalendarDays className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" /> 📋 Sunday Review
+                    </button>
+                    <button
                       data-testid="button-report-issue-sidebar"
                       onClick={() => { setShowUserMenu(false); setShowFeedbackModal(true); }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
@@ -3209,6 +3216,13 @@ export default function AryaChat() {
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                       >
                         <Briefcase className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-500" /> ✦ Niti — Business Wisdom
+                      </button>
+                      <button
+                        data-testid="button-weekly-review"
+                        onClick={() => { setShowUserMenu(false); setLocation("/review"); }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
+                      >
+                        <CalendarDays className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" /> 📋 Sunday Review
                       </button>
                       <button
                         data-testid="button-report-issue"

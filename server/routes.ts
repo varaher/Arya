@@ -3573,6 +3573,48 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
     }
   });
 
+  // ── Weekly Review ────────────────────────────────────────────────
+  app.get("/api/review/weekly", optionalUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).aryaUser?.id;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const { getWeeklyLetter } = await import("./arya/weekly-review-page");
+      const letter = await getWeeklyLetter(userId);
+      res.json(letter);
+    } catch (err: any) {
+      console.error("[Review] weekly error:", err.message);
+      res.status(500).json({ error: "Failed to generate review" });
+    }
+  });
+
+  app.post("/api/review/intention", optionalUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).aryaUser?.id;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const { intention } = req.body;
+      if (!intention?.trim()) return res.status(400).json({ error: "intention required" });
+      const { saveWeeklyIntention } = await import("./arya/weekly-review-page");
+      await saveWeeklyIntention(userId, intention.trim());
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to save intention" });
+    }
+  });
+
+  app.post("/api/review/answer", optionalUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).aryaUser?.id;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const { question, answer } = req.body;
+      if (!answer?.trim()) return res.status(400).json({ error: "answer required" });
+      const { saveReflectionAnswer } = await import("./arya/weekly-review-page");
+      await saveReflectionAnswer(userId, question || "", answer.trim());
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to save answer" });
+    }
+  });
+
   // Public reflection page — no auth required
   app.get("/api/reflection/:token", async (req: Request, res: Response) => {
     try {

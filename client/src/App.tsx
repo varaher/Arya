@@ -31,6 +31,7 @@ import ReflectionPage from "@/pages/ReflectionPage";
 import PrivacyControlPage from "@/pages/PrivacyControlPage";
 import VedicLensPage from "@/pages/VedicLensPage";
 import NitiPage from "@/pages/NitiPage";
+import WeeklyReviewPage from "@/pages/WeeklyReviewPage";
 
 function AdminRoute({ component: Component }: { component: React.ComponentType }) {
   const { isAdmin, isLoading } = useAdminAuth();
@@ -185,6 +186,10 @@ function Router() {
 
         <Route path="/niti">
           <NitiPage />
+        </Route>
+
+        <Route path="/review">
+          <WeeklyReviewPage />
         </Route>
 
         <Route path="/terms">
