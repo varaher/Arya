@@ -39,7 +39,7 @@ const FOCUS_AREAS = [
   { id: "direct",       icon: "💬", label: "I'll tell ARYA directly" },
 ];
 
-const LANGS = LANGUAGE_OPTIONS.slice(0, 6);
+const LANGS = LANGUAGE_OPTIONS;
 
 const TOTAL_SCREENS = 8;
 
@@ -309,13 +309,19 @@ function S6({ briefingTime, setBriefingTime, language, setLanguage, weeklyReview
                 key={lang.code}
                 data-testid={`button-lang-${lang.code}`}
                 onClick={() => setLanguage(lang.code)}
-                style={{ padding: "11px 8px", borderRadius: 10, border: `1.5px solid ${active ? C.cyan : C.border}`, background: active ? C.cyanDim : C.card, color: active ? C.cyan : C.muted, fontSize: 14, fontWeight: active ? 600 : 400, transition: "all 0.15s" }}
+                style={{ padding: "11px 8px", borderRadius: 10, border: `1.5px solid ${active ? C.cyan : C.border}`, background: active ? C.cyanDim : C.card, color: active ? C.cyan : C.muted, fontSize: 14, fontWeight: active ? 600 : 400, transition: "all 0.15s", lineHeight: 1.3 }}
               >
-                {lang.native}
+                <div>{lang.native}</div>
+                {lang.code !== "en" && <div style={{ fontSize: 10, opacity: 0.6, marginTop: 2 }}>{lang.english}</div>}
               </button>
             );
           })}
         </div>
+        {!language && (
+          <div style={{ marginTop: 8, fontSize: 12, color: C.amber, textAlign: "center" as const }}>
+            Pick the language that feels most like home
+          </div>
+        )}
       </div>
 
       <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -413,7 +419,7 @@ export default function OnboardingFlow({ onComplete }: Props) {
   const [accountName, setAccountName] = useState("");
   const [accountPhone, setAccountPhone] = useState("");
   const [briefingTime, setBriefingTime] = useState("07:00");
-  const [language, setLanguage] = useState("en");
+  const [language, setLanguage] = useState("");
   const [weeklyReview, setWeeklyReview] = useState(true);
 
   useEffect(() => {
@@ -443,7 +449,7 @@ export default function OnboardingFlow({ onComplete }: Props) {
     focusAreas.length > 0,
     true,
     true,
-    true,
+    language !== "",
     true,
   ][screen] ?? true;
 
