@@ -355,7 +355,14 @@ function BriefingScreen({ briefing, loading, onHome, selectedRashi }: { briefing
   );
 
   const b = briefing;
-  if (!b) return null;
+  if (!b) return (
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: 24 }}>
+      <div style={{ fontSize: 40 }}>🌙</div>
+      <div style={{ fontFamily: serif, fontSize: 18, color: C.text, textAlign: "center" }}>The stars are quiet right now</div>
+      <div style={{ fontSize: 13, color: C.textDim, textAlign: "center", maxWidth: 260 }}>We couldn't fetch today's briefing. Please check your connection and try again.</div>
+      <button onClick={onHome} style={{ marginTop: 8, padding: "10px 24px", borderRadius: 24, border: `1px solid ${C.border2}`, background: "transparent", color: C.textDim, fontSize: 13, cursor: "pointer" }}>← Back</button>
+    </div>
+  );
 
   const activeGoals = (goalsData || []).filter((g: any) => g.isActive).slice(0, 4);
 

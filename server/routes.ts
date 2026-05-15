@@ -1608,6 +1608,7 @@ export async function registerRoutes(
       const briefing = await generateVedicBriefing(userId);
       res.json(briefing);
     } catch (error: any) {
+      console.error("[VedicBriefing] Route error:", error?.message, error?.stack?.split("\n")[1]);
       res.status(500).json({ error: "Failed to generate Vedic briefing" });
     }
   });

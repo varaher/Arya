@@ -108,14 +108,21 @@ export interface VedicBriefing {
 }
 
 export async function generateVedicBriefing(userId: string): Promise<VedicBriefing> {
-  const [user] = await db.select({
-    name: aryaUsers.name,
-    rashi: aryaUsers.rashi,
-    nakshatra: aryaUsers.nakshatra,
-    dashaLord: aryaUsers.dashaLord,
-    dashaYearsLeft: aryaUsers.dashaYearsLeft,
-    vedicLensEnabled: aryaUsers.vedicLensEnabled,
-  }).from(aryaUsers).where(eq(aryaUsers.id, userId)).limit(1);
+  let user: { name: string; rashi: string | null; nakshatra: string | null; dashaLord: string | null; dashaYearsLeft: string | null; vedicLensEnabled: boolean } | null = null;
+  try {
+    const rows = await db.select({
+      name: aryaUsers.name,
+      rashi: aryaUsers.rashi,
+      nakshatra: aryaUsers.nakshatra,
+      dashaLord: aryaUsers.dashaLord,
+      dashaYearsLeft: aryaUsers.dashaYearsLeft,
+      vedicLensEnabled: aryaUsers.vedicLensEnabled,
+    }).from(aryaUsers).where(eq(aryaUsers.id, userId)).limit(1);
+    user = rows[0] || null;
+  } catch (err: any) {
+    console.error("[VedicBriefing] User query failed:", err?.message);
+    return sampleBriefing("friend");
+  }
 
   if (!user) return sampleBriefing("friend");
 
@@ -127,9 +134,14 @@ export async function generateVedicBriefing(userId: string): Promise<VedicBriefi
     return sampleBriefing(user.name, rashi || undefined);
   }
 
-  const activeGoals = await db.select({ title: aryaGoals.title }).from(aryaGoals)
-    .where(and(eq(aryaGoals.userId, userId), eq(aryaGoals.isActive, true))).limit(3);
-  const goalsTitles = activeGoals.map(g => g.title).join("; ") || "none specified";
+  let goalsTitles = "none specified";
+  try {
+    const activeGoals = await db.select({ title: aryaGoals.title }).from(aryaGoals)
+      .where(and(eq(aryaGoals.userId, userId), eq(aryaGoals.isActive, true))).limit(3);
+    goalsTitles = activeGoals.map(g => g.title).join("; ") || "none specified";
+  } catch (err: any) {
+    console.error("[VedicBriefing] Goals query failed:", err?.message);
+  }
 
   const today = new Date();
   const dayName = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][today.getDay()];
