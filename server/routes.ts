@@ -3674,5 +3674,119 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
     }
   });
 
+  // =============================================
+  // ADMIN ARYA — Founder's Personal AI
+  // =============================================
+
+  app.get("/api/admin/arya/briefing", requireAdmin, async (_req: Request, res: Response) => {
+    try {
+      const [userStats, costData, pendingDrafts, topGaps] = await Promise.all([
+        db.execute(sql`
+          SELECT COUNT(*)::int as total_users,
+            COUNT(CASE WHEN created_at > NOW() - INTERVAL '7 days' THEN 1 END)::int as new_this_week,
+            COUNT(CASE WHEN last_login_at > NOW() - INTERVAL '7 days' THEN 1 END)::int as active_this_week,
+            COUNT(CASE WHEN onboarding_complete = true THEN 1 END)::int as onboarding_complete
+          FROM arya_users`),
+        db.execute(sql`
+          SELECT COALESCE(SUM(estimated_cost_inr), 0)::numeric as cost_today,
+            COALESCE(SUM(llm_call_count), 0)::int as calls_today
+          FROM arya_usage_budget WHERE date_key = CURRENT_DATE AND user_id NOT LIKE '%SYSTEM%'`),
+        db.execute(sql`
+          SELECT COUNT(*)::int as pending FROM arya_knowledge
+          WHERE status = 'draft' AND tenant_id = 'varah'`),
+        db.execute(sql`
+          SELECT normalized_query, domain, query_count FROM arya_query_patterns
+          WHERE is_gap = true ORDER BY query_count DESC LIMIT 3`)
+      ]);
+      const u = userStats.rows[0] as any;
+      const c = costData.rows[0] as any;
+      const d = pendingDrafts.rows[0] as any;
+      const gaps = topGaps.rows as any[];
+      const onboardingRate = u.total_users > 0 ? Math.round(u.onboarding_complete / u.total_users * 100) : 0;
+      const openai = new OpenAI({ apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY, baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL });
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4.1-mini",
+        messages: [
+          { role: "system", content: "You are ARYA — the personal AI of the founder of ARYA platform. Give a sharp, honest 2-3 sentence morning briefing about the business. Direct, opinionated, like a trusted advisor. Reference specific numbers. No bullet points. No fluff." },
+          { role: "user", content: `Product state: ${u.total_users} total users, ${u.new_this_week} new this week, ${u.active_this_week} active this week, ${onboardingRate}% onboarding completion, ₹${parseFloat(c.cost_today || 0).toFixed(2)} AI cost today, ${d.pending} knowledge drafts awaiting your approval. Top gaps: ${gaps.map((g: any) => g.normalized_query).join(", ") || "none detected"}. Give me my briefing.` }
+        ],
+        max_tokens: 160,
+      });
+      res.json({
+        briefing: completion.choices[0].message.content || "Good morning. The system is running.",
+        metrics: { totalUsers: u.total_users, newThisWeek: u.new_this_week, activeThisWeek: u.active_this_week, onboardingRate, costToday: parseFloat(c.cost_today || 0).toFixed(2), pendingDrafts: d.pending, topGaps: gaps }
+      });
+    } catch (error: any) {
+      console.error("[Admin ARYA Briefing]", error.message);
+      res.status(500).json({ error: "Failed to generate briefing" });
+    }
+  });
+
+  app.post("/api/admin/arya/chat", requireAdmin, async (req: Request, res: Response) => {
+    const { message, history = [] } = req.body;
+    if (!message) return res.status(400).json({ error: "Message required" });
+    try {
+      const [userStats, costData, pendingDrafts] = await Promise.all([
+        db.execute(sql`SELECT COUNT(*)::int as total_users, COUNT(CASE WHEN last_login_at > NOW() - INTERVAL '7 days' THEN 1 END)::int as active_this_week, COUNT(CASE WHEN onboarding_complete = true THEN 1 END)::int as onboarding_complete FROM arya_users`),
+        db.execute(sql`SELECT COALESCE(SUM(estimated_cost_inr), 0)::numeric as cost_today FROM arya_usage_budget WHERE date_key = CURRENT_DATE AND user_id NOT LIKE '%SYSTEM%'`),
+        db.execute(sql`SELECT COUNT(*)::int as pending FROM arya_knowledge WHERE status = 'draft' AND tenant_id = 'varah'`)
+      ]);
+      const u = userStats.rows[0] as any;
+      const c = costData.rows[0] as any;
+      const d = pendingDrafts.rows[0] as any;
+      const onboardingRate = u.total_users > 0 ? Math.round(u.onboarding_complete / u.total_users * 100) : 0;
+      const openai = new OpenAI({ apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY, baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL });
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: `You are ARYA — the personal AI of the ARYA platform founder. You are sharp, direct, and strategic. You think like a senior product strategist and investor. Reference real data when relevant. Keep responses focused and actionable — max 3 paragraphs.\n\nCurrent product state: ${u.total_users} users (${u.active_this_week} active this week, ${onboardingRate}% onboarding completion), ₹${parseFloat(c.cost_today || 0).toFixed(2)} AI cost today, ${d.pending} knowledge drafts pending review.` },
+          ...history.slice(-8).map((m: any) => ({ role: m.role as "user" | "assistant", content: m.content })),
+          { role: "user", content: message }
+        ],
+        max_tokens: 450,
+      });
+      res.json({ response: completion.choices[0].message.content || "" });
+    } catch (error: any) {
+      console.error("[Admin ARYA Chat]", error.message);
+      res.status(500).json({ error: "Failed to process message" });
+    }
+  });
+
+  app.get("/api/admin/product-intelligence", requireAdmin, async (_req: Request, res: Response) => {
+    try {
+      const [userStats, featureStats, planStats, signups, topQueries] = await Promise.all([
+        db.execute(sql`SELECT COUNT(*)::int as total, COUNT(CASE WHEN created_at > NOW() - INTERVAL '7 days' THEN 1 END)::int as new_week, COUNT(CASE WHEN last_login_at > NOW() - INTERVAL '7 days' THEN 1 END)::int as active_week, COUNT(CASE WHEN last_login_at > NOW() - INTERVAL '1 day' THEN 1 END)::int as active_today, COUNT(CASE WHEN onboarding_complete = true THEN 1 END)::int as onboarded FROM arya_users`),
+        db.execute(sql`SELECT COALESCE(SUM(text_chat_count),0)::int AS chats, COALESCE(SUM(voice_minutes),0)::numeric AS voice, COALESCE(SUM(deep_reasoning_count),0)::int AS deep, COALESCE(SUM(estimated_cost_inr),0)::numeric AS cost FROM arya_usage_budget WHERE user_id NOT LIKE '%SYSTEM%' AND user_id NOT LIKE 'anon_%'`),
+        db.execute(sql`SELECT plan, COUNT(*)::int AS cnt FROM arya_users GROUP BY plan`),
+        db.execute(sql`SELECT DATE(created_at)::text AS day, COUNT(*)::int AS signups FROM arya_users WHERE created_at > NOW() - INTERVAL '14 days' GROUP BY day ORDER BY day`),
+        db.execute(sql`SELECT normalized_query AS query, domain, query_count, avg_confidence, is_gap FROM arya_query_patterns ORDER BY query_count DESC LIMIT 8`)
+      ]);
+      const u = userStats.rows[0] as any;
+      const f = featureStats.rows[0] as any;
+      const plans = (planStats.rows as any[]).reduce((a: any, p: any) => { a[p.plan] = p.cnt; return a; }, {});
+      const onboardingRate = u.total > 0 ? Math.round(u.onboarded / u.total * 100) : 0;
+      const openai = new OpenAI({ apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY, baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL });
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4.1-mini",
+        messages: [
+          { role: "system", content: "You are ARYA's product intelligence engine. Analyse this data and give ONE sharp opinion — the single biggest lever right now. 2-3 sentences max. Sound like a senior product strategist who has seen the data and has a strong point of view. No bullet points." },
+          { role: "user", content: `Data: ${u.total} users total, ${u.active_week} active this week, ${u.new_week} new, ${onboardingRate}% onboarding completion (${u.total - u.onboarded} users incomplete). ${Math.round(f.chats)} total chats, ${Math.round(f.voice)} voice minutes, ${f.deep} deep reasoning sessions. Total AI cost: ₹${parseFloat(f.cost || 0).toFixed(2)}. Plans: ${JSON.stringify(plans)}.` }
+        ],
+        max_tokens: 120,
+      });
+      res.json({
+        opinion: completion.choices[0].message.content || "",
+        users: { total: u.total, newThisWeek: u.new_week, activeThisWeek: u.active_week, activeToday: u.active_today, onboardingRate, incomplete: u.total - u.onboarded },
+        features: { totalChats: f.chats, voiceMinutes: Math.round(f.voice), deepReasoning: f.deep, costInr: parseFloat(f.cost || 0).toFixed(2) },
+        plans,
+        signups: signups.rows,
+        topQueries: topQueries.rows,
+      });
+    } catch (error: any) {
+      console.error("[Product Intelligence]", error.message);
+      res.status(500).json({ error: "Failed to fetch product intelligence" });
+    }
+  });
+
   return httpServer;
 }

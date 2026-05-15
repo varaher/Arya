@@ -33,6 +33,7 @@ import VedicLensPage from "@/pages/VedicLensPage";
 import NitiPage from "@/pages/NitiPage";
 import WeeklyReviewPage from "@/pages/WeeklyReviewPage";
 import OnboardingFlow from "@/pages/OnboardingFlow";
+import AdminARYA from "@/pages/AdminARYA";
 
 function OnboardingGuard({ children }: { children: React.ReactNode }) {
   const { user, isLoading, refreshUser } = useUserAuth();
@@ -174,6 +175,11 @@ function Router() {
         <Route path="/users">
           <AnimatedPage>
             <AdminLayout><AdminRoute component={UserAnalytics} /></AdminLayout>
+          </AnimatedPage>
+        </Route>
+        <Route path="/my-arya">
+          <AnimatedPage>
+            <AdminLayout><AdminRoute component={AdminARYA} /></AdminLayout>
           </AnimatedPage>
         </Route>
 

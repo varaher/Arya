@@ -23,6 +23,7 @@ import {
   Sun,
   Moon,
   Users,
+  Sparkles,
 } from "lucide-react";
 
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -31,6 +32,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
   const { theme, toggleTheme } = useTheme();
 
   const navItems = [
+    { label: "My ARYA", icon: Sparkles, href: "/my-arya" },
     { label: "Chat with ARYA", icon: MessageCircle, href: "/" },
     { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
     { label: "Users & Analytics", icon: Users, href: "/users" },
