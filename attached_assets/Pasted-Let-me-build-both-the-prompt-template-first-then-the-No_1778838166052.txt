@@ -1,0 +1,47 @@
+Let me build both — the prompt template first, then the Notification Centre.
+
+Two deliverables in one file. Switch between tabs at the top.
+
+---
+
+## Tab 1 — Prompt Spec (hand this to your developer)
+
+**Section 1 — Data inputs**
+Every field the prompt needs — cosmic layer (sign, week energy, best window, domains) and personal layer (mood 7-day array, open decisions, calendar free slots, streaks, behavioural pattern). Two columns, side by side.
+
+**Section 2 — The actual prompt template**
+Production-ready TypeScript. Copy button works. Builds the context object from DB, constructs the system prompt dynamically, calls `claude-sonnet-4-20250514`, parses JSON response. Your developer can drop this straight in.
+
+**Section 3 — Live examples**
+Same sign (Scorpio), same week — three completely different outputs showing exactly how personalisation works in practice.
+
+**Section 4 — Hard rules**
+Eight non-negotiable rules including validation logic, cost estimate (₹2,800/month at 1,000 users), and caching strategy.
+
+---
+
+## Tab 2 — Notification Centre
+
+**Eight real notifications** across three time groups — Today, Yesterday, Earlier this week. Every one is tap-to-expand with a full detail overlay. Try tapping any notification.
+
+**Notification types:**
+- 📖 Weekly Review ready
+- ✦ Wisdom Timing (the personalised insight)
+- 💬 Silence detection — *"You've been quiet. No pressure."*
+- 🔥 Goal streak milestone
+- ⚖️ Business Mind — decision still unresolved
+- 🌡️ Mood check-in
+- 🌅 Morning briefing
+- 🤝 Weekly share delivered to Priya
+
+**Filter pills** at the top — All, ARYA, Goals, Wisdom, Business, Weekly. Mark all read works.
+
+---
+
+## The One Thing to Notice
+
+Every notification is written in ARYA's voice — not a system alert. *"You've been quiet. No pressure."* feels like a message from a friend, not an app. That tone has to carry through every touchpoint — including notifications.
+
+---
+
+Shall we now do a **complete product summary** — everything built across all sessions — so you have one clean document to share with your developer and investors?
