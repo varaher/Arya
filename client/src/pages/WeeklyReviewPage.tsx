@@ -162,13 +162,6 @@ const SESSION_LABELS: Record<string, string> = {
   think_out_loud: "Thinking out loud",
 };
 
-const PHILOSOPHER_NAMES: Record<string, string> = {
-  chanakya: "Chanakya",
-  vidura: "Vidura",
-  thiruvalluvar: "Thiruvalluvar",
-  krishna: "Krishna",
-  shukra: "Shukracharya",
-};
 
 export default function WeeklyReviewPage() {
   const [, setLocation] = useLocation();
@@ -455,11 +448,6 @@ export default function WeeklyReviewPage() {
                       <div style={{ fontSize: 13, color: P.body, fontWeight: 500 }}>
                         {SESSION_LABELS[s.sessionType] || s.sessionType.replace(/_/g, " ")}
                       </div>
-                      {s.philosopher && (
-                        <div style={{ fontSize: 11, color: P.muted, marginTop: 2 }}>
-                          with {PHILOSOPHER_NAMES[s.philosopher] || s.philosopher}
-                        </div>
-                      )}
                     </div>
                     <div style={{ fontSize: 11, color: P.steel, flexShrink: 0 }}>
                       {new Date(s.createdAt).toLocaleDateString("en-IN", { weekday: "short", day: "numeric" })}
