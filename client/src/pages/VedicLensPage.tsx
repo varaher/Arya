@@ -598,7 +598,7 @@ function BriefingScreen({ briefing, loading, onHome, path }: {
             </div>
             <div style={{ padding: 16 }}>
               {(b.cosmicCards || []).map((card, i) => {
-                const tc = toneColors[card.tone];
+                const tc = toneColors[card.tone] || toneColors.caution;
                 return (
                   <div key={i} style={{ borderRadius: 12, padding: 14, marginBottom: 10, position: "relative" as const, overflow: "hidden", background: tc.bg, border: `1px solid ${tc.border}` }}>
                     <div style={{ position: "absolute" as const, left: 0, top: 0, bottom: 0, width: 3, background: tc.bar }} />

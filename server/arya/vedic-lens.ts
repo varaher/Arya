@@ -216,12 +216,24 @@ Return ONLY valid JSON matching this exact structure:
     } as any);
 
     const parsed = JSON.parse((response as any).choices[0].message.content || "{}");
+    const validTone = (t: unknown): "good" | "caution" | "watch" =>
+      (t === "good" || t === "caution" || t === "watch") ? t : "caution";
+
     return {
       userName: user.name,
-      planetaryPills: parsed.planetaryPills || [],
+      planetaryPills: (parsed.planetaryPills || []).map((p: any) => ({
+        emoji: p.emoji || "✦",
+        text: p.text || "",
+        tone: validTone(p.tone),
+      })),
       aryaInsight: parsed.aryaInsight || "",
       muhurat: parsed.muhurat || { startTime: "10:15 AM", endTime: "11:45 AM", purpose: "starting something new" },
-      cosmicCards: parsed.cosmicCards || [],
+      cosmicCards: (parsed.cosmicCards || []).map((c: any) => ({
+        tone: validTone(c.tone),
+        label: c.label || "",
+        text: c.text || "",
+        source: c.source || "",
+      })),
       guidance: parsed.guidance || { money: "", relationships: "", body: "" },
       dasha: parsed.dasha || { lord: dashaLord, yearsLeft: dashaYearsLeft, chapterText: "" },
     };
