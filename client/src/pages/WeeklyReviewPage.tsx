@@ -245,7 +245,7 @@ export default function WeeklyReviewPage() {
   const intentionValue = customIntention.trim() || selectedChip;
 
   return (
-    <div style={{ minHeight: "100dvh", background: P.bg, color: P.body, fontFamily: "Inter, sans-serif", paddingBottom: 68 }}>
+    <div style={{ minHeight: "100dvh", background: P.bg, color: P.body, fontFamily: "Inter, sans-serif", paddingBottom: "calc(88px + env(safe-area-inset-bottom, 0px))" }}>
       <style>{`
         @keyframes wr-spin { to { transform: rotate(360deg); } }
         .wr-spin { animation: wr-spin 0.8s linear infinite; }

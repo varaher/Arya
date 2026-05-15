@@ -578,7 +578,7 @@ export default function Community() {
     : 0;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-950" style={{ paddingBottom: "calc(80px + env(safe-area-inset-bottom, 0px))" }}>
       {/* ── Hero ─────────────────────────────────────────────────────────────── */}
       <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900">
         <div className="absolute inset-0 opacity-20" style={{

@@ -156,7 +156,7 @@ function PathSelectionScreen({ onSelect }: { onSelect: (p: VedicPath) => void })
       <div style={{ padding: "32px 24px 0", display: "flex", justifyContent: "center" }}>
         <div style={{ fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase" as const, color: C.textMuted }}>ARYA Lens · Setup</div>
       </div>
-      <div style={{ padding: "28px 24px 48px", maxWidth: 460, margin: "0 auto", width: "100%", display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ padding: "28px 24px 90px", maxWidth: 460, margin: "0 auto", width: "100%", display: "flex", flexDirection: "column", gap: 20 }}>
         <div>
           <h1 style={{ fontFamily: serif, fontSize: 28, fontWeight: 400, lineHeight: 1.3, color: C.text, marginBottom: 10 }}>
             How do you connect<br />with <em style={{ color: C.saffron }}>timing?</em>
@@ -203,7 +203,7 @@ function WesternSignScreen({ selected, onSelect, selectedRashi, onSelectRashi, o
     <div style={{ minHeight: "100vh" }}>
       <TopBar path="western" onBack={onBack} />
       <ProgDots step={1} total={4} color={a.main} />
-      <div style={{ padding: "0 24px 48px", maxWidth: 460, margin: "0 auto", width: "100%" }}>
+      <div style={{ padding: "0 24px 90px", maxWidth: 460, margin: "0 auto", width: "100%" }}>
         <p style={{ fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase" as const, color: a.main, opacity: 0.7, marginBottom: 10 }}>Step 1 of 3</p>
         <h1 style={{ fontFamily: serif, fontSize: 28, fontWeight: 400, lineHeight: 1.25, color: C.text, marginBottom: 8 }}>
           What's your <em style={{ color: a.main }}>star sign?</em>
@@ -276,7 +276,7 @@ function VedicRashiScreen({ selected, onSelect, onBack, onContinue }: {
     <div style={{ minHeight: "100vh" }}>
       <TopBar path="vedic" onBack={onBack} />
       <ProgDots step={1} total={4} color={a.main} />
-      <div style={{ padding: "0 24px 48px", maxWidth: 460, margin: "0 auto", width: "100%" }}>
+      <div style={{ padding: "0 24px 90px", maxWidth: 460, margin: "0 auto", width: "100%" }}>
         <p style={{ fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase" as const, color: a.main, opacity: 0.7, marginBottom: 10 }}>Step 1 of 3</p>
         <h1 style={{ fontFamily: serif, fontSize: 28, fontWeight: 400, lineHeight: 1.25, color: C.text, marginBottom: 8 }}>
           What is your <em style={{ color: a.main }}>Moon sign?</em>
@@ -328,7 +328,7 @@ function BirthScreen({ path, birthDate, setBirthDate, birthPlace, setBirthPlace,
     <div style={{ minHeight: "100vh" }}>
       <TopBar path={path} onBack={onBack} />
       <ProgDots step={step} total={total} color={a.main} />
-      <div style={{ padding: "0 24px 48px", maxWidth: 460, margin: "0 auto", width: "100%" }}>
+      <div style={{ padding: "0 24px 90px", maxWidth: 460, margin: "0 auto", width: "100%" }}>
         <p style={{ fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase" as const, color: a.main, opacity: 0.7, marginBottom: 10 }}>
           Step {step} of {total - 1}
         </p>
@@ -418,7 +418,7 @@ function ReadyScreen({ path, profile, westernSign, selectedRashi, onBack, onCont
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <TopBar path={path} onBack={onBack} />
-      <div style={{ padding: "0 24px 48px", maxWidth: 460, margin: "0 auto", width: "100%", textAlign: "center" as const, display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <div style={{ padding: "0 24px 90px", maxWidth: 460, margin: "0 auto", width: "100%", textAlign: "center" as const, display: "flex", flexDirection: "column", alignItems: "center" }}>
         <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 180, delay: 0.1 }}
           style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 90, height: 90, borderRadius: "50%", background: `radial-gradient(circle, ${a.dim} 0%, transparent 70%)`, border: `1px solid ${a.border}`, fontSize: 44, marginBottom: 24 }}>
           {path === "western" ? "⭐" : path === "vedic" ? "🪔" : "🌐"}

@@ -137,7 +137,7 @@ export async function generateVedicBriefing(userId: string): Promise<VedicBriefi
   let goalsTitles = "none specified";
   try {
     const activeGoals = await db.select({ title: aryaGoals.title }).from(aryaGoals)
-      .where(and(eq(aryaGoals.userId, userId), eq(aryaGoals.isActive, true))).limit(3);
+      .where(and(eq(aryaGoals.userId, userId), eq(aryaGoals.status, "active"))).limit(3);
     goalsTitles = activeGoals.map(g => g.title).join("; ") || "none specified";
   } catch (err: any) {
     console.error("[VedicBriefing] Goals query failed:", err?.message);

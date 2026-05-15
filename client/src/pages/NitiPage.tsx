@@ -846,7 +846,7 @@ export default function NitiPage() {
       </div>
 
       {/* Screens */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflowY: screen === "session" ? "hidden" : "auto" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflowY: screen === "session" ? "hidden" : "auto", paddingBottom: screen !== "session" ? "calc(80px + env(safe-area-inset-bottom, 0px))" : 0 }}>
         <AnimatePresence mode="wait">
           {screen === "intro"   && IntroScreen}
           {screen === "context" && ContextScreen}
