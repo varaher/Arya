@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { ArrowLeft, Check, Loader2, Share2 } from "lucide-react";
 import { useUserAuth } from "@/lib/user-auth";
+import BottomNav from "@/components/BottomNav";
 
 const P = {
   bg: "#fdf6ec",
@@ -196,7 +197,7 @@ export default function WeeklyReviewPage() {
 
   useEffect(() => {
     if (!token) { setLoading(false); setError("not_authed"); return; }
-    fetch("/api/review/weekly", { headers: { Authorization: `Bearer ${token}` } })
+    fetch("/api/review/weekly", { headers: { "x-user-token": token } })
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
       .then((d: WeeklyLetterData) => {
         setData(d);
@@ -211,7 +212,7 @@ export default function WeeklyReviewPage() {
     setSavingAnswer(true);
     await fetch("/api/review/answer", {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      headers: { "x-user-token": token, "Content-Type": "application/json" },
       body: JSON.stringify({ question: data.aryaQuestion, answer: questionAnswer }),
     }).catch(() => {});
     setAnswerSaved(true);
@@ -224,7 +225,7 @@ export default function WeeklyReviewPage() {
     setSavingIntention(true);
     await fetch("/api/review/intention", {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      headers: { "x-user-token": token, "Content-Type": "application/json" },
       body: JSON.stringify({ intention }),
     }).catch(() => {});
     setIntentionSaved(true);
@@ -244,7 +245,7 @@ export default function WeeklyReviewPage() {
   const intentionValue = customIntention.trim() || selectedChip;
 
   return (
-    <div style={{ minHeight: "100dvh", background: P.bg, color: P.body, fontFamily: "Inter, sans-serif" }}>
+    <div style={{ minHeight: "100dvh", background: P.bg, color: P.body, fontFamily: "Inter, sans-serif", paddingBottom: 68 }}>
       <style>{`
         @keyframes wr-spin { to { transform: rotate(360deg); } }
         .wr-spin { animation: wr-spin 0.8s linear infinite; }
@@ -602,6 +603,7 @@ export default function WeeklyReviewPage() {
 
         </motion.div>
       )}
+      <BottomNav />
     </div>
   );
 }

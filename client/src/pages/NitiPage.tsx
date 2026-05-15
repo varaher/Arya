@@ -6,6 +6,7 @@ import {
   Microscope, ChevronRight, Sparkles, Settings, Plus, X, Trash2,
 } from "lucide-react";
 import { useUserAuth } from "@/lib/user-auth";
+import BottomNav from "@/components/BottomNav";
 
 // ── Palette ──────────────────────────────────────────────────
 const N = {
@@ -976,6 +977,7 @@ export default function NitiPage() {
           </motion.div>
         )}
       </AnimatePresence>
+      {screen !== "session" && <BottomNav />}
     </div>
   );
 }

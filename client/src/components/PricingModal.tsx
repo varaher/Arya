@@ -112,7 +112,7 @@ export default function PricingModal({ onClose, token, currentPlan = "free", onU
 
       const res = await fetch("/api/subscription/create", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json", "x-user-token": token },
         body: JSON.stringify({ plan: planId }),
       });
       const data = await res.json();
@@ -131,7 +131,7 @@ export default function PricingModal({ onClose, token, currentPlan = "free", onU
           try {
             const verifyRes = await fetch("/api/subscription/verify", {
               method: "POST",
-              headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+              headers: { "Content-Type": "application/json", "x-user-token": token },
               body: JSON.stringify({
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_subscription_id: response.razorpay_subscription_id,

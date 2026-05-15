@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useUserAuth } from "@/lib/user-auth";
 import { ArrowLeft, Loader2, ChevronRight, Home } from "lucide-react";
+import BottomNav from "@/components/BottomNav";
 
 // ── Colors ─────────────────────────────────────────────────────────────────
 const C = {
@@ -604,6 +605,7 @@ export default function VedicLensPage() {
           </motion.div>
         </AnimatePresence>
       </div>
+      <BottomNav />
     </div>
   );
 }

@@ -3621,7 +3621,7 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
   // ── Weekly Review ────────────────────────────────────────────────
   app.get("/api/review/weekly", optionalUser, async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).aryaUser?.id;
+      const userId = (req as any).userId;
       if (!userId) return res.status(401).json({ error: "Not authenticated" });
       const { getWeeklyLetter } = await import("./arya/weekly-review-page");
       const letter = await getWeeklyLetter(userId);
@@ -3634,7 +3634,7 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
 
   app.post("/api/review/intention", optionalUser, async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).aryaUser?.id;
+      const userId = (req as any).userId;
       if (!userId) return res.status(401).json({ error: "Not authenticated" });
       const { intention } = req.body;
       if (!intention?.trim()) return res.status(400).json({ error: "intention required" });
@@ -3648,7 +3648,7 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
 
   app.post("/api/review/answer", optionalUser, async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).aryaUser?.id;
+      const userId = (req as any).userId;
       if (!userId) return res.status(401).json({ error: "Not authenticated" });
       const { question, answer } = req.body;
       if (!answer?.trim()) return res.status(400).json({ error: "answer required" });

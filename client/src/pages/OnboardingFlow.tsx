@@ -459,7 +459,7 @@ export default function OnboardingFlow({ onComplete }: Props) {
     try {
       await fetch("/api/user/onboarding", {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        headers: { "x-user-token": token, "Content-Type": "application/json" },
         body: JSON.stringify({
           name: name.trim(),
           focusAreas,

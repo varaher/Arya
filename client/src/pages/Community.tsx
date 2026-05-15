@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
+import BottomNav from "@/components/BottomNav";
 import {
   Users, Flame, CheckCircle2, Trophy, Heart, Zap, ChevronRight,
   X, ChevronDown, Send, Calendar, Star, ArrowRight, Sparkles,
@@ -141,7 +142,7 @@ function JoinFormModal({ onClose, userSession }: { onClose: () => void; userSess
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(token ? { "x-user-token": token } : {}),
         },
         body: JSON.stringify({ ...form, growthGoals, communityParticipation, habitTracking }),
       });
@@ -367,7 +368,7 @@ function PostCard({ post, token, currentUserId }: { post: Post; token: string | 
       if (!token) throw new Error("Sign in to react");
       const res = await fetch(`/api/community/posts/${post.id}/react`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json", "x-user-token": token },
         body: JSON.stringify({ reactionType: "cheer" }),
       });
       if (!res.ok) throw new Error("Failed to react");
@@ -531,7 +532,7 @@ export default function Community() {
     queryKey: ["/api/community/posts"],
     queryFn: async () => {
       const headers: Record<string, string> = {};
-      if (token) headers["Authorization"] = `Bearer ${token}`;
+      if (token) headers["x-user-token"] = token;
       const r = await fetch("/api/community/posts", { headers });
       return r.ok ? r.json() : [];
     },
@@ -543,7 +544,7 @@ export default function Community() {
       if (!token) throw new Error("auth");
       const res = await fetch("/api/community/posts", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json", "x-user-token": token },
         body: JSON.stringify({
           content: postContent.trim(),
           challengeId: challenge?.id ?? null,
@@ -863,6 +864,7 @@ export default function Community() {
           <JoinFormModal onClose={() => setShowJoinForm(false)} userSession={userSession} />
         )}
       </AnimatePresence>
+      <BottomNav />
     </div>
   );
 }
