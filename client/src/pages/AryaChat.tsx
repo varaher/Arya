@@ -65,6 +65,7 @@ import {
   Users,
   Theater,
   Trophy,
+  Headphones,
 } from "lucide-react";
 import { getStoredUiLanguage, setStoredUiLanguage, getTranslation, LANGUAGE_OPTIONS, type UiLanguage } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
@@ -3832,18 +3833,40 @@ export default function AryaChat() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    data-testid="button-voice"
+                    data-testid="button-dictate"
                     variant="ghost"
                     size="icon"
-                    onClick={() => setShowVoiceMode(true)}
-                    disabled={isStreaming}
-                    className="flex-shrink-0 rounded-full h-9 w-9 md:h-10 md:w-10 bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 text-emerald-600 dark:text-emerald-400 hover:from-emerald-500/30 hover:to-emerald-600/20 border border-emerald-200 dark:border-emerald-800"
+                    onClick={() => isRecording ? stopRecording() : startRecording()}
+                    disabled={isStreaming || isScanningDoc}
+                    className={`flex-shrink-0 rounded-full h-9 w-9 md:h-10 md:w-10 border transition-all ${
+                      isRecording
+                        ? "bg-red-500/20 text-red-500 dark:text-red-400 border-red-400 dark:border-red-600 animate-pulse"
+                        : "bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 text-emerald-600 dark:text-emerald-400 hover:from-emerald-500/30 hover:to-emerald-600/20 border-emerald-200 dark:border-emerald-800"
+                    }`}
                   >
-                    <Mic className="w-5 h-5" />
+                    {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-5 h-5" />}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="text-xs">
-                  Talk to ARYA by voice
+                  {isRecording ? "Stop — send to ARYA" : "Speak — ARYA replies in chat"}
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    data-testid="button-voice-chat"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowVoiceMode(true)}
+                    disabled={isStreaming || isRecording}
+                    className="flex-shrink-0 rounded-full h-9 w-9 md:h-10 md:w-10 bg-gradient-to-br from-indigo-500/20 to-indigo-600/10 text-indigo-600 dark:text-indigo-400 hover:from-indigo-500/30 hover:to-indigo-600/20 border border-indigo-200 dark:border-indigo-800"
+                  >
+                    <Headphones className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">
+                  Live voice conversation
                 </TooltipContent>
               </Tooltip>
 
