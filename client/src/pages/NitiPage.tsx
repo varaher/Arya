@@ -64,12 +64,12 @@ interface MarketConv {
 }
 
 // ── Static data ──────────────────────────────────────────────
-const PHILOSOPHER_META: Record<string, { name: string; emoji: string; domain: string; text: string; color: string }> = {
-  chanakya:      { name: "Chanakya",      emoji: "⚔️",  domain: "Strategy & Competition",  text: "Arthashastra",   color: "#d4a853" },
-  vidura:        { name: "Vidura",        emoji: "🏛️",  domain: "Ethics & Trust",           text: "Vidura Niti",    color: "#7c6aff" },
-  thiruvalluvar: { name: "Thiruvalluvar", emoji: "📜",  domain: "Resilience & Timing",      text: "Thirukkural",    color: "#5ecfb0" },
-  krishna:       { name: "Krishna",       emoji: "🪷",  domain: "Founder Clarity",          text: "Bhagavad Gita",  color: "#e87070" },
-  shukra:        { name: "Shukracharya",  emoji: "💎",  domain: "Finance & Structure",      text: "Shukra Niti",    color: "#4a9d7a" },
+const PHILOSOPHER_META: Record<string, { emoji: string; domain: string; color: string }> = {
+  chanakya:      { emoji: "⚔️",  domain: "Strategy & Competition",  color: "#d4a853" },
+  vidura:        { emoji: "🏛️",  domain: "Ethics & Trust",           color: "#7c6aff" },
+  thiruvalluvar: { emoji: "📜",  domain: "Resilience & Timing",      color: "#5ecfb0" },
+  krishna:       { emoji: "🪷",  domain: "Founder Clarity",          color: "#e87070" },
+  shukra:        { emoji: "💎",  domain: "Finance & Structure",      color: "#4a9d7a" },
 };
 
 const BUSINESS_TYPES  = ["Startup", "Small Business", "Enterprise", "Freelancer", "Consultant"];
@@ -394,30 +394,29 @@ export default function NitiPage() {
       <ProgDots screen={screen} />
       <div style={{ textAlign: "center" as const, padding: "4px 0" }}>
         <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 58, color: N.gold, fontWeight: 700, letterSpacing: "0.04em", lineHeight: 1 }}>Niti</div>
-        <div style={{ fontSize: 12, letterSpacing: "0.2em", color: N.steel, marginTop: 8, textTransform: "uppercase" as const }}>The Wisdom Council</div>
+        <div style={{ fontSize: 12, letterSpacing: "0.2em", color: N.steel, marginTop: 8, textTransform: "uppercase" as const }}>Your Business Thinking Partner</div>
         <div style={{ width: 48, height: 2, background: `linear-gradient(90deg, transparent, ${N.gold}, transparent)`, margin: "14px auto 0" }} />
       </div>
       <div style={{ background: N.surface2, border: `1px solid ${N.border}`, borderRadius: 14, padding: "18px 20px" }}>
         <div style={{ fontSize: 14, color: N.cream, lineHeight: 1.75 }}>
-          India's greatest strategists spent lifetimes thinking about power, decisions, people, and money. ARYA draws from their specific wisdom based on what you're dealing with — automatically.
+          ARYA brings deep strategic thinking to your business decisions — on strategy, people, finance, ethics, and founder clarity. It adapts to your actual situation, not a generic playbook.
         </div>
-        <div style={{ fontSize: 13, color: N.steel, lineHeight: 1.7, marginTop: 10 }}>Not as decoration. As actual thinking.</div>
+        <div style={{ fontSize: 13, color: N.steel, lineHeight: 1.7, marginTop: 10 }}>Not generic advice. Thinking built around you.</div>
       </div>
       <div>
-        <Label text="The Council" />
+        <Label text="How ARYA thinks with you" />
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {Object.entries(PHILOSOPHER_META).map(([key, p]) => (
             <div key={key} style={{ background: N.surface2, border: `1px solid ${N.border}`, borderLeft: `3px solid ${p.color}`, borderRadius: "0 10px 10px 0", padding: "12px 16px", display: "flex", alignItems: "center", gap: 14 }}>
               <span style={{ fontSize: 22, lineHeight: 1 }}>{p.emoji}</span>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, color: N.cream, fontWeight: 600 }}>{p.domain}</div>
-                <div style={{ fontSize: 11, color: p.color, marginTop: 2 }}>{p.text}</div>
               </div>
             </div>
           ))}
         </div>
       </div>
-      <GoldBtn label="Set up my council →" onClick={() => setScreen("context")} />
+      <GoldBtn label="Personalize ARYA for me →" onClick={() => setScreen("context")} />
     </motion.div>
   );
 
@@ -428,7 +427,7 @@ export default function NitiPage() {
       <ProgDots screen={screen} />
       <div>
         <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 21, color: N.cream, fontWeight: 700 }}>Your business</div>
-        <div style={{ fontSize: 13, color: N.steel, marginTop: 4, lineHeight: 1.5 }}>So the council speaks to your actual situation — not someone else's.</div>
+        <div style={{ fontSize: 13, color: N.steel, marginTop: 4, lineHeight: 1.5 }}>So ARYA speaks to your actual situation — not someone else's.</div>
       </div>
       <div><Label text="Type" /><ChipSelector options={BUSINESS_TYPES}  value={bizType}  onChange={setBizType}  /></div>
       <div><Label text="Stage" /><ChipSelector options={BUSINESS_STAGES} value={bizStage} onChange={setBizStage} /></div>
@@ -452,7 +451,7 @@ export default function NitiPage() {
       style={{ padding: "0 20px 36px", display: "flex", flexDirection: "column", gap: 22 }}>
       <ProgDots screen={screen} />
       <div>
-        <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 21, color: N.cream, fontWeight: 700 }}>What should the council focus on?</div>
+        <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 21, color: N.cream, fontWeight: 700 }}>What should ARYA focus on?</div>
         <div style={{ fontSize: 13, color: N.steel, marginTop: 4, lineHeight: 1.5 }}>Select the areas most relevant to where you are right now.</div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -472,7 +471,7 @@ export default function NitiPage() {
       </div>
       <div style={{ display: "flex", gap: 10 }}>
         <BackBtn onClick={() => setScreen("context")} />
-        <div style={{ flex: 1 }}><GoldBtn label="Set up my council →" onClick={saveSetup} loading={saving} disabled={focusAreas.length === 0} /></div>
+        <div style={{ flex: 1 }}><GoldBtn label="Save and continue →" onClick={saveSetup} loading={saving} disabled={focusAreas.length === 0} /></div>
       </div>
     </motion.div>
   );
@@ -484,8 +483,8 @@ export default function NitiPage() {
       <ProgDots screen={screen} />
       <div style={{ padding: "12px 0 4px" }}>
         <div style={{ fontSize: 44, marginBottom: 12, lineHeight: 1 }}>🏛️</div>
-        <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 22, color: N.gold, fontWeight: 700 }}>Your council is ready</div>
-        <div style={{ fontSize: 13, color: N.steel, marginTop: 8, lineHeight: 1.6 }}>Five classical minds. One purpose — help you think more clearly.</div>
+        <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 22, color: N.gold, fontWeight: 700 }}>ARYA is ready for you</div>
+        <div style={{ fontSize: 13, color: N.steel, marginTop: 8, lineHeight: 1.6 }}>Personalised to your business. Ready to think with you.</div>
       </div>
       <div style={{ background: N.surface2, border: `1px solid ${N.border}`, borderRadius: 14, padding: 20, textAlign: "left" as const }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: bizChallenge ? 16 : 0 }}>
@@ -504,7 +503,7 @@ export default function NitiPage() {
         )}
         <div style={{ borderTop: `1px solid ${N.border}`, paddingTop: 12, marginTop: 12, display: "flex", alignItems: "center", gap: 8 }}>
           <Sparkles size={13} color={N.gold} />
-          <div style={{ fontSize: 12, color: N.gold }}>Wisdom engine: Classical Indian Niti</div>
+          <div style={{ fontSize: 12, color: N.gold }}>Powered by ARYA</div>
         </div>
       </div>
       {focusAreas.length > 0 && (
@@ -841,7 +840,7 @@ export default function NitiPage() {
             {screen === "session" && sessionLabel ? sessionLabel : "NITI"}
           </div>
           <div style={{ fontSize: 10, color: N.steel, letterSpacing: "0.1em", textTransform: "uppercase" as const }}>
-            {screen === "home" && activeTab === "market" ? "MARKET LENS" : "THE WISDOM COUNCIL"}
+            {screen === "home" && activeTab === "market" ? "MARKET LENS" : "DECISIONS & THINKING"}
           </div>
         </div>
       </div>

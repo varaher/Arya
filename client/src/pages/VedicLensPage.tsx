@@ -142,12 +142,12 @@ function IntroScreen({ onBegin, onSkip }: { onBegin: () => void; onSkip: () => v
             animation: "vl-pulse 4s ease-in-out infinite",
           }}>🪐</div>
         </div>
-        <p style={{ fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", color: C.saffronDim, textAlign: "center", marginBottom: 10 }}>Ancient Wisdom · Modern Life</p>
+        <p style={{ fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", color: C.saffronDim, textAlign: "center", marginBottom: 10 }}>Clarity · Timing · Growth</p>
         <h1 style={{ fontFamily: serif, fontSize: 30, fontWeight: 400, lineHeight: 1.25, color: C.text, textAlign: "center", marginBottom: 10 }}>
           Meet your<br /><em style={{ color: C.saffron }}>Vedic Lens</em>
         </h1>
         <p style={{ fontSize: 14, color: C.textDim, lineHeight: 1.75, textAlign: "center", marginBottom: 28 }}>
-          India's oldest wisdom tradition — Jyotish — translated into plain, practical guidance for your everyday life. No jargon. No fear. Just clarity.
+          A deeper layer of personal guidance — cosmic timing, life cycles, and intuitive clarity — blended with your goals and what's actually happening in your life. No jargon. No fear. Just clarity.
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
           {PREVIEW_CARDS.map((card, i) => (
@@ -164,7 +164,7 @@ function IntroScreen({ onBegin, onSkip }: { onBegin: () => void; onSkip: () => v
         </div>
         <div style={{ background: "rgba(124,106,255,0.04)", border: `1px solid rgba(124,106,255,0.12)`, borderRadius: 12, padding: "14px 16px", fontSize: 12, color: C.textDim, lineHeight: 1.7, display: "flex", gap: 10, marginBottom: 24 }}>
           <span style={{ fontSize: 16, flexShrink: 0 }}>🙏</span>
-          <span>Vedic Lens offers perspective and reflection — not prediction. Think of it as a wise elder's view, not a fortune teller's. You always decide.</span>
+          <span>ARYA Lens offers perspective and reflection — not prediction. Think of it as a thoughtful view from the bigger picture. You always decide.</span>
         </div>
         <Btn variant="saffron" onClick={onBegin}>Begin setup</Btn>
         <Btn variant="ghost" onClick={onSkip}>Skip — show me the briefing</Btn>
@@ -185,7 +185,7 @@ function RashiScreen({ selected, onSelect, onBack, onContinue }: { selected: str
           What is your<br /><em style={{ color: C.saffron }}>Rashi?</em>
         </h1>
         <p style={{ fontSize: 14, color: C.textDim, lineHeight: 1.75, marginBottom: 24 }}>
-          Your Moon sign in Vedic astrology. If you don't know it — no problem, enter your birth details next and ARYA will calculate it.
+          Your birth Moon sign. If you don't know it — no problem, enter your birth details next and ARYA will work it out for you.
         </p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 24 }}>
           {RASHIS.map(r => (
@@ -235,7 +235,7 @@ function BirthScreen({ birthDate, setBirthDate, birthPlace, setBirthPlace, birth
           Your birth<br /><em style={{ color: C.saffron }}>details</em>
         </h1>
         <p style={{ fontSize: 14, color: C.textDim, lineHeight: 1.75, marginBottom: 24 }}>
-          This lets ARYA calculate your personal Kundli — your exact cosmic fingerprint. More accurate than any generic horoscope.
+          This lets ARYA build your personal cosmic profile — a precise picture of your life cycles and timing. Far more accurate than any generic horoscope.
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 20 }}>
           <div>
@@ -269,10 +269,10 @@ function BirthScreen({ birthDate, setBirthDate, birthPlace, setBirthPlace, birth
         </div>
         <div style={{ background: "rgba(124,106,255,0.04)", border: `1px solid rgba(124,106,255,0.12)`, borderRadius: 12, padding: "14px 16px", fontSize: 12, color: C.textDim, lineHeight: 1.7, display: "flex", gap: 10, marginBottom: 20 }}>
           <span style={{ fontSize: 16, flexShrink: 0 }}>🔒</span>
-          <span>Your birth details are stored privately on your account and used solely to generate your Kundli. They are never shared. You can delete them anytime via Privacy & Control.</span>
+          <span>Your birth details are stored privately on your account and used solely to personalise your ARYA Lens. They are never shared. You can delete them anytime via Privacy & Control.</span>
         </div>
         <Btn variant="primary" onClick={onContinue} disabled={saving}>
-          {saving ? "Calculating…" : "Calculate my Kundli →"}
+          {saving ? "Calculating…" : "Build my profile →"}
         </Btn>
         <Btn variant="ghost" onClick={onSkip} disabled={saving}>Skip — use just my Rashi</Btn>
       </div>
@@ -296,9 +296,9 @@ function ReadyScreen({ profile, selectedRashi, onBack, onContinue }: { profile: 
           style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 100, height: 100, borderRadius: "50%", background: "radial-gradient(circle, rgba(245,166,35,0.15), rgba(124,106,255,0.08))", border: `1px solid rgba(245,166,35,0.2)`, fontSize: 48, marginBottom: 24 }}>
           ✨
         </motion.div>
-        <p style={{ fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", color: C.saffronDim, marginBottom: 8 }}>Your Kundli is ready</p>
+        <p style={{ fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", color: C.saffronDim, marginBottom: 8 }}>Your profile is ready</p>
         <h1 style={{ fontFamily: serif, fontSize: 30, fontWeight: 400, lineHeight: 1.25, color: C.text, marginBottom: 10 }}>
-          Vedic Lens<br /><em style={{ color: C.saffron }}>is active.</em>
+          ARYA Lens<br /><em style={{ color: C.saffron }}>is active.</em>
         </h1>
         <p style={{ fontSize: 14, color: C.textDim, lineHeight: 1.75, maxWidth: 300, marginBottom: 28 }}>
           Every morning briefing now includes your personal cosmic context — in plain, simple language. No jargon ever.
@@ -306,10 +306,9 @@ function ReadyScreen({ profile, selectedRashi, onBack, onContinue }: { profile: 
         <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: 18, width: "100%", maxWidth: 320, textAlign: "left", marginBottom: 28 }}>
           <div style={{ fontSize: 11, color: C.textMuted, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 12 }}>Your cosmic profile</div>
           {[
-            ["Rashi (Moon sign)", `${rashi} ${rashiSymbol}`, C.saffron],
-            ["Current Dasha", `${dashaLord} · ${dashaYearsLeft} yrs left`, C.text],
-            ["Nakshatra", nakshatra, C.text],
-            ["Source", "Brihat Parashara Hora Shastra", C.textDim],
+            ["Moon sign", `${rashi} ${rashiSymbol}`, C.saffron],
+            ["Current cycle", `${dashaLord} · ${dashaYearsLeft} yrs left`, C.text],
+            ["Birth star", nakshatra, C.text],
           ].map(([label, value, color]) => (
             <div key={label} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 8 }}>
               <span style={{ color: C.textDim }}>{label}</span>
