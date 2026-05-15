@@ -1,0 +1,60 @@
+Under India's Digital Personal Data Protection Act 2023, users have the legal right to:
+Know what data is stored about them
+Correct inaccurate data
+Erase their data completely
+Withdraw consent at any time
+This isn't optional. It's the law.
+What ARYA Stores That Needs to Be Deletable
+Every layer of memory needs a delete path:
+Data Type
+Examples
+Conversation history
+Every chat, voice note
+Goals & progress
+What they set, streaks
+Mood & journal entries
+Weekly reflections
+Documents uploaded
+Lab reports, PDFs
+Wearable data
+Sleep, heart rate, stress
+The "One Person" shares
+Reflection links sent
+Inferred insights
+"You decide better on Tuesdays"
+That last one is the hardest. Derived insights built from deleted data — do they also get deleted? Legally and ethically, yes.
+How to Build It Right
+Three levels of forgetting:
+1. Selective Forget
+User says: "Forget everything I told you about my job"
+ARYA removes only that context thread.
+Useful for sensitive topics — relationships, health scares, financial stress.
+2. Period Wipe
+"Forget the last 3 months"
+Useful if someone went through a difficult phase they don't want carried forward.
+3. Full Reset
+Complete deletion. Account, history, insights, everything.
+Must be irreversible and confirmed clearly.
+The UX Opportunity Hidden Here
+Most apps treat data deletion as a painful exit flow buried in settings.
+ARYA can make it a feature.
+Imagine ARYA saying:
+"It's been 6 months. Some of what I know about you is from a harder chapter. Want to let go of any of it?"
+This reframes deletion as intentional growth — shedding an old version of yourself — which fits perfectly with ARYA's identity as a growth companion.
+You could even call it something other than "delete."
+"Let Go" — for selective memory removal
+"New Chapter" — for a period wipe
+"Fresh Start" — for full reset
+Technical Reality
+You need to architect this from Day 1 — not retrofit it later.
+Key requirements:
+Every piece of data tagged with user ID + timestamp + category
+Deletion must cascade — primary data, backups, derived insights, logs
+Confirmation within 72 hours of request — DPDP requirement
+Audit trail that deletion happened — without storing the deleted content
+The Trust Dividend
+Here's the counterintuitive truth —
+The easier you make it to leave, the more people trust you enough to stay.
+If users know they can wipe everything instantly, they share more openly. And sharing more openly makes ARYA smarter. Which makes them less likely to actually leave.
+Right to Forget isn't a compliance checkbox. It's a trust-building product feature.
+Make it visible, make it easy, and talk about it in your onboarding.

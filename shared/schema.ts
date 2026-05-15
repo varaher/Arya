@@ -823,5 +823,19 @@ export const insertAryaCommunityReactionSchema = createInsertSchema(aryaCommunit
 export type InsertAryaCommunityReaction = z.infer<typeof insertAryaCommunityReactionSchema>;
 export type AryaCommunityReaction = typeof aryaCommunityReactions.$inferSelect;
 
+// Deletion audit — records THAT a deletion happened, never WHAT was deleted
+export const aryaDeletionAudit = pgTable("arya_deletion_audit", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull(),
+  deletionType: varchar("deletion_type", { length: 20 }).notNull().$type<'selective' | 'period' | 'full'>(),
+  categories: text("categories").array().default(sql`ARRAY[]::text[]`),
+  recordsDeleted: integer("records_deleted").default(0),
+  periodStart: timestamp("period_start"),
+  periodEnd: timestamp("period_end"),
+  requestedAt: timestamp("requested_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at").defaultNow().notNull(),
+});
+export type AryaDeletionAudit = typeof aryaDeletionAudit.$inferSelect;
+
 // Re-export chat models
 export * from "./models/chat";

@@ -87,6 +87,7 @@ import {
 import { getVapidPublicKey } from "./arya/reminder-scheduler";
 import { conversations } from "@shared/models/chat";
 import { streamRehearsalResponse, generateRehearsalFeedback } from "./arya/rehearsal";
+import { getDataSummary, forgetSelective, forgetPeriod, forgetAll } from "./arya/forget-me-service";
 
 const retriever = new KnowledgeRetriever();
 const medicalEngine = new MedicalEngine();
@@ -1436,6 +1437,62 @@ export async function registerRoutes(
       res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
+
+  // ── Right to Forget (DPDP Act 2023) ─────────────────────────────────────────
+
+  app.get("/api/user/data-summary", optionalUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const summary = await getDataSummary(userId);
+      res.json(summary);
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to fetch data summary" });
+    }
+  });
+
+  app.delete("/api/user/forget/selective", optionalUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const { categories } = req.body;
+      if (!Array.isArray(categories) || categories.length === 0) {
+        return res.status(400).json({ error: "categories array is required" });
+      }
+      const recordsDeleted = await forgetSelective(userId, categories);
+      res.json({ ok: true, recordsDeleted });
+    } catch (error: any) {
+      res.status(500).json({ error: "Deletion failed. Please try again." });
+    }
+  });
+
+  app.delete("/api/user/forget/period", optionalUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const { startDate, endDate } = req.body;
+      if (!startDate || !endDate) {
+        return res.status(400).json({ error: "startDate and endDate are required" });
+      }
+      const recordsDeleted = await forgetPeriod(userId, new Date(startDate), new Date(endDate));
+      res.json({ ok: true, recordsDeleted });
+    } catch (error: any) {
+      res.status(500).json({ error: "Deletion failed. Please try again." });
+    }
+  });
+
+  app.delete("/api/user/forget/all", optionalUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const recordsDeleted = await forgetAll(userId);
+      res.json({ ok: true, recordsDeleted });
+    } catch (error: any) {
+      res.status(500).json({ error: "Deletion failed. Please try again." });
+    }
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────────
 
   // Start a rehearsal conversation — ARYA plays a persona so the user can practise
   app.post("/api/arya/conversations/:id/start-rehearsal", optionalUser, async (req: Request, res: Response) => {

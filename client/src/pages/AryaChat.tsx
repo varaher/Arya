@@ -3033,6 +3033,13 @@ export default function AryaChat() {
                       <MessageCircleWarning className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400" /> Report Issue
                     </button>
                     <button
+                      data-testid="button-privacy-control-sidebar"
+                      onClick={() => { setShowUserMenu(false); setLocation("/privacy-control"); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
+                    >
+                      <Shield className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" /> Privacy & Control
+                    </button>
+                    <button
                       data-testid="button-user-logout-sidebar"
                       onClick={() => { setShowUserMenu(false); userLogout(); }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-500 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-slate-700"
@@ -3181,6 +3188,13 @@ export default function AryaChat() {
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                       >
                         <MessageCircleWarning className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400" /> Report Issue
+                      </button>
+                      <button
+                        data-testid="button-privacy-control"
+                        onClick={() => { setShowUserMenu(false); setLocation("/privacy-control"); }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
+                      >
+                        <Shield className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" /> Privacy & Control
                       </button>
                       <button
                         data-testid="button-user-logout"
