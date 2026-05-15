@@ -3452,7 +3452,7 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
 
   app.get("/api/niti/profile", optionalUser, async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).aryaUser?.id;
+      const userId = (req as any).userId;
       if (!userId) return res.json({ nitiEnabled: false });
       const [user] = await db.select({
         nitiEnabled: aryaUsers.nitiEnabled,
@@ -3470,7 +3470,7 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
 
   app.post("/api/niti/setup", optionalUser, async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).aryaUser?.id;
+      const userId = (req as any).userId;
       if (!userId) return res.status(401).json({ error: "Not authenticated" });
       const { businessType, businessStage, businessRole, businessChallenge, businessFocusAreas } = req.body;
       await db.update(aryaUsers).set({
@@ -3489,7 +3489,7 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
 
   app.post("/api/niti/sessions", optionalUser, async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).aryaUser?.id;
+      const userId = (req as any).userId;
       if (!userId) return res.status(401).json({ error: "Not authenticated" });
       const { sessionType } = req.body;
       if (!sessionType) return res.status(400).json({ error: "sessionType required" });
@@ -3503,7 +3503,7 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
 
   app.get("/api/niti/sessions", optionalUser, async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).aryaUser?.id;
+      const userId = (req as any).userId;
       if (!userId) return res.json([]);
       const sessions = await db.select().from(aryaNitiSessions)
         .where(eq(aryaNitiSessions.userId, userId))
@@ -3517,7 +3517,7 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
 
   app.post("/api/niti/sessions/:id/message", optionalUser, async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).aryaUser?.id;
+      const userId = (req as any).userId;
       if (!userId) return res.status(401).json({ error: "Not authenticated" });
       const sessionId = parseInt(req.params.id);
       if (isNaN(sessionId)) return res.status(400).json({ error: "Invalid session id" });
@@ -3571,7 +3571,7 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
   // ── Portfolio Holdings ─────────────────────────────────────
   app.get("/api/niti/portfolio", optionalUser, async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).aryaUser?.id;
+      const userId = (req as any).userId;
       if (!userId) return res.json([]);
       const holdings = await db.select().from(aryaPortfolioHoldings)
         .where(eq(aryaPortfolioHoldings.userId, userId))
@@ -3584,7 +3584,7 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
 
   app.post("/api/niti/portfolio", optionalUser, async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).aryaUser?.id;
+      const userId = (req as any).userId;
       if (!userId) return res.status(401).json({ error: "Not authenticated" });
       const { name, ticker, assetType, quantity, avgPrice, notes } = req.body;
       if (!name?.trim()) return res.status(400).json({ error: "name required" });
@@ -3606,7 +3606,7 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
 
   app.delete("/api/niti/portfolio/:id", optionalUser, async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).aryaUser?.id;
+      const userId = (req as any).userId;
       if (!userId) return res.status(401).json({ error: "Not authenticated" });
       const holdingId = parseInt(req.params.id);
       if (isNaN(holdingId)) return res.status(400).json({ error: "Invalid id" });
