@@ -547,7 +547,7 @@ function BriefingScreen({ briefing, loading, onHome, path }: {
         <div style={{ fontSize: 13, color: C.textDim, marginBottom: path !== "neutral" ? 16 : 8 }}>Here's what today looks like — for you, specifically.</div>
         {path !== "neutral" && (
           <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" as any }}>
-            {b.planetaryPills.map((p, i) => (
+            {(b.planetaryPills || []).map((p, i) => (
               <div key={i} style={pillStyle(p.tone)}><span>{p.emoji}</span><span>{p.text}</span></div>
             ))}
           </div>
@@ -571,7 +571,7 @@ function BriefingScreen({ briefing, loading, onHome, path }: {
             <div style={{ fontSize: 11, color: a.main, letterSpacing: "0.08em" }}>ARYA · {path === "neutral" ? "Personal Insight" : "Blended Insight"}</div>
           </div>
           <div style={{ fontSize: 14, color: C.text, lineHeight: 1.75 }}
-            dangerouslySetInnerHTML={{ __html: b.aryaInsight.replace(/\*\*(.*?)\*\*/g, `<strong style="color:${a.main}">$1</strong>`) }} />
+            dangerouslySetInnerHTML={{ __html: (b.aryaInsight || "").replace(/\*\*(.*?)\*\*/g, `<strong style="color:${a.main}">$1</strong>`) }} />
         </div>
 
         {/* Timing window */}
@@ -580,10 +580,10 @@ function BriefingScreen({ briefing, loading, onHome, path }: {
             <span style={{ fontSize: 22 }}>⏰</span>
             <div>
               <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 2 }}>Best window today</div>
-              <div style={{ fontSize: 16, color: a.main, fontWeight: 600, letterSpacing: "0.05em" }}>{b.muhurat.startTime} – {b.muhurat.endTime}</div>
+              <div style={{ fontSize: 16, color: a.main, fontWeight: 600, letterSpacing: "0.05em" }}>{b.muhurat?.startTime ?? "—"} – {b.muhurat?.endTime ?? "—"}</div>
             </div>
           </div>
-          <div style={{ fontSize: 11, color: C.textDim, textAlign: "right" as const }}>For {b.muhurat.purpose}</div>
+          <div style={{ fontSize: 11, color: C.textDim, textAlign: "right" as const }}>For {b.muhurat?.purpose ?? "important tasks"}</div>
         </div>
 
         {/* Cosmic cards — Western + Vedic only */}
@@ -597,7 +597,7 @@ function BriefingScreen({ briefing, loading, onHome, path }: {
               <div style={{ marginLeft: "auto", fontSize: 9, padding: "3px 8px", borderRadius: 10, color: a.main, background: a.dim, border: `1px solid ${a.border}`, letterSpacing: "0.08em", textTransform: "uppercase" as const }}>ARYA Lens</div>
             </div>
             <div style={{ padding: 16 }}>
-              {b.cosmicCards.map((card, i) => {
+              {(b.cosmicCards || []).map((card, i) => {
                 const tc = toneColors[card.tone];
                 return (
                   <div key={i} style={{ borderRadius: 12, padding: 14, marginBottom: 10, position: "relative" as const, overflow: "hidden", background: tc.bg, border: `1px solid ${tc.border}` }}>
@@ -611,9 +611,9 @@ function BriefingScreen({ briefing, loading, onHome, path }: {
                 );
               })}
               {[
-                { emoji: "💰", label: "Money & decisions",  text: b.guidance.money },
-                { emoji: "❤️", label: "Relationships",      text: b.guidance.relationships },
-                { emoji: "🏃", label: "Body & energy",      text: b.guidance.body },
+                { emoji: "💰", label: "Money & decisions",  text: b.guidance?.money ?? "" },
+                { emoji: "❤️", label: "Relationships",      text: b.guidance?.relationships ?? "" },
+                { emoji: "🏃", label: "Body & energy",      text: b.guidance?.body ?? "" },
               ].map((row, i, arr) => (
                 <div key={row.label} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 0", borderBottom: i < arr.length - 1 ? `1px solid ${C.border}` : "none" }}>
                   <span style={{ fontSize: 20, flexShrink: 0, marginTop: 2 }}>{row.emoji}</span>
@@ -637,9 +637,9 @@ function BriefingScreen({ briefing, loading, onHome, path }: {
             </div>
             <div style={{ padding: 16 }}>
               {[
-                { emoji: "💰", label: "Money & decisions", text: b.guidance.money },
-                { emoji: "❤️", label: "Relationships",     text: b.guidance.relationships },
-                { emoji: "🏃", label: "Energy & focus",    text: b.guidance.body },
+                { emoji: "💰", label: "Money & decisions", text: b.guidance?.money ?? "" },
+                { emoji: "❤️", label: "Relationships",     text: b.guidance?.relationships ?? "" },
+                { emoji: "🏃", label: "Energy & focus",    text: b.guidance?.body ?? "" },
               ].map((row, i, arr) => (
                 <div key={row.label} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 0", borderBottom: i < arr.length - 1 ? `1px solid ${C.border}` : "none" }}>
                   <span style={{ fontSize: 20, flexShrink: 0, marginTop: 2 }}>{row.emoji}</span>
@@ -768,8 +768,12 @@ export default function VedicLensPage() {
   }, [token]);
 
   const goTo = async (next: VedicScreen) => {
-    if (next === "ready")   await saveProfile();
-    if (next === "briefing") await fetchBriefing();
+    if (next === "ready") await saveProfile();
+    if (next === "briefing") {
+      setScreen("briefing");
+      fetchBriefing();
+      return;
+    }
     setScreen(next);
   };
 
