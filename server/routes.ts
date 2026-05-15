@@ -88,6 +88,7 @@ import { getVapidPublicKey } from "./arya/reminder-scheduler";
 import { conversations } from "@shared/models/chat";
 import { streamRehearsalResponse, generateRehearsalFeedback } from "./arya/rehearsal";
 import { getDataSummary, forgetSelective, forgetPeriod, forgetAll } from "./arya/forget-me-service";
+import { computeKundliProfile, generateVedicBriefing } from "./arya/vedic-lens";
 
 const retriever = new KnowledgeRetriever();
 const medicalEngine = new MedicalEngine();
@@ -1489,6 +1490,80 @@ export async function registerRoutes(
       res.json({ ok: true, recordsDeleted });
     } catch (error: any) {
       res.status(500).json({ error: "Deletion failed. Please try again." });
+    }
+  });
+
+  // ── Vedic Lens ────────────────────────────────────────────────────────────────
+
+  app.post("/api/user/vedic-lens", optionalUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      if (!userId) return res.status(401).json({ error: "Login required" });
+
+      const { rashi, birthDate, birthPlace, birthTimeApprox, birthTimeExact } = req.body;
+
+      let nakshatra: string | null = null;
+      let dashaLord: string | null = null;
+      let dashaYearsLeft: string | null = null;
+
+      if (birthDate) {
+        const computed = computeKundliProfile(birthDate);
+        nakshatra = computed.nakshatra;
+        dashaLord = computed.dashaLord;
+        dashaYearsLeft = computed.dashaYearsLeft;
+      }
+
+      await db.update(aryaUsers).set({
+        vedicLensEnabled: true,
+        rashi: rashi || null,
+        birthDate: birthDate || null,
+        birthPlace: birthPlace || null,
+        birthTimeApprox: birthTimeApprox || null,
+        birthTimeExact: birthTimeExact || null,
+        nakshatra,
+        dashaLord,
+        dashaYearsLeft,
+      }).where(eq(aryaUsers.id, userId));
+
+      res.json({
+        ok: true,
+        profile: { rashi, nakshatra, dashaLord, dashaYearsLeft },
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to save Vedic Lens profile" });
+    }
+  });
+
+  app.get("/api/user/vedic-lens", optionalUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      if (!userId) return res.status(401).json({ error: "Login required" });
+
+      const [user] = await db.select({
+        vedicLensEnabled: aryaUsers.vedicLensEnabled,
+        rashi: aryaUsers.rashi,
+        nakshatra: aryaUsers.nakshatra,
+        dashaLord: aryaUsers.dashaLord,
+        dashaYearsLeft: aryaUsers.dashaYearsLeft,
+        birthDate: aryaUsers.birthDate,
+        birthPlace: aryaUsers.birthPlace,
+        birthTimeApprox: aryaUsers.birthTimeApprox,
+      }).from(aryaUsers).where(eq(aryaUsers.id, userId)).limit(1);
+
+      res.json(user || {});
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to fetch Vedic profile" });
+    }
+  });
+
+  app.get("/api/user/vedic-briefing", optionalUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      if (!userId) return res.status(401).json({ error: "Login required" });
+      const briefing = await generateVedicBriefing(userId);
+      res.json(briefing);
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to generate Vedic briefing" });
     }
   });
 

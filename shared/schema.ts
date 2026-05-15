@@ -413,6 +413,15 @@ export const aryaUsers = pgTable("arya_users", {
   reflectionShareEnabled: boolean("reflection_share_enabled").default(false),
   reflectionSharePaused: boolean("reflection_share_paused").default(false),
   lastLoginAt: timestamp("last_login_at"),
+  vedicLensEnabled: boolean("vedic_lens_enabled").default(false),
+  rashi: varchar("rashi", { length: 30 }),
+  birthDate: varchar("birth_date", { length: 10 }),
+  birthPlace: varchar("birth_place", { length: 255 }),
+  birthTimeApprox: varchar("birth_time_approx", { length: 20 }),
+  birthTimeExact: varchar("birth_time_exact", { length: 5 }),
+  nakshatra: varchar("nakshatra", { length: 50 }),
+  dashaLord: varchar("dasha_lord", { length: 30 }),
+  dashaYearsLeft: varchar("dasha_years_left", { length: 10 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

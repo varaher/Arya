@@ -29,6 +29,7 @@ import UserAnalytics from "@/pages/UserAnalytics";
 import Community from "@/pages/Community";
 import ReflectionPage from "@/pages/ReflectionPage";
 import PrivacyControlPage from "@/pages/PrivacyControlPage";
+import VedicLensPage from "@/pages/VedicLensPage";
 
 function AdminRoute({ component: Component }: { component: React.ComponentType }) {
   const { isAdmin, isLoading } = useAdminAuth();
@@ -175,6 +176,10 @@ function Router() {
 
         <Route path="/privacy-control">
           <AnimatedPage><PrivacyControlPage /></AnimatedPage>
+        </Route>
+
+        <Route path="/vedic-lens">
+          <VedicLensPage />
         </Route>
 
         <Route path="/terms">
