@@ -34,6 +34,7 @@ import NitiPage from "@/pages/NitiPage";
 import WeeklyReviewPage from "@/pages/WeeklyReviewPage";
 import OnboardingFlow from "@/pages/OnboardingFlow";
 import AdminARYA from "@/pages/AdminARYA";
+import PranaPage from "@/pages/PranaPage";
 
 function OnboardingGuard({ children }: { children: React.ReactNode }) {
   const { user, isLoading, refreshUser } = useUserAuth();
@@ -205,6 +206,10 @@ function Router() {
 
         <Route path="/review">
           <WeeklyReviewPage />
+        </Route>
+
+        <Route path="/prana">
+          <PranaPage />
         </Route>
 
         <Route path="/terms">

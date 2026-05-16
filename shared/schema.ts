@@ -898,5 +898,21 @@ export const aryaDeletionAudit = pgTable("arya_deletion_audit", {
 });
 export type AryaDeletionAudit = typeof aryaDeletionAudit.$inferSelect;
 
+// ── Health Readings (Prana) ──────────────────────────────────────────────────
+export const aryaHealthReadings = pgTable("arya_health_readings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull(),
+  metric: varchar("metric", { length: 50 }).notNull(),
+  value: decimal("value", { precision: 10, scale: 2 }).notNull(),
+  value2: decimal("value2", { precision: 10, scale: 2 }),
+  unit: varchar("unit", { length: 20 }),
+  notes: text("notes"),
+  loggedAt: timestamp("logged_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export const insertAryaHealthReadingSchema = createInsertSchema(aryaHealthReadings).omit({ id: true, createdAt: true, loggedAt: true });
+export type InsertAryaHealthReading = z.infer<typeof insertAryaHealthReadingSchema>;
+export type AryaHealthReading = typeof aryaHealthReadings.$inferSelect;
+
 // Re-export chat models
 export * from "./models/chat";

@@ -67,6 +67,7 @@ import {
   Trophy,
   Headphones,
   ShieldCheck,
+  Activity,
 } from "lucide-react";
 import { getStoredUiLanguage, setStoredUiLanguage, getTranslation, LANGUAGE_OPTIONS, type UiLanguage } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
@@ -3083,6 +3084,14 @@ export default function AryaChat() {
                       <span className="truncate">Niti — Business Wisdom</span>
                     </button>
                     <button
+                      data-testid="button-prana-sidebar"
+                      onClick={() => { setShowUserMenu(false); setLocation("/prana"); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
+                    >
+                      <Activity className="w-3.5 h-3.5 text-teal-500 shrink-0" />
+                      <span className="truncate">Prana — Health Tracking</span>
+                    </button>
+                    <button
                       data-testid="button-weekly-review-sidebar"
                       onClick={() => { setShowUserMenu(false); setLocation("/review"); }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
@@ -3273,6 +3282,14 @@ export default function AryaChat() {
                       >
                         <Briefcase className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-500 shrink-0" />
                         <span className="truncate">Niti — Business Wisdom</span>
+                      </button>
+                      <button
+                        data-testid="button-prana"
+                        onClick={() => { setShowUserMenu(false); setLocation("/prana"); }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
+                      >
+                        <Activity className="w-3.5 h-3.5 text-teal-500 shrink-0" />
+                        <span className="truncate">Prana — Health Tracking</span>
                       </button>
                       <button
                         data-testid="button-weekly-review"

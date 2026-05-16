@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARYA — Master Build Index</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #04060a;
+    --surface: #080c12;
+    --surface2: #0d1219;
+    --border: #161e28;
+    --border2: #1e2a38;
+    --lime: #b8f040;
+    --lime-dim: rgba(184,240,64,0.08);
+    --lime-border: rgba(184,240,64,0.2);
+    --amber: #f0a830;
+    --amber-dim: rgba(240,168,48,0.08);
+    --amber-border: rgba(240,168,48,0.2);
+    --red: #f05050;
+    --red-dim: rgba(240,80,80,0.08);
+    --red-border: rgba(240,80,80,0.2);
+    --blue: #4090f0;
+    --blue-dim: rgba(64,144,240,0.08);
+    --teal: #3dd9c0;
+    --teal-dim: rgba(61,217,192,0.08);
+    --teal-border: rgba(61,217,192,0.2);
+    --violet: #a060f0;
+    --violet-dim: rgba(160,96,240,0.08);
+    --text: #d8e8f0;
+    --text-dim: #5a7890;
+    --text-muted: #283848;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    padding-bottom: 60px;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(184,240,64,0.03) 0%, transparent 55%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 40px 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── HEADER ── */
+  .master-header {
+    border-bottom: 1px solid var(--border2);
+    padding-bottom: 32px;
+    margin-bottom: 40px;
+  }
+
+  .mh-eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--lime);
+    opacity: 0.8;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .mh-eyebrow::after { content: ''; flex: 1; height: 1px; background: var(--border2); }
+
+  .mh-title {
+    font-family: 'Instrument Serif', serif;
+    font-size: 48px;
+    font-style: italic;
+    color: var(--text);
+    line-height: 1.1;
+    margin-bottom: 8px;
+  }
+  .mh-title span { color: var(--lime); }
+
+  .mh-sub {
+    font-size: 14px;
+    color: var(--text-dim);
+    line-height: 1.7;
+    max-width: 560px;
+  }
+
+  .mh-stats {
+    display: flex;
+    gap: 24px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+  .mh-stat { }
+  .mh-stat-num { font-size: 32px; font-weight: 800; color: var(--lime); letter-spacing: -0.03em; font-family: 'JetBrains Mono', monospace; }
+  .mh-stat-label { font-size: 11px; color: var(--text-muted); letter-spacing: 0.08em; margin-top: 2px; }
+
+  /* ── HEALTH DISCLAIMER — PROMINENT ── */
+  .health-disclaimer-major {
+    background: var(--red-dim);
+    border: 1px solid var(--red-border);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 40px;
+  }
+  .hdm-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .hdm-icon { font-size: 28px; flex-shrink: 0; }
+  .hdm-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--red);
+    letter-spacing: 0.02em;
+  }
+  .hdm-sub { font-size: 11px; color: var(--text-dim); margin-top: 2px; letter-spacing: 0.06em; }
+
+  .hdm-rules { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+  .hdm-rule {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+  .hdm-rule-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+  .hdm-rule strong { color: var(--text); }
+
+  .hdm-legal {
+    background: rgba(240,80,80,0.05);
+    border: 1px solid rgba(240,80,80,0.15);
+    border-radius: 10px;
+    padding: 14px;
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.75;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .hdm-legal strong { color: var(--red); }
+
+  /* ── SECTION ── */
+  .section { margin-bottom: 40px; }
+  .section-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border2);
+  }
+  .sh-num {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: var(--lime-dim);
+    border: 1px solid var(--lime-border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--lime);
+    flex-shrink: 0;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .sh-title { font-size: 18px; font-weight: 700; color: var(--text); }
+  .sh-count { margin-left: auto; font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
+
+  /* ── FILE CARD ── */
+  .file-grid { display: flex; flex-direction: column; gap: 8px; }
+
+  .file-card {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 14px;
+    padding: 16px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    transition: border-color 0.2s;
+  }
+  .file-card:hover { border-color: var(--border2); }
+
+  .fc-icon {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 19px;
+    flex-shrink: 0;
+    border: 1px solid var(--border2);
+  }
+
+  .fc-content { flex: 1; min-width: 0; }
+
+  .fc-filename {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--lime);
+    margin-bottom: 4px;
+    letter-spacing: 0.02em;
+  }
+
+  .fc-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .fc-desc { font-size: 12px; color: var(--text-dim); line-height: 1.6; margin-bottom: 8px; }
+
+  .fc-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+  .fc-tag {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 5px;
+    letter-spacing: 0.04em;
+  }
+  .tag-done { color: var(--lime); background: var(--lime-dim); border: 1px solid var(--lime-border); }
+  .tag-screens { color: var(--blue); background: var(--blue-dim); border: 1px solid rgba(64,144,240,0.2); }
+  .tag-interactive { color: var(--teal); background: var(--teal-dim); border: 1px solid var(--teal-border); }
+  .tag-dev { color: var(--amber); background: var(--amber-dim); border: 1px solid var(--amber-border); }
+  .tag-health { color: var(--red); background: var(--red-dim); border: 1px solid var(--red-border); }
+  .tag-admin { color: var(--violet); background: var(--violet-dim); border: 1px solid rgba(160,96,240,0.2); }
+
+  .fc-screens {
+    font-size: 11px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+    text-align: right;
+  }
+
+  /* ── WHAT ARYA DOES / DOESNT ── */
+  .rule-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  @media (max-width: 560px) { .rule-grid { grid-template-columns: 1fr; } }
+
+  .rule-col { border-radius: 12px; padding: 16px; }
+  .rule-col.does { background: var(--lime-dim); border: 1px solid var(--lime-border); }
+  .rule-col.doesnt { background: var(--red-dim); border: 1px solid var(--red-border); }
+  .rule-col-label { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 12px; font-weight: 700; }
+  .rule-col.does .rule-col-label { color: var(--lime); }
+  .rule-col.doesnt .rule-col-label { color: var(--red); }
+  .rule-item { font-size: 12px; color: var(--text-dim); line-height: 1.6; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.04); display: flex; gap: 8px; }
+  .rule-item:last-child { border-bottom: none; }
+  .rule-item-icon { flex-shrink: 0; }
+
+  /* ── PENDING ── */
+  .pending-card {
+    background: var(--surface);
+    border: 1px solid var(--amber-border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+  .pending-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .pending-title { color: var(--text); font-weight: 600; margin-bottom: 2px; }
+  .pending-sub { font-size: 11px; color: var(--text-muted); }
+
+  /* ── TECH STACK ── */
+  .stack-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .stack-row:last-child { border-bottom: none; }
+  .stack-label { color: var(--text-dim); }
+  .stack-val { font-family: 'JetBrains Mono', monospace; color: var(--lime); font-size: 12px; }
+
+  /* ── BOTTOM NOTE ── */
+  .bottom-note {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 14px;
+    padding: 20px;
+    margin-top: 40px;
+    text-align: center;
+  }
+  .bn-title { font-family: 'Instrument Serif', serif; font-size: 22px; font-style: italic; color: var(--text); margin-bottom: 8px; }
+  .bn-sub { font-size: 13px; color: var(--text-dim); line-height: 1.7; max-width: 480px; margin: 0 auto; }
+
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ── HEADER ── -->
+  <div class="master-header">
+    <div class="mh-eyebrow">ARYA · Complete Build Index · May 2026</div>
+    <div class="mh-title">Everything<br>built for <span>ARYA.</span></div>
+    <p class="mh-sub">Complete index of all UI screens, features, and specifications built across all design sessions. Hand this to your developer as the master reference.</p>
+    <div class="mh-stats">
+      <div class="mh-stat">
+        <div class="mh-stat-num">14</div>
+        <div class="mh-stat-label">HTML files built</div>
+      </div>
+      <div class="mh-stat">
+        <div class="mh-stat-num">40+</div>
+        <div class="mh-stat-label">Screens designed</div>
+      </div>
+      <div class="mh-stat">
+        <div class="mh-stat-num">100%</div>
+        <div class="mh-stat-label">Interactive & working</div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ── HEALTH DISCLAIMER — MOST IMPORTANT ── -->
+  <div class="health-disclaimer-major">
+    <div class="hdm-top">
+      <div class="hdm-icon">⚕️</div>
+      <div>
+        <div class="hdm-title">ARYA Health — Critical Disclaimer</div>
+        <div class="hdm-sub">Must be implemented exactly as specified · Non-negotiable</div>
+      </div>
+    </div>
+
+    <div class="hdm-rules">
+      <div class="hdm-rule">
+        <div class="hdm-rule-icon">✓</div>
+        <div><strong>ARYA only provides lifestyle suggestions.</strong> Walking more, sleeping better, drinking water, managing stress — ARYA stays strictly in this lane.</div>
+      </div>
+      <div class="hdm-rule">
+        <div class="hdm-rule-icon">✓</div>
+        <div><strong>ARYA notices patterns and flags them.</strong> "Your resting HR has been elevated for 4 days" — observation only. Never a diagnosis.</div>
+      </div>
+      <div class="hdm-rule">
+        <div class="hdm-rule-icon">✓</div>
+        <div><strong>ARYA suggests visiting a doctor.</strong> For anything concerning — SpO2 below 95%, sustained HR elevation, unusual glucose readings — ARYA says "worth mentioning to your doctor at your next visit."</div>
+      </div>
+      <div class="hdm-rule">
+        <div class="hdm-rule-icon">✓</div>
+        <div><strong>ARYA provides motivation and encouragement.</strong> Celebrating streaks, acknowledging effort, connecting health data to mood and energy — this is ARYA's role.</div>
+      </div>
+      <div class="hdm-rule">
+        <div class="hdm-rule-icon">✗</div>
+        <div><strong>ARYA never diagnoses.</strong> Never says "you have X condition" or "this reading means Y."</div>
+      </div>
+      <div class="hdm-rule">
+        <div class="hdm-rule-icon">✗</div>
+        <div><strong>ARYA never prescribes.</strong> Never recommends medication, supplements, specific medical treatments, or dosages.</div>
+      </div>
+      <div class="hdm-rule">
+        <div class="hdm-rule-icon">✗</div>
+        <div><strong>ARYA never creates urgency around health data</strong> in a way that causes panic. Tone is always calm, observational, and empowering.</div>
+      </div>
+    </div>
+
+    <div class="hdm-legal">
+      <strong>LEGAL DISCLAIMER — displayed prominently in the Health section:</strong>
+      <br><br>
+      "ARYA's health feature helps you track your own readings and notice lifestyle patterns over time. ARYA is not a medical device, does not provide medical advice, and is not a substitute for professional medical care. All observations are for personal awareness only.
+      <br><br>
+      If you have a health concern, please consult a qualified doctor or healthcare professional. In an emergency, call 112 (India) or your local emergency services immediately.
+      <br><br>
+      Your health data is stored privately on secure servers, used only to generate your personal insights, and never shared with third parties. You can delete all health data at any time via Settings → Right to Forget."
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════
+       SECTION 1 — CORE USER SCREENS
+  ══════════════════════════════════ -->
+  <div class="section">
+    <div class="section-head">
+      <div class="sh-num">01</div>
+      <div class="sh-title">Core User Screens</div>
+      <div class="sh-count">5 files</div>
+    </div>
+    <div class="file-grid">
+
+      <div class="file-card">
+        <div class="fc-icon" style="background:rgba(184,240,64,0.08);border-color:rgba(184,240,64,0.2);">🚀</div>
+        <div class="fc-content">
+          <div class="fc-filename">arya-onboarding.html</div>
+          <div class="fc-title">New User Onboarding</div>
+          <div class="fc-desc">8-screen first-time user flow. Splash → What ARYA is → Name entry (live preview of first message) → What matters to you → Future You letter → One Person setup → Morning briefing time → Ready screen. Animated, fully interactive.</div>
+          <div class="fc-tags">
+            <span class="fc-tag tag-done">✓ Complete</span>
+            <span class="fc-tag tag-screens">8 screens</span>
+            <span class="fc-tag tag-interactive">Fully interactive</span>
+          </div>
+        </div>
+        <div class="fc-screens">8 screens</div>
+      </div>
+
+      <div class="file-card">
+        <div class="fc-icon" style="background:rgba(61,217,192,0.08);border-color:rgba(61,217,192,0.2);">📖</div>
+        <div class="fc-content">
+          <div class="fc-filename">arya-weekly-review.html</div>
+          <div class="fc-title">Sunday Weekly Review</div>
+          <div class="fc-desc">Full letter-style Sunday review. Mood arc Mon–Sun with SVG curve, goals hit/miss/streak, Pattern Insight dark card (the magic), Business Mind recap, KAAL cosmic week, ARYA's one question (saves to journal), Next week intention setter, Past weeks horizontal scroll. Light parchment theme — intentionally different from all other screens.</div>
+          <div class="fc-tags">
+            <span class="fc-tag tag-done">✓ Complete</span>
+            <span class="fc-tag tag-screens">1 screen</span>
+            <span class="fc-tag tag-interactive">Interactive</span>
+          </div>
+        </div>
+        <div class="fc-screens">1 screen</div>
+      </div>
+
+      <div class="file-card">
+        <div class="fc-icon" style="background:rgba(240,80,80,0.08);border-color:rgba(240,80,80,0.2);">🔒</div>
+        <div class="fc-content">
+          <div class="fc-filename">arya-right-to-forget.html</div>
+          <div class="fc-title">Privacy Control — Right to Forget</div>
+          <div class="fc-desc">Full DPDP Act 2023 compliant deletion flow. Three paths: Let Go (select categories by chip), New Chapter (pick time period), Fresh Start (complete reset). Each requires typing the exact phrase to confirm. Ends on deletion receipt with timestamp. Language: release / let go / new chapter — never "delete."</div>
+          <div class="fc-tags">
+            <span class="fc-tag tag-done">✓ Complete</span>
+            <span class="fc-tag tag-screens">5 screens</span>
+            <span class="fc-tag tag-interactive">Fully interactive</span>
+          </div>
+        </div>
+        <div class="fc-screens">5 screens</div>
+      </div>
+
+      <div class="file-card">
+        <div class="fc-icon" style="background:rgba(61,217,192,0.08);border-color:rgba(61,217,192,0.2);">🫀</div>
+        <div class="fc-content">
+          <div class="fc-filename">arya-health.html</div>
+          <div class="fc-title">Body & Health — Daily Log + Insights</div>
+          <div class="fc-desc">Three tabs. Daily Log: 6 metric cards (HR, SpO2, Steps, Stress, Calories, Weight) — tap to open modal with large number input. Sleep 7-day bar chart. Blood pressure with dot history. Glucose range bar. Trends tab: sparkline charts per metric. ARYA Insights tab: 5 personalised observations connecting health data to mood, decisions, sleep, and patterns. Connect wearable banner for future device sync.</div>
+          <div class="fc-tags">
+            <span class="fc-tag tag-done">✓ Complete</span>
+            <span class="fc-tag tag-screens">3 tabs</span>
+            <span class="fc-tag tag-health">Health · Disclaimer required</span>
+            <span class="fc-tag tag-interactive">Modal entry</span>
+          </div>
+        </div>
+        <div class="fc-screens">3 tabs</div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════
+       SECTION 2 — KAAL (WISDOM TIMING)
+  ══════════════════════════════════ -->
+  <div class="section">
+    <div class="section-head">
+      <div class="sh-num">02</div>
+      <div class="sh-title">KAAL — Wisdom Timing</div>
+      <div class="sh-count">3 files</div>
+    </div>
+    <div class="file-grid">
+
+      <div class="file-card">
+        <div class="fc-icon" style="background:rgba(212,168,64,0.08);border-color:rgba(212,168,64,0.2);">✦</div>
+        <div class="fc-content">
+          <div class="fc-filename">arya-wisdom-timing-v2.html</div>
+          <div class="fc-title">KAAL Onboarding — Three-Path Universal</div>
+          <div class="fc-desc">Universal religion-neutral onboarding. Screen 0: three-path choice. Path 1 (Western ⭐): 12-sign zodiac picker with dates, option to also add Rashi. Path 2 (Vedic 🪔): Rashi picker showing both Rashi name AND Western sign on every card. Path 3 (Neutral 🌐): straight to birth details, zero sign language. Birth time screen: 6 approximate windows + exact time + skip option — all three equally prominent. Each path ends on its own completion screen with colour coding (gold/saffron/silver). Bug fixed: no more blank page.</div>
+          <div class="fc-tags">
+            <span class="fc-tag tag-done">✓ Complete · Bug fixed</span>
+            <span class="fc-tag tag-screens">8 screens</span>
+            <span class="fc-tag tag-interactive">3 complete paths</span>
+          </div>
+        </div>
+        <div class="fc-screens">8 screens</div>
+      </div>
+
+      <div class="file-card">
+        <div class="fc-icon" style="background:rgba(232,144,74,0.08);border-color:rgba(232,144,74,0.2);">🌅</div>
+        <div class="fc-content">
+          <div class="fc-filename">arya-personalised-wisdom.html</div>
+          <div class="fc-title">KAAL — Personalised Morning Briefing Result</div>
+          <div class="fc-desc">The actual KAAL output screen. Three switchable users at the top showing same sign (Scorpio) — three completely different insights. Arjun (Western, founder, decision pending, mood rising): "You've had this decision open 11 days. Tuesday 9–12am is free on your calendar. That's your moment." Priya (Vedic, career stress, low mood): rest-focused, Muhurat shown, Dasha explained as life chapter. David (Neutral, no sign language): pure pattern timing, zero astrology terms. Personal data tags on each insight showing which data points shaped it.</div>
+          <div class="fc-tags">
+            <span class="fc-tag tag-done">✓ Complete</span>
+            <span class="fc-tag tag-screens">1 screen · 3 users</span>
+            <span class="fc-tag tag-interactive">Switchable</span>
+          </div>
+        </div>
+        <div class="fc-screens">1 screen</div>
+      </div>
+
+      <div class="file-card">
+        <div class="fc-icon" style="background:rgba(212,168,64,0.08);border-color:rgba(212,168,64,0.2);">🪐</div>
+        <div class="fc-content">
+          <div class="fc-filename">arya-vedic-lens.html</div>
+          <div class="fc-title">KAAL — Original Vedic Briefing (Hindu path)</div>
+          <div class="fc-desc">Original full Vedic experience. Kundli profile, Rashi picker, birth details, morning briefing with planetary bar in plain language, ARYA blended insight, Muhurat strip, cosmic guidance cards (strength/caution), domain guidance (money/relationships/body), Dasha period as life chapter. All Vedic terms translated to plain language — user never sees jargon. Sources (Brihat Parashara, Phaladeepika) visible only as footnotes.</div>
+          <div class="fc-tags">
+            <span class="fc-tag tag-done">✓ Complete</span>
+            <span class="fc-tag tag-screens">5 screens</span>
+            <span class="fc-tag tag-interactive">Fully interactive</span>
+          </div>
+        </div>
+        <div class="fc-screens">5 screens</div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════
+       SECTION 3 — BUSINESS MIND / NITI
+  ══════════════════════════════════ -->
+  <div class="section">
+    <div class="section-head">
+      <div class="sh-num">03</div>
+      <div class="sh-title">Niti — Business Mind</div>
+      <div class="sh-count">2 files</div>
+    </div>
+    <div class="file-grid">
+
+      <div class="file-card">
+        <div class="fc-icon" style="background:rgba(232,120,58,0.08);border-color:rgba(232,120,58,0.2);">💼</div>
+        <div class="fc-content">
+          <div class="fc-filename">arya-business-mind.html</div>
+          <div class="fc-title">Business Mind — Onboarding + Decision Session</div>
+          <div class="fc-desc">4-screen onboarding: what Business Mind is, business context setup (type/stage/role/challenge), focus area selector (8 categories), profile ready. Session Home: 4 session types, recent sessions with status. Live Decision Session: ARYA opens with sharp direct question, follow-up chips branch the conversation, framework blocks, verdict cards, warning cards, wisdom source footnote. Indian philosophical wisdom engine (Chanakya, Vidura, Krishna, Thiruvalluvar, Shukracharya) runs silently — ARYA speaks in its own voice throughout.</div>
+          <div class="fc-tags">
+            <span class="fc-tag tag-done">✓ Complete</span>
+            <span class="fc-tag tag-screens">6 screens</span>
+            <span class="fc-tag tag-interactive">Live session</span>
+            <span class="fc-tag tag-dev">Hidden wisdom engine</span>
+          </div>
+        </div>
+        <div class="fc-screens">6 screens</div>
+      </div>
+
+      <div class="file-card">
+        <div class="fc-icon" style="background:rgba(90,184,144,0.08);border-color:rgba(90,184,144,0.2);">📈</div>
+        <div class="fc-content">
+          <div class="fc-filename">arya-market-lens.html</div>
+          <div class="fc-title">Market Lens — Inside Business Mind</div>
+          <div class="fc-desc">Sits as a tab inside Business Mind — not a separate section. Today's Markets: Nifty/Sensex/Bank Nifty/IT with sparkline, ARYA plain-language market commentary. News cards: headline + plain English explanation + personal impact chips + "What does this mean for me?" expandable (fully working). Portfolio Journal: self-reported holdings with P&L. ARYA proactively asks Socratic questions about holdings. Think with ARYA: 4 pre-loaded real questions + free input. SEBI disclaimer on every screen.</div>
+          <div class="fc-tags">
+            <span class="fc-tag tag-done">✓ Complete</span>
+            <span class="fc-tag tag-screens">1 screen · 2 tabs</span>
+            <span class="fc-tag tag-interactive">Expandable news</span>
+            <span class="fc-tag tag-dev">SEBI disclaimer required</span>
+          </div>
+        </div>
+        <div class="fc-screens">1 screen</div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════
+       SECTION 4 — ADMIN
+  ══════════════════════════════════ -->
+  <div class="section">
+    <div class="section-head">
+      <div class="sh-num">04</div>
+      <div class="sh-title">Admin Console</div>
+      <div class="sh-count">2 files</div>
+    </div>
+    <div class="file-grid">
+
+      <div class="file-card">
+        <div class="fc-icon" style="background:rgba(184,240,64,0.08);border-color:rgba(184,240,64,0.2);">⚡</div>
+        <div class="fc-content">
+          <div class="fc-filename">arya-admin.html</div>
+          <div class="fc-title">Admin Dashboard — Intelligence + Self-Learning</div>
+          <div class="fc-desc">Three-panel admin console. Panel 1 (My ARYA Chat): live metrics rail, ARYA morning briefing with data table, conversation branches from suggestion chips (6 pre-loaded — all working with real responses). Panel 2 (Self-Learning): 4 proposals from 2,847 conversations — each with before/after, evidence, confidence score. Approve/Edit/Reject working, badge count updates. Panel 3 (Intelligence): ARYA's opinion first, KPI grid, retention bars, feature usage grid, user cohort table, ARYA's recommended action. Live clock in topbar.</div>
+          <div class="fc-tags">
+            <span class="fc-tag tag-done">✓ Complete</span>
+            <span class="fc-tag tag-screens">3 panels</span>
+            <span class="fc-tag tag-admin">Admin only</span>
+            <span class="fc-tag tag-interactive">Fully interactive</span>
+          </div>
+        </div>
+        <div class="fc-screens">3 panels</div>
+      </div>
+
+      <div class="file-card">
+        <div class="fc-icon" style="background:rgba(184,240,64,0.08);border-color:rgba(184,240,64,0.2);">🎙️</div>
+        <div class="fc-content">
+          <div class="fc-filename">arya-admin-personal.html</div>
+          <div class="fc-title">Admin Personal ARYA — Chat + Voice</div>
+          <div class="fc-desc">Founder's private ARYA. Chat mode: ARYA opens with morning briefing knowing both personal (hiring decision, mood, streaks) and product context (Sequoia call, retention drop). 5 suggestion chips all working with specific data-driven responses. 🎙️ button in input bar records voice notes. Voice mode: full-screen interface with animated waveform, big hold-to-speak button with rings, timer, ARYA text response after release. Recent voice notes list with mini waveforms. Context drawer slides in showing everything ARYA knows about the founder.</div>
+          <div class="fc-tags">
+            <span class="fc-tag tag-done">✓ Complete</span>
+            <span class="fc-tag tag-screens">2 modes</span>
+            <span class="fc-tag tag-admin">Admin only</span>
+            <span class="fc-tag tag-interactive">Chat + Voice working</span>
+          </div>
+        </div>
+        <div class="fc-screens">2 modes</div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════
+       SECTION 5 — KAAL PROMPT SPEC
+  ══════════════════════════════════ -->
+  <div class="section">
+    <div class="section-head">
+      <div class="sh-num">05</div>
+      <div class="sh-title">Developer Specifications</div>
+      <div class="sh-count">1 file</div>
+    </div>
+    <div class="file-grid">
+
+      <div class="file-card">
+        <div class="fc-icon" style="background:rgba(64,144,240,0.08);border-color:rgba(64,144,240,0.2);">📐</div>
+        <div class="fc-content">
+          <div class="fc-filename">arya-prompt-spec-notif.html</div>
+          <div class="fc-title">Prompt Engineering Spec + Notification Centre</div>
+          <div class="fc-desc">Two tabs. Tab 1 (Prompt Spec): Complete developer specification for personalised KAAL insights. Data inputs (cosmic + personal layers), production-ready TypeScript prompt template with copy button, three live examples showing same sign different outputs, 8 hard rules including validation logic. Cost estimate: ₹2,800/month at 1,000 users. Cache strategy. Tab 2 (Notification Centre): 8 real notifications across 3 time groups, filter pills, mark all read, tap-to-expand detail overlay for each notification. All in ARYA's voice.</div>
+          <div class="fc-tags">
+            <span class="fc-tag tag-done">✓ Complete</span>
+            <span class="fc-tag tag-dev">Dev spec</span>
+            <span class="fc-tag tag-interactive">Copy button works</span>
+          </div>
+        </div>
+        <div class="fc-screens">2 tabs</div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════
+       WHAT ARYA DOES / DOESN'T DO
+  ══════════════════════════════════ -->
+  <div class="section">
+    <div class="section-head">
+      <div class="sh-num">06</div>
+      <div class="sh-title">ARYA Health — What It Does and Doesn't Do</div>
+      <div class="sh-count">Non-negotiable</div>
+    </div>
+
+    <div class="rule-grid">
+      <div class="rule-col does">
+        <div class="rule-col-label">✓ ARYA does this</div>
+        <div class="rule-item"><span class="rule-item-icon">🚶</span> Suggests lifestyle changes — walk more, sleep better, drink water, manage stress</div>
+        <div class="rule-item"><span class="rule-item-icon">👁️</span> Notices patterns — "Your HR has been elevated 4 days"</div>
+        <div class="rule-item"><span class="rule-item-icon">🔗</span> Connects health to mood, decisions, goals, sleep</div>
+        <div class="rule-item"><span class="rule-item-icon">💪</span> Celebrates streaks and healthy habits</div>
+        <div class="rule-item"><span class="rule-item-icon">🩺</span> Suggests visiting a doctor when something is worth checking</div>
+        <div class="rule-item"><span class="rule-item-icon">📊</span> Tracks user-entered readings over time</div>
+        <div class="rule-item"><span class="rule-item-icon">🧘</span> Recommends rest, recovery, mindfulness</div>
+        <div class="rule-item"><span class="rule-item-icon">💧</span> Basic wellness reminders — hydration, posture, breaks</div>
+      </div>
+      <div class="rule-col doesnt">
+        <div class="rule-col-label">✗ ARYA never does this</div>
+        <div class="rule-item"><span class="rule-item-icon">🚫</span> Diagnoses any condition — ever</div>
+        <div class="rule-item"><span class="rule-item-icon">🚫</span> Recommends medication or supplements</div>
+        <div class="rule-item"><span class="rule-item-icon">🚫</span> Gives specific treatment plans</div>
+        <div class="rule-item"><span class="rule-item-icon">🚫</span> Interprets lab results clinically</div>
+        <div class="rule-item"><span class="rule-item-icon">🚫</span> Creates panic or urgency around readings</div>
+        <div class="rule-item"><span class="rule-item-icon">🚫</span> Replaces professional medical advice</div>
+        <div class="rule-item"><span class="rule-item-icon">🚫</span> Makes predictions about health outcomes</div>
+        <div class="rule-item"><span class="rule-item-icon">🚫</span> Shares health data with any third party</div>
+      </div>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:16px;font-size:13px;color:var(--text-dim);line-height:1.75;">
+      <strong style="color:var(--text);">The tone rule:</strong> ARYA speaks like a caring, informed friend — not a doctor, not a fitness app. "Your sleep has been lower this week — your body might need more rest this weekend" is right. "You have a sleep deficit of 6.2 hours indicating possible cortisol dysregulation" is wrong. Always warm, always empowering, always within the lifestyle lane.
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════
+       PENDING ITEMS
+  ══════════════════════════════════ -->
+  <div class="section">
+    <div class="section-head">
+      <div class="sh-num">07</div>
+      <div class="sh-title">Still To Build</div>
+      <div class="sh-count">4 items</div>
+    </div>
+
+    <div class="pending-card">
+      <div class="pending-icon">💳</div>
+      <div>
+        <div class="pending-title">Razorpay Subscription Flow UI</div>
+        <div class="pending-sub">Backend wired. 5 secrets needed. Pricing modal + upgrade screen not yet built as UI.</div>
+      </div>
+    </div>
+
+    <div class="pending-card">
+      <div class="pending-icon">🔔</div>
+      <div>
+        <div class="pending-title">Push Notification Delivery</div>
+        <div class="pending-sub">VAPID keys loaded, DB scheduler running, browser push subscription flow on frontend not yet wired.</div>
+      </div>
+    </div>
+
+    <div class="pending-card">
+      <div class="pending-icon">🏥</div>
+      <div>
+        <div class="pending-title">ERmate + ERprana</div>
+        <div class="pending-sub">Admin stubs exist. Clinical documentation copilot and patient monitoring — not yet built out. Future phase.</div>
+      </div>
+    </div>
+
+    <div class="pending-card">
+      <div class="pending-icon">⌚</div>
+      <div>
+        <div class="pending-title">Wearable Device Sync</div>
+        <div class="pending-sub">Phase 1 (manual entry) designed and built. Phase 2: Apple Health / Google Fit API integration. Phase 3: boAt, Noise, Fitbit partnerships. Currently manual entry only.</div>
+      </div>
+    </div>
+
+  </div>
+
+
+  <!-- ══════════════════════════════════
+       TECH NOTES
+  ══════════════════════════════════ -->
+  <div class="section">
+    <div class="section-head">
+      <div class="sh-num">08</div>
+      <div class="sh-title">Key Technical Notes</div>
+      <div class="sh-count">For developer</div>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:16px;">
+      <div class="stack-row"><span class="stack-label">KAAL insight model</span><span class="stack-val">claude-sonnet-4-20250514</span></div>
+      <div class="stack-row"><span class="stack-label">KAAL insight cache key</span><span class="stack-val">wisdom:{user_id}:{date}</span></div>
+      <div class="stack-row"><span class="stack-label">KAAL generation time</span><span class="stack-val">5 AM daily · before briefing</span></div>
+      <div class="stack-row"><span class="stack-label">KAAL cost estimate</span><span class="stack-val">₹2,800/month @ 1,000 users</span></div>
+      <div class="stack-row"><span class="stack-label">Jyotish knowledge units</span><span class="stack-val">31 units seeded (Phaladeepika + Parashara)</span></div>
+      <div class="stack-row"><span class="stack-label">Health data category</span><span class="stack-val">Sensitive personal data · DPDP Act 2023</span></div>
+      <div class="stack-row"><span class="stack-label">Health data storage</span><span class="stack-val">User-isolated · Never shared · Deletable</span></div>
+      <div class="stack-row"><span class="stack-label">WhatsApp Sunday share</span><span class="stack-val">~₹0.88/message · BSP required (AiSensy/Wati)</span></div>
+      <div class="stack-row"><span class="stack-label">KAAL path options</span><span class="stack-val">western | vedic | neutral</span></div>
+      <div class="stack-row"><span class="stack-label">Health disclaimer</span><span class="stack-val">Required on every health screen · Non-negotiable</span></div>
+    </div>
+  </div>
+
+
+  <!-- ── BOTTOM NOTE ── -->
+  <div class="bottom-note">
+    <div class="bn-title">One product. Many layers.</div>
+    <p class="bn-sub">Every screen in this index is designed as part of one coherent companion — not a collection of features. The voice, the aesthetic, the tone, the restraint — it all belongs to ARYA. When your developer builds these into production, the character must come with them.</p>
+  </div>
+
+</div>
+</body>
+</html>

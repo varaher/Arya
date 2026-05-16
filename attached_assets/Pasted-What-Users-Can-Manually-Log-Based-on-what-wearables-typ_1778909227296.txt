@@ -1,0 +1,75 @@
+What Users Can Manually Log
+Based on what wearables typically track — here's what makes sense for ARYA:
+Daily vitals:
+
+Steps
+Sleep duration + quality (deep / light / restless)
+Resting heart rate
+Blood oxygen (SpO2)
+Stress level (many devices give a 1–100 score)
+Calories burned
+
+Weekly:
+
+Weight
+Body fat % (if they have a smart scale)
+Blood pressure (if they have a BP monitor)
+
+For diabetic users:
+
+Blood glucose readings
+HbA1c (quarterly)
+
+For women:
+
+Cycle tracking
+Basal body temperature
+
+
+How ARYA Uses This Data
+This is where it gets powerful. ARYA doesn't just store numbers — it connects them to everything else it knows.
+Examples of what ARYA says:
+
+"Your resting heart rate has been elevated for 4 days — 78 vs your usual 64. Your mood logs show stress this week. These two are connected. What's weighing on you?"
+
+
+"You slept 4.5 hours last night and have your Sequoia call today. Want to push the hardest decisions to tomorrow when you're clearer?"
+
+
+"Your steps dropped from 8,000 to 2,000 over the last week. The last time this happened, your mood dropped three days later. Just flagging it."
+
+
+"Your SpO2 has been below 95 three times this week. That's worth mentioning to a doctor — not urgent, but worth noting."
+
+This is something no fitness app does — because no fitness app knows your mood, your goals, your decisions, and your calendar simultaneously.
+
+The Three Phases
+Phase 1 — Manual entry (build now)
+Simple daily log. Quick entry. 30 seconds max.
+Phase 2 — Health app sync
+
+Apple Health (iOS) — free API, pulls from any connected device
+Google Fit (Android) — free API, same
+This covers 90% of users without any direct device partnership
+
+Phase 3 — Direct device integration
+
+boAt, Noise — India's biggest wearable brands
+Fitbit, Garmin, Samsung Health
+These require partnership agreements but unlock automatic sync
+
+
+The UI I'd Build
+Three screens:
+1. Daily Health Log — quick entry card in the morning briefing. Six metrics, tap to update. Takes 30 seconds.
+2. Health Trends — weekly view. ARYA's interpretation of what the numbers mean together — not just charts.
+3. ARYA Health Insights — where the magic lives. ARYA connecting health data to mood, decisions, and goals. "Your best decision-making days correlate with 7+ hours of sleep and under 70bpm resting heart rate."
+
+One Important Caution
+Health data falls under sensitive personal data in India's DPDP Act 2023 — stricter requirements than regular personal data.
+You need:
+
+Explicit consent before collecting any health data
+Clear purpose limitation — health data used only for ARYA insights, never shared
+Right to delete health data separately from other data
+Consider adding it to your Right to Forget flow as a separate category

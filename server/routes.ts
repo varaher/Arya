@@ -25,7 +25,7 @@ import {
   SUPPORTED_LANGUAGES,
   type SarvamLanguageCode,
 } from "./arya/sarvam-service";
-import { QueryRequestSchema, DomainSchema, aryaKnowledge, aryaClinicalRecords, aryaVoiceQualityLog, aryaMemory, aryaNitiSessions, aryaNitiMessages, aryaPortfolioHoldings } from "@shared/schema";
+import { QueryRequestSchema, DomainSchema, aryaKnowledge, aryaClinicalRecords, aryaVoiceQualityLog, aryaMemory, aryaNitiSessions, aryaNitiMessages, aryaPortfolioHoldings, aryaHealthReadings } from "@shared/schema";
 import OpenAI from "openai";
 import { eq, and, desc, asc, sql, or, isNull, lte, inArray } from "drizzle-orm";
 import { db } from "./db";
@@ -2085,6 +2085,90 @@ export async function registerRoutes(
       res.json({ checkins });
     } catch (err: any) {
       res.status(500).json({ error: "Failed to get mood history" });
+    }
+  });
+
+  // ── Health Readings (Prana) ─────────────────────────────────────────────────
+  app.post("/api/user/health/readings", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const { metric, value, value2, unit, notes } = req.body;
+      if (!metric || value === undefined || value === null) return res.status(400).json({ error: "metric and value are required" });
+      const [reading] = await db.insert(aryaHealthReadings).values({
+        userId, metric, value: String(value), value2: value2 != null ? String(value2) : null, unit: unit || null, notes: notes || null,
+      }).returning();
+      res.json({ reading });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to save health reading" });
+    }
+  });
+
+  app.get("/api/user/health/readings", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const { metric, days = "14" } = req.query as Record<string, string>;
+      const since = new Date();
+      since.setDate(since.getDate() - parseInt(days));
+      let query = db.select().from(aryaHealthReadings)
+        .where(and(eq(aryaHealthReadings.userId, userId), sql`${aryaHealthReadings.loggedAt} >= ${since}`))
+        .orderBy(desc(aryaHealthReadings.loggedAt));
+      if (metric) {
+        const readings = await db.select().from(aryaHealthReadings)
+          .where(and(eq(aryaHealthReadings.userId, userId), eq(aryaHealthReadings.metric, metric), sql`${aryaHealthReadings.loggedAt} >= ${since}`))
+          .orderBy(desc(aryaHealthReadings.loggedAt)).limit(30);
+        return res.json({ readings });
+      }
+      const readings = await query.limit(200);
+      res.json({ readings });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to fetch health readings" });
+    }
+  });
+
+  app.delete("/api/user/health/readings/:id", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      await db.delete(aryaHealthReadings).where(and(eq(aryaHealthReadings.id, req.params.id), eq(aryaHealthReadings.userId, userId)));
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to delete reading" });
+    }
+  });
+
+  app.get("/api/user/health/insights", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const since = new Date(); since.setDate(since.getDate() - 14);
+      const readings = await db.select().from(aryaHealthReadings)
+        .where(and(eq(aryaHealthReadings.userId, userId), sql`${aryaHealthReadings.loggedAt} >= ${since}`))
+        .orderBy(desc(aryaHealthReadings.loggedAt)).limit(200);
+      if (readings.length < 3) return res.json({ insights: [], insufficient: true });
+
+      const summary: Record<string, number[]> = {};
+      readings.forEach(r => {
+        if (!summary[r.metric]) summary[r.metric] = [];
+        summary[r.metric].push(parseFloat(r.value));
+      });
+      const dataLines = Object.entries(summary).map(([m, vals]) => {
+        const avg = (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1);
+        return `${m}: last ${vals.length} readings, avg ${avg}, latest ${vals[0]}`;
+      }).join("\n");
+
+      const openai = new OpenAI({ apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY, baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL });
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: `You are ARYA's health pattern observer. You notice lifestyle patterns in user health data and share warm, observational insights. CRITICAL RULES: (1) NEVER diagnose any condition. (2) NEVER prescribe medication or supplements. (3) NEVER create alarm or panic. (4) For anything medically concerning (SpO2 < 95, very elevated HR), say "worth mentioning to your doctor at your next visit" — calmly. (5) Connect health to lifestyle: sleep, stress, movement, energy. (6) Tone: warm, personal, like a caring friend — not clinical. Return ONLY a JSON array of exactly 5 insights. Each: { type: "positive"|"caution"|"flag"|"correlation"|"neutral", icon: "emoji", title: "short title", body: "2-3 sentences max. conversational.", tip: "one short actionable suggestion or null" }` },
+          { role: "user", content: `Here is my health data from the last 14 days:\n${dataLines}\n\nGive me 5 personal insights based on these patterns.` }
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.7,
+        max_tokens: 900,
+      });
+      const parsed = JSON.parse(completion.choices[0].message.content || "{}");
+      res.json({ insights: parsed.insights || parsed || [] });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to generate insights" });
     }
   });
 
