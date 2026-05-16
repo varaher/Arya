@@ -3947,8 +3947,9 @@ export default function AryaChat() {
                 </Tooltip>
                 {showLanguageMenu && (
                   <div className="absolute bottom-full left-0 mb-2 w-52 bg-card border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden z-50">
-                    <div className="px-3 py-2 border-b border-gray-200 dark:border-slate-700">
+                    <div className="px-3 py-2 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
                       <p className="text-xs font-medium text-muted-foreground">Voice Language</p>
+                      <a href="/language" className="text-[10px] text-cyan-600 dark:text-cyan-400 hover:underline">Tone preview →</a>
                     </div>
                     <div className="max-h-72 overflow-y-auto py-1">
                       <div className="px-3 py-1">

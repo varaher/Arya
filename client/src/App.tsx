@@ -36,6 +36,7 @@ import OnboardingFlow from "@/pages/OnboardingFlow";
 import AdminARYA from "@/pages/AdminARYA";
 import PranaPage from "@/pages/PranaPage";
 import PricingPage from "@/pages/PricingPage";
+import LanguageSettingsPage from "@/pages/LanguageSettingsPage";
 
 function OnboardingGuard({ children }: { children: React.ReactNode }) {
   const { user, isLoading, refreshUser } = useUserAuth();
@@ -215,6 +216,10 @@ function Router() {
 
         <Route path="/pricing">
           <AnimatedPage><PricingPage /></AnimatedPage>
+        </Route>
+
+        <Route path="/language">
+          <AnimatedPage><LanguageSettingsPage /></AnimatedPage>
         </Route>
 
         <Route path="/terms">
