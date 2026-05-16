@@ -2016,15 +2016,22 @@ export default function AryaChat() {
 
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
-    // main.tsx already fires 'sw-update-ready' — just listen for it
+    const check = () => navigator.serviceWorker.getRegistration().then(reg => { if (reg?.waiting) setUpdateAvailable(true); });
+    // main.tsx already fires 'sw-update-ready' — listen for it
     const onUpdateReady = () => setUpdateAvailable(true);
     window.addEventListener("sw-update-ready", onUpdateReady);
-    // Also catch the case where a SW was already waiting before this component mounted
-    navigator.serviceWorker.getRegistration().then(reg => {
-      if (reg?.waiting) setUpdateAvailable(true);
-    });
-    return () => window.removeEventListener("sw-update-ready", onUpdateReady);
+    // Catch SW already waiting when this component mounted
+    check();
+    // Also poll every 60s in case the event was missed (mobile background tab etc.)
+    const interval = setInterval(check, 60_000);
+    return () => { window.removeEventListener("sw-update-ready", onUpdateReady); clearInterval(interval); };
   }, []);
+
+  // Re-check whenever the user menu is opened — catches mobile edge cases
+  useEffect(() => {
+    if (!showUserMenu || !("serviceWorker" in navigator)) return;
+    navigator.serviceWorker.getRegistration().then(reg => { if (reg?.waiting) setUpdateAvailable(true); });
+  }, [showUserMenu]);
 
   const handleAppUpdate = async () => {
     const reg = await navigator.serviceWorker.getRegistration();
@@ -3061,7 +3068,8 @@ export default function AryaChat() {
                       onClick={() => { setShowUserMenu(false); setLocation("/niti"); }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                     >
-                      <Briefcase className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-500" /> Niti — Business Wisdom
+                      <Briefcase className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-500 shrink-0" />
+                      <span className="truncate">Niti — Business Wisdom</span>
                     </button>
                     <button
                       data-testid="button-weekly-review-sidebar"
@@ -3251,7 +3259,8 @@ export default function AryaChat() {
                         onClick={() => { setShowUserMenu(false); setLocation("/niti"); }}
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                       >
-                        <Briefcase className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-500" /> Niti — Business Wisdom
+                        <Briefcase className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-500 shrink-0" />
+                        <span className="truncate">Niti — Business Wisdom</span>
                       </button>
                       <button
                         data-testid="button-weekly-review"
