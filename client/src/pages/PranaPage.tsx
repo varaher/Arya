@@ -14,7 +14,7 @@ const C = {
   violet: "#7c6aff", violetDim: "rgba(124,106,255,0.10)",
   amber: "#f5a623", amberDim: "rgba(245,166,35,0.10)", amberBorder: "rgba(245,166,35,0.22)",
   lime: "#a8e063", limeDim: "rgba(168,224,99,0.10)",
-  text: "#e8e8f0", textDim: "#6a6a88", textMuted: "#2d2d40",
+  text: "#e8e8f0", textDim: "#9898b8", textMuted: "#7878a0",
 };
 const sans = "'Inter', 'Nunito', sans-serif";
 const serif = "'Libre Baskerville', Georgia, serif";

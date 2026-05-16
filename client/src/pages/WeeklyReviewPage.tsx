@@ -23,7 +23,7 @@ const P = {
   darkBorder: "#2e2010",
   darkGold: "#d4a853",
   darkCream: "#f0e8d5",
-  darkMuted: "#7a6848",
+  darkMuted: "#b09870",
 };
 
 interface DayMood {

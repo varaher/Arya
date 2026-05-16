@@ -34,7 +34,7 @@ export default function BottomNav() {
               display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
               gap: 4, padding: "10px 4px 12px",
               border: "none", background: "transparent",
-              color: active ? "#f5a623" : "rgba(255,255,255,0.38)",
+              color: active ? "#f5a623" : "rgba(255,255,255,0.55)",
               cursor: "pointer", transition: "color 0.18s",
             }}
           >
