@@ -817,7 +817,7 @@ export default function VedicLensPage() {
   const backFromBirth = () => setScreen(path === "neutral" ? "path" : "sign");
 
   return (
-    <div style={{ background: C.bg, minHeight: "100vh", color: C.text, fontFamily: sans, position: "relative", overflowX: "hidden" }}>
+    <div style={{ background: C.bg, minHeight: "100vh", color: C.text, fontFamily: sans, position: "relative" }}>
       {/* Star field */}
       <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, overflow: "hidden" }}>
         {stars.map(s => (
@@ -827,51 +827,52 @@ export default function VedicLensPage() {
       <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(ellipse, rgba(124,106,255,0.05) 0%, transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
 
       <div style={{ position: "relative", zIndex: 1 }}>
-        <AnimatePresence mode="wait">
-          <motion.div key={screen} initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -18 }} transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }} style={{ minHeight: "100vh" }}>
 
-            {screen === "path" && <PathSelectionScreen onSelect={handlePathSelect} />}
+        {/* Setup screens — animated slide transitions */}
+        {(screen === "path" || screen === "sign" || screen === "birth") && (
+          <AnimatePresence mode="wait">
+            <motion.div key={screen} initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.26, ease: [0.16, 1, 0.3, 1] }}>
+              {screen === "path" && <PathSelectionScreen onSelect={handlePathSelect} />}
+              {screen === "sign" && path === "western" && (
+                <WesternSignScreen
+                  selected={selectedWestern} onSelect={setSelectedWestern}
+                  selectedRashi={selectedRashi} onSelectRashi={setSelectedRashi}
+                  onBack={backFromSign} onContinue={() => setScreen("birth")} />
+              )}
+              {screen === "sign" && path === "vedic" && (
+                <VedicRashiScreen
+                  selected={selectedRashi} onSelect={setSelectedRashi}
+                  onBack={backFromSign} onContinue={() => setScreen("birth")} />
+              )}
+              {screen === "birth" && (
+                <BirthScreen
+                  path={path}
+                  birthDate={birthDate}       setBirthDate={setBirthDate}
+                  birthPlace={birthPlace}     setBirthPlace={setBirthPlace}
+                  birthTimeApprox={birthTimeApprox} setBirthTimeApprox={setBirthTimeApprox}
+                  birthTimeExact={birthTimeExact}   setBirthTimeExact={setBirthTimeExact}
+                  onBack={backFromBirth}
+                  onContinue={() => goTo("ready")}
+                  onSkip={() => goTo("ready")}
+                  saving={saving} />
+              )}
+            </motion.div>
+          </AnimatePresence>
+        )}
 
-            {screen === "sign" && path === "western" && (
-              <WesternSignScreen
-                selected={selectedWestern} onSelect={setSelectedWestern}
-                selectedRashi={selectedRashi} onSelectRashi={setSelectedRashi}
-                onBack={backFromSign} onContinue={() => setScreen("birth")} />
-            )}
-            {screen === "sign" && path === "vedic" && (
-              <VedicRashiScreen
-                selected={selectedRashi} onSelect={setSelectedRashi}
-                onBack={backFromSign} onContinue={() => setScreen("birth")} />
-            )}
+        {/* Result screens — free scroll, no animation wrapper constraining height */}
+        {screen === "ready" && (
+          <ReadyScreen
+            path={path} profile={profile}
+            westernSign={selectedWestern} selectedRashi={selectedRashi}
+            onBack={() => setScreen("birth")} onContinue={() => goTo("briefing")} />
+        )}
+        {screen === "briefing" && (
+          <BriefingScreen
+            briefing={briefing} loading={briefingLoading} error={briefingError}
+            onHome={() => setLocation("/")} onRetry={fetchBriefing} path={path} />
+        )}
 
-            {screen === "birth" && (
-              <BirthScreen
-                path={path}
-                birthDate={birthDate}       setBirthDate={setBirthDate}
-                birthPlace={birthPlace}     setBirthPlace={setBirthPlace}
-                birthTimeApprox={birthTimeApprox} setBirthTimeApprox={setBirthTimeApprox}
-                birthTimeExact={birthTimeExact}   setBirthTimeExact={setBirthTimeExact}
-                onBack={backFromBirth}
-                onContinue={() => goTo("ready")}
-                onSkip={() => goTo("ready")}
-                saving={saving} />
-            )}
-
-            {screen === "ready" && (
-              <ReadyScreen
-                path={path} profile={profile}
-                westernSign={selectedWestern} selectedRashi={selectedRashi}
-                onBack={() => setScreen("birth")} onContinue={() => goTo("briefing")} />
-            )}
-
-            {screen === "briefing" && (
-              <BriefingScreen
-                briefing={briefing} loading={briefingLoading} error={briefingError}
-                onHome={() => setLocation("/")} onRetry={fetchBriefing} path={path} />
-            )}
-
-          </motion.div>
-        </AnimatePresence>
       </div>
       <BottomNav />
     </div>
