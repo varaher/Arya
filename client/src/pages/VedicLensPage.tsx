@@ -487,8 +487,8 @@ function ReadyScreen({ path, profile, westernSign, selectedRashi, onBack, onCont
 }
 
 // ── Screen 5: Briefing (path-aware) ──────────────────────────────────────────
-function BriefingScreen({ briefing, loading, onHome, path }: {
-  briefing: VedicBriefing | null; loading: boolean; onHome: () => void; path: VedicPath;
+function BriefingScreen({ briefing, loading, error, onHome, onRetry, path }: {
+  briefing: VedicBriefing | null; loading: boolean; error: "login" | "error" | null; onHome: () => void; onRetry: () => void; path: VedicPath;
 }) {
   const { data: goalsData } = useQuery<any[]>({
     queryKey: ["/api/arya/goals"],
@@ -521,14 +521,32 @@ function BriefingScreen({ briefing, loading, onHome, path }: {
     </div>
   );
 
-  if (!briefing) return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: 24 }}>
-      <div style={{ fontSize: 40 }}>🌙</div>
-      <div style={{ fontFamily: serif, fontSize: 18, color: C.text, textAlign: "center" as const }}>Briefing unavailable right now</div>
-      <div style={{ fontSize: 13, color: C.textDim, textAlign: "center" as const, maxWidth: 260 }}>Check your connection and try again.</div>
-      <button onClick={onHome} style={{ marginTop: 8, padding: "10px 24px", borderRadius: 24, border: `1px solid ${C.border2}`, background: "transparent", color: C.textDim, fontSize: 13, cursor: "pointer" }}>← Back</button>
-    </div>
-  );
+  if (!briefing) {
+    const isLogin = error === "login";
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: 24, background: C.bg }}>
+        <div style={{ fontSize: 44 }}>{isLogin ? "🔐" : "🌙"}</div>
+        <div style={{ fontFamily: serif, fontSize: 20, color: C.text, textAlign: "center" as const }}>
+          {isLogin ? "Sign in to see your briefing" : "Couldn't load your briefing"}
+        </div>
+        <div style={{ fontSize: 13, color: C.textDim, textAlign: "center" as const, maxWidth: 280, lineHeight: 1.7 }}>
+          {isLogin
+            ? "Your personal timing briefing is available after signing in to ARYA."
+            : "This sometimes happens when the connection drops. Tap below to try again."}
+        </div>
+        <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+          {!isLogin && (
+            <button onClick={onRetry} style={{ padding: "11px 24px", borderRadius: 24, border: "none", background: C.indigo, color: "white", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: sans }}>
+              Try again
+            </button>
+          )}
+          <button onClick={onHome} style={{ padding: "11px 24px", borderRadius: 24, border: `1px solid ${C.border2}`, background: "transparent", color: C.textDim, fontSize: 13, cursor: "pointer", fontFamily: sans }}>
+            ← Back to ARYA
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const b = briefing;
   const activeGoals = (goalsData || []).filter((g: any) => g.isActive).slice(0, 4);
@@ -718,6 +736,7 @@ export default function VedicLensPage() {
   const [profile,           setProfile]           = useState<LensProfile | null>(null);
   const [briefing,          setBriefing]          = useState<VedicBriefing | null>(null);
   const [briefingLoading,   setBriefingLoading]   = useState(false);
+  const [briefingError,     setBriefingError]     = useState<"login" | "error" | null>(null);
 
   useEffect(() => {
     const link = document.createElement("link");
@@ -758,18 +777,30 @@ export default function VedicLensPage() {
 
   const fetchBriefing = useCallback(async () => {
     setBriefingLoading(true);
+    setBriefingError(null);
+    setBriefing(null);
     try {
       const headers: Record<string, string> = {};
       if (token) headers["x-user-token"] = token;
       const res = await fetch("/api/user/vedic-briefing", { headers });
-      if (res.ok) setBriefing(await res.json());
-    } catch {}
+      if (res.ok) {
+        const data = await res.json();
+        setBriefing(data);
+      } else if (res.status === 401) {
+        setBriefingError("login");
+      } else {
+        setBriefingError("error");
+      }
+    } catch {
+      setBriefingError("error");
+    }
     setBriefingLoading(false);
   }, [token]);
 
   const goTo = async (next: VedicScreen) => {
     if (next === "ready") await saveProfile();
     if (next === "briefing") {
+      setBriefingLoading(true);
       setScreen("briefing");
       fetchBriefing();
       return;
@@ -835,8 +866,8 @@ export default function VedicLensPage() {
 
             {screen === "briefing" && (
               <BriefingScreen
-                briefing={briefing} loading={briefingLoading}
-                onHome={() => setLocation("/")} path={path} />
+                briefing={briefing} loading={briefingLoading} error={briefingError}
+                onHome={() => setLocation("/")} onRetry={fetchBriefing} path={path} />
             )}
 
           </motion.div>
