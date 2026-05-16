@@ -16,41 +16,63 @@ function getRazorpay(): Razorpay {
   return _razorpay;
 }
 
-export type SubscriptionPlan = "core" | "pro";
+export type SubscriptionPlan = "core" | "pro" | "elite";
 
 export const PLAN_CONFIG = {
   core: {
     name: "ARYA Core",
-    amountInr: 349,
+    amountInr: 249,
     razorpayPlanId: process.env.RAZORPAY_PLAN_ID_CORE || "",
-    chatsPerDay: 15,
-    voiceMinutesPerDay: 5,
+    chatsPerDay: 9999,          // unlimited
+    voiceMinutesPerMonth: 150,
+    maxGoals: 10,
+    memoryRetentionDays: 30,
     features: [
-      "15 chats per day",
-      "5 min voice per day",
-      "File & image analysis",
-      "Memory — 30 days",
-      "Unlimited goals",
-      "Morning briefing",
-      "Weekly review",
+      "Unlimited conversations",
+      "150 min voice per month",
+      "Up to 10 goals",
+      "30-day memory",
+      "Weekly Review + Morning Briefing",
+      "KAAL Basic + Health tracking",
+      "All 11 Indian languages",
+      "Document & image scan",
     ],
   },
   pro: {
     name: "ARYA Pro",
-    amountInr: 549,
+    amountInr: 499,
     razorpayPlanId: process.env.RAZORPAY_PLAN_ID_PRO || "",
-    chatsPerDay: 30,
-    voiceMinutesPerDay: 20,
+    chatsPerDay: 9999,          // unlimited
+    voiceMinutesPerMonth: 50,   // overages at ₹2/min, capped ₹200/month
+    voiceOveragePerMinuteInr: 2,
+    voiceOverageCapInr: 200,
+    maxGoals: 9999,             // unlimited
+    memoryRetentionDays: 365,
     features: [
-      "30 chats per day",
-      "20 min voice per day",
-      "File & image analysis",
-      "Memory — 1 year",
+      "Everything in Core",
+      "50 voice min/month (₹2/min above, capped ₹200)",
       "Unlimited goals",
-      "Morning briefing",
-      "Weekly review",
-      "Deep reasoning — full power",
-      "Priority access to new features",
+      "1-year memory",
+      "KAAL Full + Business Mind",
+      "Market Lens",
+      "Early access to new features",
+    ],
+  },
+  elite: {
+    name: "ARYA Elite",
+    amountInr: 999,
+    razorpayPlanId: process.env.RAZORPAY_PLAN_ID_ELITE || "",
+    chatsPerDay: 9999,          // unlimited
+    voiceMinutesPerMonth: 9999, // unlimited
+    maxGoals: 9999,             // unlimited
+    memoryRetentionDays: 36500, // lifetime (~100 years)
+    features: [
+      "Everything in Pro",
+      "Unlimited voice — no metering",
+      "Lifetime memory",
+      "Priority response speed",
+      "KAAL Full Vedic experience",
+      "Monthly Life Review",
     ],
   },
 };

@@ -3113,9 +3113,10 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
       configured: isRazorpayConfigured(),
       keyId: getRazorpayKeyId(),
       plans: {
-        free: { name: "Free", amountInr: 0, chatsPerDay: 10, voiceMinutesPerDay: 2, deepReasoningPerDay: 2, maxGoals: 3 },
-        core: { ...PLAN_CONFIG.core, razorpayPlanId: undefined },
-        pro: { ...PLAN_CONFIG.pro, razorpayPlanId: undefined },
+        free:  { name: "Free",  amountInr: 0,   maxGoals: 3    },
+        core:  { ...PLAN_CONFIG.core,  razorpayPlanId: undefined },
+        pro:   { ...PLAN_CONFIG.pro,   razorpayPlanId: undefined },
+        elite: { ...PLAN_CONFIG.elite, razorpayPlanId: undefined },
       },
     });
   });
@@ -3134,8 +3135,8 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
     try {
       const userId = (req as any).userId;
       const { plan } = req.body;
-      if (!plan || !["core", "pro"].includes(plan)) {
-        return res.status(400).json({ error: "Invalid plan. Choose 'core' or 'pro'." });
+      if (!plan || !["core", "pro", "elite"].includes(plan)) {
+        return res.status(400).json({ error: "Invalid plan. Choose 'core', 'pro', or 'elite'." });
       }
       if (!isRazorpayConfigured()) {
         return res.status(503).json({ error: "Payment gateway not configured. Contact support." });
@@ -3161,7 +3162,7 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
       if (!razorpay_payment_id || !razorpay_subscription_id || !razorpay_signature) {
         return res.status(400).json({ error: "Missing payment details" });
       }
-      if (!plan || !["core", "pro"].includes(plan)) {
+      if (!plan || !["core", "pro", "elite"].includes(plan)) {
         return res.status(400).json({ error: "Invalid plan" });
       }
       const valid = verifyPaymentSignature(razorpay_payment_id, razorpay_subscription_id, razorpay_signature);

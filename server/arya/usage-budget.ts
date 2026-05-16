@@ -2,35 +2,43 @@ import { db } from "../db";
 import { aryaUsageBudget, aryaDailyCost } from "@shared/schema";
 import { eq, and, sql, lt } from "drizzle-orm";
 
-export type UserPlan = 'free' | 'core' | 'pro';
+export type UserPlan = 'free' | 'core' | 'pro' | 'elite';
 
 export const PLAN_LIMITS: Record<UserPlan, {
   textChatsPerDay: number; voiceMinutesPerDay: number; deepReasoningPerDay: number;
   llmCallsPerMinute: number; maxGoals: number; memoryRetentionDays: number;
 }> = {
   free: {
-    textChatsPerDay: 10,
-    voiceMinutesPerDay: 2,
+    textChatsPerDay: 20,
+    voiceMinutesPerDay: 0,
     deepReasoningPerDay: 2,
     llmCallsPerMinute: 5,
     maxGoals: 3,
-    memoryRetentionDays: 7,
+    memoryRetentionDays: 1,    // resets daily
   },
   core: {
-    textChatsPerDay: 15,
-    voiceMinutesPerDay: 5,
-    deepReasoningPerDay: 5,
+    textChatsPerDay: 9999,     // unlimited
+    voiceMinutesPerDay: 5,     // 150 min/month ÷ 30 days
+    deepReasoningPerDay: 10,
     llmCallsPerMinute: 10,
-    maxGoals: 999,
+    maxGoals: 10,
     memoryRetentionDays: 30,
   },
   pro: {
-    textChatsPerDay: 30,
-    voiceMinutesPerDay: 20,
-    deepReasoningPerDay: 10,
-    llmCallsPerMinute: 15,
-    maxGoals: 999,
+    textChatsPerDay: 9999,     // unlimited
+    voiceMinutesPerDay: 9999,  // monthly 50-min tracked separately with overages
+    deepReasoningPerDay: 9999,
+    llmCallsPerMinute: 20,
+    maxGoals: 9999,            // unlimited
     memoryRetentionDays: 365,
+  },
+  elite: {
+    textChatsPerDay: 9999,     // unlimited
+    voiceMinutesPerDay: 9999,  // unlimited
+    deepReasoningPerDay: 9999,
+    llmCallsPerMinute: 30,
+    maxGoals: 9999,            // unlimited
+    memoryRetentionDays: 36500, // lifetime
   },
 };
 
