@@ -38,6 +38,7 @@ import PranaPage from "@/pages/PranaPage";
 import PricingPage from "@/pages/PricingPage";
 import LanguageSettingsPage from "@/pages/LanguageSettingsPage";
 import LocalizationDemoPage from "@/pages/LocalizationDemoPage";
+import LanguageRoadmapPage from "@/pages/LanguageRoadmapPage";
 
 function OnboardingGuard({ children }: { children: React.ReactNode }) {
   const { user, isLoading, refreshUser } = useUserAuth();
@@ -225,6 +226,10 @@ function Router() {
 
         <Route path="/language-demo">
           <AnimatedPage><LocalizationDemoPage /></AnimatedPage>
+        </Route>
+
+        <Route path="/language-roadmap">
+          <AnimatedPage><LanguageRoadmapPage /></AnimatedPage>
         </Route>
 
         <Route path="/terms">

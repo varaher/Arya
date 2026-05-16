@@ -309,11 +309,18 @@ export default function LanguageSettingsPage() {
             <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Language Settings</h1>
             <p className="text-xs text-muted-foreground">26 languages · ARYA adapts tone and dialect for each</p>
           </div>
-          <Link href="/language-demo">
-            <button className="flex items-center gap-1.5 text-xs font-medium text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 transition-colors border border-cyan-200 dark:border-cyan-800 rounded-full px-3 py-1.5">
-              <span>See live demo →</span>
-            </button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link href="/language-roadmap">
+              <button className="flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors border border-amber-200 dark:border-amber-800 rounded-full px-3 py-1.5">
+                <span>Roadmap →</span>
+              </button>
+            </Link>
+            <Link href="/language-demo">
+              <button className="flex items-center gap-1.5 text-xs font-medium text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 transition-colors border border-cyan-200 dark:border-cyan-800 rounded-full px-3 py-1.5">
+                <span>Live demo →</span>
+              </button>
+            </Link>
+          </div>
         </div>
       </div>
 
