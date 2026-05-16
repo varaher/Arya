@@ -46,6 +46,7 @@ interface NitiSessionMeta {
   status: string;
   philosopher?: string;
   createdAt: string;
+  updatedAt: string;
 }
 
 interface Holding {
@@ -377,6 +378,31 @@ export default function NitiPage() {
     setIsLoading(false);
   }, [currentSession, isLoading, token]);
 
+  const resumeSession = async (s: NitiSessionMeta) => {
+    if (!token) return;
+    setIsLoading(true);
+    setMessages([]);
+    try {
+      const r = await fetch(`/api/niti/sessions/${s.id}/messages`, { headers: { "x-user-token": token } });
+      if (r.ok) {
+        const data = await r.json();
+        const mapped = (data.messages as any[]).map(m => ({
+          id: msgId.current++,
+          role: m.role as "user" | "arya",
+          content: m.content,
+          pushQuestion: m.pushQuestion ?? undefined,
+          followUps: m.followUps ?? undefined,
+          philosopher: m.philosopher ?? undefined,
+          source: m.source ?? undefined,
+        }));
+        setMessages(mapped);
+        setCurrentSession({ id: s.id, sessionType: s.sessionType });
+        setScreen("session");
+      }
+    } catch {}
+    setIsLoading(false);
+  };
+
   const toggleFocus = (area: string) =>
     setFocusAreas(prev => prev.includes(area) ? prev.filter(a => a !== area) : [...prev, area]);
 
@@ -697,22 +723,40 @@ export default function NitiPage() {
         <div>
           <Label text="Recent sessions" />
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {sessions.slice(0, 5).map(s => {
+            {sessions.slice(0, 8).map(s => {
               const sType = SESSION_TYPES.find(st => st.key === s.sessionType);
               const phil  = s.philosopher ? PHILOSOPHER_META[s.philosopher] : null;
+              const ts    = new Date(s.updatedAt || s.createdAt);
+              const dateStr = ts.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+              const timeStr = ts.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
               return (
-                <div key={s.id} style={{ background: N.surface2, border: `1px solid ${N.border}`, borderRadius: 10, padding: "12px 16px", display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, color: N.cream }}>{s.title || sType?.label || s.sessionType}</div>
-                    <div style={{ fontSize: 11, color: N.steel, marginTop: 2 }}>
-                      {new Date(s.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
-                      {phil && <span style={{ color: phil.color, marginLeft: 8 }}>{phil.emoji} {phil.name}</span>}
+                <button
+                  key={s.id}
+                  data-testid={`session-card-${s.id}`}
+                  onClick={() => resumeSession(s)}
+                  style={{
+                    background: N.surface2, border: `1px solid ${N.border}`, borderRadius: 10,
+                    padding: "12px 16px", display: "flex", alignItems: "center", gap: 12,
+                    cursor: "pointer", width: "100%", textAlign: "left",
+                    transition: "border-color 0.15s, background 0.15s",
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = N.gold; (e.currentTarget as HTMLButtonElement).style.background = "rgba(212,168,83,0.06)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = N.border; (e.currentTarget as HTMLButtonElement).style.background = N.surface2; }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, color: N.cream, fontWeight: 500 }}>{s.title || sType?.label || s.sessionType}</div>
+                    <div style={{ fontSize: 11, color: N.steel, marginTop: 3, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" as const }}>
+                      <span>{dateStr} · {timeStr}</span>
+                      {phil && <span style={{ color: phil.color }}>{phil.emoji} {phil.name}</span>}
                     </div>
                   </div>
-                  <div style={{ padding: "3px 8px", borderRadius: 20, background: s.status === "resolved" ? "rgba(74,157,122,0.15)" : "rgba(212,168,83,0.1)", color: s.status === "resolved" ? N.green : N.gold, fontSize: 10 }}>
-                    {s.status === "resolved" ? "Resolved" : "Active"}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                    <div style={{ padding: "3px 8px", borderRadius: 20, background: s.status === "resolved" ? "rgba(74,157,122,0.15)" : "rgba(212,168,83,0.1)", color: s.status === "resolved" ? N.green : N.gold, fontSize: 10 }}>
+                      {s.status === "resolved" ? "Resolved" : "Active"}
+                    </div>
+                    <ChevronRight size={14} color={N.steel} />
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>

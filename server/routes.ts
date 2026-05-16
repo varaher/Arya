@@ -27,7 +27,7 @@ import {
 } from "./arya/sarvam-service";
 import { QueryRequestSchema, DomainSchema, aryaKnowledge, aryaClinicalRecords, aryaVoiceQualityLog, aryaMemory, aryaNitiSessions, aryaNitiMessages, aryaPortfolioHoldings } from "@shared/schema";
 import OpenAI from "openai";
-import { eq, and, desc, sql, or, isNull, lte, inArray } from "drizzle-orm";
+import { eq, and, desc, asc, sql, or, isNull, lte, inArray } from "drizzle-orm";
 import { db } from "./db";
 import {
   createApiKey,
@@ -3512,6 +3512,25 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
       res.json(sessions);
     } catch (err: any) {
       res.status(500).json({ error: "Failed to load sessions" });
+    }
+  });
+
+  app.get("/api/niti/sessions/:id/messages", optionalUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const sessionId = parseInt(req.params.id);
+      if (isNaN(sessionId)) return res.status(400).json({ error: "Invalid session id" });
+      const [session] = await db.select().from(aryaNitiSessions)
+        .where(and(eq(aryaNitiSessions.id, sessionId), eq(aryaNitiSessions.userId, userId)))
+        .limit(1);
+      if (!session) return res.status(404).json({ error: "Session not found" });
+      const messages = await db.select().from(aryaNitiMessages)
+        .where(eq(aryaNitiMessages.sessionId, sessionId))
+        .orderBy(asc(aryaNitiMessages.createdAt));
+      res.json({ session, messages });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to load session messages" });
     }
   });
 
