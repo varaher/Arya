@@ -1256,6 +1256,41 @@ export async function registerRoutes(
     }
   });
 
+  // Seed Jyotish knowledge from Phaladeepika + Brihat Parashara
+  app.post("/api/admin/knowledge/seed-jyotish", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { jyotishSeedUnits, JYOTISH_TENANT_ID } = await import("./arya/seeds/jyotish-seed");
+      const tenantId = JYOTISH_TENANT_ID;
+      // Check how many are already seeded
+      const existing = await db.select({ id: aryaKnowledge.id })
+        .from(aryaKnowledge)
+        .where(and(eq(aryaKnowledge.tenantId, tenantId), eq(aryaKnowledge.domain, "jyotish" as any)));
+      if (existing.length > 0) {
+        return res.json({ skipped: true, message: `${existing.length} Jyotish units already exist. Delete them first to re-seed.`, existing: existing.length });
+      }
+      let inserted = 0;
+      for (const unit of jyotishSeedUnits) {
+        await db.insert(aryaKnowledge).values({
+          tenantId,
+          domain: "jyotish" as any,
+          topic: unit.topic,
+          content: unit.content,
+          tags: unit.tags,
+          language: "en",
+          sourceType: "classical_text",
+          sourceTitle: unit.source,
+          status: "published",
+        });
+        inserted++;
+      }
+      console.log(`[Jyotish Seed] Inserted ${inserted} knowledge units`);
+      res.json({ success: true, inserted, message: `${inserted} Jyotish knowledge units seeded from Phaladeepika & Brihat Parashara.` });
+    } catch (err: any) {
+      console.error("[Jyotish Seed] Error:", err);
+      res.status(500).json({ error: "Failed to seed Jyotish knowledge", detail: err.message });
+    }
+  });
+
   // Get all knowledge by domain
   app.get("/api/knowledge/domain/:domain", requireAdmin, async (req: Request, res: Response) => {
     try {

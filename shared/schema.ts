@@ -20,7 +20,7 @@ export type User = typeof users.$inferSelect;
 // ARYA Core Tables
 
 // Domain enum
-export const DomainSchema = z.enum(['medical', 'business', 'sanskrit', 'chanakya']);
+export const DomainSchema = z.enum(['medical', 'business', 'sanskrit', 'chanakya', 'jyotish']);
 export type Domain = z.infer<typeof DomainSchema>;
 
 // Knowledge Base Table (published knowledge)

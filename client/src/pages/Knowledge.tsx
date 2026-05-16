@@ -4,63 +4,91 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { 
-  Search, 
-  Database, 
-  Filter, 
-  Plus, 
-  BookOpen, 
-  ExternalLink 
+import {
+  Search,
+  Database,
+  Filter,
+  Plus,
+  BookOpen,
+  ExternalLink,
+  Loader2,
+  Star,
 } from "lucide-react";
 import { mockKnowledgeBase, KnowledgeUnit } from "@/lib/mockData";
+
+type SeedStatus = "idle" | "loading" | "done" | "skipped" | "error";
 
 export default function Knowledge() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDomain, setSelectedDomain] = useState<string | null>(null);
   const [selectedNode, setSelectedNode] = useState<KnowledgeUnit | null>(null);
+  const [seedStatus, setSeedStatus] = useState<SeedStatus>("idle");
+  const [seedMsg, setSeedMsg] = useState("");
 
   const filteredNodes = useMemo(() => {
     return mockKnowledgeBase.filter(node => {
-      const matchesSearch = node.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                           node.tags.some(t => t.toLowerCase().includes(searchTerm.toLowerCase()));
+      const matchesSearch = node.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            node.tags.some(t => t.toLowerCase().includes(searchTerm.toLowerCase()));
       const matchesDomain = selectedDomain ? node.domain === selectedDomain : true;
       return matchesSearch && matchesDomain;
     });
   }, [searchTerm, selectedDomain]);
 
-  // Generate random positions for the nodes (stable based on ID)
   const getNodePosition = (id: string) => {
     const seed = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const x = (seed * 9301 + 49297) % 100; // 0-100%
-    const y = (seed * 49297 + 93217) % 100; // 0-100%
+    const x = (seed * 9301 + 49297) % 100;
+    const y = (seed * 49297 + 93217) % 100;
     return { x, y };
   };
 
   const getDomainColor = (domain: string) => {
-    switch(domain) {
-      case 'medical': return 'bg-cyan-500 shadow-cyan-500/50';
-      case 'business': return 'bg-indigo-500 shadow-indigo-500/50';
-      case 'sanskrit': return 'bg-amber-500 shadow-amber-500/50';
-      case 'chanakya': return 'bg-emerald-500 shadow-emerald-500/50';
-      default: return 'bg-gray-500';
+    switch (domain) {
+      case 'medical':   return 'bg-cyan-500 shadow-cyan-500/50';
+      case 'business':  return 'bg-indigo-500 shadow-indigo-500/50';
+      case 'sanskrit':  return 'bg-amber-500 shadow-amber-500/50';
+      case 'chanakya':  return 'bg-emerald-500 shadow-emerald-500/50';
+      case 'jyotish':   return 'bg-orange-400 shadow-orange-400/50';
+      default:          return 'bg-gray-500';
+    }
+  };
+
+  const handleSeedJyotish = async () => {
+    setSeedStatus("loading");
+    setSeedMsg("");
+    try {
+      const r = await fetch("/api/admin/knowledge/seed-jyotish", { method: "POST" });
+      const data = await r.json();
+      if (data.skipped) {
+        setSeedStatus("skipped");
+        setSeedMsg(data.message);
+      } else if (data.success) {
+        setSeedStatus("done");
+        setSeedMsg(data.message);
+      } else {
+        setSeedStatus("error");
+        setSeedMsg(data.error || "Unknown error");
+      }
+    } catch {
+      setSeedStatus("error");
+      setSeedMsg("Network error — please try again.");
     }
   };
 
   return (
     <div className="h-[calc(100vh-8rem)] flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-display font-bold text-white flex items-center gap-2">
             <Database className="w-6 h-6 text-primary" />
             Knowledge Graph
           </h1>
-          <p className="text-muted-foreground">8,432 Indexed Units across 4 Domains</p>
+          <p className="text-muted-foreground">Indexed units across 5 domains</p>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="relative w-64">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="relative w-56">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input 
-              placeholder="Search knowledge..." 
+            <Input
+              placeholder="Search knowledge..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-9 bg-card/50 border-border"
@@ -74,20 +102,45 @@ export default function Knowledge() {
             <Plus className="w-4 h-4" />
             Add Unit
           </Button>
+          {/* Jyotish seed button */}
+          <Button
+            data-testid="button-seed-jyotish"
+            variant="outline"
+            className={`gap-2 border-orange-400/40 text-orange-300 hover:bg-orange-400/10 ${seedStatus === "loading" ? "opacity-60 pointer-events-none" : ""}`}
+            onClick={handleSeedJyotish}
+            disabled={seedStatus === "loading"}
+          >
+            {seedStatus === "loading"
+              ? <Loader2 className="w-4 h-4 animate-spin" />
+              : <Star className="w-4 h-4" />}
+            {seedStatus === "done"    ? "Jyotish Seeded ✓"    :
+             seedStatus === "skipped" ? "Already Seeded"       :
+             seedStatus === "error"   ? "Seed Failed"          :
+                                        "Seed Jyotish Texts"}
+          </Button>
         </div>
       </div>
+
+      {/* Status banner */}
+      {seedMsg && (
+        <div className={`text-sm px-4 py-2 rounded-lg border ${
+          seedStatus === "done"    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300" :
+          seedStatus === "skipped" ? "bg-amber-500/10 border-amber-500/30 text-amber-300"       :
+                                     "bg-red-500/10 border-red-500/30 text-red-300"
+        }`}>
+          {seedMsg}
+        </div>
+      )}
 
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-6 min-h-0">
         {/* Graph View */}
         <Card className="lg:col-span-3 bg-card/30 backdrop-blur border-border overflow-hidden relative group">
-          <div className="absolute inset-0 bg-[url('/src/assets/grid.svg')] opacity-20 pointer-events-none"></div>
-          
-          {/* Node Canvas */}
+          <div className="absolute inset-0 bg-[url('/src/assets/grid.svg')] opacity-20 pointer-events-none" />
+
           <div className="absolute inset-8">
             {filteredNodes.map((node) => {
               const pos = getNodePosition(node.id);
               const isSelected = selectedNode?.id === node.id;
-              
               return (
                 <motion.button
                   key={node.id}
@@ -98,18 +151,17 @@ export default function Knowledge() {
                   transition={{ type: "spring", stiffness: 260, damping: 20 }}
                   onClick={() => setSelectedNode(node)}
                 >
-                  {/* Pulse Effect */}
                   <div className={`absolute inset-0 rounded-full animate-ping opacity-75 ${getDomainColor(node.domain)}`} />
                 </motion.button>
               );
             })}
           </div>
 
-          <div className="absolute bottom-4 left-4 flex gap-2">
-            {['medical', 'business', 'sanskrit', 'chanakya'].map(d => (
-              <Badge 
-                key={d} 
-                variant="outline" 
+          <div className="absolute bottom-4 left-4 flex gap-2 flex-wrap">
+            {['medical', 'business', 'sanskrit', 'chanakya', 'jyotish'].map(d => (
+              <Badge
+                key={d}
+                variant="outline"
                 className={`cursor-pointer capitalize hover:bg-white/10 ${selectedDomain === d ? 'border-primary bg-primary/10' : 'border-border'}`}
                 onClick={() => setSelectedDomain(selectedDomain === d ? null : d)}
               >

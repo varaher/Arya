@@ -5,6 +5,7 @@ export interface OrchestratorWeights {
   business: number;
   sanskrit: number;
   chanakya: number;
+  jyotish: number;
 }
 
 export interface OrchestratorConfig {
@@ -25,10 +26,11 @@ export interface RoutingDecision {
 
 export class Orchestrator {
   private weights: OrchestratorWeights = {
-    medical: 0.25,
-    business: 0.25,
-    sanskrit: 0.25,
-    chanakya: 0.25
+    medical: 0.2,
+    business: 0.2,
+    sanskrit: 0.2,
+    chanakya: 0.2,
+    jyotish: 0.2,
   };
 
   constructor(config?: OrchestratorConfig) {
@@ -76,6 +78,11 @@ export class Orchestrator {
       reasoning.push('Governance/leadership keywords detected');
     }
 
+    if (this.hasJyotishKeywords(lowerQuery)) {
+      adjustedWeights.jyotish += 0.5;
+      reasoning.push('Jyotish/astrology keywords detected');
+    }
+
     if (this.hasAyurvedaMedicalCrossover(lowerQuery)) {
       adjustedWeights.sanskrit += 0.15;
       adjustedWeights.medical += 0.15;
@@ -96,7 +103,7 @@ export class Orchestrator {
     let mode: OrchestratorMode = 'single';
     if (secondaryDomain && sorted[1][1] > 0.2) {
       mode = 'dual';
-    } else if (sorted[3][1] > 0.1) {
+    } else if (sorted.length >= 4 && sorted[3][1] > 0.1) {
       mode = 'four_pillar';
     }
 
@@ -230,6 +237,31 @@ export class Orchestrator {
                       'politics', 'leadership', 'power', 'statecraft', 'diplomacy',
                       'mandala theory', 'saptanga', 'upaya', 'kautilya', 'spy network',
                       'raja dharma', 'danda', 'kosha', 'foreign policy'];
+    return keywords.some(kw => query.includes(kw));
+  }
+
+  private hasJyotishKeywords(query: string): boolean {
+    const keywords = [
+      'jyotish', 'jyotisha', 'astrology', 'horoscope', 'birth chart', 'kundali', 'kundli',
+      'lagna', 'ascendant', 'rashi', 'zodiac', 'nakshatra', 'lunar mansion',
+      'graha', 'planet', 'surya', 'chandra', 'mangal', 'budha', 'guru', 'shukra', 'shani',
+      'rahu', 'ketu', 'saturn', 'jupiter', 'mars', 'venus', 'mercury',
+      'dasha', 'mahadasha', 'antardasha', 'vimshottari', 'planetary period',
+      'transit', 'gochar', 'sade sati', 'ashtama shani',
+      'bhava', 'house', '1st house', '7th house', '10th house',
+      'yoga', 'raj yoga', 'raja yoga', 'dhana yoga', 'hamsa yoga',
+      'exaltation', 'debilitation', 'uccha', 'neecha', 'swakshetra',
+      'phaladeepika', 'brihat parashara', 'parashara', 'hora shastra',
+      'bv raman', 'b.v. raman', 'mantreshwara',
+      'aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo',
+      'libra', 'scorpio', 'sagittarius', 'capricorn', 'aquarius', 'pisces',
+      'mesha', 'vrishabha', 'mithuna', 'karka', 'simha', 'kanya',
+      'tula', 'vrishchika', 'dhanu', 'makara', 'kumbha', 'meena',
+      'aspect', 'drishti', 'conjunction', 'opposition', 'trine', 'square',
+      'benefic', 'malefic', 'retrograde', 'vakra', 'combustion', 'asta',
+      'navamsa', 'divisional chart', 'varga', 'd9', 'd10',
+      'ashtakavarga', 'shadbala', 'planetary strength',
+    ];
     return keywords.some(kw => query.includes(kw));
   }
 
