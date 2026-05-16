@@ -5,7 +5,7 @@ const ITEMS = [
   { path: "/",           label: "Home",   Icon: House    },
   { path: "/my-goals",   label: "Goals",  Icon: Target   },
   { path: "/niti",       label: "Niti",   Icon: Scale    },
-  { path: "/vedic-lens", label: "Vedic",  Icon: Star     },
+  { path: "/vedic-lens", label: "KAAL",   Icon: Star     },
   { path: "/review",     label: "Review", Icon: BookOpen },
 ];
 

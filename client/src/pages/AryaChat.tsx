@@ -2022,9 +2022,16 @@ export default function AryaChat() {
     window.addEventListener("sw-update-ready", onUpdateReady);
     // Catch SW already waiting when this component mounted
     check();
-    // Also poll every 60s in case the event was missed (mobile background tab etc.)
-    const interval = setInterval(check, 60_000);
-    return () => { window.removeEventListener("sw-update-ready", onUpdateReady); clearInterval(interval); };
+    // Also poll every 30s in case the event was missed
+    const interval = setInterval(check, 30_000);
+    // Check again whenever user returns to this tab (handles background updates)
+    const onVisible = () => { if (document.visibilityState === "visible") check(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("sw-update-ready", onUpdateReady);
+      document.removeEventListener("visibilitychange", onVisible);
+      clearInterval(interval);
+    };
   }, []);
 
   // Re-check whenever the user menu is opened — catches mobile edge cases
@@ -2996,8 +3003,11 @@ export default function AryaChat() {
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 className="w-full flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-all"
               >
-                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-emerald-500/20 to-amber-500/20 border border-emerald-300 dark:border-emerald-700 flex items-center justify-center flex-shrink-0">
-                  <User className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <div className="relative w-7 h-7 flex-shrink-0">
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-emerald-500/20 to-amber-500/20 border border-emerald-300 dark:border-emerald-700 flex items-center justify-center">
+                    <User className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  {updateAvailable && <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-red-500 border border-white dark:border-slate-800 animate-pulse" />}
                 </div>
                 <div className="flex-1 min-w-0 text-left">
                   <div className="text-xs font-medium text-gray-900 dark:text-white truncate">{user?.name}</div>
@@ -3061,7 +3071,7 @@ export default function AryaChat() {
                       onClick={() => { setShowUserMenu(false); setLocation("/vedic-lens"); }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                     >
-                      <Sparkles className="w-3.5 h-3.5 text-amber-500" /> Vedic Lens
+                      <Sparkles className="w-3.5 h-3.5 text-amber-500" /> ✦ KAAL — Cosmic Timing
                     </button>
                     <button
                       data-testid="button-niti-sidebar"
@@ -3197,9 +3207,10 @@ export default function AryaChat() {
                 <button
                   data-testid="button-user-menu"
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="p-1.5 rounded-lg bg-gradient-to-br from-emerald-500/20 to-amber-500/20 border border-emerald-300 dark:border-emerald-700 hover:border-emerald-400 dark:hover:border-emerald-600 transition-all"
+                  className="relative p-1.5 rounded-lg bg-gradient-to-br from-emerald-500/20 to-amber-500/20 border border-emerald-300 dark:border-emerald-700 hover:border-emerald-400 dark:hover:border-emerald-600 transition-all"
                 >
                   <User className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  {updateAvailable && <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-red-500 border border-white dark:border-slate-800 animate-pulse" />}
                 </button>
                 {showUserMenu && <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />}
                 <AnimatePresence>
@@ -3252,7 +3263,7 @@ export default function AryaChat() {
                         onClick={() => { setShowUserMenu(false); setLocation("/vedic-lens"); }}
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                       >
-                        <Sparkles className="w-3.5 h-3.5 text-amber-500" /> Vedic Lens
+                        <Sparkles className="w-3.5 h-3.5 text-amber-500" /> ✦ KAAL — Cosmic Timing
                       </button>
                       <button
                         data-testid="button-niti"
