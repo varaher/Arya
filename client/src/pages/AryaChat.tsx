@@ -209,7 +209,28 @@ const DEFAULT_LANGUAGES: LanguageOption[] = [
   { code: "gu-IN", name: "Gujarati", native: "ગુજરાતી" },
   { code: "pa-IN", name: "Punjabi", native: "ਪੰਜਾਬੀ" },
   { code: "od-IN", name: "Odia", native: "ଓଡ଼ିଆ" },
+  { code: "ar-SA", name: "Arabic", native: "العربية" },
+  { code: "fr-FR", name: "French", native: "Français" },
+  { code: "es-ES", name: "Spanish", native: "Español" },
+  { code: "de-DE", name: "German", native: "Deutsch" },
+  { code: "pt-BR", name: "Portuguese", native: "Português" },
+  { code: "ru-RU", name: "Russian", native: "Русский" },
+  { code: "ja-JP", name: "Japanese", native: "日本語" },
+  { code: "zh-CN", name: "Chinese", native: "中文" },
+  { code: "ko-KR", name: "Korean", native: "한국어" },
+  { code: "it-IT", name: "Italian", native: "Italiano" },
+  { code: "tr-TR", name: "Turkish", native: "Türkçe" },
+  { code: "id-ID", name: "Indonesian", native: "Bahasa Indonesia" },
+  { code: "nl-NL", name: "Dutch", native: "Nederlands" },
+  { code: "sv-SE", name: "Swedish", native: "Svenska" },
 ];
+
+const SARVAM_LANGUAGE_CODES = new Set([
+  "hi-IN","bn-IN","ta-IN","te-IN","mr-IN","kn-IN","ml-IN","gu-IN","pa-IN","od-IN",
+]);
+
+const isGlobalVoiceLang = (code: string) =>
+  !SARVAM_LANGUAGE_CODES.has(code) && code !== "en-IN";
 
 function ConfidenceBadge({ confidence, sourcesCount, memoryUsed }: { confidence?: number; sourcesCount?: number; memoryUsed?: boolean }) {
   if (!confidence && confidence !== 0) return null;
@@ -2105,6 +2126,8 @@ export default function AryaChat() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const speechRecognitionRef = useRef<any>(null);
+  const isWebSpeechModeRef = useRef(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const langMenuRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
@@ -2642,6 +2665,73 @@ export default function AryaChat() {
   const startRecording = useCallback(async () => {
     try {
       setVoiceError(null);
+
+      const WebSpeechRecognition =
+        (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const useWebSpeech = isGlobalVoiceLang(selectedLanguage) && !!WebSpeechRecognition;
+
+      if (useWebSpeech) {
+        isWebSpeechModeRef.current = true;
+        const recognition = new WebSpeechRecognition();
+        recognition.lang = selectedLanguage;
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+        speechRecognitionRef.current = recognition;
+
+        recognition.onstart = () => {
+          setIsRecording(true);
+          setRecordingTime(0);
+          recordingTimerRef.current = setInterval(
+            () => setRecordingTime((t) => t + 1),
+            1000,
+          );
+        };
+
+        recognition.onresult = (event: any) => {
+          const transcript = event.results[0][0].transcript.trim();
+          if (recordingTimerRef.current) {
+            clearInterval(recordingTimerRef.current);
+            recordingTimerRef.current = null;
+          }
+          setIsRecording(false);
+          setRecordingTime(0);
+          setShowSidebar(false);
+          isWebSpeechModeRef.current = false;
+          speechRecognitionRef.current = null;
+          if (transcript) sendMessage(transcript);
+        };
+
+        recognition.onerror = (event: any) => {
+          if (recordingTimerRef.current) {
+            clearInterval(recordingTimerRef.current);
+            recordingTimerRef.current = null;
+          }
+          setIsRecording(false);
+          setRecordingTime(0);
+          isWebSpeechModeRef.current = false;
+          speechRecognitionRef.current = null;
+          if (event.error !== "aborted" && event.error !== "no-speech") {
+            setVoiceError("Speech recognition failed. Please try again.");
+          }
+        };
+
+        recognition.onend = () => {
+          if (recordingTimerRef.current) {
+            clearInterval(recordingTimerRef.current);
+            recordingTimerRef.current = null;
+          }
+          setIsRecording(false);
+          setRecordingTime(0);
+          isWebSpeechModeRef.current = false;
+          speechRecognitionRef.current = null;
+        };
+
+        recognition.start();
+        return;
+      }
+
+      isWebSpeechModeRef.current = false;
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
       const mimeTypes = [
@@ -2685,9 +2775,22 @@ export default function AryaChat() {
         setVoiceError("Could not start recording. Please check your microphone.");
       }
     }
-  }, []);
+  }, [selectedLanguage, sendMessage]);
 
   const stopRecording = useCallback(async () => {
+    if (isWebSpeechModeRef.current && speechRecognitionRef.current) {
+      speechRecognitionRef.current.abort();
+      speechRecognitionRef.current = null;
+      isWebSpeechModeRef.current = false;
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
+      setIsRecording(false);
+      setRecordingTime(0);
+      return;
+    }
+
     const recorder = mediaRecorderRef.current;
     if (!recorder || recorder.state !== "recording") return;
 
@@ -3847,8 +3950,31 @@ export default function AryaChat() {
                     <div className="px-3 py-2 border-b border-gray-200 dark:border-slate-700">
                       <p className="text-xs font-medium text-muted-foreground">Voice Language</p>
                     </div>
-                    <div className="max-h-64 overflow-y-auto py-1">
-                      {DEFAULT_LANGUAGES.map((lang) => (
+                    <div className="max-h-72 overflow-y-auto py-1">
+                      <div className="px-3 py-1">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">India — Sarvam AI</p>
+                      </div>
+                      {DEFAULT_LANGUAGES.filter(l => SARVAM_LANGUAGE_CODES.has(l.code) || l.code === "en-IN").map((lang) => (
+                        <button
+                          key={lang.code}
+                          data-testid={`button-lang-${lang.code}`}
+                          onClick={() => {
+                            setSelectedLanguage(lang.code);
+                            setShowLanguageMenu(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors ${
+                            selectedLanguage === lang.code ? "text-primary bg-primary/10" : "text-gray-700 dark:text-gray-200"
+                          }`}
+                        >
+                          <span>{lang.name}</span>
+                          <span className="text-xs text-muted-foreground">{lang.native}</span>
+                        </button>
+                      ))}
+                      <div className="mx-3 my-1 border-t border-gray-200 dark:border-slate-700" />
+                      <div className="px-3 py-1">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">Global — Browser</p>
+                      </div>
+                      {DEFAULT_LANGUAGES.filter(l => isGlobalVoiceLang(l.code)).map((lang) => (
                         <button
                           key={lang.code}
                           data-testid={`button-lang-${lang.code}`}
@@ -3974,7 +4100,9 @@ export default function AryaChat() {
                     {formatTime(recordingTime)}
                   </span>
                   <span className="text-xs text-muted-foreground hidden sm:inline">
-                    Recording{selectedLanguage !== "en-IN" ? ` in ${currentLang?.name}` : ""}... tap stop when done
+                    {isGlobalVoiceLang(selectedLanguage)
+                      ? `Listening in ${currentLang?.name}… speak, then pause to send`
+                      : `Recording${selectedLanguage !== "en-IN" ? ` in ${currentLang?.name}` : ""}… tap stop when done`}
                   </span>
                 </div>
               ) : (
