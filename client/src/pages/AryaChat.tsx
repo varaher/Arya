@@ -66,6 +66,7 @@ import {
   Theater,
   Trophy,
   Headphones,
+  ShieldCheck,
 } from "lucide-react";
 import { getStoredUiLanguage, setStoredUiLanguage, getTranslation, LANGUAGE_OPTIONS, type UiLanguage } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
@@ -5577,6 +5578,14 @@ const TUTORIAL_STEPS = [
     iconColor: "text-purple-600 dark:text-purple-400",
     iconBg: "bg-purple-100 dark:bg-purple-900/30 border-purple-300",
     tip: "Your memory is private — it shapes how ARYA responds to you but is never shared",
+  },
+  {
+    title: "Your data, your choice",
+    description: "ARYA gives you full control over your data under India's DPDP Act 2023. From Privacy & Control in your profile menu, you can delete specific categories (goals, memory, moods), wipe a date range, or do a complete reset — any time, instantly.",
+    icon: ShieldCheck,
+    iconColor: "text-emerald-600 dark:text-emerald-400",
+    iconBg: "bg-emerald-100 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700",
+    tip: "Every deletion is logged (not what was deleted — just that it happened) so you always have a receipt",
   },
   {
     title: "Rehearse hard conversations",
