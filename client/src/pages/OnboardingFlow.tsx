@@ -301,24 +301,51 @@ function S6({ briefingTime, setBriefingTime, language, setLanguage, weeklyReview
         <div style={{ fontSize: 12, color: C.muted, letterSpacing: "0.06em", marginBottom: 10, textTransform: "uppercase" as const }}>
           Language that feels like home
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
-          {LANGS.map(lang => {
+
+        {/* India */}
+        <div style={{ fontSize: 10, color: C.muted, letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 6, display: "flex", alignItems: "center", gap: 4 }}>
+          <span>🇮🇳</span> India
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 14 }}>
+          {LANGS.filter(l => l.group === "india").map(lang => {
             const active = language === lang.code;
             return (
               <button
                 key={lang.code}
                 data-testid={`button-lang-${lang.code}`}
                 onClick={() => setLanguage(lang.code)}
-                style={{ padding: "11px 8px", borderRadius: 10, border: `1.5px solid ${active ? C.cyan : C.border}`, background: active ? C.cyanDim : C.card, color: active ? C.cyan : C.muted, fontSize: 14, fontWeight: active ? 600 : 400, transition: "all 0.15s", lineHeight: 1.3 }}
+                style={{ padding: "10px 6px", borderRadius: 10, border: `1.5px solid ${active ? C.cyan : C.border}`, background: active ? C.cyanDim : C.card, color: active ? C.cyan : C.muted, fontSize: 13, fontWeight: active ? 600 : 400, transition: "all 0.15s", lineHeight: 1.3, textAlign: "center" as const }}
               >
-                <div>{lang.native}</div>
-                {lang.code !== "en" && <div style={{ fontSize: 10, opacity: 0.6, marginTop: 2 }}>{lang.english}</div>}
+                <div style={{ fontSize: 15, marginBottom: 2 }}>{lang.flag}</div>
+                <div style={{ fontSize: 11 }}>{lang.native}</div>
               </button>
             );
           })}
         </div>
+
+        {/* Global */}
+        <div style={{ fontSize: 10, color: C.muted, letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 6, display: "flex", alignItems: "center", gap: 4 }}>
+          <span>🌍</span> Global
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+          {LANGS.filter(l => l.group === "global").map(lang => {
+            const active = language === lang.code;
+            return (
+              <button
+                key={lang.code}
+                data-testid={`button-lang-${lang.code}`}
+                onClick={() => setLanguage(lang.code)}
+                style={{ padding: "10px 6px", borderRadius: 10, border: `1.5px solid ${active ? "#a855f7" : C.border}`, background: active ? "rgba(168,85,247,0.12)" : C.card, color: active ? "#a855f7" : C.muted, fontSize: 13, fontWeight: active ? 600 : 400, transition: "all 0.15s", lineHeight: 1.3, textAlign: "center" as const }}
+              >
+                <div style={{ fontSize: 15, marginBottom: 2 }}>{lang.flag}</div>
+                <div style={{ fontSize: 11 }}>{lang.native}</div>
+              </button>
+            );
+          })}
+        </div>
+
         {!language && (
-          <div style={{ marginTop: 8, fontSize: 12, color: C.amber, textAlign: "center" as const }}>
+          <div style={{ marginTop: 10, fontSize: 12, color: C.amber, textAlign: "center" as const }}>
             Pick the language that feels most like home
           </div>
         )}

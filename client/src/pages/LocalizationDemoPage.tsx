@@ -4,8 +4,8 @@ import { Link } from "wouter";
 import { ArrowLeft, Target, CalendarDays, MessageSquare, Sun, Mic, Paperclip, Send, Plus, Check, Bell } from "lucide-react";
 
 type LangCode =
-  | "en" | "hi" | "sa" | "ta" | "bn" | "te" | "mr" | "kn" | "ml" | "gu" | "pa"
-  | "ar" | "he" | "fr" | "es" | "de" | "ja" | "zh" | "ko" | "pt" | "ru" | "tr" | "id";
+  | "en" | "hi" | "sa" | "ta" | "bn" | "te" | "mr" | "kn" | "ml" | "gu" | "pa" | "od"
+  | "ar" | "he" | "fr" | "es" | "de" | "ja" | "zh" | "ko" | "pt" | "ru" | "tr" | "id" | "sw";
 
 type Tab = "today" | "chat" | "goals" | "kaal";
 
@@ -53,6 +53,8 @@ const LANGS: LangMeta[] = [
   { code: "mr", name: "Marathi",    native: "मराठी",               flag: "🇮🇳" },
   { code: "kn", name: "Kannada",    native: "ಕನ್ನಡ",               flag: "🇮🇳" },
   { code: "ml", name: "Malayalam",  native: "മലയാളം",              flag: "🇮🇳" },
+  { code: "gu", name: "Gujarati",   native: "ગુજરાતી",             flag: "🇮🇳" },
+  { code: "od", name: "Odia",       native: "ଓଡ଼ିଆ",               flag: "🇮🇳" },
   { code: "ar", name: "Arabic",     native: "العربية",             flag: "🌙", rtl: true },
   { code: "he", name: "Hebrew",     native: "עברית",               flag: "✡️",  rtl: true },
   { code: "fr", name: "French",     native: "Français",            flag: "🇫🇷" },
@@ -65,6 +67,7 @@ const LANGS: LangMeta[] = [
   { code: "ru", name: "Russian",    native: "Русский",             flag: "🇷🇺" },
   { code: "tr", name: "Turkish",    native: "Türkçe",              flag: "🇹🇷" },
   { code: "id", name: "Indonesian", native: "Bahasa Indonesia",    flag: "🇮🇩" },
+  { code: "sw", name: "Swahili",    native: "Kiswahili",           flag: "🌍" },
 ];
 
 const T: Record<LangCode, Translations> = {
@@ -382,6 +385,51 @@ const T: Record<LangCode, Translations> = {
     kaal_heading: "Jadwal hari ini", kaal_reminder: "Set pengingat",
     kaal_item_1: "Jalan pagi — 06:30", kaal_item_2: "Meeting tim — 10:00", kaal_item_3: "Kerja fokus — 14:00",
     arya_tagline: "Asisten berpikir dan tumbuh pribadimu",
+  },
+  gu: {
+    nav_today: "આજ", nav_chat: "વાતચીત", nav_goals: "લક્ષ્યો", nav_kaal: "સમય",
+    greeting: "સુપ્રભાત, અર્જુન", greeting_sub: "આજની અંતર્દૃષ્ટિ",
+    today_insight: "તમે ૭ દિવસ સળંગ કર્યું. આ ફક્ત streak નથી — એક ટેવ બની રહી છે. આગળ વધો.",
+    today_mood_q: "આજ તમને કેવું લાગે છે?",
+    chat_placeholder: "ARYA ને કંઈ પણ પૂછો…",
+    chat_user_msg: "હું કામ અંગે ખૂબ ચિંતિત છું, શું કરવું સમજ નથી આવતું.",
+    chat_arya_reply: "પહેલા ઊંડો શ્વાસ લો. કામનો ભાર ઘણી વખત ભારે થઈ જાય છે. અત્યારે સૌથી વધુ શું ભારે લાગે છે? ત્યાંથી શરૂ કરીએ.",
+    goals_heading: "તમારા લક્ષ્યો", goals_add: "નવું લક્ષ્ય ઉમેરો",
+    goal_1: "દરરોજ ૧૦ પૃષ્ઠ વાંચવા", goal_2: "૩૦ મિનિટ સવારની ચાલ", goal_3: "શુક્રવાર સુધી proposal તૈયાર કરવી",
+    goal_active: "સક્રિય",
+    kaal_heading: "તમારો દિવસ", kaal_reminder: "યાદ કરાવો",
+    kaal_item_1: "સવારની ચાલ — સ. ૬:૩૦", kaal_item_2: "Team standup — સ. ૧૦:૦૦", kaal_item_3: "Deep work — બ. ૨:૦૦",
+    arya_tagline: "તમારો વ્યક્તિગત વિચાર અને વૃદ્ધિ સહાયક",
+  },
+  od: {
+    nav_today: "ଆଜି", nav_chat: "ବାର୍ତ୍ତା", nav_goals: "ଲକ୍ଷ୍ୟ", nav_kaal: "ସମୟ",
+    greeting: "ଶୁଭ ସକାଳ, ଅର୍ଜୁନ", greeting_sub: "ଆଜିର ଅନ୍ତର୍ଦୃଷ୍ଟି",
+    today_insight: "ତୁମେ ୭ ଦିନ ଧାରାବାହିକ ଭାବେ କରିଛ। ଏହା କେବଳ streak ନୁହେଁ — ଏକ ଅଭ୍ୟାସ ତୈଯାର ହେଉଛି। ଆଗକୁ ଚାଲ।",
+    today_mood_q: "ଆଜି ତୁମେ କିପ୍ରକାର ଅନୁଭବ କରୁଛ?",
+    chat_placeholder: "ARYA କୁ ଯାହା ଇଚ୍ଛା ପଚାର…",
+    chat_user_msg: "ମୁଁ କାମ ଯୋଗୁ ବହୁତ ଚିନ୍ତିତ ଅଛି, କଣ କରିବି ବୁଝ ହେଉ ନାହିଁ।",
+    chat_arya_reply: "ପ୍ରଥମେ ଏକ ଗଭୀର ନିଃଶ୍ୱାସ ନିଅ। କାମର ଚାପ ଅନେକ ସମୟ ଭାରୀ ହୋଇ ଯାଏ। ଏବେ ସବୁଠୁ ଅଧିକ କଣ ଅଡ଼ୁଆ ଲାଗୁଛି? ସେଠୁ ଆରମ୍ଭ କରିବା।",
+    goals_heading: "ତୁମ ଲକ୍ଷ୍ୟ", goals_add: "ନୂଆ ଲକ୍ଷ୍ୟ ଯୋଡ଼",
+    goal_1: "ପ୍ରତ୍ୟେକ ଦିନ ୧୦ ପୃଷ୍ଠା ପଢ଼", goal_2: "୩୦ ମିନିଟ ସକାଳ ଭ୍ରମଣ", goal_3: "ଶୁକ୍ରବାର ପୂର୍ବରୁ proposal ସମାପ୍ତ",
+    goal_active: "ସକ୍ରିୟ",
+    kaal_heading: "ତୁମ ଦିନ", kaal_reminder: "ମନେ ପକା",
+    kaal_item_1: "ସକାଳ ଭ୍ରମଣ — ୬:୩୦", kaal_item_2: "Team standup — ୧୦:୦୦", kaal_item_3: "Deep work — ୨:୦୦",
+    arya_tagline: "ତୁମ ବ୍ୟକ୍ତିଗତ ଚିନ୍ତା ଓ ବିକାଶ ସହାୟକ",
+  },
+  sw: {
+    nav_today: "Leo", nav_chat: "Mazungumzo", nav_goals: "Malengo", nav_kaal: "Wakati",
+    greeting: "Habari za asubuhi, Arjun", greeting_sub: "Ufahamu wako wa leo",
+    today_insight: "Umekuwa thabiti kwa siku 7. Hii si tu streak — tabia inajengeka. Endelea.",
+    today_mood_q: "Unajisikiaje leo?",
+    chat_placeholder: "Uliza ARYA chochote…",
+    chat_user_msg: "Nina msongo mkubwa wa kazi na sijui nifanye nini.",
+    chat_arya_reply: "Pumzika kidogo kwanza. Msongo wa kazi hujilimbikiza haraka. Ni nini kinakusumbua zaidi sasa hivi? Tuanze hapo.",
+    goals_heading: "Malengo yako", goals_add: "Ongeza lengo jipya",
+    goal_1: "Soma kurasa 10 kila siku", goal_2: "Tembea asubuhi dakika 30", goal_3: "Maliza pendekezo kabla ya Ijumaa",
+    goal_active: "Hai",
+    kaal_heading: "Siku yako", kaal_reminder: "Weka ukumbusho",
+    kaal_item_1: "Kutembea asubuhi — 6:30", kaal_item_2: "Mkutano wa timu — 10:00", kaal_item_3: "Kazi ya kina — 14:00",
+    arya_tagline: "Msaidizi wako binafsi wa kufikiri na kukua",
   },
 };
 

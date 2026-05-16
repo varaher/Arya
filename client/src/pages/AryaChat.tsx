@@ -860,20 +860,51 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
 
           {/* App Language */}
           <div>
-            <div className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2">App Language</div>
-            <div className="grid grid-cols-3 gap-1.5">
-              {LANGUAGE_OPTIONS.map(({ code, native, flag }) => (
-                <button key={code} data-testid={`option-lang-${code}`} onClick={() => setUiLang(code)}
-                  className={`flex flex-col items-center gap-0.5 px-2 py-2.5 rounded-lg transition-all ${
-                    uiLang === code
-                      ? "bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-300 dark:border-emerald-700 text-emerald-600 dark:text-emerald-400"
-                      : "bg-gray-100 dark:bg-slate-700 border border-transparent text-gray-500 dark:text-gray-400"
-                  }`}
-                >
-                  <span className="text-base leading-none">{flag}</span>
-                  <span className="text-[11px] font-medium leading-tight text-center">{native}</span>
-                </button>
-              ))}
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-xs font-semibold text-gray-600 dark:text-gray-300">{tl("ui_language")}</div>
+              <span className="text-[10px] text-muted-foreground bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded-full">25 languages</span>
+            </div>
+
+            {/* India section */}
+            <div className="mb-2">
+              <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1.5 flex items-center gap-1">
+                <span>🇮🇳</span> India
+              </div>
+              <div className="grid grid-cols-3 gap-1">
+                {LANGUAGE_OPTIONS.filter(l => l.group === "india").map(({ code, native, flag }) => (
+                  <button key={code} data-testid={`option-lang-${code}`} onClick={() => setUiLang(code as UiLanguage)}
+                    className={`flex flex-col items-center gap-0.5 px-1 py-2 rounded-lg transition-all ${
+                      uiLang === code
+                        ? "bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-300 dark:border-emerald-700 text-emerald-600 dark:text-emerald-400"
+                        : "bg-gray-100 dark:bg-slate-700 border border-transparent text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-600"
+                    }`}
+                  >
+                    <span className="text-sm leading-none">{flag}</span>
+                    <span className="text-[10px] font-medium leading-tight text-center">{native}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Global section */}
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1.5 flex items-center gap-1">
+                <span>🌍</span> Global
+              </div>
+              <div className="grid grid-cols-3 gap-1">
+                {LANGUAGE_OPTIONS.filter(l => l.group === "global").map(({ code, native, flag }) => (
+                  <button key={code} data-testid={`option-lang-${code}`} onClick={() => setUiLang(code as UiLanguage)}
+                    className={`flex flex-col items-center gap-0.5 px-1 py-2 rounded-lg transition-all ${
+                      uiLang === code
+                        ? "bg-cyan-50 dark:bg-cyan-900/20 border border-cyan-300 dark:border-cyan-700 text-cyan-600 dark:text-cyan-400"
+                        : "bg-gray-100 dark:bg-slate-700 border border-transparent text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-600"
+                    }`}
+                  >
+                    <span className="text-sm leading-none">{flag}</span>
+                    <span className="text-[10px] font-medium leading-tight text-center">{native}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
