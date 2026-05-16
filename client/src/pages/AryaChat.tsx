@@ -2821,6 +2821,8 @@ export default function AryaChat() {
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
+      if (isMobile) return;
       e.preventDefault();
       if (pendingImage) sendWithImage();
       else sendMessage(input);
