@@ -119,7 +119,7 @@ function TopBar({ path, onBack }: { path: VedicPath | null; onBack: () => void }
   return (
     <div style={{ padding: "20px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
       <button onClick={onBack} style={{ color: C.textDim, fontSize: 13, background: "none", border: "none", cursor: "pointer", fontFamily: sans }}>← Back</button>
-      {path ? <PathBadge path={path} /> : <div style={{ fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase" as const, color: C.textMuted }}>✦ KAAL</div>}
+      {path ? <PathBadge path={path} /> : <div style={{ fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase" as const, color: C.textMuted }}>KAAL</div>}
       <div style={{ width: 60 }} />
     </div>
   );
@@ -154,7 +154,7 @@ function PathSelectionScreen({ onSelect }: { onSelect: (p: VedicPath) => void })
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "32px 24px 0", display: "flex", justifyContent: "center" }}>
-        <div style={{ fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase" as const, color: C.textMuted }}>✦ KAAL · Cosmic Setup</div>
+        <div style={{ fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase" as const, color: C.textMuted }}>KAAL · Cosmic Setup</div>
       </div>
       <div style={{ padding: "28px 24px 90px", maxWidth: 460, margin: "0 auto", width: "100%", display: "flex", flexDirection: "column", gap: 20 }}>
         <div>
