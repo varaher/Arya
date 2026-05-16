@@ -3086,7 +3086,7 @@ export default function AryaChat() {
                       onClick={() => { setShowUserMenu(false); setLocation("/review"); }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                     >
-                      <CalendarDays className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" /> 📋 Sunday Review
+                      <CalendarDays className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" /> Sunday Review
                     </button>
                     {updateAvailable && (
                       <button
@@ -3278,7 +3278,7 @@ export default function AryaChat() {
                         onClick={() => { setShowUserMenu(false); setLocation("/review"); }}
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                       >
-                        <CalendarDays className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" /> 📋 Sunday Review
+                        <CalendarDays className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" /> Sunday Review
                       </button>
                       {updateAvailable && (
                         <button
@@ -5579,8 +5579,32 @@ const TUTORIAL_STEPS = [
     tip: "Your memory is private — it shapes how ARYA responds to you but is never shared",
   },
   {
+    title: "Rehearse hard conversations",
+    description: "Use ARYA to practise difficult conversations before they happen — with your boss, a parent, an investor, or anyone else. ARYA plays the other person so you can find the right words in a safe space.",
+    icon: MessageSquare,
+    iconColor: "text-rose-600 dark:text-rose-400",
+    iconBg: "bg-rose-100 dark:bg-rose-900/30 border-rose-300 dark:border-rose-700",
+    tip: "Try: \"Help me practise telling my manager I need a raise\" — ARYA becomes the manager",
+  },
+  {
+    title: "KAAL — Cosmic Timing",
+    description: "KAAL gives you a personalised daily briefing based on your birth details and the current planetary period. It translates ancient timing wisdom into plain, practical language — what today looks like for you, specifically.",
+    icon: Star,
+    iconColor: "text-amber-500 dark:text-amber-400",
+    iconBg: "bg-amber-100 dark:bg-amber-900/30 border-amber-300",
+    tip: "No astrology knowledge needed — KAAL explains everything in everyday language. Find it in your profile menu",
+  },
+  {
+    title: "Niti — Business Wisdom",
+    description: "Niti is your business thinking companion. Bring it your decisions, plans, and people situations — it routes your question to the right philosopher (Chanakya, Vidura, Krishna and others) and stress-tests your thinking. Also tracks live market news and lets you journal your portfolio.",
+    icon: Briefcase,
+    iconColor: "text-yellow-600 dark:text-yellow-500",
+    iconBg: "bg-yellow-100 dark:bg-yellow-900/30 border-yellow-300 dark:border-yellow-700",
+    tip: "Every Niti response ends with a Socratic question — it helps you think deeper, not just receive an answer",
+  },
+  {
     title: "Make ARYA yours",
-    description: "Customize ARYA's tone, response length, and focus areas. Turn on a morning briefing (your goals + news at 7am IST), a weekly growth review, and switch between light and dark themes.",
+    description: "Customize ARYA's tone, response length, and focus areas. Turn on a morning briefing (your goals + news delivered to you daily), a Sunday review, and switch the app language between English and Hindi.",
     icon: Palette,
     iconColor: "text-emerald-600 dark:text-emerald-400",
     iconBg: "bg-emerald-100 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700",
