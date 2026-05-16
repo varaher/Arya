@@ -21,9 +21,17 @@ export type SubscriptionPlan = "core" | "pro" | "elite";
 export const PLAN_CONFIG = {
   core: {
     name: "ARYA Core",
+    // India (Razorpay / INR)
     amountInr: 249,
+    amountInrAnnual: 2490,
     razorpayPlanId: process.env.RAZORPAY_PLAN_ID_CORE || "",
-    chatsPerDay: 9999,          // unlimited
+    // International (Paddle / USD)
+    amountUsd: 3.99,
+    amountUsdAnnual: 32,
+    paddlePriceId: process.env.PADDLE_PRICE_ID_CORE || "",
+    paddlePriceIdAnnual: process.env.PADDLE_PRICE_ID_CORE_ANNUAL || "",
+    // Limits
+    chatsPerDay: 9999,
     voiceMinutesPerMonth: 150,
     maxGoals: 10,
     memoryRetentionDays: 30,
@@ -40,17 +48,27 @@ export const PLAN_CONFIG = {
   },
   pro: {
     name: "ARYA Pro",
+    // India (Razorpay / INR)
     amountInr: 499,
+    amountInrAnnual: 4990,
     razorpayPlanId: process.env.RAZORPAY_PLAN_ID_PRO || "",
-    chatsPerDay: 9999,          // unlimited
-    voiceMinutesPerMonth: 50,   // overages at ₹2/min, capped ₹200/month
+    // International (Paddle / USD)
+    amountUsd: 7.99,
+    amountUsdAnnual: 64,
+    paddlePriceId: process.env.PADDLE_PRICE_ID_PRO || "",
+    paddlePriceIdAnnual: process.env.PADDLE_PRICE_ID_PRO_ANNUAL || "",
+    // Limits
+    chatsPerDay: 9999,
+    voiceMinutesPerMonth: 50,
     voiceOveragePerMinuteInr: 2,
+    voiceOveragePerMinuteUsd: 0.02,
     voiceOverageCapInr: 200,
-    maxGoals: 9999,             // unlimited
+    voiceOverageCapUsd: 2.40,
+    maxGoals: 9999,
     memoryRetentionDays: 365,
     features: [
       "Everything in Core",
-      "50 voice min/month (₹2/min above, capped ₹200)",
+      "50 voice min/month (₹2/min above, capped ₹200 · $0.02/min above, capped $2.40)",
       "Unlimited goals",
       "1-year memory",
       "KAAL Full + Business Mind",
@@ -60,12 +78,20 @@ export const PLAN_CONFIG = {
   },
   elite: {
     name: "ARYA Elite",
+    // India (Razorpay / INR)
     amountInr: 999,
+    amountInrAnnual: 9990,
     razorpayPlanId: process.env.RAZORPAY_PLAN_ID_ELITE || "",
-    chatsPerDay: 9999,          // unlimited
-    voiceMinutesPerMonth: 9999, // unlimited
-    maxGoals: 9999,             // unlimited
-    memoryRetentionDays: 36500, // lifetime (~100 years)
+    // International (Paddle / USD)
+    amountUsd: 14.99,
+    amountUsdAnnual: 119,
+    paddlePriceId: process.env.PADDLE_PRICE_ID_ELITE || "",
+    paddlePriceIdAnnual: process.env.PADDLE_PRICE_ID_ELITE_ANNUAL || "",
+    // Limits
+    chatsPerDay: 9999,
+    voiceMinutesPerMonth: 9999,
+    maxGoals: 9999,
+    memoryRetentionDays: 36500,
     features: [
       "Everything in Pro",
       "Unlimited voice — no metering",
