@@ -95,7 +95,7 @@ const FEATURES: Array<{ label: string; free: string | boolean; core: string | bo
   { label: "Goals",             free: "3 max",      core: "10 max",     pro: "Unlimited",       elite: "Unlimited"       },
   { label: "Voice input",       free: false,        core: "5 min/day",  pro: "50 min/month",    elite: "Unlimited",      note: "Pro includes 50 min/mo. Extra $0.05/min (₹4/min)" },
   { label: "Voice notes",       free: false,        core: true,         pro: true,              elite: true              },
-  { label: "Document & image scan", free: false,    core: true,         pro: true,              elite: true              },
+  { label: "Document & image scan", free: true,     core: true,         pro: true,              elite: true              },
   { label: "KAAL timing lens",  free: false,        core: "Basic",      pro: "Full",            elite: "Full + Vedic"    },
   { label: "Business Mind",     free: false,        core: false,        pro: true,              elite: true              },
   { label: "Market Lens",       free: false,        core: false,        pro: true,              elite: true              },
@@ -104,7 +104,7 @@ const FEATURES: Array<{ label: string; free: string | boolean; core: string | bo
   { label: "Health tracking",   free: false,        core: "Basic",      pro: "Full",            elite: "Full"            },
   { label: "Reflection share",  free: false,        core: true,         pro: true,              elite: true              },
   { label: "Priority response", free: false,        core: false,        pro: false,             elite: true              },
-  { label: "All 11 languages",  free: "English only",core: true,        pro: true,              elite: true              },
+  { label: "All 11 languages",  free: true,         core: true,         pro: true,              elite: true              },
   { label: "Early access",      free: false,        core: false,        pro: true,              elite: true              },
   { label: "Monthly life review",free: false,       core: false,        pro: false,             elite: true              },
 ];
