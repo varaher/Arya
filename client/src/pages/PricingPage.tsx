@@ -32,9 +32,9 @@ const PRICES: Record<Region, Record<PlanId, PlanPrice>> = {
   },
   intl: {
     free:  { monthly: 0,    annual: 0,   annualMonthly: 0,    currency: "USD", symbol: "$" },
-    core:  { monthly: 2.99, annual: 24,  annualMonthly: 2.00, currency: "USD", symbol: "$" },
-    pro:   { monthly: 5.99, annual: 49,  annualMonthly: 4.08, currency: "USD", symbol: "$" },
-    elite: { monthly: 11.99,annual: 99,  annualMonthly: 8.25, currency: "USD", symbol: "$" },
+    core:  { monthly: 3.99, annual: 32,  annualMonthly: 2.67, currency: "USD", symbol: "$" },
+    pro:   { monthly: 7.99, annual: 64,  annualMonthly: 5.33, currency: "USD", symbol: "$" },
+    elite: { monthly: 14.99,annual: 119, annualMonthly: 9.92, currency: "USD", symbol: "$" },
   },
 };
 
