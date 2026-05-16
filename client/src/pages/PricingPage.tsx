@@ -31,10 +31,10 @@ const PRICES: Record<Region, Record<PlanId, PlanPrice>> = {
     elite: { monthly: 999, annual: 9990,   annualMonthly: 833,  currency: "INR", symbol: "₹" },
   },
   intl: {
-    free:  { monthly: 0,    annual: 0,    annualMonthly: 0,   currency: "USD", symbol: "$" },
-    core:  { monthly: 4.99, annual: 39,   annualMonthly: 3.25,currency: "USD", symbol: "$" },
-    pro:   { monthly: 9.99, annual: 79,   annualMonthly: 6.58,currency: "USD", symbol: "$" },
-    elite: { monthly: 19.99,annual: 159,  annualMonthly: 13.25,currency: "USD", symbol: "$"},
+    free:  { monthly: 0,    annual: 0,   annualMonthly: 0,    currency: "USD", symbol: "$" },
+    core:  { monthly: 2.99, annual: 24,  annualMonthly: 2.00, currency: "USD", symbol: "$" },
+    pro:   { monthly: 5.99, annual: 49,  annualMonthly: 4.08, currency: "USD", symbol: "$" },
+    elite: { monthly: 11.99,annual: 99,  annualMonthly: 8.25, currency: "USD", symbol: "$" },
   },
 };
 
@@ -93,7 +93,7 @@ const FEATURES: Array<{ label: string; free: string | boolean; core: string | bo
   { label: "Daily messages",    free: "20/day",     core: "Unlimited",  pro: "Unlimited",       elite: "Unlimited"       },
   { label: "Memory",            free: "Resets daily",core: "30 days",   pro: "1 year",          elite: "Full lifetime"   },
   { label: "Goals",             free: "3 max",      core: "10 max",     pro: "Unlimited",       elite: "Unlimited"       },
-  { label: "Voice input",       free: false,        core: "5 min/day",  pro: "50 min/month",    elite: "Unlimited",      note: "Pro includes 50 min/mo. Extra $0.05/min (₹4/min)" },
+  { label: "Voice input",       free: false,        core: "150 min/month", pro: "50 min/month + overages", elite: "Unlimited", note: "Pro overages: ₹2/min (India) · $0.02/min (Global). Capped at ₹200/month extra." },
   { label: "Voice notes",       free: false,        core: true,         pro: true,              elite: true              },
   { label: "Document & image scan", free: true,     core: true,         pro: true,              elite: true              },
   { label: "KAAL timing lens",  free: false,        core: "Basic",      pro: "Full",            elite: "Full + Vedic"    },
@@ -417,8 +417,9 @@ export default function PricingPage() {
               <p className="text-sm text-amber-700 dark:text-amber-400 leading-relaxed">
                 Pro includes <strong>50 voice minutes per month</strong> — enough for most users.
                 If you go over, you're charged{" "}
-                <strong>{region === INDIA ? "₹4" : "$0.05"} per extra minute</strong> — only for what you use.
-                Elite gets unlimited voice with no metering.
+                <strong>{region === INDIA ? "₹2" : "$0.02"} per extra minute</strong>, capped at{" "}
+                <strong>{region === INDIA ? "₹200" : "$2.40"} extra per month</strong> — so your bill never doubles.
+                Elite gets unlimited voice with no metering at all.
               </p>
             </div>
           </div>

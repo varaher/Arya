@@ -40,7 +40,7 @@ const PLANS = [
     badge: "Popular",
     features: [
       "Unlimited conversations",
-      "5 min voice per day",
+      "150 min voice per month",
       "Up to 10 goals",
       "30-day memory",
       "Weekly Review + Morning Briefing",
@@ -61,7 +61,7 @@ const PLANS = [
     badge: "Best Value",
     features: [
       "Everything in Core",
-      "50 voice min/month (₹4/min above)",
+      "50 voice min/month (₹2/min above, capped ₹200)",
       "Unlimited goals",
       "1-year memory",
       "KAAL Full + Business Mind",
