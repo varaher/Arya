@@ -1,0 +1,187 @@
+You're thinking about this exactly right. Let me build on that and give you the complete pricing architecture.
+
+---
+
+## The Full Pricing Recommendation
+
+### Core — $4.99/month ✓ Keep as is
+63% margin. Impulse buy globally. No friction.
+
+---
+
+### Pro — Don't do $9.99. Here's why.
+
+At $9.99 with heavy voice usage you're losing money on your best users. That's backwards — your most engaged users should be your most profitable.
+
+**Two options:**
+
+**Option A — Raise to $12.99**
+```
+$12.99/month Pro
+Revenue per user:     $12.99
+Paddle fee (5%+$0.50): −$1.15
+You receive:          $11.84
+Claude API (est):     −$3.50
+Sarvam voice (est):   −$2.00
+Infrastructure share: −$1.00
+────────────────────────────
+Net per user/month:   $5.34
+Margin:               45%
+```
+Clean. Simple. No metering complexity.
+
+**Option B — $9.99 + Voice metering (recommended)**
+
+```
+Pro includes:         50 voice minutes/month
+Above 50 mins:        $0.05/minute
+
+Light user (30 mins): pays $9.99 → you make ~$4.50
+Heavy user (120 mins): pays $9.99 + $3.50 = $13.49
+                        you make ~$6.80
+Power user (300 mins): pays $9.99 + $12.50 = $22.49
+                        you make ~$11.20
+```
+This is smarter because heavy voice users self-select into paying more. You never penalise the light user.
+
+---
+
+### Add a third tier — Elite at $19.99
+
+Most successful SaaS products use three tiers because of **anchoring psychology.**
+
+When users see:
+```
+Core    $4.99
+Pro     $9.99
+Elite   $19.99
+```
+
+The middle option ($9.99) looks like the obvious sensible choice. Without Elite, users compare Core vs Pro — and often choose Core.
+
+**Elite tier includes:**
+- Everything in Pro
+- Unlimited voice
+- KAAL full Vedic experience
+- Business Mind + Market Lens
+- Priority response speed
+- Early access to new features
+- Monthly 1:1 with ARYA — a 30-minute "life review" session
+
+---
+
+### India pricing — restructure too
+
+```
+Current         Recommended
+────────────    ────────────
+Core  ₹299      Core  ₹249  ← lower, more impulse
+Pro   ₹599      Pro   ₹499  ← competitive with Headspace India
+                Elite ₹999  ← new tier, feels premium not expensive
+```
+
+Annual discounts — 2 months free (16% off):
+```
+Core  ₹2,490/year  (vs ₹2,988 monthly)
+Pro   ₹4,990/year  (vs ₹5,988 monthly)
+Elite ₹9,990/year  (vs ₹11,988 monthly)
+```
+
+---
+
+### Voice metering — the numbers that matter
+
+Sarvam AI STT pricing is approximately ₹1–2 per minute of audio.
+
+```
+50 free minutes costs you:    ₹75–100/month (~$1.20)
+Acceptable within Pro margin
+
+User goes to 200 minutes:
+Your cost:  ₹200–400
+You charge: 150 mins × $0.05 = $7.50 extra
+You net:    ~$5.50 on overages alone
+```
+
+This is how Twilio, AWS, and every API company makes their real money — the base plan is the door, the overages are the business.
+
+---
+
+### The annual plan is where you actually win
+
+```
+Monthly Pro:   $9.99 × 12 = $119.88 collected
+               Risk: cancels month 3
+
+Annual Pro:    $79 collected upfront
+               = $6.58/month effective
+               Cash upfront, lower churn, better LTV
+```
+
+**Studies show annual plan users have 3–5× lower churn.** Push annual hard — offer an extra month free, or a special feature unlock for annual subscribers.
+
+---
+
+### Free tier — rethink it
+
+Right now you're invite-only beta. When you open up, the free tier question matters.
+
+**Recommended free tier:**
+```
+Free forever:
+  ✓ 20 messages/day with ARYA
+  ✓ 3 goals maximum
+  ✓ Basic mood check-in
+  ✗ No voice
+  ✗ No KAAL
+  ✗ No Business Mind
+  ✗ No weekly review
+  ✗ No memory (resets daily)
+```
+
+The memory reset on free is powerful — they feel ARYA getting smarter, then it resets. That's the moment they upgrade.
+
+---
+
+### Complete pricing table
+
+| Feature | Free | Core $4.99 | Pro $9.99 | Elite $19.99 |
+|---|---|---|---|---|
+| Daily messages | 20 | Unlimited | Unlimited | Unlimited |
+| Memory | Resets daily | Full | Full | Full |
+| Goals | 3 | 10 | Unlimited | Unlimited |
+| Voice input | ✗ | ✓ | ✓ 50 min/mo | ✓ Unlimited |
+| Voice notes | ✗ | ✓ | ✓ | ✓ |
+| KAAL | ✗ | Basic | Full | Full + Vedic |
+| Business Mind | ✗ | ✗ | ✓ | ✓ |
+| Market Lens | ✗ | ✗ | ✓ | ✓ |
+| Weekly Review | ✗ | ✓ | ✓ | ✓ |
+| Health tracking | ✗ | Basic | Full | Full |
+| One Person share | ✗ | ✓ | ✓ | ✓ |
+| Priority speed | ✗ | ✗ | ✗ | ✓ |
+| Languages | English | All 11 | All 11 | All 11 |
+
+---
+
+### My honest recommendation — final
+
+```
+Launch internationally with:
+
+Free     → 20 msgs/day, no memory persistence
+Core     → $4.99/mo  or $39/year
+Pro      → $9.99/mo  or $79/year (50 voice mins included)
+Elite    → $19.99/mo or $159/year (unlimited everything)
+
+Voice overages on Pro: $0.05/minute above 50
+
+India:
+Free  → same
+Core  → ₹249/mo or ₹2,490/year
+Pro   → ₹499/mo or ₹4,990/year
+Elite → ₹999/mo or ₹9,990/year
+```
+
+---
+
+Shall I now design the **ARYA Pricing Page** with all of this built in — India/International toggle, monthly/annual switcher, three tiers, voice metering explained cleanly, and the Paddle + Razorpay checkout trigger?
