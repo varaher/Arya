@@ -1,0 +1,111 @@
+Good decision. Indian languages are your core market and every user who sees ARYA in their mother tongue feels — *this was made for me.*
+
+Let me map out exactly what needs to be done.
+
+---
+
+## The 11 Indian Languages — Full List
+
+```
+1.  English    (default)
+2.  Hindi      हिन्दी
+3.  Tamil      தமிழ்
+4.  Telugu     తెలుగు
+5.  Kannada    ಕನ್ನಡ
+6.  Malayalam  മലയാളം
+7.  Bengali    বাংলা
+8.  Marathi    मराठी
+9.  Gujarati   ગુજરાતી
+10. Punjabi    ਪੰਜਾਬੀ
+11. Odia       ଓଡ଼ିଆ
+```
+
+You already have English + Hindi live. Nine more to add.
+
+---
+
+## What Each Language Needs
+
+**Three things per language:**
+
+**1. UI Translation file** — every string in the app
+**2. Font** — each script needs its own Google Font
+**3. ARYA system prompt instruction** — language-specific tone notes
+
+---
+
+## Font Map — One Per Script
+
+```
+English    → Already loaded (Manrope/your current font)
+Hindi      → Noto Sans Devanagari (covers Marathi too)
+Tamil      → Noto Sans Tamil
+Telugu     → Noto Sans Telugu
+Kannada    → Noto Sans Kannada
+Malayalam  → Noto Sans Malayalam
+Bengali    → Noto Sans Bengali
+Marathi    → Noto Sans Devanagari (same as Hindi)
+Gujarati   → Noto Sans Gujarati
+Punjabi    → Noto Sans Gurmukhi
+Odia       → Noto Sans Oriya
+```
+
+All are Google Fonts — free, load dynamically only when that language is selected.
+
+---
+
+## Complete Translation Master File
+
+This is what your developer needs. Every string, every language.
+
+Let me now build the complete working demo with all 11 languages.
+
+Tap every language button at the top. Each one changes everything instantly.
+
+---
+
+## What's Built — All 11 Languages
+
+Every language shows five sections updating simultaneously:
+
+**Navigation & UI strings** — 12 key strings with their i18n key shown alongside so your developer knows exactly which key maps to which translation
+
+**Morning briefing** — greeting, date format, sub-heading, timing pills — all in the correct script with the correct font
+
+**ARYA conversation** — the stress question answered in each language with the warm friend tone. Notice how each response feels natural in that language — not translated English
+
+**Goals panel** — title, streak label, all four goals
+
+**KAAL insight** — the timing wisdom in each language
+
+**Developer reference box** at the bottom — shows the exact Google Font import string, the CSS class to apply, and the i18n locale key for that language
+
+---
+
+## The Nine Fonts — All Different Scripts
+
+```
+English    → Manrope (Latin)
+Hindi      → Noto Sans Devanagari
+Marathi    → Noto Sans Devanagari (same)
+Tamil      → Noto Sans Tamil
+Telugu     → Noto Sans Telugu
+Kannada    → Noto Sans Kannada
+Malayalam  → Noto Sans Malayalam
+Bengali    → Noto Sans Bengali
+Gujarati   → Noto Sans Gujarati
+Punjabi    → Noto Sans Gurmukhi
+Odia       → Noto Sans Oriya
+```
+
+All load from Google Fonts. All free. All render correctly in the browser right now.
+
+---
+
+## What Your Developer Does With This
+
+This file **is the complete translation reference**. Hand it over with one instruction:
+
+*"Replace every hardcoded string in the React app with `t('key')` calls. The translation values for all 11 languages are in this file. The font to load per language is in the developer reference box at the bottom of each language view."*
+
+That's the entire brief.

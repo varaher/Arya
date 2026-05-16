@@ -75,6 +75,8 @@ const LANGUAGES: LanguageEntry[] = [
   { code: "od-IN", name: "Odia", native: "ଓଡ଼ିଆ", speakers: "38M", region: "india" },
   { code: "pa-IN", name: "Punjabi", native: "ਪੰਜਾਬੀ", speakers: "33M", region: "india" },
 
+  { code: "sa-IN", name: "Sanskrit", native: "संस्कृतम्", speakers: "25K scholars · cultural", region: "india" },
+
   // Middle East
   {
     code: "ar-SA",
@@ -165,6 +167,11 @@ const TONE_PREVIEWS: Record<string, TonePreview> = {
     userMessage: "ମୁଁ କାମ ନେଇ ବହୁତ ଚিntit ଅଛି, କଣ କରିବି ବୁଝୁ ନାହିଁ।",
     aryaResponse: "ଆଗ ଗୋଟେ ଗଭୀର ନିଃଶ୍ୱାସ ନିଅ। କାମର ଚାପ ବେଳେ ବେଳେ ବହୁତ ଭାରି ହୋଇ ଯାଏ — ଏଇଟା ସ୍ୱାଭାବିକ। ଏବେ ସବୁଠୁ ଅଧିକ ଯାହା ଚିntit ଦୁଚ୍ଚିতা ଦେଉଛ? ସେଠୁ ଆରମ୍ଭ କରିବା।",
     tags: ["Warm", "Natural", "Friend-like"],
+  },
+  "sa-IN": {
+    userMessage: "कार्येण अतीव खिन्नोऽस्मि, किं करणीयम् इति न जानामि।",
+    aryaResponse: "मित्र, प्रथमं गभीरं श्वासं गृहाण। कार्यभारः कदाचित् अतीव गुरुः भवति — एतत् स्वाभाविकम्। अधुना किं तव मनः पीडयति? तत्र एव आरभामहे।",
+    tags: ["Classical warmth", "Devanagari", "Scholar-friend"],
   },
   "ar-SA": {
     userMessage: "أنا تعبان جداً من الشغل ومش عارف أعمل إيه.",
@@ -298,10 +305,15 @@ export default function LanguageSettingsPage() {
               <ArrowLeft className="w-5 h-5" />
             </button>
           </Link>
-          <div>
+          <div className="flex-1">
             <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Language Settings</h1>
-            <p className="text-xs text-muted-foreground">25 languages · ARYA adapts tone and dialect for each</p>
+            <p className="text-xs text-muted-foreground">26 languages · ARYA adapts tone and dialect for each</p>
           </div>
+          <Link href="/language-demo">
+            <button className="flex items-center gap-1.5 text-xs font-medium text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 transition-colors border border-cyan-200 dark:border-cyan-800 rounded-full px-3 py-1.5">
+              <span>See live demo →</span>
+            </button>
+          </Link>
         </div>
       </div>
 

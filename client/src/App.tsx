@@ -37,6 +37,7 @@ import AdminARYA from "@/pages/AdminARYA";
 import PranaPage from "@/pages/PranaPage";
 import PricingPage from "@/pages/PricingPage";
 import LanguageSettingsPage from "@/pages/LanguageSettingsPage";
+import LocalizationDemoPage from "@/pages/LocalizationDemoPage";
 
 function OnboardingGuard({ children }: { children: React.ReactNode }) {
   const { user, isLoading, refreshUser } = useUserAuth();
@@ -220,6 +221,10 @@ function Router() {
 
         <Route path="/language">
           <AnimatedPage><LanguageSettingsPage /></AnimatedPage>
+        </Route>
+
+        <Route path="/language-demo">
+          <AnimatedPage><LocalizationDemoPage /></AnimatedPage>
         </Route>
 
         <Route path="/terms">
