@@ -45,14 +45,27 @@ const SCRIPT_PATTERNS: Array<{ lang: string; pattern: RegExp }> = [
  */
 export function sarvamLangToShort(sarvamCode: string): string {
   if (!sarvamCode) return "en";
-  // "hi-IN" → "hi", "ta-IN" → "ta", "ur-IN" → "ur"
-  const short = sarvamCode.split("-")[0].toLowerCase();
-  // Map Sarvam-specific codes that differ from ARYA codes
+  // Full lookup table for all 11 Sarvam-supported languages.
+  // Keys are Sarvam's exact BCP-47 codes; values are ARYA's short codes.
   const SARVAM_MAP: Record<string, string> = {
-    ur: "hi",   // Urdu → treat as Hindi (same Devanagari thinking layer)
-    or: "od",   // Sarvam uses "or" for Odia; ARYA uses "od"
+    "hi-IN": "hi",   // Hindi
+    "ta-IN": "ta",   // Tamil
+    "te-IN": "te",   // Telugu
+    "kn-IN": "kn",   // Kannada
+    "ml-IN": "ml",   // Malayalam
+    "bn-IN": "bn",   // Bengali
+    "gu-IN": "gu",   // Gujarati
+    "mr-IN": "mr",   // Marathi (shares Devanagari with hi — treated separately)
+    "pa-IN": "pa",   // Punjabi (Gurmukhi script)
+    "or-IN": "od",   // Odia — Sarvam uses "or-IN"; ARYA uses "od"
+    "en-IN": "en",   // English (Indian accent)
+    // Safety aliases — Sarvam sometimes returns short codes without region
+    "hi": "hi", "ta": "ta", "te": "te", "kn": "kn", "ml": "ml",
+    "bn": "bn", "gu": "gu", "mr": "mr", "pa": "pa", "or": "od", "en": "en",
+    // Urdu guard — Sarvam occasionally misdetects Hindi as Urdu
+    "ur-IN": "hi", "ur": "hi",
   };
-  return SARVAM_MAP[short] ?? short;
+  return SARVAM_MAP[sarvamCode] ?? sarvamCode.split("-")[0].toLowerCase();
 }
 
 /**
