@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, uuid, timestamp, integer, jsonb, decimal, boolean, serial } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, uuid, timestamp, date, integer, jsonb, decimal, boolean, serial } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -428,6 +428,7 @@ export const aryaUsers = pgTable("arya_users", {
   businessRole: varchar("business_role", { length: 50 }),
   businessChallenge: text("business_challenge"),
   businessFocusAreas: text("business_focus_areas").array(),
+  voicePreference: varchar("voice_preference", { length: 20 }).default("female"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -546,6 +547,7 @@ export const aryaResponseCache = pgTable("arya_response_cache", {
   responseText: text("response_text").notNull(),
   domain: varchar("domain", { length: 50 }).$type<Domain>(),
   keywords: text("keywords").array().default(sql`ARRAY[]::text[]`),
+  language: varchar("language", { length: 10 }).default("en").notNull(),
   sourceMessageId: integer("source_message_id"),
   sourceConversationId: integer("source_conversation_id"),
   confidenceScore: decimal("confidence_score", { precision: 3, scale: 2 }).default("0.50"),
@@ -913,6 +915,86 @@ export const aryaHealthReadings = pgTable("arya_health_readings", {
 export const insertAryaHealthReadingSchema = createInsertSchema(aryaHealthReadings).omit({ id: true, createdAt: true, loggedAt: true });
 export type InsertAryaHealthReading = z.infer<typeof insertAryaHealthReadingSchema>;
 export type AryaHealthReading = typeof aryaHealthReadings.$inferSelect;
+
+// =============================================
+// SELF-LEARNING — QUALITY SIGNALS
+// =============================================
+
+export const aryaResponseQualitySignals = pgTable("arya_response_quality_signals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  cacheEntryId: varchar("cache_entry_id", { length: 255 }),
+  userId: varchar("user_id", { length: 255 }).notNull(),
+  tenantId: varchar("tenant_id", { length: 100 }).notNull(),
+  explicitRating: integer("explicit_rating"),        // +1 thumbs up, -1 thumbs down, null = implicit
+  correctionText: text("correction_text"),
+  continuedConversation: boolean("continued_conversation").default(false),
+  sessionContinued: boolean("session_continued").default(false),
+  immediateFollowup: boolean("immediate_followup").default(false),
+  computedScore: integer("computed_score"),          // 0–100
+  language: varchar("language", { length: 10 }).default("en"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export const insertAryaResponseQualitySignalSchema = createInsertSchema(aryaResponseQualitySignals).omit({ id: true, createdAt: true });
+export type InsertAryaResponseQualitySignal = z.infer<typeof insertAryaResponseQualitySignalSchema>;
+export type AryaResponseQualitySignal = typeof aryaResponseQualitySignals.$inferSelect;
+
+// =============================================
+// LANGUAGE PROFILES
+// =============================================
+
+export const aryaUserLanguageProfiles = pgTable("arya_user_language_profiles", {
+  userId: varchar("user_id", { length: 255 }).primaryKey(),
+  uiLanguage: varchar("ui_language", { length: 10 }).default("en"),
+  detectedLanguages: jsonb("detected_languages").default({}),  // { "ta": 12, "hi": 3 } — count per lang
+  preferredResponseLanguage: varchar("preferred_response_language", { length: 10 }).default("en"),
+  lastDetected: varchar("last_detected", { length: 10 }),
+  lastSwitchedAt: timestamp("last_switched_at"),
+  autoSwitchEnabled: boolean("auto_switch_enabled").default(true),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+export type AryaUserLanguageProfile = typeof aryaUserLanguageProfiles.$inferSelect;
+
+// =============================================
+// CORRECTION PAIRS (training data)
+// =============================================
+
+export const aryaCorrectionPairs = pgTable("arya_correction_pairs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id", { length: 100 }).notNull(),
+  userId: varchar("user_id", { length: 255 }),
+  originalQuery: text("original_query").notNull(),
+  badResponse: text("bad_response").notNull(),
+  userCorrection: text("user_correction").notNull(),
+  improvedDraft: text("improved_draft"),
+  language: varchar("language", { length: 10 }).default("en"),
+  adminReviewed: boolean("admin_reviewed").default(false),
+  adminApproved: boolean("admin_approved").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export const insertAryaCorrectionPairSchema = createInsertSchema(aryaCorrectionPairs).omit({ id: true, createdAt: true });
+export type InsertAryaCorrectionPair = z.infer<typeof insertAryaCorrectionPairSchema>;
+export type AryaCorrectionPair = typeof aryaCorrectionPairs.$inferSelect;
+
+// =============================================
+// REFLECTION SHARES
+// =============================================
+// NOTE: This table was created via raw SQL. The Drizzle definition matches
+// the existing DB structure so schema inference works correctly.
+
+export const aryaReflectionShares = pgTable("arya_reflection_shares", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull(),
+  shareToken: varchar("share_token", { length: 64 }).notNull().unique(),
+  weekStart: date("week_start").notNull(),
+  content: jsonb("content").notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  viewedAt: timestamp("viewed_at"),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export const insertAryaReflectionShareSchema = createInsertSchema(aryaReflectionShares).omit({ id: true, createdAt: true });
+export type InsertAryaReflectionShare = z.infer<typeof insertAryaReflectionShareSchema>;
+export type AryaReflectionShare = typeof aryaReflectionShares.$inferSelect;
 
 // Re-export chat models
 export * from "./models/chat";

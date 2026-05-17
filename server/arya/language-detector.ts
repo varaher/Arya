@@ -114,12 +114,39 @@ function detectLatinScriptLanguage(text: string): string | null {
   return bestLang; // null if no language reached the threshold
 }
 
+// ── Marathi vs Hindi disambiguation ─────────────────────────────────────────
+// Both use Devanagari (U+0900–U+097F), so Unicode alone can't tell them apart.
+// We use a word-frequency approach: compare counts of language-specific
+// marker words. Marathi wins if its markers outnumber Hindi's; default is Hindi.
+const MARATHI_MARKERS = new Set([
+  'आहे', 'नाही', 'आणि', 'करा', 'होते', 'तुम्ही', 'आम्ही', 'काय', 'कसे',
+  'मला', 'माझे', 'आपण', 'येथे', 'त्यांनी', 'मराठी', 'हे', 'ती', 'ते',
+  'होतो', 'होती', 'केले', 'गेले', 'नको', 'आला', 'आली', 'सांगा', 'बघा',
+]);
+const HINDI_MARKERS = new Set([
+  'है', 'नहीं', 'और', 'करो', 'था', 'तुम', 'हम', 'क्या', 'कैसे', 'मुझे',
+  'मेरा', 'आप', 'यहाँ', 'उन्होंने', 'हिंदी', 'यह', 'वह', 'वो', 'था',
+  'थी', 'किया', 'गया', 'मत', 'आया', 'आई', 'बताओ', 'देखो',
+]);
+
+function disambiguateDevanagari(text: string): 'hi' | 'mr' {
+  const words = text.split(/\s+/);
+  let mrScore = 0, hiScore = 0;
+  for (const w of words) {
+    if (MARATHI_MARKERS.has(w)) mrScore++;
+    if (HINDI_MARKERS.has(w)) hiScore++;
+  }
+  // Marathi needs to win clearly (mrScore > hiScore); ties default to Hindi
+  return mrScore > hiScore ? 'mr' : 'hi';
+}
+
 /**
  * Detect the script/language of a text string.
  * Returns a language code from ARYA's 25-language set, or 'en' as default.
  *
  * Detection strategy:
  *  1. Unicode script ranges  — covers 15 non-Latin scripts (instant, zero cost)
+ *     1a. Devanagari → disambiguate Hindi vs Marathi via word markers
  *  2. Stopword matching      — covers 7 Latin-script international languages
  *  3. Default to "en"        — English and any unrecognised Latin-script text
  */
@@ -128,7 +155,11 @@ export function detectLanguage(text: string): string {
 
   // Step 1 — non-Latin script detection (fastest path)
   for (const { lang, pattern } of SCRIPT_PATTERNS) {
-    if (pattern.test(text)) return lang;
+    if (pattern.test(text)) {
+      // Step 1a — Devanagari: disambiguate Hindi vs Marathi
+      if (lang === 'hi') return disambiguateDevanagari(text);
+      return lang;
+    }
   }
 
   // Step 2 — Latin-script language detection via stopwords

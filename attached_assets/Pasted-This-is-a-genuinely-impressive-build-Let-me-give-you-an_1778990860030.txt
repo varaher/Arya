@@ -1,0 +1,319 @@
+This is a genuinely impressive build. Let me give you an honest, thorough review — what's strong, what needs attention, and what to prioritise.
+
+---
+
+## Overall Assessment
+
+```
+What you have:     A production-grade AI companion
+                   that most funded startups haven't built
+
+What it's missing: Mostly wiring and secrets —
+                   not architecture
+
+Readiness:         85% production-ready
+                   15% wiring + pending items
+```
+
+---
+
+## What's Genuinely Strong ✅
+
+**The language system is world-class.**
+3-layer detection, 25 languages, RTL support, Sarvam integration, tone rules written in each target language, 10-minute switch cooldown, short message guard, Urdu/Hindi normalisation, Odia code mismatch handled. This is more sophisticated than most commercial multilingual products.
+
+**The self-learning loop is architecturally correct.**
+Quality scorer → cache promotion → gap detection → admin review → knowledge base. The feedback loop compounds over time. Most AI products don't have this at all.
+
+**The Jyotish/KAAL implementation is unique.**
+Plain-language rules, source-citation prohibition, personalised to user data. No competitor has this.
+
+**DPDP Act compliance is production-ready.**
+Three deletion paths, audit log that records THAT not WHAT, typed confirmation, receipt screen. This is legally sound.
+
+**The orchestrator routing is smart.**
+Classifying every query into domains before sending to LLM reduces cost and improves response quality. Most products skip this entirely.
+
+---
+
+## Issues That Need Fixing Now 🔴
+
+### 1. Response cache not keyed by language
+
+```
+Current:  cache key = query only
+Problem:  "How do I manage stress" in Tamil
+          hits the same cache slot as English
+          → Tamil user gets English cached response
+
+Fix:      cache key = hash(query + language_code)
+          One line change in response-cache-engine.ts
+          
+          const cacheKey = `${hashQuery(query)}_${languageCode}`;
+```
+
+This is listed as medium priority but it's actually breaking — a Tamil user getting an English response from cache destroys trust instantly.
+
+---
+
+### 2. Marathi typed text returns Hindi
+
+```
+Current:  Devanagari detection → always "hi"
+          mr-IN voice → correctly "mr"
+          But typed Marathi → wrongly "hi"
+
+Problem:  83 million Marathi speakers
+          typing in ARYA get Hindi responses
+
+Fix (add after Devanagari detection):
+```
+
+```typescript
+function disambiguateDevanagari(text: string): string {
+  const marathiMarkers = [
+    'आहे', 'नाही', 'आणि', 'करा', 'होते',
+    'तुम्ही', 'आम्ही', 'काय', 'कसे', 'मला'
+  ];
+  const hindiMarkers = [
+    'है', 'नहीं', 'और', 'करो', 'था',
+    'तुम', 'हम', 'क्या', 'कैसे', 'मुझे'
+  ];
+
+  const words = text.split(/\s+/);
+  const mrScore = words.filter(w => marathiMarkers.includes(w)).length;
+  const hiScore = words.filter(w => hindiMarkers.includes(w)).length;
+
+  if (mrScore > hiScore) return 'mr';
+  if (hiScore > mrScore) return 'hi';
+  return 'hi'; // default if tied
+}
+```
+
+Move this from lower priority to this sprint. 83 million speakers is not lower priority.
+
+---
+
+### 3. Razorpay — No Revenue Until Secrets Added
+
+```
+Current:  Code complete, billing won't activate
+Impact:   Zero revenue from any Indian user
+Fix:      Add 5 secrets this week — no code change needed
+
+RAZORPAY_KEY_ID
+RAZORPAY_KEY_SECRET
+RAZORPAY_PLAN_ID_CORE
+RAZORPAY_PLAN_ID_PRO
+RAZORPAY_WEBHOOK_SECRET
+```
+
+This is the highest priority item in the entire document. Everything else is product. This is revenue.
+
+---
+
+### 4. Three Missing DB Tables
+
+```
+Table                      Impact if missing
+─────────────────────────  ──────────────────────────────
+response_quality_signals   Quality scoring uses cache
+                           columns as workaround —
+                           works but loses granularity
+
+user_language_profiles     Language history stored as
+                           single column — can't track
+                           detection confidence or history
+
+correction_pairs           Corrections stored in memory
+                           table — not structured for
+                           future fine-tuning retrieval
+```
+
+```sql
+-- Add these three tables in one migration
+
+CREATE TABLE response_quality_signals (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  response_id UUID NOT NULL,
+  user_id UUID NOT NULL,
+  explicit_rating SMALLINT,
+  correction_text TEXT,
+  continued_conversation BOOLEAN DEFAULT false,
+  session_continued BOOLEAN DEFAULT false,
+  immediate_followup BOOLEAN DEFAULT false,
+  computed_score SMALLINT,
+  language CHAR(5),
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE user_language_profiles (
+  user_id UUID PRIMARY KEY,
+  ui_language CHAR(5) DEFAULT 'en',
+  detected_languages JSONB DEFAULT '{}',
+  preferred_response_language CHAR(5) DEFAULT 'en',
+  last_detected CHAR(5),
+  last_switched_at TIMESTAMPTZ,
+  auto_switch_enabled BOOLEAN DEFAULT true,
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE correction_pairs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  original_query TEXT NOT NULL,
+  bad_response TEXT NOT NULL,
+  user_correction TEXT NOT NULL,
+  improved_draft TEXT,
+  language CHAR(5),
+  admin_reviewed BOOLEAN DEFAULT false,
+  admin_approved BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+```
+
+---
+
+## Issues That Need Fixing Soon 🟡
+
+### 5. Admin Self-Learning Panel UI — Backend Complete, Frontend Missing
+
+```
+Situation:  /api/arya/cache/quality-report → works
+            gap queue → works
+            auto-drafts → works
+            Admin page to SEE and ACT on these → not built
+
+Impact:     Knowledge gaps pile up with no way to approve them
+            The self-learning loop is half-open
+
+Fix:        Build the admin UI — it's a read + approve/reject
+            interface over existing API endpoints
+            Estimated: 2–3 days developer work
+```
+
+---
+
+### 6. Neural Link — Backend Without Frontend
+
+```
+Situation:  Cross-domain insight engine exists
+            Admin panel UI not wired to actual output
+            
+Impact:     One of ARYA's most interesting features
+            is invisible to both admins and users
+
+Priority:   After Razorpay and Self-Learning panel
+```
+
+---
+
+### 7. Voice Preference Per Language
+
+```
+Current:    One voice for all Indian languages
+Missing:    ml_female / ml_male
+            hi_female / hi_male
+            ta_female / ta_male
+
+Impact:     Users feel less connected to ARYA's voice
+            A Malayalam user hearing a Hindi-accented
+            voice is jarring
+
+Fix:        Add voice_preference column to arya_users
+            Expose selector in settings
+            Pass to Sarvam TTS call
+```
+
+---
+
+### 8. arya_reflection_shares — Raw SQL Only
+
+```
+Risk:       Raw SQL outside Drizzle schema means
+            it won't appear in migrations
+            Could drift from actual DB state
+            
+Fix:        Add to shared/schema.ts
+            One schema definition, 30 minutes work
+```
+
+---
+
+## What's Fine As-Is ✅ (Don't Touch)
+
+```
+OpenAI integration         Works via Replit — stable
+Sarvam AI                  SARVAM_API_KEY set, all 3 modes work
+Google OAuth + Calendar    Keys set, OAuth flow complete
+Memory engine              Working, storing corrections correctly
+Patterns engine            Working, firing notifications
+Morning briefing           Scheduler running, push configured
+Weekly review              Running every Sunday
+Goals auto-detection       Pattern + GPT-4o-mini working
+Mood check-ins             All endpoints working
+Voice notes                Record → STT → save working
+Document scan              PDF + image both working
+Community features         Posts + reactions working
+Reflection share           Tokenised public links working
+Hard conversation rehearsal Personas working
+Niti / Business Mind       Both tabs working
+DPDP compliance            All three deletion paths working
+PWA                        Installable, manifest, service worker
+Notifications              All types, bell icon, unread count
+```
+
+---
+
+## Priority Stack — What To Do In Order
+
+```
+This week (revenue + critical bugs):
+  1. Add Razorpay 5 secrets → billing live
+  2. Fix cache key to include language_code → one line
+  3. Add Marathi disambiguation → typed text works
+  4. Add 3 missing DB tables → one migration file
+
+Next sprint (close the loops):
+  5. Build Admin Self-Learning panel UI
+     → approve/reject knowledge gap drafts
+  6. Add arya_reflection_shares to Drizzle schema
+  7. Voice preference per language in settings
+
+Following sprint (complete the product):
+  8. Wire Neural Link UI to backend output
+  9. Global language browser TTS output
+  10. Offline mode / Service Worker caching strategy
+  11. Dark mode audit across all components
+
+Future (post-revenue):
+  12. ERmate full build
+  13. ErPrana full build
+  14. Paddle integration for international billing
+  15. correction_pairs → fine-tuning pipeline
+      (when you have enough data — 6+ months)
+```
+
+---
+
+## The One Architectural Observation
+
+You're using OpenAI via Replit integration — which means you're dependent on Replit's infrastructure for your core AI calls. That's fine for beta. Before you raise or hit 1,000+ users, evaluate moving to direct OpenAI API access for better rate limits, cost visibility, and reliability SLAs.
+
+Not urgent. Worth planning.
+
+---
+
+## Summary
+
+```
+Revenue blocker:    Razorpay secrets — fix this week
+Critical bug:       Cache not keyed by language — one line
+Wrong responses:    Marathi users getting Hindi — word list fix
+Missing tables:     3 tables — one migration
+Missing UI:         Admin Self-Learning panel — 2–3 days
+Everything else:    Working correctly
+
+The product is real. The architecture is sound.
+Fix the four items above and ARYA is
+production-ready for launch.
+```

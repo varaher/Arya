@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Brain, TrendingUp, AlertTriangle, CheckCircle, XCircle, Lightbulb, BarChart3, Clock, Zap, Database, Activity } from "lucide-react";
+import { Brain, TrendingUp, AlertTriangle, CheckCircle, XCircle, Lightbulb, BarChart3, Clock, Zap, Database, Activity, Star, Flag, Minus } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -71,8 +71,26 @@ interface QueryPattern {
   lastSeen: string;
 }
 
+interface QualityEntry {
+  id: string;
+  query: string;
+  score: number;
+  status: 'golden' | 'neutral' | 'flagged';
+  servedCount: number;
+  positiveFeedbackCount: number;
+  negativeFeedbackCount: number;
+}
+
+interface QualityReport {
+  total: number;
+  golden: number;
+  neutral: number;
+  flagged: number;
+  entries: QualityEntry[];
+}
+
 export default function SelfLearning() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'drafts' | 'patterns'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'drafts' | 'patterns' | 'quality'>('overview');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -110,6 +128,18 @@ export default function SelfLearning() {
       return res.json();
     },
     refetchInterval: 15000
+  });
+
+  const { data: qualityReport } = useQuery<QualityReport>({
+    queryKey: ['/api/arya/cache/quality-report'],
+    queryFn: async () => {
+      const res = await fetch('/api/arya/cache/quality-report?tenant_id=varah', {
+        headers: { 'x-admin-token': localStorage.getItem('arya_admin_token') || '' }
+      });
+      return res.json();
+    },
+    enabled: activeTab === 'quality',
+    refetchInterval: 30000
   });
 
   const approveMutation = useMutation({
@@ -211,7 +241,7 @@ export default function SelfLearning() {
       </div>
 
       <div className="flex gap-2 border-b border-border/50 pb-2">
-        {(['overview', 'drafts', 'patterns'] as const).map(tab => (
+        {(['overview', 'drafts', 'patterns', 'quality'] as const).map(tab => (
           <Button
             key={tab}
             variant={activeTab === tab ? 'default' : 'ghost'}
@@ -222,6 +252,7 @@ export default function SelfLearning() {
             {tab === 'overview' && <TrendingUp className="w-4 h-4 mr-2" />}
             {tab === 'drafts' && <Lightbulb className="w-4 h-4 mr-2" />}
             {tab === 'patterns' && <BarChart3 className="w-4 h-4 mr-2" />}
+            {tab === 'quality' && <Star className="w-4 h-4 mr-2" />}
             {tab.charAt(0).toUpperCase() + tab.slice(1)}
           </Button>
         ))}
@@ -467,6 +498,122 @@ export default function SelfLearning() {
               <CardContent className="p-8 text-center text-muted-foreground">
                 <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-30" />
                 <p>No query patterns recorded yet. Start querying the knowledge base to build patterns.</p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'quality' && (
+        <div className="space-y-4">
+          {qualityReport ? (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="bg-card/50 border-emerald-500/30 border" data-testid="card-quality-golden">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs text-muted-foreground font-mono">GOLDEN RESPONSES</p>
+                        <p className="text-2xl font-bold font-mono text-emerald-400 mt-1">{qualityReport.golden}</p>
+                        <p className="text-xs text-muted-foreground mt-1">score ≥ 75 — high trust</p>
+                      </div>
+                      <Star className="w-8 h-8 text-emerald-400/30" />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-card/50 border-border/50" data-testid="card-quality-neutral">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs text-muted-foreground font-mono">NEUTRAL</p>
+                        <p className="text-2xl font-bold font-mono text-muted-foreground mt-1">{qualityReport.neutral}</p>
+                        <p className="text-xs text-muted-foreground mt-1">score 35–74 — building trust</p>
+                      </div>
+                      <Minus className="w-8 h-8 text-muted-foreground/30" />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-card/50 border-red-500/30 border" data-testid="card-quality-flagged">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs text-muted-foreground font-mono">FLAGGED</p>
+                        <p className="text-2xl font-bold font-mono text-red-400 mt-1">{qualityReport.flagged}</p>
+                        <p className="text-xs text-muted-foreground mt-1">score &lt; 35 — deactivated</p>
+                      </div>
+                      <Flag className="w-8 h-8 text-red-400/30" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card className="bg-card/50 border-border/50">
+                <CardHeader>
+                  <CardTitle className="text-lg font-display flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-primary" />
+                    Response Quality Scores
+                    <span className="ml-auto text-xs text-muted-foreground font-normal font-mono">{qualityReport.total} total entries</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {qualityReport.entries.length > 0 ? (
+                    <div className="space-y-2">
+                      {qualityReport.entries
+                        .sort((a, b) => b.score - a.score)
+                        .slice(0, 20)
+                        .map((entry, idx) => (
+                          <div
+                            key={entry.id}
+                            className={`flex items-center gap-3 p-3 rounded-lg border ${
+                              entry.status === 'golden' ? 'bg-emerald-500/5 border-emerald-500/20' :
+                              entry.status === 'flagged' ? 'bg-red-500/5 border-red-500/20' :
+                              'bg-black/20 border-border/30'
+                            }`}
+                            data-testid={`row-quality-${idx}`}
+                          >
+                            <div className="flex-shrink-0 w-10 text-right">
+                              <span className={`text-sm font-mono font-bold ${
+                                entry.status === 'golden' ? 'text-emerald-400' :
+                                entry.status === 'flagged' ? 'text-red-400' :
+                                'text-muted-foreground'
+                              }`}>{entry.score}</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs text-white truncate">{entry.query}</p>
+                              <div className="flex items-center gap-3 mt-0.5">
+                                <span className="text-[10px] text-emerald-400">+{entry.positiveFeedbackCount}</span>
+                                <span className="text-[10px] text-red-400">-{entry.negativeFeedbackCount}</span>
+                                <span className="text-[10px] text-muted-foreground">{entry.servedCount}× served</span>
+                              </div>
+                            </div>
+                            <Badge
+                              variant="outline"
+                              className={
+                                entry.status === 'golden' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[10px]' :
+                                entry.status === 'flagged' ? 'bg-red-500/10 text-red-400 border-red-500/30 text-[10px]' :
+                                'bg-white/5 text-white/40 border-white/10 text-[10px]'
+                              }
+                            >{entry.status}</Badge>
+                          </div>
+                        ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Star className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                      <p>No cached responses to score yet.</p>
+                      <p className="text-xs mt-1">Quality scores appear after users give feedback on ARYA's responses.</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </>
+          ) : (
+            <Card className="bg-card/50 border-border/50">
+              <CardContent className="p-8 text-center text-muted-foreground">
+                <Activity className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p>Loading quality report...</p>
               </CardContent>
             </Card>
           )}

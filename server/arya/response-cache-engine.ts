@@ -43,17 +43,20 @@ export class ResponseCacheEngine {
     responseText: string,
     domain: Domain | undefined,
     messageId: number,
-    conversationId: number
+    conversationId: number,
+    language: string = 'en'
   ): Promise<AryaResponseCache> {
     const normalized = this.normalizeQuery(userQuery);
     const keywords = this.extractKeywords(userQuery);
+    const lang = language || 'en';
 
     const existing = await db
       .select()
       .from(aryaResponseCache)
       .where(and(
         eq(aryaResponseCache.tenantId, tenantId),
-        eq(aryaResponseCache.normalizedQuery, normalized)
+        eq(aryaResponseCache.normalizedQuery, normalized),
+        eq(aryaResponseCache.language, lang)
       ))
       .limit(1);
 
@@ -68,7 +71,7 @@ export class ResponseCacheEngine {
         })
         .where(eq(aryaResponseCache.id, entry.id))
         .returning();
-      console.log(`[ResponseCache] Updated golden response for: "${normalized}" (confidence: ${updated.confidenceScore})`);
+      console.log(`[ResponseCache] Updated golden response for: "${normalized}" [${lang}] (confidence: ${updated.confidenceScore})`);
       return updated;
     }
 
@@ -79,6 +82,7 @@ export class ResponseCacheEngine {
       responseText,
       domain: domain || undefined,
       keywords,
+      language: lang,
       sourceMessageId: messageId,
       sourceConversationId: conversationId,
       confidenceScore: "0.50",
@@ -87,22 +91,25 @@ export class ResponseCacheEngine {
       isActive: true,
     }).returning();
 
-    console.log(`[ResponseCache] Cached new golden response for: "${normalized}"`);
+    console.log(`[ResponseCache] Cached new golden response for: "${normalized}" [${lang}]`);
     return cached;
   }
 
   async markNegativeFeedback(
     tenantId: string,
-    userQuery: string
+    userQuery: string,
+    language: string = 'en'
   ): Promise<void> {
     const normalized = this.normalizeQuery(userQuery);
+    const lang = language || 'en';
 
     const existing = await db
       .select()
       .from(aryaResponseCache)
       .where(and(
         eq(aryaResponseCache.tenantId, tenantId),
-        eq(aryaResponseCache.normalizedQuery, normalized)
+        eq(aryaResponseCache.normalizedQuery, normalized),
+        eq(aryaResponseCache.language, lang)
       ))
       .limit(1);
 
@@ -122,7 +129,7 @@ export class ResponseCacheEngine {
         })
         .where(eq(aryaResponseCache.id, entry.id));
 
-      console.log(`[ResponseCache] Negative feedback for: "${normalized}" (confidence: ${newConfidence.toFixed(2)}, active: ${!shouldDeactivate})`);
+      console.log(`[ResponseCache] Negative feedback for: "${normalized}" [${lang}] (confidence: ${newConfidence.toFixed(2)}, active: ${!shouldDeactivate})`);
     }
   }
 
@@ -176,9 +183,11 @@ export class ResponseCacheEngine {
 
   async shadowLookup(
     tenantId: string,
-    userQuery: string
+    userQuery: string,
+    language: string = 'en'
   ): Promise<{ hit: boolean; match: CacheMatch | null; lookupTimeMs: number }> {
     const startTime = Date.now();
+    const lang = language || 'en';
 
     try {
       const candidates = await db
@@ -186,7 +195,8 @@ export class ResponseCacheEngine {
         .from(aryaResponseCache)
         .where(and(
           eq(aryaResponseCache.tenantId, tenantId),
-          eq(aryaResponseCache.isActive, true)
+          eq(aryaResponseCache.isActive, true),
+          eq(aryaResponseCache.language, lang)
         ))
         .orderBy(desc(aryaResponseCache.positiveFeedbackCount))
         .limit(100);

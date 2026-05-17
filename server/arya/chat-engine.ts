@@ -437,6 +437,13 @@ export async function generateAryaResponse(
 ): Promise<{ stream: AsyncIterable<string>; meta: AryaResponseMeta }> {
   const startTime = Date.now();
 
+  // Detect language early — needed for language-partitioned cache lookups.
+  // For voice queries, sarvamDetectedLang is already known (Sarvam STT output).
+  // For typed queries, run detectLanguage() — it's < 1ms with no I/O.
+  const earlyLang: string = sarvamDetectedLang
+    ? sarvamLangToShort(sarvamDetectedLang)
+    : detectLanguage(userMessage);
+
   const smartResult = processSmartCommand(userMessage);
 
   if (smartResult.handled && smartResult.response) {
@@ -466,7 +473,7 @@ export async function generateAryaResponse(
   // Bypass cache for time-sensitive, personal, or voice queries
   const shouldBypassCache = isMarketQuery || isNewsQuery || isTechQuery || isPersonalQuery || voiceMode;
 
-  const cacheResult = await responseCacheEngine.shadowLookup(tenantId, userMessage);
+  const cacheResult = await responseCacheEngine.shadowLookup(tenantId, userMessage, earlyLang);
 
   // ─── ACTIVE CACHE SERVING ────────────────────────────────────────────────────
   // Threshold 0.45: exact matches (score 1.0 × confidence 0.50) = 0.50 → served
@@ -668,7 +675,8 @@ export async function generateAryaResponse(
         responseCacheEngine.cacheGoldenResponse(
           tenantId, userMessage, fullResponse,
           routing.primaryDomain as Domain,
-          0, conversationId || 0
+          0, conversationId || 0,
+          earlyLang
         ).catch(err => console.error("[AUTO-CACHE ERROR]", err.message || "Unknown error"));
       }
       // ─────────────────────────────────────────────────────────────────────────
