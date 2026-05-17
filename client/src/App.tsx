@@ -8,6 +8,7 @@ import { AdminLayout, PublicLayout } from "@/components/layout/Layout";
 import { AdminAuthProvider, useAdminAuth } from "@/lib/admin-auth";
 import { UserAuthProvider, useUserAuth } from "@/lib/user-auth";
 import { ThemeProvider } from "@/lib/theme";
+import { LanguageProvider, LanguageDetectionBanner } from "@/lib/language-context";
 import PWAPrompt from "@/components/PWAPrompt";
 import NotFound from "@/pages/not-found";
 
@@ -249,19 +250,22 @@ function Router() {
 function App() {
   return (
     <ThemeProvider>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <AdminAuthProvider>
-            <UserAuthProvider>
-              <Toaster />
-              <PWAPrompt />
-              <OnboardingGuard>
-                <Router />
-              </OnboardingGuard>
-            </UserAuthProvider>
-          </AdminAuthProvider>
-        </TooltipProvider>
-      </QueryClientProvider>
+      <LanguageProvider>
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <AdminAuthProvider>
+              <UserAuthProvider>
+                <Toaster />
+                <PWAPrompt />
+                <LanguageDetectionBanner />
+                <OnboardingGuard>
+                  <Router />
+                </OnboardingGuard>
+              </UserAuthProvider>
+            </AdminAuthProvider>
+          </TooltipProvider>
+        </QueryClientProvider>
+      </LanguageProvider>
     </ThemeProvider>
   );
 }

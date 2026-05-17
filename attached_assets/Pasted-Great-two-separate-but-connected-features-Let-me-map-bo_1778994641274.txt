@@ -1,0 +1,691 @@
+Great — two separate but connected features. Let me map both out completely.
+
+---
+
+## Feature 1 — Language Preference Changes Everything Instantly
+
+### What Needs To Happen
+
+When user selects a language — every visible string updates immediately. No page reload. No partial updates. Everything at once.
+
+```
+User selects தமிழ் in settings
+        ↓
+i18n.changeLanguage('ta') fires
+        ↓
+React re-renders entire app
+        ↓
+Sidebar nav → Tamil
+Chat placeholder → Tamil
+Goals page → Tamil
+Mood card → Tamil
+Morning briefing → Tamil
+Onboarding → Tamil
+Pricing page → Tamil
+Settings page → Tamil
+ARYA system prompt → Tamil tone instruction
+document.dir → 'ltr' (Tamil is LTR)
+Noto Sans Tamil font → loaded
+        ↓
+Saved to localStorage + DB simultaneously
+        ↓
+Next session → Tamil loads immediately on open
+```
+
+---
+
+## The Implementation
+
+### Step 1 — Language Change Function (Central)
+
+One function that does everything. Called from anywhere in the app.
+
+```typescript
+// client/src/lib/language-manager.ts
+
+import i18n from './i18n';
+
+const RTL_LANGUAGES = ['ar', 'he'];
+
+const LANGUAGE_FONTS: Record<string, string> = {
+  hi: 'Noto Sans Devanagari',
+  mr: 'Noto Sans Devanagari',
+  sa: 'Noto Sans Devanagari',
+  ta: 'Noto Sans Tamil',
+  te: 'Noto Sans Telugu',
+  kn: 'Noto Sans Kannada',
+  ml: 'Noto Sans Malayalam',
+  bn: 'Noto Sans Bengali',
+  gu: 'Noto Sans Gujarati',
+  pa: 'Noto Sans Gurmukhi',
+  or: 'Noto Sans Oriya',
+  ar: 'Noto Sans Arabic',
+  he: 'Noto Sans Hebrew',
+  ja: 'Noto Sans JP',
+  zh: 'Noto Sans SC',
+  ko: 'Noto Sans KR',
+  // Latin scripts — no extra font needed
+  // en, fr, es, de, pt, id, sw, tr → Manrope already loaded
+};
+
+const FONT_URLS: Record<string, string> = {
+  'Noto Sans Devanagari':
+    'https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@300;400;600&display=swap',
+  'Noto Sans Tamil':
+    'https://fonts.googleapis.com/css2?family=Noto+Sans+Tamil:wght@300;400;600&display=swap',
+  'Noto Sans Telugu':
+    'https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@300;400;600&display=swap',
+  'Noto Sans Kannada':
+    'https://fonts.googleapis.com/css2?family=Noto+Sans+Kannada:wght@300;400;600&display=swap',
+  'Noto Sans Malayalam':
+    'https://fonts.googleapis.com/css2?family=Noto+Sans+Malayalam:wght@300;400;600&display=swap',
+  'Noto Sans Bengali':
+    'https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@300;400;600&display=swap',
+  'Noto Sans Gujarati':
+    'https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@300;400;600&display=swap',
+  'Noto Sans Gurmukhi':
+    'https://fonts.googleapis.com/css2?family=Noto+Sans+Gurmukhi:wght@300;400;600&display=swap',
+  'Noto Sans Oriya':
+    'https://fonts.googleapis.com/css2?family=Noto+Sans+Oriya:wght@300;400;600&display=swap',
+  'Noto Sans Arabic':
+    'https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;600&display=swap',
+  'Noto Sans Hebrew':
+    'https://fonts.googleapis.com/css2?family=Noto+Sans+Hebrew:wght@300;400;600&display=swap',
+  'Noto Sans JP':
+    'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;600&display=swap',
+  'Noto Sans SC':
+    'https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;600&display=swap',
+  'Noto Sans KR':
+    'https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;600&display=swap',
+};
+
+export async function applyLanguage(langCode: string): Promise<void> {
+
+  // 1. Update i18n — triggers React re-render of all t() strings
+  await i18n.changeLanguage(langCode);
+
+  // 2. Set document direction (RTL for Arabic + Hebrew)
+  const isRTL = RTL_LANGUAGES.includes(langCode);
+  document.documentElement.dir = isRTL ? 'rtl' : 'ltr';
+  document.documentElement.lang = langCode;
+
+  // 3. Load script-specific font if needed
+  const fontFamily = LANGUAGE_FONTS[langCode];
+  if (fontFamily) {
+    await loadFont(fontFamily);
+    document.documentElement.style.setProperty(
+      '--font-primary', `'${fontFamily}', sans-serif`
+    );
+  } else {
+    // Latin script — reset to default
+    document.documentElement.style.setProperty(
+      '--font-primary', `'Manrope', sans-serif`
+    );
+  }
+
+  // 4. Save to localStorage immediately
+  localStorage.setItem('arya_ui_language', langCode);
+
+  // 5. Save to DB (non-blocking — don't await)
+  saveLanguageToServer(langCode).catch(console.error);
+}
+
+async function loadFont(fontFamily: string): Promise<void> {
+  // Skip if already loaded
+  const existing = document.querySelector(
+    `link[data-font="${fontFamily}"]`
+  );
+  if (existing) return;
+
+  const url = FONT_URLS[fontFamily];
+  if (!url) return;
+
+  return new Promise((resolve) => {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = url;
+    link.setAttribute('data-font', fontFamily);
+    link.onload = () => resolve();
+    document.head.appendChild(link);
+  });
+}
+
+async function saveLanguageToServer(langCode: string): Promise<void> {
+  await fetch('/api/user/preferences', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ui_language: langCode })
+  });
+}
+```
+
+---
+
+### Step 2 — App Startup Loads Language Instantly
+
+```typescript
+// client/src/main.tsx or App.tsx
+
+import { applyLanguage } from './lib/language-manager';
+
+async function initApp() {
+  // Priority order:
+  // 1. DB preference (if logged in)
+  // 2. localStorage (instant, no network)
+  // 3. IP detection (first-time visitors)
+  // 4. Browser language
+  // 5. English fallback
+
+  const user = await getCurrentUser();
+
+  if (user?.ui_language) {
+    // Logged-in user — use their saved preference
+    await applyLanguage(user.ui_language);
+  } else {
+    // Not logged in or no preference saved
+    const stored = localStorage.getItem('arya_ui_language');
+    if (stored) {
+      await applyLanguage(stored);
+    } else {
+      // First time — detect from IP (Feature 2 below)
+      const detected = await detectLanguageFromIP();
+      await applyLanguage(detected);
+    }
+  }
+}
+
+initApp();
+```
+
+---
+
+### Step 3 — CSS Uses Variable Font (Instant Switch)
+
+```css
+/* global.css */
+
+:root {
+  --font-primary: 'Manrope', sans-serif;
+}
+
+/* Everything uses the variable */
+body {
+  font-family: var(--font-primary);
+}
+
+.sidebar, .chat-bubble, .goal-card,
+.mood-card, .briefing, .nav-item {
+  font-family: var(--font-primary);
+}
+
+/* RTL layout fixes — logical properties */
+[dir="rtl"] .sidebar {
+  border-right: none;
+  border-left: 1px solid var(--border);
+}
+
+[dir="rtl"] .back-arrow {
+  transform: scaleX(-1);
+}
+
+[dir="rtl"] .chat-bubble-user {
+  margin-inline-start: auto;
+  margin-inline-end: 0;
+}
+
+[dir="rtl"] .notification-dot {
+  right: auto;
+  left: -4px;
+}
+```
+
+---
+
+### Step 4 — React Hook For Any Component
+
+```typescript
+// client/src/hooks/useLanguage.ts
+
+import { useTranslation } from 'react-i18next';
+import { applyLanguage } from '../lib/language-manager';
+
+export function useLanguage() {
+  const { i18n, t } = useTranslation();
+
+  const changeLanguage = async (langCode: string) => {
+    await applyLanguage(langCode);
+    // React re-renders automatically via i18next
+  };
+
+  return {
+    currentLanguage: i18n.language,
+    changeLanguage,
+    t,
+    isRTL: ['ar', 'he'].includes(i18n.language),
+  };
+}
+
+// Usage in any component:
+function LanguageSelector() {
+  const { changeLanguage, currentLanguage } = useLanguage();
+
+  return (
+    <div>
+      {LANGUAGES.map(lang => (
+        <button
+          key={lang.code}
+          onClick={() => changeLanguage(lang.code)}
+          className={currentLanguage === lang.code ? 'active' : ''}
+        >
+          {lang.native}
+        </button>
+      ))}
+    </div>
+  );
+}
+```
+
+---
+
+---
+
+## Feature 2 — IP Detection Sets Language Automatically
+
+### The Logic
+
+```
+New user opens ARYA
+        ↓
+No localStorage, no DB preference
+        ↓
+IP geolocation API called
+        ↓
+Returns: { country: 'IN', region: 'Tamil Nadu', city: 'Chennai' }
+        ↓
+countryToLanguage('IN', 'Tamil Nadu') → 'ta'
+        ↓
+App loads in Tamil automatically
+        ↓
+Soft banner shown:
+"We've set Tamil as your language. Change →"
+        ↓
+User can override anytime in settings
+```
+
+---
+
+### Step 5 — IP Detection (Server-Side)
+
+Always do this server-side. Client-side IP detection leaks API keys.
+
+```typescript
+// server/arya/ip-language-detector.ts
+
+import maxmind from 'maxmind'; // or use a free API
+
+// Option A — Free API (easiest, good enough for launch)
+// ipapi.co — 1,000 free requests/day
+// ip-api.com — 10,000 free requests/month (no HTTPS on free)
+// ipwho.is — unlimited free
+
+export async function detectLanguageFromIP(
+  ip: string
+): Promise<{ language: string; country: string; region: string }> {
+
+  try {
+    // Remove if localhost/development
+    if (ip === '127.0.0.1' || ip === '::1' || ip.startsWith('192.168')) {
+      return { language: 'en', country: 'IN', region: '' };
+    }
+
+    const response = await fetch(
+      `https://ipwho.is/${ip}`,
+      { signal: AbortSignal.timeout(2000) } // 2s timeout max
+    );
+
+    const data = await response.json();
+
+    if (!data.success) {
+      return { language: 'en', country: 'IN', region: '' };
+    }
+
+    const language = mapLocationToLanguage(
+      data.country_code,  // 'IN'
+      data.region,        // 'Tamil Nadu'
+      data.city           // 'Chennai'
+    );
+
+    return {
+      language,
+      country: data.country_code,
+      region: data.region
+    };
+
+  } catch {
+    // Never block app load on IP detection failure
+    return { language: 'en', country: '', region: '' };
+  }
+}
+```
+
+---
+
+### Step 6 — The Location-to-Language Map
+
+This is the most important part. India has 29 states — each maps to a primary language.
+
+```typescript
+// server/arya/location-language-map.ts
+
+// India — state → language
+const INDIA_STATE_LANGUAGE: Record<string, string> = {
+  // South India
+  'Tamil Nadu':          'ta',
+  'Puducherry':          'ta',
+  'Andhra Pradesh':      'te',
+  'Telangana':           'te',
+  'Karnataka':           'kn',
+  'Kerala':              'ml',
+  'Lakshadweep':         'ml',
+
+  // West India
+  'Maharashtra':         'mr',
+  'Goa':                 'mr', // or 'en' — Goa is complex
+  'Gujarat':             'gu',
+  'Dadra and Nagar Haveli': 'gu',
+  'Daman and Diu':       'gu',
+
+  // North India
+  'Delhi':               'hi',
+  'Uttar Pradesh':       'hi',
+  'Madhya Pradesh':      'hi',
+  'Rajasthan':           'hi',
+  'Bihar':               'hi',
+  'Jharkhand':           'hi',
+  'Uttarakhand':         'hi',
+  'Himachal Pradesh':    'hi',
+  'Haryana':             'hi',
+  'Chandigarh':          'hi',
+  'Chhattisgarh':        'hi',
+
+  // East India
+  'West Bengal':         'bn',
+  'Odisha':              'or',
+  'Assam':               'bn', // or Assamese — bn is close enough
+
+  // Northeast
+  'Meghalaya':           'en', // English dominant
+  'Nagaland':            'en',
+  'Mizoram':             'en',
+  'Arunachal Pradesh':   'en',
+  'Manipur':             'en',
+  'Tripura':             'bn',
+  'Sikkim':              'en',
+
+  // Punjab region
+  'Punjab':              'pa',
+  'Jammu and Kashmir':   'hi', // complex — default hi
+  'Ladakh':              'hi',
+};
+
+// International — country → language
+const COUNTRY_LANGUAGE: Record<string, string> = {
+  // South Asia
+  'IN': 'hi',   // India default (overridden by state above)
+  'BD': 'bn',   // Bangladesh
+  'LK': 'ta',   // Sri Lanka → Tamil (sizeable Tamil population)
+  'PK': 'hi',   // Pakistan → closest mapped to Hindi (Urdu)
+  'NP': 'hi',   // Nepal
+
+  // Middle East
+  'SA': 'ar',   // Saudi Arabia
+  'AE': 'ar',   // UAE
+  'KW': 'ar',   // Kuwait
+  'QA': 'ar',   // Qatar
+  'BH': 'ar',   // Bahrain
+  'OM': 'ar',   // Oman
+  'IQ': 'ar',   // Iraq
+  'JO': 'ar',   // Jordan
+  'LB': 'ar',   // Lebanon
+  'SY': 'ar',   // Syria
+  'EG': 'ar',   // Egypt
+  'MA': 'ar',   // Morocco
+  'DZ': 'ar',   // Algeria
+  'TN': 'ar',   // Tunisia
+  'LY': 'ar',   // Libya
+  'YE': 'ar',   // Yemen
+  'IL': 'he',   // Israel
+
+  // Europe
+  'FR': 'fr',   // France
+  'BE': 'fr',   // Belgium (French dominant)
+  'CH': 'de',   // Switzerland (German dominant)
+  'DE': 'de',   // Germany
+  'AT': 'de',   // Austria
+  'ES': 'es',   // Spain
+  'MX': 'es',   // Mexico
+  'AR': 'es',   // Argentina
+  'CO': 'es',   // Colombia
+  'CL': 'es',   // Chile
+  'PE': 'es',   // Peru
+  'VE': 'es',   // Venezuela
+  'EC': 'es',   // Ecuador
+  'PT': 'pt',   // Portugal
+  'BR': 'pt',   // Brazil
+  'RU': 'ru',   // Russia
+  'UA': 'ru',   // Ukraine (Russian widely spoken)
+  'KZ': 'ru',   // Kazakhstan
+  'TR': 'tr',   // Turkey
+
+  // Asia Pacific
+  'JP': 'ja',   // Japan
+  'CN': 'zh',   // China
+  'TW': 'zh',   // Taiwan
+  'HK': 'zh',   // Hong Kong
+  'SG': 'zh',   // Singapore (Chinese majority)
+  'KR': 'ko',   // South Korea
+  'ID': 'id',   // Indonesia
+  'MY': 'id',   // Malaysia (Malay ≈ Indonesian)
+
+  // Africa
+  'KE': 'sw',   // Kenya
+  'TZ': 'sw',   // Tanzania
+  'UG': 'sw',   // Uganda
+  'SN': 'fr',   // Senegal
+  'CI': 'fr',   // Ivory Coast
+  'CM': 'fr',   // Cameroon
+  'CD': 'fr',   // DRC
+
+  // Default English-speaking countries
+  'US': 'en',
+  'GB': 'en',
+  'CA': 'en',
+  'AU': 'en',
+  'NZ': 'en',
+  'ZA': 'en',
+  'NG': 'en',
+  'GH': 'en',
+};
+
+export function mapLocationToLanguage(
+  countryCode: string,
+  region: string,
+  city: string
+): string {
+
+  // India — use state-level mapping
+  if (countryCode === 'IN') {
+    const stateLanguage = INDIA_STATE_LANGUAGE[region];
+    if (stateLanguage) return stateLanguage;
+    return 'hi'; // India default
+  }
+
+  // International — country-level mapping
+  return COUNTRY_LANGUAGE[countryCode] || 'en';
+}
+```
+
+---
+
+### Step 7 — The API Endpoint
+
+```typescript
+// server/routes.ts — add this endpoint
+
+app.get('/api/detect-language', async (req, res) => {
+  // Get real IP — handle proxies and Replit
+  const ip =
+    req.headers['x-forwarded-for']?.toString().split(',')[0].trim() ||
+    req.headers['x-real-ip']?.toString() ||
+    req.socket.remoteAddress ||
+    '';
+
+  const result = await detectLanguageFromIP(ip);
+
+  res.json({
+    language: result.language,
+    country: result.country,
+    region: result.region,
+    // Never expose raw IP to client
+  });
+});
+```
+
+---
+
+### Step 8 — Client Calls The Endpoint On First Load
+
+```typescript
+// client/src/lib/language-manager.ts
+
+export async function detectLanguageFromIP(): Promise<string> {
+  try {
+    const response = await fetch('/api/detect-language', {
+      signal: AbortSignal.timeout(3000) // 3s max — never block app
+    });
+
+    const data = await response.json();
+    return data.language || 'en';
+
+  } catch {
+    return 'en'; // If detection fails — English. Never crash.
+  }
+}
+```
+
+---
+
+### Step 9 — The Soft Banner (Don't Force, Suggest)
+
+```typescript
+// client/src/components/LanguageBanner.tsx
+
+function LanguageBanner({ detectedLang, onAccept, onDismiss }) {
+  const langNames = {
+    ta: 'தமிழ்', hi: 'हिन्दी', te: 'తెలుగు',
+    kn: 'ಕನ್ನಡ', ml: 'മലയാളം', bn: 'বাংলা',
+    ar: 'العربية', fr: 'Français', es: 'Español',
+    // ... all 25
+  };
+
+  if (detectedLang === 'en') return null; // No banner needed
+
+  return (
+    <div className="language-banner">
+      <span>
+        We detected you might prefer{' '}
+        <strong>{langNames[detectedLang]}</strong>
+      </span>
+      <button onClick={onAccept}>
+        Switch →
+      </button>
+      <button onClick={onDismiss}>
+        Keep English
+      </button>
+    </div>
+  );
+}
+```
+
+---
+
+## The Complete First-Visit Flow
+
+```
+New user opens ARYA.com
+        ↓
+App shell loads (English initially — instant)
+        ↓
+detectLanguageFromIP() called (non-blocking)
+        ↓
+IP → server → ipwho.is → { country:'IN', region:'Tamil Nadu' }
+        ↓
+mapLocationToLanguage('IN', 'Tamil Nadu') → 'ta'
+        ↓
+applyLanguage('ta') fires:
+  i18n.changeLanguage('ta')     → all UI strings update
+  document.dir = 'ltr'          → Tamil is LTR
+  Noto Sans Tamil font loaded   → correct script renders
+  localStorage saved            → persists for next visit
+        ↓
+Soft banner shown (1 second after load):
+  "We've set Tamil as your language. Change →"
+        ↓
+User continues in Tamil
+        ↓
+User creates account → ui_language: 'ta' saved to DB
+        ↓
+Every future session → Tamil loads instantly from DB
+```
+
+---
+
+## The Returning User Flow
+
+```
+Returning logged-in user opens ARYA
+        ↓
+localStorage check → 'ta' found → applyLanguage('ta') instantly
+(No network call needed — font may already be cached)
+        ↓
+DB syncs in background → confirms 'ta'
+        ↓
+App in Tamil from first frame ← no flash of English
+```
+
+---
+
+## Summary For Your Developer
+
+```
+Two features. One priority order.
+
+Week 1:
+  1. applyLanguage() central function
+     → i18n + dir + font + localStorage + DB save
+
+  2. App startup reads language from:
+     localStorage first (instant)
+     then DB (background sync)
+
+  3. CSS uses var(--font-primary)
+     applyLanguage() sets the variable
+     Everything updates instantly
+
+Week 2:
+  4. /api/detect-language endpoint
+     → get IP → ipwho.is → map to language code
+
+  5. Client calls /api/detect-language
+     Only if no localStorage and not logged in
+
+  6. Soft banner — suggest, never force
+     "Switch to Tamil?" with Accept / Keep English
+
+One rule above everything:
+  IP detection must NEVER block app load.
+  Always wrap in try/catch with timeout.
+  English is always the safe fallback.
+```
+
+The two features together mean a user in Chennai opens ARYA for the first time and sees Tamil — without touching a single setting. A returning user sees their language from the first frame — no flash, no delay. That's the experience.

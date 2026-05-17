@@ -69,7 +69,8 @@ import {
   ShieldCheck,
   Activity,
 } from "lucide-react";
-import { getStoredUiLanguage, setStoredUiLanguage, getTranslation, LANGUAGE_OPTIONS, type UiLanguage } from "@/lib/i18n";
+import { getTranslation, LANGUAGE_OPTIONS, type UiLanguage } from "@/lib/i18n";
+import { useLanguage } from "@/lib/language-context";
 import { useTheme } from "@/lib/theme";
 import RemindersPanel from "@/components/RemindersPanel";
 import PricingModal from "@/components/PricingModal";
@@ -498,6 +499,7 @@ function MemoryPanel({ onClose, token }: { onClose: () => void; token?: string |
 
 function CustomizePanel({ onClose, token }: { onClose: () => void; token: string }) {
   const queryClient = useQueryClient();
+  const { language: ctxLanguage, setLanguage: setGlobalLang } = useLanguage();
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -529,7 +531,7 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
   const [morningBriefing, setMorningBriefing] = useState(false);
   const [briefingTime, setBriefingTime] = useState("07:00");
   const [weeklyReview, setWeeklyReview] = useState(false);
-  const [uiLang, setUiLang] = useState<UiLanguage>("en");
+  const [uiLang, setUiLang] = useState<UiLanguage>(ctxLanguage);
   const [shareEnabled, setShareEnabled] = useState(false);
   const [shareName, setShareName] = useState("");
   const [shareContact, setShareContact] = useState("");
@@ -589,7 +591,6 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
           body: JSON.stringify({ enabled: shareEnabled, name: shareName, contact: shareContact, paused: sharePaused }),
         }),
       ]);
-      setStoredUiLanguage(uiLang);
       queryClient.invalidateQueries({ queryKey: ["/api/user/preferences"] });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -872,7 +873,7 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
               </div>
               <div className="grid grid-cols-3 gap-1">
                 {LANGUAGE_OPTIONS.filter(l => l.group === "india").map(({ code, native, flag }) => (
-                  <button key={code} data-testid={`option-lang-${code}`} onClick={() => setUiLang(code as UiLanguage)}
+                  <button key={code} data-testid={`option-lang-${code}`} onClick={() => { const l = code as UiLanguage; setUiLang(l); setGlobalLang(l); }}
                     className={`flex flex-col items-center gap-0.5 px-1 py-2 rounded-lg transition-all ${
                       uiLang === code
                         ? "bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-300 dark:border-emerald-700 text-emerald-600 dark:text-emerald-400"
@@ -893,7 +894,7 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
               </div>
               <div className="grid grid-cols-3 gap-1">
                 {LANGUAGE_OPTIONS.filter(l => l.group === "global").map(({ code, native, flag }) => (
-                  <button key={code} data-testid={`option-lang-${code}`} onClick={() => setUiLang(code as UiLanguage)}
+                  <button key={code} data-testid={`option-lang-${code}`} onClick={() => { const l = code as UiLanguage; setUiLang(l); setGlobalLang(l); }}
                     className={`flex flex-col items-center gap-0.5 px-1 py-2 rounded-lg transition-all ${
                       uiLang === code
                         ? "bg-cyan-50 dark:bg-cyan-900/20 border border-cyan-300 dark:border-cyan-700 text-cyan-600 dark:text-cyan-400"
@@ -2260,8 +2261,7 @@ export default function AryaChat() {
   const [pendingImage, setPendingImage] = useState<{ base64: string; previewUrl: string; mimeType: string } | null>(null);
   const [isScanningDoc, setIsScanningDoc] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
-  const [uiLanguage] = useState<UiLanguage>(() => getStoredUiLanguage());
-  const t = (key: string) => getTranslation(uiLanguage, key);
+  const { language: uiLanguage, t, setLanguage: setGlobalLanguage } = useLanguage();
   const [moodCheckedInToday, setMoodCheckedInToday] = useState(() => {
     try { return localStorage.getItem("arya_mood_date") === new Date().toDateString(); } catch { return false; }
   });

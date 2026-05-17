@@ -13,6 +13,7 @@ import { GoalsEngine } from "./arya/goals-engine";
 import { FeedbackEngine } from "./arya/feedback-engine";
 import { getCacheQualityReport } from "./arya/response-quality-scorer";
 import { sarvamLangToShort, autoUpdateLanguagePreference } from "./arya/language-detector";
+import { detectLanguageFromIP, LANGUAGE_DISPLAY_NAMES } from "./arya/ip-language-detector";
 import { InsightsEngine } from "./arya/insights-engine";
 import { ResponseCacheEngine } from "./arya/response-cache-engine";
 import { chatStorage } from "./replit_integrations/chat/storage";
@@ -2112,11 +2113,27 @@ export async function registerRoutes(
     try {
       const userId = (req as any).userId;
       const { language } = req.body;
-      if (!["en", "hi"].includes(language)) return res.status(400).json({ error: "Unsupported language" });
+      const VALID_LANGS = ["en","hi","ta","te","kn","ml","bn","mr","gu","pa","od","sa","ur","ar","he","fr","es","de","ja","zh","ko","pt","ru","tr","id","sw"];
+      if (!VALID_LANGS.includes(language)) return res.status(400).json({ error: "Unsupported language" });
       await db.update(aryaUsers).set({ uiLanguage: language } as any).where(eq(aryaUsers.id, userId));
       res.json({ ok: true, uiLanguage: language });
     } catch {
       res.status(500).json({ error: "Failed to update UI language" });
+    }
+  });
+
+  // ── IP-based Language Detection (no auth required) ────────────────────────
+  app.get("/api/detect-language", async (req: Request, res: Response) => {
+    try {
+      const ip =
+        (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
+        (req.headers["x-real-ip"] as string) ||
+        req.socket?.remoteAddress ||
+        "";
+      const result = await detectLanguageFromIP(ip);
+      res.json(result);
+    } catch {
+      res.json({ language: "en", languageName: "English", country: "", region: "" });
     }
   });
 
