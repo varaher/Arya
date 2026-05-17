@@ -132,36 +132,71 @@ export function buildLanguageInstruction(
   return `DETECTED LANGUAGE — THIS SESSION: The user is writing in ${langName}. Respond in ${langName}. Do not switch to English unless the user does first.`;
 }
 
+// ── Switch-cooldown tracker (in-memory, per process) ───────────────────────
+// Stores the timestamp of the last preferredLanguage switch per userId.
+// Prevents accidental language flips from one-off words typed in another script.
+const lastSwitchTimestamp = new Map<string, number>();
+const SWITCH_COOLDOWN_MS = 10 * 60 * 1000; // 10 minutes
+
 /**
  * Auto-update the user's preferredLanguage in arya_users once we have
  * enough evidence (3+ messages in same detected language in this session).
  * Fires async — never blocks the response.
+ *
+ * Edge cases handled:
+ *  - Short messages (< 3 chars): skipped — "OK", "👍", emoji can't be trusted
+ *  - Cooldown: if the language switched less than 10 min ago, skip again —
+ *    prevents one-off English words flipping back from a non-English preference
  */
 export async function autoUpdateLanguagePreference(
   userId: string | null | undefined,
   detectedLang: string,
-  history: ChatMessage[]
+  history: ChatMessage[],
+  currentMessageLength: number = 99   // caller passes userMessage.length
 ): Promise<void> {
   if (!userId || detectedLang === "en") return;
+
+  // Edge case 2 — short message: can't trust the detection
+  if (currentMessageLength < 3) return;
 
   try {
     const recentUserMessages = history
       .filter((m) => m.role === "user")
       .slice(-8);
 
-    let count = 1; // current message already detected
+    let count = 1; // current message already counted
     for (const msg of recentUserMessages) {
-      if (detectLanguage(msg.content) === detectedLang) count++;
+      // Also skip short historical messages when counting evidence
+      if (msg.content.trim().length >= 3 && detectLanguage(msg.content) === detectedLang) count++;
     }
 
-    // 3+ messages in same language → update preference silently
-    if (count >= 3) {
-      await db
-        .update(aryaUsers)
-        .set({ preferredLanguage: detectedLang } as any)
-        .where(eq(aryaUsers.id, userId));
-      console.log(`[LanguageDetector] Auto-updated preferredLanguage → ${detectedLang} for user ${userId}`);
+    // Need 3+ messages of evidence before updating
+    if (count < 3) return;
+
+    // Read current preference to determine if this is actually a switch
+    const [user] = await db
+      .select({ preferredLanguage: aryaUsers.preferredLanguage })
+      .from(aryaUsers)
+      .where(eq(aryaUsers.id, userId))
+      .limit(1);
+
+    const currentLang = (user as any)?.preferredLanguage ?? "en";
+    if (currentLang === detectedLang) return; // no change needed
+
+    // Edge case 3 — cooldown: don't switch if we switched less than 10 min ago
+    const lastSwitch = lastSwitchTimestamp.get(userId) ?? 0;
+    if (Date.now() - lastSwitch < SWITCH_COOLDOWN_MS) {
+      console.log(`[LanguageDetector] Switch cooldown active for user ${userId} — skipping ${currentLang} → ${detectedLang}`);
+      return;
     }
+
+    await db
+      .update(aryaUsers)
+      .set({ preferredLanguage: detectedLang } as any)
+      .where(eq(aryaUsers.id, userId));
+
+    lastSwitchTimestamp.set(userId, Date.now());
+    console.log(`[LanguageDetector] preferredLanguage ${currentLang} → ${detectedLang} for user ${userId}`);
   } catch (err) {
     // Non-critical — never surface errors here
     console.error("[LanguageDetector] Auto-update failed:", err);

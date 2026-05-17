@@ -593,12 +593,16 @@ export async function generateAryaResponse(
   // use it directly. For typed text: run script detection on the message.
   // (In the voice path, userMessage is the English translation, so
   //  detectLanguage() would wrongly return "en" — hence the override.)
+  const msgLen = userMessage.trim().length;
   const detectedLang = sarvamDetectedLang
     ? sarvamLangToShort(sarvamDetectedLang)
     : detectLanguage(userMessage);
+  // buildLanguageInstruction uses conversation history — reliable even for
+  // short messages ("OK", "👍") because it looks at the last 6 user turns.
   const langInstruction = buildLanguageInstruction(conversationHistory, detectedLang, "en");
-  // Fire async — never blocks the response
-  autoUpdateLanguagePreference(userId, detectedLang, conversationHistory).catch(() => {});
+  // autoUpdateLanguagePreference writes to DB — skip for very short messages
+  // (< 3 chars); pass length so it can apply the 10-min switch cooldown.
+  autoUpdateLanguagePreference(userId, detectedLang, conversationHistory, msgLen).catch(() => {});
 
   const voiceInstruction = voiceMode
     ? "\n\nVOICE MODE ACTIVE: The user is speaking to you via voice. Keep your response SHORT and conversational — 2-3 sentences max. No bullet points, no markdown, no numbered lists. Speak naturally as if talking to a friend. Get to the point immediately."
