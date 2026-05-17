@@ -73,6 +73,7 @@ export default function RemindersPanel({ onClose }: { onClose: () => void }) {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [notifPermission, setNotifPermission] = useState<NotificationPermission>("default");
+  const [requestingPerm, setRequestingPerm] = useState(false);
   const [form, setForm] = useState({
     title: "",
     message: "",
@@ -97,9 +98,21 @@ export default function RemindersPanel({ onClose }: { onClose: () => void }) {
   }
 
   async function enableNotifications() {
-    if (!token) return;
-    const perm = await requestNotificationPermission(token);
-    setNotifPermission(perm);
+    if (!token || requestingPerm) return;
+    // If already denied at OS level, can't prompt again — guide user to settings
+    if (Notification.permission === "denied") {
+      setNotifPermission("denied");
+      return;
+    }
+    setRequestingPerm(true);
+    try {
+      const perm = await requestNotificationPermission(token);
+      setNotifPermission(perm);
+    } catch {
+      // ignore
+    } finally {
+      setRequestingPerm(false);
+    }
   }
 
   async function createReminder(data?: typeof QUICK_TEMPLATES[0]) {
@@ -174,7 +187,19 @@ export default function RemindersPanel({ onClose }: { onClose: () => void }) {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {notifPermission !== "granted" && (
+        {notifPermission === "denied" && (
+          <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 flex items-start gap-3">
+            <Bell className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-red-300 font-medium">Notifications blocked</p>
+              <p className="text-xs text-red-400/70 mt-0.5">
+                Your browser has blocked notifications. To fix this, open your browser settings → Site settings → Notifications → allow this site.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {notifPermission === "default" && (
           <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex items-start gap-3">
             <Bell className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
             <div className="flex-1 min-w-0">
@@ -183,9 +208,10 @@ export default function RemindersPanel({ onClose }: { onClose: () => void }) {
               <Button
                 size="sm"
                 onClick={enableNotifications}
-                className="mt-2 bg-amber-500 hover:bg-amber-400 text-black text-xs h-7 px-3"
+                disabled={requestingPerm}
+                className="mt-2 bg-amber-500 hover:bg-amber-400 text-black text-xs h-7 px-3 disabled:opacity-60"
               >
-                Enable Now
+                {requestingPerm ? "Requesting…" : "Enable Now"}
               </Button>
             </div>
           </div>

@@ -1433,13 +1433,18 @@ function CalendarPanel({ onClose, token }: { onClose: () => void; token: string 
 
 function GoalsPanel({ onClose }: { onClose: () => void }) {
   const queryClient = useQueryClient();
+  const { token, isLoggedIn } = useUserAuth();
   const [newGoalTitle, setNewGoalTitle] = useState("");
   const [newGoalSteps, setNewGoalSteps] = useState("");
 
-  const { data, isLoading } = useQuery<{ goals: GoalItem[] }>({
-    queryKey: ["/api/arya/goals"],
+  const { data: goals, isLoading } = useQuery<GoalItem[]>({
+    queryKey: ["/api/user/goals"],
+    enabled: !!token,
     queryFn: async () => {
-      const res = await fetch("/api/arya/goals?tenant_id=varah");
+      const res = await fetch("/api/user/goals", {
+        headers: { "x-user-token": token! },
+      });
+      if (!res.ok) return [];
       return res.json();
     },
   });
@@ -1447,15 +1452,15 @@ function GoalsPanel({ onClose }: { onClose: () => void }) {
   const createGoalMutation = useMutation({
     mutationFn: async () => {
       const steps = newGoalSteps.split("\n").map(s => s.trim()).filter(Boolean);
-      const res = await fetch("/api/arya/goals", {
+      const res = await fetch("/api/user/goals", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tenant_id: "varah", title: newGoalTitle, steps }),
+        headers: { "Content-Type": "application/json", "x-user-token": token! },
+        body: JSON.stringify({ title: newGoalTitle, steps, goalType: "habit" }),
       });
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/arya/goals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/goals"] });
       setNewGoalTitle("");
       setNewGoalSteps("");
     },
@@ -1470,17 +1475,20 @@ function GoalsPanel({ onClose }: { onClose: () => void }) {
         body: JSON.stringify({ status: newStatus }),
       });
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/arya/goals"] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/user/goals"] }),
   });
 
   const deleteGoalMutation = useMutation({
     mutationFn: async (goalId: string) => {
-      await fetch(`/api/arya/goals/${goalId}`, { method: "DELETE" });
+      await fetch(`/api/user/goals/${goalId}`, {
+        method: "DELETE",
+        headers: { "x-user-token": token! },
+      });
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/arya/goals"] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/user/goals"] }),
   });
 
-  const goals = data?.goals || [];
+  const goalsList = goals || [];
   const priorityColors: Record<string, string> = {
     low: "text-gray-400", medium: "text-blue-400", high: "text-amber-600 dark:text-amber-400", critical: "text-red-500 dark:text-red-400"
   };
@@ -1491,7 +1499,7 @@ function GoalsPanel({ onClose }: { onClose: () => void }) {
         <div className="flex items-center gap-2">
           <Target className="w-4 h-4 text-amber-600 dark:text-amber-400" />
           <span className="text-sm font-semibold text-gray-900 dark:text-white">Goals & Plans</span>
-          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">{goals.filter(g => g.status === 'active').length}</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">{goalsList.filter(g => g.status === 'active').length}</span>
         </div>
         <button onClick={onClose} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-400">
           <X className="w-4 h-4" />
@@ -1527,7 +1535,7 @@ function GoalsPanel({ onClose }: { onClose: () => void }) {
 
       <div className="flex-1 overflow-y-auto p-3 space-y-3">
         {isLoading && <div className="flex items-center justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-amber-600 dark:text-amber-400" /></div>}
-        {goals.map((goal) => (
+        {goalsList.map((goal) => (
           <div key={goal.id} className="rounded-xl bg-gray-100 dark:bg-slate-700 border border-gray-200 dark:border-slate-700 p-3 group" data-testid={`card-goal-${goal.id}`}>
             <div className="flex items-start justify-between mb-2">
               <div className="flex-1">
@@ -1575,7 +1583,7 @@ function GoalsPanel({ onClose }: { onClose: () => void }) {
             </div>
           </div>
         ))}
-        {!isLoading && goals.length === 0 && (
+        {!isLoading && goalsList.length === 0 && (
           <div className="text-center py-8">
             <Target className="w-8 h-8 text-gray-900 dark:text-white/10 mx-auto mb-2" />
             <p className="text-sm text-gray-400">No goals yet</p>
