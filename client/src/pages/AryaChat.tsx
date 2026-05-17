@@ -3771,7 +3771,7 @@ export default function AryaChat() {
                   className="px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all flex items-center gap-1.5"
                 >
                   <LogIn className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                  Sign in to track goals
+                  {t("sign_in_goals")}
                 </button>
               )}
               <button
@@ -3780,7 +3780,7 @@ export default function AryaChat() {
                 className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-slate-700 border border-gray-200 dark:border-slate-700 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-amber-300 transition-all flex items-center gap-1.5"
               >
                 <HelpCircle className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-                Take a Tour
+                {t("take_tour")}
               </button>
             </div>
             {isLoggedIn && token && !moodCheckedInToday && (
@@ -3789,6 +3789,53 @@ export default function AryaChat() {
                 onComplete={() => setMoodCheckedInToday(true)}
                 uiLang={uiLanguage}
               />
+            )}
+
+            {/* ── Quick Access Grid (logged-in only) ── */}
+            {isLoggedIn && (
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.35 }}
+                className="w-full max-w-md mb-4"
+              >
+                <div className="flex items-center justify-between mb-2 px-1">
+                  <span className="text-[10px] uppercase tracking-widest font-bold text-gray-400 dark:text-gray-500">
+                    {t("quick_access")}
+                  </span>
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    { icon: "🎯", label: t("goals"),     action: () => { setShowGoals(true); setShowMemory(false); setShowNotes(false); setShowReminders(false); setShowCalendar(false); }, color: "amber"   },
+                    { icon: "🧠", label: t("memory"),    action: () => { setShowMemory(true); setShowGoals(false); setShowNotes(false); setShowReminders(false); setShowCalendar(false); }, color: "emerald" },
+                    { icon: "📝", label: t("notes"),     action: () => { setShowNotes(true); setShowGoals(false); setShowMemory(false); setShowReminders(false); setShowCalendar(false); }, color: "cyan"    },
+                    { icon: "😊", label: t("mood"),      action: () => setMoodCheckedInToday(false), color: "rose"    },
+                    { icon: "🔔", label: t("reminders"), action: () => { setShowReminders(true); setShowGoals(false); setShowMemory(false); setShowNotes(false); setShowCalendar(false); }, color: "violet"  },
+                    { icon: "📅", label: t("calendar"),  action: () => { setShowCalendar(true); setShowGoals(false); setShowMemory(false); setShowNotes(false); setShowReminders(false); }, color: "blue"    },
+                    { icon: "🏘️", label: t("community"), action: () => setLocation("/community"), color: "teal"    },
+                    { icon: "⚖️", label: "Niti",         action: () => setLocation("/niti"),       color: "purple"  },
+                  ].map((item, i) => (
+                    <motion.button
+                      key={item.label}
+                      data-testid={`button-quick-access-${i}`}
+                      onClick={item.action}
+                      initial={{ opacity: 0, scale: 0.85 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.25, delay: 0.38 + i * 0.04 }}
+                      whileHover={{ scale: 1.07, y: -2 }}
+                      whileTap={{ scale: 0.93 }}
+                      className="flex flex-col items-center gap-1.5 py-3 px-1 rounded-2xl bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-gray-200 dark:hover:border-slate-600 transition-all group"
+                    >
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-gray-50 dark:bg-slate-700 group-hover:bg-gray-100 dark:group-hover:bg-slate-600 transition-colors">
+                        {item.icon}
+                      </div>
+                      <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200 leading-tight text-center transition-colors line-clamp-1 w-full px-0.5">
+                        {item.label}
+                      </span>
+                    </motion.button>
+                  ))}
+                </div>
+              </motion.div>
             )}
 
             <motion.div

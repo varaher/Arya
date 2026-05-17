@@ -93,6 +93,13 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     weekly_review:     "Weekly Review",
     ui_language:       "App Language",
     save_preferences:  "Save Preferences",
+    quick_access:      "Quick Access",
+    mood:              "Mood",
+    community:         "Community",
+    calendar:          "Calendar",
+    reminders:         "Reminders",
+    sign_in_goals:     "Sign in to track goals",
+    take_tour:         "Take a Tour",
   },
 
   // ── Hindi ─────────────────────────────────────────────────────────────────────
@@ -136,6 +143,13 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     weekly_review:     "साप्ताहिक समीक्षा",
     ui_language:       "ऐप भाषा",
     save_preferences:  "प्राथमिकताएं सहेजें",
+    quick_access:      "त्वरित पहुंच",
+    mood:              "मनोदशा",
+    community:         "समुदाय",
+    calendar:          "कैलेंडर",
+    reminders:         "रिमाइंडर",
+    sign_in_goals:     "लक्ष्य ट्रैक करने के लिए साइन इन करें",
+    take_tour:         "परिचय लें",
   },
 
   // ── Marathi ───────────────────────────────────────────────────────────────────
@@ -179,6 +193,13 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     weekly_review:     "साप्ताहिक आढावा",
     ui_language:       "अॅप भाषा",
     save_preferences:  "प्राधान्ये जतन करा",
+    quick_access:      "जलद प्रवेश",
+    mood:              "मनःस्थिती",
+    community:         "समुदाय",
+    calendar:          "दिनदर्शिका",
+    reminders:         "स्मरणपत्रे",
+    sign_in_goals:     "उद्दिष्टे ट्रॅक करण्यासाठी साइन इन करा",
+    take_tour:         "परिचय घ्या",
   },
 
   // ── Bengali ───────────────────────────────────────────────────────────────────
@@ -222,6 +243,13 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     weekly_review:     "সাপ্তাহিক পর্যালোচনা",
     ui_language:       "অ্যাপ ভাষা",
     save_preferences:  "পছন্দ সংরক্ষণ করুন",
+    quick_access:      "দ্রুত অ্যাক্সেস",
+    mood:              "মেজাজ",
+    community:         "সম্প্রদায়",
+    calendar:          "ক্যালেন্ডার",
+    reminders:         "অনুস্মারক",
+    sign_in_goals:     "লক্ষ্য ট্র্যাক করতে সাইন ইন করুন",
+    take_tour:         "পরিচয় নিন",
   },
 
   // ── Tamil ─────────────────────────────────────────────────────────────────────
@@ -265,6 +293,13 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     weekly_review:     "வாராந்திர மதிப்பாய்வு",
     ui_language:       "பயன்பாட்டு மொழி",
     save_preferences:  "விருப்பங்களைச் சேமி",
+    quick_access:      "விரைவு அணுகல்",
+    mood:              "மனநிலை",
+    community:         "சமூகம்",
+    calendar:          "நாட்காட்டி",
+    reminders:         "நினைவூட்டல்கள்",
+    sign_in_goals:     "இலக்குகளை கண்காணிக்க உள்நுழையுங்கள்",
+    take_tour:         "சுற்றுப்பயணம் செய்யுங்கள்",
   },
 
   // ── Telugu ────────────────────────────────────────────────────────────────────
@@ -308,6 +343,13 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     weekly_review:     "వారపు సమీక్ష",
     ui_language:       "యాప్ భాష",
     save_preferences:  "ప్రాధాన్యతలను సేవ్ చేయండి",
+    quick_access:      "త్వరిత యాక్సెస్",
+    mood:              "మూడ్",
+    community:         "కమ్యూనిటీ",
+    calendar:          "కేలండర్",
+    reminders:         "రిమైండర్లు",
+    sign_in_goals:     "లక్ష్యాలను ట్రాక్ చేయడానికి సైన్ ఇన్ చేయండి",
+    take_tour:         "పర్యటన చేయండి",
   },
 
   // ── Kannada ───────────────────────────────────────────────────────────────────
@@ -351,6 +393,13 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     weekly_review:     "ಸಾಪ್ತಾಹಿಕ ಪರಿಶೀಲನೆ",
     ui_language:       "ಅಪ್ಲಿಕೇಶನ್ ಭಾಷೆ",
     save_preferences:  "ಆದ್ಯತೆಗಳನ್ನು ಉಳಿಸಿ",
+    quick_access:      "ತ್ವರಿತ ಪ್ರವೇಶ",
+    mood:              "ಮನಸ್ಥಿತಿ",
+    community:         "ಸಮುದಾಯ",
+    calendar:          "ಕ್ಯಾಲೆಂಡರ್",
+    reminders:         "ಜ್ಞಾಪಕಗಳು",
+    sign_in_goals:     "ಗುರಿಗಳನ್ನು ಟ್ರ್ಯಾಕ್ ಮಾಡಲು ಸೈನ್ ಇನ್ ಮಾಡಿ",
+    take_tour:         "ಪ್ರವಾಸ ಮಾಡಿ",
   },
 
   // ── Malayalam ─────────────────────────────────────────────────────────────────
@@ -394,6 +443,13 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     weekly_review:     "വാരാന്ത്യ അവലോകനം",
     ui_language:       "ആപ്പ് ഭാഷ",
     save_preferences:  "മുൻഗണനകൾ സൂക്ഷിക്കൂ",
+    quick_access:      "ദ്രുത ആക്സസ്",
+    mood:              "മൂഡ്",
+    community:         "കമ്മ്യൂണിറ്റി",
+    calendar:          "കലണ്ടർ",
+    reminders:         "ഓർമ്മപ്പെടുത്തലുകൾ",
+    sign_in_goals:     "ലക്ഷ്യങ്ങൾ ട്രാക്ക് ചെയ്യാൻ സൈൻ ഇൻ ചെയ്യൂ",
+    take_tour:         "ടൂർ ആരംഭിക്കൂ",
   },
 
   // ── Gujarati ──────────────────────────────────────────────────────────────────
@@ -437,6 +493,13 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     weekly_review:     "સાપ્તાહિક સમીક્ષા",
     ui_language:       "એપ ભાષા",
     save_preferences:  "પસંદગીઓ સાચવો",
+    quick_access:      "ઝડપી ઍક્સેસ",
+    mood:              "મૂડ",
+    community:         "સમુદાય",
+    calendar:          "કૅલેન્ડર",
+    reminders:         "રિમાઇન્ડર",
+    sign_in_goals:     "ધ્યેયો ટ્રૅક કરવા સાઇન ઇન કરો",
+    take_tour:         "પ્રવાસ કરો",
   },
 
   // ── Punjabi ───────────────────────────────────────────────────────────────────
@@ -480,6 +543,13 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     weekly_review:     "ਹਫ਼ਤਾਵਾਰੀ ਸਮੀਖਿਆ",
     ui_language:       "ਐਪ ਭਾਸ਼ਾ",
     save_preferences:  "ਤਰਜੀਹਾਂ ਸੇਵ ਕਰੋ",
+    quick_access:      "ਤੇਜ਼ ਪਹੁੰਚ",
+    mood:              "ਮੂਡ",
+    community:         "ਭਾਈਚਾਰਾ",
+    calendar:          "ਕੈਲੰਡਰ",
+    reminders:         "ਰੀਮਾਈਂਡਰ",
+    sign_in_goals:     "ਟੀਚੇ ਟਰੈਕ ਕਰਨ ਲਈ ਸਾਈਨ ਇਨ ਕਰੋ",
+    take_tour:         "ਦੌਰਾ ਕਰੋ",
   },
 
   // ── Odia ──────────────────────────────────────────────────────────────────────
@@ -523,6 +593,13 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     weekly_review:     "ସାପ୍ତାହିକ ସମୀକ୍ଷା",
     ui_language:       "ଆପ ଭାଷା",
     save_preferences:  "ପ୍ରାଥମିକତା ସଂରକ୍ଷଣ କରନ୍ତୁ",
+    quick_access:      "ଦ୍ରୁତ ଆକ୍ସେସ",
+    mood:              "ମୁଡ",
+    community:         "ସମୁଦାୟ",
+    calendar:          "କ୍ୟାଲେଣ୍ଡର",
+    reminders:         "ରିମାଇଣ୍ଡର",
+    sign_in_goals:     "ଲକ୍ଷ୍ୟ ଟ୍ର୍ୟାକ୍ କରିବାକୁ ସାଇନ୍ ଇନ୍ କରନ୍ତୁ",
+    take_tour:         "ଭ୍ରମଣ କରନ୍ତୁ",
   },
 
   // ── Sanskrit ──────────────────────────────────────────────────────────────────
@@ -566,6 +643,13 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     weekly_review:     "साप्ताहिक-समीक्षा",
     ui_language:       "अनुप्रयोग-भाषा",
     save_preferences:  "प्राथमिकताः रक्ष",
+    quick_access:      "शीघ्रप्रवेशः",
+    mood:              "मनःस्थितिः",
+    community:         "समुदायः",
+    calendar:          "पञ्चाङ्गम्",
+    reminders:         "स्मरणिकाः",
+    sign_in_goals:     "लक्ष्याणि अनुगन्तुं प्रवेशतु",
+    take_tour:         "परिचयः",
   },
 
   // ── Arabic (RTL) ──────────────────────────────────────────────────────────────
@@ -609,6 +693,13 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     weekly_review:     "المراجعة الأسبوعية",
     ui_language:       "لغة التطبيق",
     save_preferences:  "حفظ التفضيلات",
+    quick_access:      "وصول سريع",
+    mood:              "المزاج",
+    community:         "المجتمع",
+    calendar:          "التقويم",
+    reminders:         "التذكيرات",
+    sign_in_goals:     "سجّل الدخول لتتبع أهدافك",
+    take_tour:         "جولة سريعة",
   },
 
   // ── Hebrew (RTL) ──────────────────────────────────────────────────────────────
@@ -652,6 +743,13 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     weekly_review:     "סקירה שבועית",
     ui_language:       "שפת האפליקציה",
     save_preferences:  "שמור העדפות",
+    quick_access:      "גישה מהירה",
+    mood:              "מצב רוח",
+    community:         "קהילה",
+    calendar:          "לוח שנה",
+    reminders:         "תזכורות",
+    sign_in_goals:     "התחבר כדי לעקוב אחר יעדים",
+    take_tour:         "סיור מהיר",
   },
 
   // ── French ────────────────────────────────────────────────────────────────────
@@ -695,6 +793,13 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     weekly_review:     "Revue hebdomadaire",
     ui_language:       "Langue de l'app",
     save_preferences:  "Sauvegarder les préférences",
+    quick_access:      "Accès rapide",
+    mood:              "Humeur",
+    community:         "Communauté",
+    calendar:          "Calendrier",
+    reminders:         "Rappels",
+    sign_in_goals:     "Connecte-toi pour suivre tes objectifs",
+    take_tour:         "Faire la visite",
   },
 
   // ── Spanish ───────────────────────────────────────────────────────────────────
@@ -738,6 +843,13 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     weekly_review:     "Revisión semanal",
     ui_language:       "Idioma de la app",
     save_preferences:  "Guardar preferencias",
+    quick_access:      "Acceso rápido",
+    mood:              "Estado de ánimo",
+    community:         "Comunidad",
+    calendar:          "Calendario",
+    reminders:         "Recordatorios",
+    sign_in_goals:     "Inicia sesión para seguir tus metas",
+    take_tour:         "Hacer el recorrido",
   },
 
   // ── German ────────────────────────────────────────────────────────────────────
@@ -781,6 +893,13 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     weekly_review:     "Wochenrückblick",
     ui_language:       "App-Sprache",
     save_preferences:  "Einstellungen speichern",
+    quick_access:      "Schnellzugriff",
+    mood:              "Stimmung",
+    community:         "Gemeinschaft",
+    calendar:          "Kalender",
+    reminders:         "Erinnerungen",
+    sign_in_goals:     "Anmelden um Ziele zu verfolgen",
+    take_tour:         "Rundgang starten",
   },
 
   // ── Japanese ──────────────────────────────────────────────────────────────────
@@ -824,6 +943,13 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     weekly_review:     "週次レビュー",
     ui_language:       "アプリの言語",
     save_preferences:  "設定を保存",
+    quick_access:      "クイックアクセス",
+    mood:              "気分",
+    community:         "コミュニティ",
+    calendar:          "カレンダー",
+    reminders:         "リマインダー",
+    sign_in_goals:     "目標を追跡するためにサインイン",
+    take_tour:         "ツアーを見る",
   },
 
   // ── Chinese ───────────────────────────────────────────────────────────────────
@@ -867,6 +993,13 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     weekly_review:     "每周回顾",
     ui_language:       "应用语言",
     save_preferences:  "保存偏好设置",
+    quick_access:      "快速访问",
+    mood:              "心情",
+    community:         "社区",
+    calendar:          "日历",
+    reminders:         "提醒",
+    sign_in_goals:     "登录以跟踪目标",
+    take_tour:         "查看导览",
   },
 
   // ── Korean ────────────────────────────────────────────────────────────────────
@@ -910,6 +1043,13 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     weekly_review:     "주간 복습",
     ui_language:       "앱 언어",
     save_preferences:  "설정 저장",
+    quick_access:      "빠른 접근",
+    mood:              "기분",
+    community:         "커뮤니티",
+    calendar:          "캘린더",
+    reminders:         "알림",
+    sign_in_goals:     "목표를 추적하려면 로그인하세요",
+    take_tour:         "둘러보기",
   },
 
   // ── Portuguese ────────────────────────────────────────────────────────────────
@@ -953,6 +1093,13 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     weekly_review:     "Revisão semanal",
     ui_language:       "Idioma do app",
     save_preferences:  "Salvar preferências",
+    quick_access:      "Acesso rápido",
+    mood:              "Humor",
+    community:         "Comunidade",
+    calendar:          "Calendário",
+    reminders:         "Lembretes",
+    sign_in_goals:     "Entre para acompanhar seus objetivos",
+    take_tour:         "Fazer o tour",
   },
 
   // ── Russian ───────────────────────────────────────────────────────────────────
@@ -996,6 +1143,13 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     weekly_review:     "Еженедельный обзор",
     ui_language:       "Язык приложения",
     save_preferences:  "Сохранить настройки",
+    quick_access:      "Быстрый доступ",
+    mood:              "Настроение",
+    community:         "Сообщество",
+    calendar:          "Календарь",
+    reminders:         "Напоминания",
+    sign_in_goals:     "Войдите для отслеживания целей",
+    take_tour:         "Начать экскурсию",
   },
 
   // ── Turkish ───────────────────────────────────────────────────────────────────
@@ -1039,6 +1193,13 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     weekly_review:     "Haftalık İnceleme",
     ui_language:       "Uygulama Dili",
     save_preferences:  "Tercihleri Kaydet",
+    quick_access:      "Hızlı Erişim",
+    mood:              "Ruh Hali",
+    community:         "Topluluk",
+    calendar:          "Takvim",
+    reminders:         "Hatırlatıcılar",
+    sign_in_goals:     "Hedefleri takip etmek için giriş yap",
+    take_tour:         "Turu Başlat",
   },
 
   // ── Indonesian ────────────────────────────────────────────────────────────────
@@ -1082,6 +1243,13 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     weekly_review:     "Ulasan Mingguan",
     ui_language:       "Bahasa Aplikasi",
     save_preferences:  "Simpan Preferensi",
+    quick_access:      "Akses Cepat",
+    mood:              "Suasana Hati",
+    community:         "Komunitas",
+    calendar:          "Kalender",
+    reminders:         "Pengingat",
+    sign_in_goals:     "Masuk untuk melacak target",
+    take_tour:         "Lihat Tur",
   },
 
   // ── Swahili ───────────────────────────────────────────────────────────────────
@@ -1125,6 +1293,13 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     weekly_review:     "Mapitio ya Kila Wiki",
     ui_language:       "Lugha ya Programu",
     save_preferences:  "Hifadhi Mapendeleo",
+    quick_access:      "Ufikiaji wa Haraka",
+    mood:              "Hisia",
+    community:         "Jamii",
+    calendar:          "Kalenda",
+    reminders:         "Vikumbusho",
+    sign_in_goals:     "Ingia ili kufuatilia malengo",
+    take_tour:         "Angalia Ziara",
   },
 };
 
