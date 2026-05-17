@@ -10,6 +10,7 @@ import { db } from "../db";
 import { aryaGoals, aryaGoalSteps, aryaNotifications, aryaUsers, aryaReminders } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { fetchLatestNews, fetchMarketNews, formatNewsForChat } from "./news-service";
+import { detectLanguage, buildLanguageInstruction, autoUpdateLanguagePreference } from "./language-detector";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -586,12 +587,18 @@ export async function generateAryaResponse(
 
   const userPrefs = await getUserPreferenceContext(userId);
 
+  // ── Language detection ────────────────────────────────────────────────────
+  const detectedLang = detectLanguage(userMessage);
+  const langInstruction = buildLanguageInstruction(conversationHistory, detectedLang, "en");
+  // Fire async — never blocks the response
+  autoUpdateLanguagePreference(userId, detectedLang, conversationHistory).catch(() => {});
+
   const voiceInstruction = voiceMode
     ? "\n\nVOICE MODE ACTIVE: The user is speaking to you via voice. Keep your response SHORT and conversational — 2-3 sentences max. No bullet points, no markdown, no numbered lists. Speak naturally as if talking to a friend. Get to the point immediately."
     : "";
 
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-    { role: "system", content: ARYA_SYSTEM_PROMPT + userPrefs + knowledgeContext + newsContext + memoryContext + uncertaintyGuidance + voiceInstruction },
+    { role: "system", content: ARYA_SYSTEM_PROMPT + userPrefs + (langInstruction ? `\n\n${langInstruction}` : "") + knowledgeContext + newsContext + memoryContext + uncertaintyGuidance + voiceInstruction },
     ...conversationHistory.slice(-20).map(m => ({
       role: m.role as "user" | "assistant",
       content: m.content,

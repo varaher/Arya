@@ -2,6 +2,7 @@ import { db } from "../db";
 import { aryaFeedback, aryaMemory, AryaFeedback } from "@shared/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { ResponseCacheEngine } from "./response-cache-engine";
+import { applyFeedbackToCache } from "./response-quality-scorer";
 
 const responseCacheEngine = new ResponseCacheEngine();
 
@@ -35,7 +36,7 @@ export class FeedbackEngine {
         .where(eq(aryaFeedback.id, existing[0].id))
         .returning();
 
-      this.processLearningLoop(messageId, conversationId, tenantId, rating).catch(err =>
+      this.processLearningLoop(messageId, conversationId, tenantId, rating, !!correctionText).catch(err =>
         console.error("[FeedbackEngine] Learning loop error:", err)
       );
 
@@ -63,7 +64,7 @@ export class FeedbackEngine {
       }).catch(() => {});
     }
 
-    this.processLearningLoop(messageId, conversationId, tenantId, rating).catch(err =>
+    this.processLearningLoop(messageId, conversationId, tenantId, rating, !!correctionText).catch(err =>
       console.error("[FeedbackEngine] Learning loop error:", err)
     );
 
@@ -74,10 +75,12 @@ export class FeedbackEngine {
     messageId: number,
     conversationId: number,
     tenantId: string,
-    rating: 'up' | 'down'
+    rating: 'up' | 'down',
+    correctionProvided: boolean = false
   ): Promise<void> {
+    const userQuery = await responseCacheEngine.getUserQueryForMessage(messageId, conversationId);
+
     if (rating === 'up') {
-      const userQuery = await responseCacheEngine.getUserQueryForMessage(messageId, conversationId);
       const assistantResponse = await responseCacheEngine.getAssistantResponse(messageId);
 
       if (userQuery && assistantResponse && assistantResponse.length > 20) {
@@ -92,11 +95,17 @@ export class FeedbackEngine {
         console.log(`[LearningLoop] Golden response cached from thumbs-up on message ${messageId}`);
       }
     } else if (rating === 'down') {
-      const userQuery = await responseCacheEngine.getUserQueryForMessage(messageId, conversationId);
       if (userQuery) {
         await responseCacheEngine.markNegativeFeedback(tenantId, userQuery);
         console.log(`[LearningLoop] Negative feedback recorded for message ${messageId}`);
       }
+    }
+
+    // ── Quality scorer: recompute score and promote/flag the cache entry ──
+    if (userQuery) {
+      const normalizedQuery = responseCacheEngine.normalizeQuery(userQuery);
+      applyFeedbackToCache(tenantId, normalizedQuery, rating, correctionProvided)
+        .catch(err => console.error("[QualityScorer] applyFeedbackToCache error:", err));
     }
   }
 

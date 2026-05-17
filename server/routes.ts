@@ -11,6 +11,7 @@ import { NeuralLinkEngine } from "./arya/neural-link-engine";
 import { generateAryaResponse, memoryEngine, type ChatMessage } from "./arya/chat-engine";
 import { GoalsEngine } from "./arya/goals-engine";
 import { FeedbackEngine } from "./arya/feedback-engine";
+import { getCacheQualityReport } from "./arya/response-quality-scorer";
 import { InsightsEngine } from "./arya/insights-engine";
 import { ResponseCacheEngine } from "./arya/response-cache-engine";
 import { chatStorage } from "./replit_integrations/chat/storage";
@@ -2828,6 +2829,19 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
       const tenantId = (req.query.tenant_id as string) || 'varah';
       const stats = await feedbackEngine.getFeedbackStats(tenantId);
       res.json(stats);
+    } catch (error: any) {
+      res.status(500).json({ error: "Something went wrong. Please try again." });
+    }
+  });
+
+  app.get("/api/arya/cache/quality-report", async (req: Request, res: Response) => {
+    try {
+      const tenantId = (req.query.tenant_id as string) || 'varah';
+      const report = await getCacheQualityReport(tenantId);
+      const golden  = report.filter(r => r.status === "golden").length;
+      const neutral = report.filter(r => r.status === "neutral").length;
+      const flagged = report.filter(r => r.status === "flagged").length;
+      res.json({ total: report.length, golden, neutral, flagged, entries: report });
     } catch (error: any) {
       res.status(500).json({ error: "Something went wrong. Please try again." });
     }
