@@ -761,8 +761,11 @@ export async function registerRoutes(
     try {
       const userId = (req as any).userId;
       const status = req.query.status as string | undefined;
+      const goalType = req.query.goalType as string | undefined;
+
       let conditions: any[] = [eq(aryaGoals.userId, userId)];
       if (status) conditions.push(eq(aryaGoals.status, status as any));
+      if (goalType) conditions.push(eq((aryaGoals as any).goalType, goalType));
 
       const goals = await db.select().from(aryaGoals)
         .where(and(...conditions))
@@ -807,13 +810,27 @@ export async function registerRoutes(
   app.post("/api/user/goals", requireUser, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).userId;
-      const { title, description, steps, priority, dailyTargetMinutes, reminderTime } = req.body;
+      const {
+        title, description, steps, priority,
+        dailyTargetMinutes, reminderTime,
+        goalType, dueDate, reminderAt, recurrence,
+        peopleInvolved, contextNote,
+      } = req.body;
       if (!title) return res.status(400).json({ error: "Title is required" });
 
-      const existingGoals = await db.select().from(aryaGoals)
-        .where(and(eq(aryaGoals.userId, userId), eq(aryaGoals.status, "active" as any)));
-      if (existingGoals.length >= 3) {
-        return res.status(429).json({ error: "You can have up to 3 active goals. Complete or remove an existing goal to add a new one." });
+      const type = goalType || "habit";
+
+      // Cap active habits at 5; tasks/reminders/intentions are uncapped
+      if (type === "habit") {
+        const activeHabits = await db.select().from(aryaGoals)
+          .where(and(
+            eq(aryaGoals.userId, userId),
+            eq(aryaGoals.status, "active" as any),
+            eq((aryaGoals as any).goalType, "habit")
+          ));
+        if (activeHabits.length >= 5) {
+          return res.status(429).json({ error: "You can have up to 5 active habits. Complete or pause an existing one first." });
+        }
       }
 
       const [goal] = await db.insert(aryaGoals).values({
@@ -825,9 +842,17 @@ export async function registerRoutes(
         priority: priority || "medium",
         dailyTargetMinutes: dailyTargetMinutes || null,
         reminderTime: reminderTime || null,
-      }).returning();
+        goalType: type as any,
+        dueDate: dueDate ? new Date(dueDate) : null,
+        reminderAt: reminderAt ? new Date(reminderAt) : null,
+        recurrence: recurrence || null,
+        peopleInvolved: peopleInvolved || null,
+        contextNote: contextNote || null,
+        isCompleted: false,
+        reminderFired: false,
+      } as any).returning();
 
-      const createdSteps = [];
+      const createdSteps: any[] = [];
       if (steps && steps.length > 0) {
         for (let i = 0; i < steps.length; i++) {
           const [step] = await db.insert(aryaGoalSteps).values({
@@ -851,7 +876,11 @@ export async function registerRoutes(
     try {
       const userId = (req as any).userId;
       const { goalId } = req.params;
-      const { status, title, description, dailyTargetMinutes, reminderTime } = req.body;
+      const {
+        status, title, description, dailyTargetMinutes, reminderTime,
+        dueDate, reminderAt, recurrence, peopleInvolved, contextNote,
+        isCompleted,
+      } = req.body;
 
       const [goal] = await db.select().from(aryaGoals)
         .where(and(eq(aryaGoals.id, goalId), eq(aryaGoals.userId, userId)))
@@ -859,18 +888,48 @@ export async function registerRoutes(
       if (!goal) return res.status(404).json({ error: "Goal not found" });
 
       const update: any = { updatedAt: new Date() };
-      if (status) update.status = status;
-      if (title) update.title = title;
+      if (status !== undefined) update.status = status;
+      if (title !== undefined) update.title = title;
       if (description !== undefined) update.description = description;
       if (dailyTargetMinutes !== undefined) update.dailyTargetMinutes = dailyTargetMinutes;
       if (reminderTime !== undefined) update.reminderTime = reminderTime;
-      if (status === "completed") update.completedAt = new Date();
+      if (dueDate !== undefined) update.dueDate = dueDate ? new Date(dueDate) : null;
+      if (reminderAt !== undefined) {
+        update.reminderAt = reminderAt ? new Date(reminderAt) : null;
+        update.reminderFired = false; // reset so it fires at the new time
+      }
+      if (recurrence !== undefined) update.recurrence = recurrence;
+      if (peopleInvolved !== undefined) update.peopleInvolved = peopleInvolved;
+      if (contextNote !== undefined) update.contextNote = contextNote;
+      if (isCompleted !== undefined) update.isCompleted = isCompleted;
+      if (status === "completed" || isCompleted === true) {
+        update.completedAt = new Date();
+        update.isCompleted = true;
+        update.status = "completed";
+      }
 
       await db.update(aryaGoals).set(update).where(eq(aryaGoals.id, goalId));
       res.json({ success: true });
     } catch (error: any) {
       console.error("[UPDATE GOAL ERROR]", error.message || "Unknown error");
       res.status(500).json({ error: "Failed to update goal" });
+    }
+  });
+
+  app.delete("/api/user/goals/:goalId", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const { goalId } = req.params;
+      const [goal] = await db.select().from(aryaGoals)
+        .where(and(eq(aryaGoals.id, goalId), eq(aryaGoals.userId, userId)))
+        .limit(1);
+      if (!goal) return res.status(404).json({ error: "Goal not found" });
+      await db.delete(aryaGoalSteps).where(eq(aryaGoalSteps.goalId, goalId));
+      await db.delete(aryaGoals).where(eq(aryaGoals.id, goalId));
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("[DELETE GOAL ERROR]", error.message || "Unknown error");
+      res.status(500).json({ error: "Failed to delete goal" });
     }
   });
 

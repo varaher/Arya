@@ -1,0 +1,397 @@
+This is a real gap. A personal companion that only tracks reading habits as goals is not a personal companion — it's a habit tracker.
+
+Let me map out exactly what needs to change.
+
+---
+
+## What's Wrong Right Now
+
+The goal detection in `chat-engine.ts` uses pattern matching that's biased toward wellness and habit-style goals. Anything that doesn't sound like a habit — "message Priya about the meeting", "follow up with the investor", "buy groceries before Thursday" — either gets missed entirely or gets forced into a habit template that doesn't fit.
+
+```
+Current goal model (implicit):
+  - Habit-style goals with streaks
+  - Daily recurrence assumed
+  - Progress tracked by check-in frequency
+  - Examples: walk 30 mins, read 20 mins, meditate
+
+What it should be:
+  - ANY intention the user expresses
+  - One-time tasks
+  - Reminders with specific times
+  - Long-term goals with milestones
+  - Soft intentions ("I want to call mom more")
+  - Hard deadlines ("submit proposal by Friday")
+```
+
+---
+
+## The Four Goal Types ARYA Should Recognise
+
+```
+Type 1 — TASK (one-time, completable)
+  "Message Priya about the project"
+  "Buy dad a birthday gift"
+  "Follow up with the investor this week"
+  → No streak. Just done or not done.
+  → Can have a deadline.
+
+Type 2 — HABIT (recurring, streak-trackable)
+  "Walk 30 minutes every morning"
+  "Read before bed"
+  "Drink 2 litres of water daily"
+  → Has recurrence. Streak makes sense.
+  → Current model handles this well.
+
+Type 3 — REMINDER (time-specific)
+  "Remind me to call Rajan at 3pm"
+  "Message the team before the meeting tomorrow"
+  "Pay the electricity bill before the 15th"
+  → Has a specific time or date.
+  → Should fire a notification.
+  → Google Calendar connection relevant here.
+
+Type 4 — INTENTION (soft, no deadline)
+  "I want to spend more time with family"
+  "I should be more patient with myself"
+  "I want to learn something new this month"
+  → No hard deadline or recurrence.
+  → ARYA checks in on these periodically.
+  → Tracks sentiment, not completion.
+```
+
+---
+
+## The Database Changes Needed
+
+```sql
+-- Add goal_type to arya_goals
+ALTER TABLE arya_goals
+  ADD COLUMN goal_type TEXT DEFAULT 'habit'
+    CHECK (goal_type IN ('task', 'habit', 'reminder', 'intention')),
+  ADD COLUMN due_date TIMESTAMPTZ,
+  ADD COLUMN reminder_time TIMESTAMPTZ,
+  ADD COLUMN reminder_fired BOOLEAN DEFAULT false,
+  ADD COLUMN calendar_event_id TEXT,
+  ADD COLUMN recurrence TEXT,
+  -- 'daily' | 'weekdays' | 'weekly' | 'custom' | null
+  ADD COLUMN completed_at TIMESTAMPTZ,
+  ADD COLUMN is_completed BOOLEAN DEFAULT false,
+  ADD COLUMN people_involved TEXT[],
+  -- ["Priya", "Rajan"] — for social tasks
+  ADD COLUMN context_note TEXT;
+  -- what ARYA understood about why this matters
+```
+
+---
+
+## The Goal Detection Rewrite
+
+In `chat-engine.ts`, the goal detection pattern needs to be much broader.
+
+```typescript
+// server/arya/goal-detector.ts — rewrite
+
+const GOAL_DETECTION_PROMPT = `
+You are analysing a conversation to detect any goals,
+tasks, reminders, or intentions the user has expressed.
+
+Extract EVERY goal-like expression — not just habits.
+This includes:
+- Tasks: "I need to message X", "I should call Y"
+- Reminders: "remind me to Z at [time]", "don't let me forget"
+- Habits: "I want to start doing X daily/every morning"
+- Intentions: "I want to be better at X", "I should X more"
+- Deadlines: "I need to finish X by [date/time]"
+- Social goals: "I should spend more time with X"
+- Work goals: "Follow up on X", "Complete X before Y"
+- Any other personal commitment or intention
+
+For each goal found, return:
+{
+  "goals": [
+    {
+      "title": "brief, clear title",
+      "goal_type": "task" | "habit" | "reminder" | "intention",
+      "due_date": "ISO date or null",
+      "reminder_time": "ISO datetime or null",
+      "recurrence": "daily" | "weekdays" | "weekly" | null,
+      "people_involved": ["names mentioned"],
+      "context_note": "why this matters to the user",
+      "confidence": 0.0-1.0
+    }
+  ]
+}
+
+Only include goals with confidence > 0.65.
+Return empty goals array if nothing found.
+User message: {{message}}
+Recent context: {{last_3_messages}}
+`;
+
+// Examples that should NOW be detected:
+
+// "I need to message Priya about the project timeline"
+// → { type: 'task', title: 'Message Priya about project timeline',
+//     people_involved: ['Priya'] }
+
+// "Remind me to call the bank at 2pm tomorrow"
+// → { type: 'reminder', title: 'Call the bank',
+//     reminder_time: '[tomorrow 2pm ISO]' }
+
+// "I should follow up with the investor this week"
+// → { type: 'task', title: 'Follow up with investor',
+//     due_date: '[end of week ISO]' }
+
+// "I want to spend more quality time with my kids"
+// → { type: 'intention', title: 'More quality time with kids',
+//     people_involved: ['kids'] }
+
+// "I need to submit the proposal before Friday"
+// → { type: 'task', title: 'Submit proposal',
+//     due_date: '[Friday ISO]' }
+
+// "Walk every morning"
+// → { type: 'habit', title: 'Morning walk',
+//     recurrence: 'daily' }
+```
+
+---
+
+## Google Calendar Integration — How It Connects
+
+You already have Calendar OAuth. Wire goal creation to it.
+
+```typescript
+// server/arya/goal-calendar-sync.ts
+
+async function syncGoalToCalendar(
+  goal: Goal,
+  userId: string
+): Promise<string | null> {
+
+  // Only sync goals with time component
+  if (!goal.due_date && !goal.reminder_time) return null;
+
+  // Only if user has calendar connected
+  const calendarConnected = await isCalendarConnected(userId);
+  if (!calendarConnected) return null;
+
+  const eventTime = goal.reminder_time || goal.due_date;
+
+  const calendarEvent = {
+    summary: `ARYA: ${goal.title}`,
+    description: goal.context_note || '',
+    start: {
+      dateTime: eventTime,
+      timeZone: await getUserTimezone(userId)
+    },
+    end: {
+      dateTime: addMinutes(eventTime, 30), // 30 min default
+      timeZone: await getUserTimezone(userId)
+    },
+    reminders: {
+      useDefault: false,
+      overrides: [
+        { method: 'popup', minutes: 30 },
+        { method: 'popup', minutes: 5 }
+      ]
+    }
+  };
+
+  const event = await createCalendarEvent(userId, calendarEvent);
+  return event.id; // stored in goal.calendar_event_id
+}
+```
+
+---
+
+## The ARYA Response — How It Should Sound
+
+When ARYA detects a goal, it should confirm naturally — not robotically.
+
+```typescript
+// Goal confirmation responses by type
+
+const GOAL_CONFIRMATIONS = {
+
+  task: (goal) => [
+    `Got it — I've noted "${goal.title}".${
+      goal.due_date ? ` I'll remind you before ${formatDate(goal.due_date)}.` : ''
+    }`,
+    `Added to your list: ${goal.title}.${
+      goal.people_involved?.length
+        ? ` I'll keep ${goal.people_involved[0]} in mind.`
+        : ''
+    }`,
+  ],
+
+  reminder: (goal) => [
+    `Reminder set — I'll nudge you ${
+      formatRelativeTime(goal.reminder_time)
+    } about ${goal.title}.${
+      goal.calendar_event_id ? ' Also added to your calendar.' : ''
+    }`,
+  ],
+
+  habit: (goal) => [
+    `${goal.title} — I'll track this with you. Starting tomorrow?`,
+    `Let's build this. I'll check in on ${goal.title} daily.`,
+  ],
+
+  intention: (goal) => [
+    `I hear that. "${goal.title}" — I'll keep this in mind as we talk.`,
+    `That matters. I'll check in on this with you from time to time.`,
+  ],
+
+};
+```
+
+---
+
+## The Reminder Firing — Using Existing Scheduler
+
+You already have `reminder-scheduler.ts`. Add a goal reminder check.
+
+```typescript
+// Add to reminder-scheduler.ts
+
+async function checkGoalReminders() {
+  const now = new Date();
+  const upcoming = await db.query(`
+    SELECT g.*, u.id as user_id
+    FROM arya_goals g
+    JOIN arya_users u ON g.user_id = u.id
+    WHERE g.goal_type IN ('task', 'reminder')
+      AND g.reminder_time IS NOT NULL
+      AND g.reminder_time <= NOW() + INTERVAL '5 minutes'
+      AND g.reminder_time >= NOW() - INTERVAL '5 minutes'
+      AND g.reminder_fired = false
+      AND g.is_completed = false
+  `);
+
+  for (const goal of upcoming) {
+    await sendNotification(goal.user_id, {
+      type: 'goal_reminder',
+      title: `ARYA reminder`,
+      body: goal.title,
+      data: { goal_id: goal.id }
+    });
+
+    await db.query(`
+      UPDATE arya_goals
+      SET reminder_fired = true
+      WHERE id = $1
+    `, [goal.id]);
+  }
+}
+
+// Run every 5 minutes alongside existing checks
+```
+
+---
+
+## The My Goals Page — Needs Restructuring
+
+Currently shows all goals as a flat list with streaks. Needs tabs by type.
+
+```
+My Goals page — updated layout:
+
+┌─────────────────────────────┐
+│  Today's tasks         (3)  │  ← tasks due today
+│  Reminders             (2)  │  ← reminders firing today/soon
+│  Habits                (4)  │  ← daily check-in style
+│  Intentions            (2)  │  ← soft goals ARYA tracks
+│  All goals                  │  ← everything
+└─────────────────────────────┘
+
+Task card:
+  ☐ Message Priya about project
+    Due: Today · People: Priya
+    [Complete] [Reschedule] [Delete]
+
+Reminder card:
+  🔔 Call the bank
+    3:00 PM today · Calendar synced ✓
+    [Mark done] [Snooze 1hr] [Delete]
+
+Habit card:
+  🔥 Morning walk — 30 mins
+    Streak: 13 days · Today: ☐
+    [Log today] [View history]
+
+Intention card:
+  💭 More quality time with kids
+    Added 3 weeks ago
+    ARYA: "How has this been going?"
+    [Reflect] [Convert to habit] [Archive]
+```
+
+---
+
+## What ARYA Says When It Creates A Goal
+
+Every goal type gets a different confirmation. No more generic "Goal added."
+
+```
+Task detected:
+  User: "I need to message Priya about the timeline"
+  ARYA: "Added to your list — message Priya about the
+         timeline. Want me to remind you at a specific time?"
+
+Reminder detected:
+  User: "Remind me to call the bank at 2pm tomorrow"
+  ARYA: "Done. I'll remind you tomorrow at 2pm to call
+         the bank. Added to your calendar too."
+
+Habit detected:
+  User: "I want to start meditating every morning"
+  ARYA: "Let's build this. Morning meditation — I'll
+         check in with you on this every day. Starting
+         tomorrow morning?"
+
+Intention detected:
+  User: "I want to be more patient with myself"
+  ARYA: "That's worth holding onto. I'll keep this in
+         mind — and I'll ask you about it from time to
+         time. No pressure, just reflection."
+```
+
+---
+
+## The Full Fix — Summary For Your Developer
+
+```
+1. Database (30 mins)
+   ALTER arya_goals → add 8 columns
+   goal_type, due_date, reminder_time, reminder_fired,
+   calendar_event_id, recurrence, is_completed, people_involved
+
+2. Goal detector rewrite (2–3 hours)
+   Replace pattern matching with GPT-4o-mini prompt
+   Detect all 4 types — task, habit, reminder, intention
+   Extract time, people, deadline from natural language
+
+3. Calendar sync (2 hours)
+   Wire goal creation → createCalendarEvent()
+   For goals with due_date or reminder_time only
+   Store event ID in goal for future updates/deletes
+
+4. Scheduler update (1 hour)
+   Add checkGoalReminders() to existing scheduler
+   Runs every 5 minutes alongside existing checks
+
+5. My Goals page (2–3 hours)
+   Add goal_type tabs — Today / Reminders / Habits / Intentions
+   Different card UI per type
+   Complete / Snooze / Reschedule actions
+
+6. Goal confirmations (1 hour)
+   Type-specific ARYA responses after goal creation
+   Natural language — not "Goal added successfully"
+```
+
+**Total: roughly one sprint. Two developers, three days.**
+
+The architecture is already there — scheduler, calendar, notifications, memory engine. This is wiring and a goal detector upgrade, not a rebuild.

@@ -258,6 +258,8 @@ export type InsertAryaMemory = z.infer<typeof insertAryaMemorySchema>;
 export type AryaMemory = typeof aryaMemory.$inferSelect;
 
 // Goals & Plans - Break complex tasks into steps, track across sessions
+export type GoalType = 'task' | 'habit' | 'reminder' | 'intention';
+
 export const aryaGoals = pgTable("arya_goals", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tenantId: varchar("tenant_id", { length: 100 }).notNull(),
@@ -271,9 +273,20 @@ export const aryaGoals = pgTable("arya_goals", {
   completedAt: timestamp("completed_at"),
   conversationId: integer("conversation_id"),
   dailyTargetMinutes: integer("daily_target_minutes"),
-  reminderTime: varchar("reminder_time", { length: 10 }),
+  reminderTime: varchar("reminder_time", { length: 10 }),  // HH:MM for daily habit reminders
   streakCount: integer("streak_count").default(0).notNull(),
   lastActivityAt: timestamp("last_activity_at"),
+  // ── New goal-type system ──────────────────────────────────────────────────
+  goalType: varchar("goal_type", { length: 20 }).default("habit").notNull().$type<GoalType>(),
+  dueDate: timestamp("due_date", { withTimezone: true }),       // deadline for tasks
+  reminderAt: timestamp("reminder_at", { withTimezone: true }), // specific datetime reminder
+  reminderFired: boolean("reminder_fired").default(false).notNull(),
+  calendarEventId: varchar("calendar_event_id", { length: 500 }),
+  recurrence: varchar("recurrence", { length: 20 }),            // daily/weekdays/weekly/null
+  isCompleted: boolean("is_completed").default(false).notNull(),
+  peopleInvolved: text("people_involved").array(),
+  contextNote: text("context_note"),
+  // ─────────────────────────────────────────────────────────────────────────
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

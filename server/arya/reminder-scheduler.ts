@@ -264,6 +264,57 @@ async function checkWeeklyChallenge(): Promise<void> {
   }
 }
 
+async function checkGoalReminders(): Promise<void> {
+  try {
+    const now = new Date();
+    const windowStart = new Date(now.getTime() - 5 * 60 * 1000);  // 5 min ago
+    const windowEnd   = new Date(now.getTime() + 5 * 60 * 1000);  // 5 min ahead
+
+    const upcoming = await db.execute(
+      `SELECT * FROM arya_goals
+       WHERE reminder_at IS NOT NULL
+         AND reminder_at >= $1
+         AND reminder_at <= $2
+         AND reminder_fired = false
+         AND is_completed = false
+         AND status = 'active'
+         AND user_id IS NOT NULL`,
+      [windowStart.toISOString(), windowEnd.toISOString()]
+    ) as any;
+
+    const rows = upcoming.rows || [];
+
+    for (const goal of rows) {
+      if (!goal.user_id) continue;
+
+      await sendPushToUser(goal.user_id, {
+        title: 'ARYA reminder',
+        body: goal.title,
+        data: { goalId: goal.id, type: 'goal_reminder' },
+      });
+
+      await db.execute(
+        `UPDATE arya_goals SET reminder_fired = true WHERE id = $1`,
+        [goal.id]
+      );
+
+      await db.insert(aryaNotifications).values({
+        userId: goal.user_id,
+        type: 'reminder',
+        title: 'ARYA reminder',
+        message: goal.title,
+        goalId: goal.id,
+      }).catch(() => {});
+
+      console.log(`[GoalReminder] Fired reminder for goal "${goal.title}" (user ${goal.user_id})`);
+    }
+  } catch (err: any) {
+    console.error("[GOAL REMINDER CHECK]", err.message);
+  }
+}
+
+let goalReminderInterval: ReturnType<typeof setInterval> | null = null;
+
 export function startReminderScheduler(): void {
   if (schedulerInterval) return;
   schedulerInterval = setInterval(checkAndFireReminders, 30 * 1000);
@@ -277,11 +328,12 @@ export function startReminderScheduler(): void {
   weeklyChallengeInterval = setInterval(checkWeeklyChallenge, 15 * 60 * 1000); // check every 15 min
   silenceDetectionInterval = setInterval(checkSilenceDetection, 30 * 60 * 1000); // check every 30 min
   patternsInterval = setInterval(checkPatterns, 60 * 60 * 1000); // check every hour
+  goalReminderInterval = setInterval(checkGoalReminders, 5 * 60 * 1000); // check every 5 min
 
   // Seed an initial challenge if none exists
   import("./community-challenge").then(({ seedInitialChallenge }) => seedInitialChallenge()).catch(() => {});
 
-  console.log("[SCHEDULER] Reminder scheduler started — briefing/review/challenge/silence/patterns active");
+  console.log("[SCHEDULER] Reminder scheduler started — briefing/review/challenge/silence/patterns/goal-reminders active");
 }
 
 export function stopReminderScheduler(): void {
@@ -292,4 +344,5 @@ export function stopReminderScheduler(): void {
   if (weeklyChallengeInterval) { clearInterval(weeklyChallengeInterval); weeklyChallengeInterval = null; }
   if (silenceDetectionInterval) { clearInterval(silenceDetectionInterval); silenceDetectionInterval = null; }
   if (patternsInterval) { clearInterval(patternsInterval); patternsInterval = null; }
+  if (goalReminderInterval) { clearInterval(goalReminderInterval); goalReminderInterval = null; }
 }
