@@ -68,16 +68,77 @@ export function sarvamLangToShort(sarvamCode: string): string {
   return SARVAM_MAP[sarvamCode] ?? sarvamCode.split("-")[0].toLowerCase();
 }
 
+// ── Stopword signatures for Latin-script languages ──────────────────────────
+// Each entry lists high-frequency words unique to that language that are
+// extremely unlikely to appear in English. Two matches = confident detection.
+// Words are lowercased; matching is done on the lowercased input.
+const LATIN_STOPWORDS: Array<{ lang: string; words: string[] }> = [
+  // French — distinctive: articles, negation particle, prepositions
+  { lang: "fr", words: ["le", "la", "les", "une", "des", "du", "pas", "est", "avec", "dans", "pour", "vous", "nous", "mais", "sont", "sur"] },
+  // Spanish — distinctive: articles, ser/estar forms, prepositions
+  { lang: "es", words: ["el", "ella", "los", "las", "una", "del", "que", "por", "para", "con", "pero", "como", "muy", "todo", "este", "esta"] },
+  // German — distinctive: articles (der/die/das), conjunctions, pronouns
+  { lang: "de", words: ["der", "die", "das", "und", "ich", "ist", "nicht", "ein", "eine", "mit", "für", "auf", "auch", "sind", "haben", "wird"] },
+  // Portuguese — distinctive: articles and prepositions that differ from Spanish
+  { lang: "pt", words: ["uma", "você", "para", "com", "não", "isso", "essa", "esse", "aqui", "também", "porque", "quando", "mais", "por"] },
+  // Turkish — distinctive: postpositions, suffixes encoded as standalone words
+  { lang: "tr", words: ["bir", "bu", "ve", "için", "ama", "ben", "sen", "ile", "çok", "daha", "olan", "gibi", "bunu", "kadar", "değil"] },
+  // Indonesian — distinctive: particles and determiners absent in English
+  { lang: "id", words: ["yang", "dan", "di", "ini", "itu", "tidak", "ada", "dengan", "untuk", "dari", "saya", "kami", "mereka", "juga", "sudah"] },
+  // Swahili — distinctive: noun class prefixes encoded as words
+  { lang: "sw", words: ["na", "ya", "wa", "ni", "kwa", "la", "za", "katika", "hii", "hilo", "kuwa", "pia", "sana", "lakini", "kama"] },
+];
+
+/**
+ * Detect Latin-script language by stopword matching.
+ * Requires 2+ matches to avoid false positives from borrowed words.
+ * Returns a language code or null if confidence is too low.
+ */
+function detectLatinScriptLanguage(text: string): string | null {
+  const lower = text.toLowerCase();
+  // Tokenise into whole words — punctuation stripped
+  const words = new Set(lower.match(/\b[a-záéíóúüñàâäèêëîïôùûüçœæøåßãõ]+\b/g) ?? []);
+  if (words.size === 0) return null;
+
+  let bestLang: string | null = null;
+  let bestCount = 0;
+
+  for (const { lang, words: stopwords } of LATIN_STOPWORDS) {
+    const matches = stopwords.filter(w => words.has(w)).length;
+    if (matches >= 2 && matches > bestCount) {
+      bestCount = matches;
+      bestLang = lang;
+    }
+  }
+
+  return bestLang; // null if no language reached the threshold
+}
+
 /**
  * Detect the script/language of a text string.
  * Returns a language code from ARYA's 25-language set, or 'en' as default.
+ *
+ * Detection strategy:
+ *  1. Unicode script ranges  — covers 15 non-Latin scripts (instant, zero cost)
+ *  2. Stopword matching      — covers 7 Latin-script international languages
+ *  3. Default to "en"        — English and any unrecognised Latin-script text
  */
 export function detectLanguage(text: string): string {
   if (!text || text.trim().length < 2) return "en";
+
+  // Step 1 — non-Latin script detection (fastest path)
   for (const { lang, pattern } of SCRIPT_PATTERNS) {
     if (pattern.test(text)) return lang;
   }
-  return "en"; // Latin-script or unknown → default English
+
+  // Step 2 — Latin-script language detection via stopwords
+  // Only attempt on messages long enough to have reliable stopword evidence
+  if (text.trim().length >= 8) {
+    const latinLang = detectLatinScriptLanguage(text);
+    if (latinLang) return latinLang;
+  }
+
+  return "en"; // English or undetected Latin-script
 }
 
 /**
