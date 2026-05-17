@@ -3372,7 +3372,7 @@ export default function AryaChat() {
   const currentLang = DEFAULT_LANGUAGES.find(l => l.code === selectedLanguage);
 
   return (
-    <div className="flex h-[calc(100vh-5rem)] md:h-[calc(100vh-6rem)] gap-0 md:gap-4 relative" data-testid="page-arya-chat">
+    <div className="flex h-[calc(100dvh-5rem)] md:h-[calc(100dvh-6rem)] gap-0 md:gap-4 relative" data-testid="page-arya-chat">
       <AnimatePresence>
         {showSidebar && (
           <motion.div
@@ -3993,7 +3993,7 @@ export default function AryaChat() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.4 }}
-            className="flex-1 flex flex-col items-center justify-start text-center px-4 pt-8 pb-10 overflow-y-auto"
+            className="flex-1 flex flex-col items-center justify-start text-center px-4 pt-3 md:pt-8 pb-4 md:pb-10 overflow-y-auto"
           >
             <motion.div
               data-testid="img-arya-logo"
@@ -4033,7 +4033,7 @@ export default function AryaChat() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.3 }}
-              className="text-muted-foreground max-w-md mb-3 text-sm md:text-base"
+              className="text-muted-foreground max-w-md mb-2 text-sm md:text-base hidden md:block"
             >
               {t("welcome_desc")}
             </motion.p>
@@ -4066,47 +4066,40 @@ export default function AryaChat() {
               />
             )}
 
-            {/* ── Quick Access Grid (logged-in only) ── */}
+            {/* ── Quick Access (horizontal scrollable pills) ── */}
             {isLoggedIn && (
               <motion.div
-                initial={{ opacity: 0, y: 12 }}
+                initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.35 }}
-                className="w-full max-w-md mb-4"
+                transition={{ duration: 0.35, delay: 0.32 }}
+                className="w-full max-w-md mb-3"
               >
-                <div className="flex items-center justify-between mb-2 px-1">
-                  <span className="text-[10px] uppercase tracking-widest font-bold text-gray-400 dark:text-gray-500">
-                    {t("quick_access")}
-                  </span>
-                </div>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1"
+                  style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+                >
                   {[
-                    { icon: "🎯", label: t("goals"),     action: () => { setShowGoals(true); setShowMemory(false); setShowNotes(false); setShowReminders(false); setShowCalendar(false); }, color: "amber"   },
-                    { icon: "🧠", label: t("memory"),    action: () => { setShowMemory(true); setShowGoals(false); setShowNotes(false); setShowReminders(false); setShowCalendar(false); }, color: "emerald" },
-                    { icon: "📝", label: t("notes"),     action: () => { setShowNotes(true); setShowGoals(false); setShowMemory(false); setShowReminders(false); setShowCalendar(false); }, color: "cyan"    },
-                    { icon: "😊", label: t("mood"),      action: () => setMoodCheckedInToday(false), color: "rose"    },
-                    { icon: "🔔", label: t("reminders"), action: () => { setShowReminders(true); setShowGoals(false); setShowMemory(false); setShowNotes(false); setShowCalendar(false); }, color: "violet"  },
-                    { icon: "📅", label: t("calendar"),  action: () => { setShowCalendar(true); setShowGoals(false); setShowMemory(false); setShowNotes(false); setShowReminders(false); }, color: "blue"    },
-                    { icon: "🏘️", label: t("community"), action: () => setLocation("/community"), color: "teal"    },
-                    { icon: "⚖️", label: "Niti",         action: () => setLocation("/niti"),       color: "purple"  },
+                    { icon: "🎯", label: t("goals"),     action: () => { setShowGoals(true); setShowMemory(false); setShowNotes(false); setShowReminders(false); setShowCalendar(false); } },
+                    { icon: "🧠", label: t("memory"),    action: () => { setShowMemory(true); setShowGoals(false); setShowNotes(false); setShowReminders(false); setShowCalendar(false); } },
+                    { icon: "📝", label: t("notes"),     action: () => { setShowNotes(true); setShowGoals(false); setShowMemory(false); setShowReminders(false); setShowCalendar(false); } },
+                    { icon: "😊", label: t("mood"),      action: () => setMoodCheckedInToday(false) },
+                    { icon: "🔔", label: t("reminders"), action: () => { setShowReminders(true); setShowGoals(false); setShowMemory(false); setShowNotes(false); setShowCalendar(false); } },
+                    { icon: "📅", label: t("calendar"),  action: () => { setShowCalendar(true); setShowGoals(false); setShowMemory(false); setShowNotes(false); setShowReminders(false); } },
+                    { icon: "🏘️", label: t("community"), action: () => setLocation("/community") },
+                    { icon: "⚖️", label: "Niti",         action: () => setLocation("/niti") },
                   ].map((item, i) => (
                     <motion.button
                       key={item.label}
                       data-testid={`button-quick-access-${i}`}
                       onClick={item.action}
-                      initial={{ opacity: 0, scale: 0.85 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.25, delay: 0.38 + i * 0.04 }}
-                      whileHover={{ scale: 1.07, y: -2 }}
-                      whileTap={{ scale: 0.93 }}
-                      className="flex flex-col items-center gap-1.5 py-3 px-1 rounded-2xl bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-gray-200 dark:hover:border-slate-600 transition-all group"
+                      initial={{ opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.2, delay: 0.34 + i * 0.04 }}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.92 }}
+                      className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-emerald-200 dark:hover:border-slate-500 transition-all"
                     >
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-gray-50 dark:bg-slate-700 group-hover:bg-gray-100 dark:group-hover:bg-slate-600 transition-colors">
-                        {item.icon}
-                      </div>
-                      <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200 leading-tight text-center transition-colors line-clamp-1 w-full px-0.5">
-                        {item.label}
-                      </span>
+                      <span className="text-base leading-none">{item.icon}</span>
+                      <span className="text-xs font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">{item.label}</span>
                     </motion.button>
                   ))}
                 </div>
@@ -4680,7 +4673,7 @@ export default function AryaChat() {
               <button onClick={() => setVoiceError(null)} className="text-red-500 dark:text-red-400/60 hover:text-red-500 dark:hover:text-red-400 text-xs">✕</button>
             </div>
           )}
-          <div className="flex items-center justify-center gap-2 mt-1.5 md:mt-2">
+          <div className="hidden md:flex items-center justify-center gap-2 mt-1.5 md:mt-2">
             {selectedLanguage !== "en-IN" && (
               <span className="text-[10px] md:text-xs text-amber-600 dark:text-amber-400/80 flex items-center gap-1">
                 <Volume2 className="w-3 h-3" />
