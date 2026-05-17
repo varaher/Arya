@@ -21,6 +21,42 @@ const learningEngine = new LearningEngine();
 const memoryEngine = new MemoryEngine();
 const responseCacheEngine = new ResponseCacheEngine();
 
+// ── Language-specific tone instructions ──────────────────────────────────────
+// Applied dynamically per user based on their uiLanguage preference.
+// The UNIVERSAL rule always applies; the per-language entry adds specifics.
+const UNIVERSAL_TONE_RULE = `UNIVERSAL RULE across every language:
+If the user writes casually — be casual.
+If they write with slang — match that energy.
+If they write formally — respect that.
+Mirror the user, never impose a register.`;
+
+const LANGUAGE_TONE: Record<string, string> = {
+  ar: "Use the user's Arabic dialect — Gulf, Levantine, Egyptian, or Moroccan. Never use formal fusha in casual conversation. Match their regional warmth.",
+  he: "Use modern conversational Hebrew. Informal register — אתה not formal forms. Warm and direct like a good friend.",
+  fr: "Always use 'tu' not 'vous' unless the user writes formally first. Short sentences. Natural French — not textbook.",
+  de: "Always use 'du' not 'Sie' unless the user writes formally first. Direct but warm — Germans appreciate honesty.",
+  ja: "Use です/ます polite casual form. Never keigo unless the user initiates it. Short sentences. Warm but not over-familiar.",
+  ko: "Use 해요체 (haeyoche) — polite but warm. Never 합쇼체 formal register unless the user signals it.",
+  ru: "Use ты not вы unless the user writes formally first. Russians appreciate directness — be warm but get to the point.",
+  tr: "Use sen not siz unless the user writes formally first. Warm and conversational — like a trusted older friend.",
+  zh: "Use simplified Chinese. Match the user's register. Everyday spoken Chinese — not literary or formal written style.",
+  id: "Use bahasa sehari-hari — natural everyday Indonesian. Not formal textbook Bahasa.",
+  sw: "Use standard Kiswahili understood across Kenya, Tanzania, and Uganda. Warm and communal tone.",
+  es: "Use tú not usted unless the user writes formally. Match Latin American or Spain Spanish based on their dialect cues.",
+  pt: "Use você naturally — Brazilian Portuguese warmth. Informal and direct like a friend over coffee.",
+  sa: "Respond in Sanskrit where possible. For complex thoughts blend Sanskrit with simple English gracefully. Every word should feel considered.",
+  hi: "बातचीत में दोस्त जैसा लहजा रखो। आप की जगह तुम या आप — जो user लिखे वही।",
+  ta: "நண்பனிடம் பேசுவது போல் பேசு। எளிய தமிழ் — நூல் தமிழ் இல்லை।",
+  te: "స్నేహితుడిలా మాట్లాడు। సరళమైన తెలుగు — పుస్తక భాష కాదు।",
+  kn: "ಗೆಳೆಯನ ರೀತಿ ಮಾತಾಡು। ಸರಳ ಕನ್ನಡ — ಪಠ್ಯಪುಸ್ತಕ ಶೈಲಿ ಬೇಡ।",
+  ml: "ഒരു അടുത്ത സുഹൃത്തിനോട് സംസാരിക്കുന്നതു പോലെ। ലളിതമായ മലയാളം।",
+  bn: "বন্ধুর মতো কথা বলো। সহজ বাংলা — পাঠ্যপুস্তকের ভাষা নয়।",
+  mr: "मित्रासारखं बोल। सोपी मराठी — पुस्तकी भाषा नाही।",
+  gu: "મિત્ર જેવો વ્યવહાર રાખ। સરળ ગુજરાતી — પાઠ્યપુસ્તક ભાષા નહીં।",
+  pa: "ਦੋਸਤ ਵਾਂਗ ਗੱਲ ਕਰ। ਸਾਦੀ ਪੰਜਾਬੀ — ਕਿਤਾਬੀ ਭਾਸ਼ਾ ਨਹੀਂ।",
+  od: "ବନ୍ଧୁ ଭଳି କଥା ହୁଅ। ସରଳ ଓଡ଼ିଆ — ପୁସ୍ତକ ଭାଷା ନୁହେଁ।",
+};
+
 const ARYA_SYSTEM_PROMPT = `You are ARYA — a Personal Thinking & Growth Assistant created by VARAH Group. You are not just a chatbot. You are a thinking companion, a goal tracker, a daily discipline guide, a voice-based planner, a wisdom-rooted advisor, and a life organiser. You are rooted in Bharatiya (Indian) civilizational wisdom while being globally informed.
 
 YOUR PURPOSE — Help people:
@@ -263,6 +299,7 @@ async function getUserPreferenceContext(userId?: string | null): Promise<string>
       focusAreas: aryaUsers.focusAreas,
       wisdomQuotes: aryaUsers.wisdomQuotes,
       currentWork: aryaUsers.currentWork,
+      uiLanguage: (aryaUsers as any).uiLanguage,
       age: (aryaUsers as any).age,
       city: (aryaUsers as any).city,
       occupation: (aryaUsers as any).occupation,
@@ -351,6 +388,14 @@ async function getUserPreferenceContext(userId?: string | null): Promise<string>
     };
     if (user.wisdomQuotes && wisdomMap[user.wisdomQuotes]) {
       parts.push(`- Wisdom & quotes: ${wisdomMap[user.wisdomQuotes]}`);
+    }
+
+    // Language-specific tone — injected per user's UI language preference
+    const lang = (user as any).uiLanguage || "en";
+    parts.push(`\nLANGUAGE TONE — THIS SESSION:\n${UNIVERSAL_TONE_RULE}`);
+    const specificTone = LANGUAGE_TONE[lang];
+    if (specificTone) {
+      parts.push(`SPECIFIC TO ${lang.toUpperCase()}: ${specificTone}`);
     }
 
     return parts.length > 1 ? parts.join("\n") : "";
