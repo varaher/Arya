@@ -39,6 +39,23 @@ const SCRIPT_PATTERNS: Array<{ lang: string; pattern: RegExp }> = [
 // — not worth the complexity for our use case.
 
 /**
+ * Convert a Sarvam-style BCP-47 language tag (e.g. "hi-IN", "ta-IN", "ml-IN")
+ * into the short code used throughout ARYA (e.g. "hi", "ta", "ml").
+ * If the code is already short or unrecognised, it is returned as-is.
+ */
+export function sarvamLangToShort(sarvamCode: string): string {
+  if (!sarvamCode) return "en";
+  // "hi-IN" → "hi", "ta-IN" → "ta", "ur-IN" → "ur"
+  const short = sarvamCode.split("-")[0].toLowerCase();
+  // Map Sarvam-specific codes that differ from ARYA codes
+  const SARVAM_MAP: Record<string, string> = {
+    ur: "hi",   // Urdu → treat as Hindi (same Devanagari thinking layer)
+    or: "od",   // Sarvam uses "or" for Odia; ARYA uses "od"
+  };
+  return SARVAM_MAP[short] ?? short;
+}
+
+/**
  * Detect the script/language of a text string.
  * Returns a language code from ARYA's 25-language set, or 'en' as default.
  */

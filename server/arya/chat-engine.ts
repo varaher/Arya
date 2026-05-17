@@ -10,7 +10,7 @@ import { db } from "../db";
 import { aryaGoals, aryaGoalSteps, aryaNotifications, aryaUsers, aryaReminders } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { fetchLatestNews, fetchMarketNews, formatNewsForChat } from "./news-service";
-import { detectLanguage, buildLanguageInstruction, autoUpdateLanguagePreference } from "./language-detector";
+import { detectLanguage, buildLanguageInstruction, autoUpdateLanguagePreference, sarvamLangToShort } from "./language-detector";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -432,7 +432,8 @@ export async function generateAryaResponse(
   tenantId: string = "varah",
   conversationId?: number,
   userId?: string | null,
-  voiceMode: boolean = false
+  voiceMode: boolean = false,
+  sarvamDetectedLang?: string   // Pre-detected by Sarvam STT — skips script detection
 ): Promise<{ stream: AsyncIterable<string>; meta: AryaResponseMeta }> {
   const startTime = Date.now();
 
@@ -588,7 +589,13 @@ export async function generateAryaResponse(
   const userPrefs = await getUserPreferenceContext(userId);
 
   // ── Language detection ────────────────────────────────────────────────────
-  const detectedLang = detectLanguage(userMessage);
+  // For voice input: Sarvam STT already detected the language accurately —
+  // use it directly. For typed text: run script detection on the message.
+  // (In the voice path, userMessage is the English translation, so
+  //  detectLanguage() would wrongly return "en" — hence the override.)
+  const detectedLang = sarvamDetectedLang
+    ? sarvamLangToShort(sarvamDetectedLang)
+    : detectLanguage(userMessage);
   const langInstruction = buildLanguageInstruction(conversationHistory, detectedLang, "en");
   // Fire async — never blocks the response
   autoUpdateLanguagePreference(userId, detectedLang, conversationHistory).catch(() => {});

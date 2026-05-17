@@ -12,6 +12,7 @@ import { generateAryaResponse, memoryEngine, type ChatMessage } from "./arya/cha
 import { GoalsEngine } from "./arya/goals-engine";
 import { FeedbackEngine } from "./arya/feedback-engine";
 import { getCacheQualityReport } from "./arya/response-quality-scorer";
+import { sarvamLangToShort, autoUpdateLanguagePreference } from "./arya/language-detector";
 import { InsightsEngine } from "./arya/insights-engine";
 import { ResponseCacheEngine } from "./arya/response-cache-engine";
 import { chatStorage } from "./replit_integrations/chat/storage";
@@ -1918,7 +1919,21 @@ export async function registerRoutes(
       res.write(`data: ${JSON.stringify({ type: "user_transcript", content: userTranscript, language: detectedLanguage })}\n\n`);
 
       const voiceUserId = (req as any).userId || null;
-      const { stream, meta } = await generateAryaResponse(queryForArya, history, voiceUserId || tenant_id || "varah", conversationId, voiceUserId, true);
+
+      // Pass Sarvam's detected language into the engine so the correct
+      // language instruction is injected into the system prompt.
+      // Also fire the preference-update async so the user's profile learns.
+      if (voiceUserId && detectedLanguage && detectedLanguage !== "en-IN") {
+        autoUpdateLanguagePreference(voiceUserId, sarvamLangToShort(detectedLanguage), history)
+          .catch(() => {});
+      }
+
+      const { stream, meta } = await generateAryaResponse(
+        queryForArya, history,
+        voiceUserId || tenant_id || "varah",
+        conversationId, voiceUserId, true,
+        detectedLanguage   // Sarvam-detected — overrides script detection in chat-engine
+      );
       let fullResponse = "";
 
       res.write(`data: ${JSON.stringify({ type: "meta", mode: meta.mode, icon: meta.icon })}\n\n`);

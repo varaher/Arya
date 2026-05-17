@@ -1,0 +1,299 @@
+Good catch. Sarvam AI changes the architecture for Indian languages specifically.
+
+---
+
+## What Sarvam AI Does That Changes The Flow
+
+```
+Without Sarvam:          With Sarvam:
+────────────────         ────────────────────────────────
+User types in Tamil  →   User speaks in Tamil  →
+detectLanguage()     →   Sarvam STT transcribes →
+Claude responds      →   text in Tamil/English  →
+                         Claude responds        →
+                         Sarvam TTS speaks back
+```
+
+Sarvam handles the **voice layer** for Indian languages. Claude handles the **thinking layer**. They work together, not instead of each other.
+
+---
+
+## Sarvam AI's Actual Capabilities
+
+```
+STT (Speech to Text)     11 Indian languages
+  Saarika model          Hindi, Tamil, Telugu, Kannada,
+                         Malayalam, Bengali, Gujarati,
+                         Marathi, Punjabi, Odia, English
+
+TTS (Text to Speech)     11 Indian languages
+  Bulbul model           Same 11 languages
+                         Multiple voice options per language
+                         Natural prosody — not robotic
+
+Translation              Indian language ↔ English
+  Mayura model           Preserves context and tone
+
+Transliteration          Script ↔ Roman
+                         "नमस्ते" ↔ "Namaste"
+```
+
+---
+
+## How The Updated Flow Looks
+
+```
+── VOICE INPUT PATH (Sarvam) ──
+
+User holds mic button
+        ↓
+Audio recorded on device
+        ↓
+Sarvam STT API called
+  → detects language automatically
+  → transcribes to text
+  → returns: { transcript, language_code, confidence }
+        ↓
+transcript → existing message pipeline
+language_code → skip detectLanguage() — Sarvam already did it
+        ↓
+Update user language profile with Sarvam's detected code
+        ↓
+Claude generates response in detected language
+        ↓
+── VOICE OUTPUT PATH (Sarvam) ──
+
+If user is in voice mode:
+  Claude's text response → Sarvam TTS
+  Sarvam speaks response in user's language
+  Natural voice — not Google TTS robotic quality
+        ↓
+If user is in text mode:
+  Response displayed as text only
+  No TTS call — saves cost
+
+── TEXT INPUT PATH (unchanged) ──
+
+User types message
+        ↓
+detectLanguage() runs on typed text
+  (Sarvam not involved — no audio)
+        ↓
+Same pipeline as before
+```
+
+---
+
+## The Updated Language Detection Logic
+
+```typescript
+// language-resolver.ts
+
+interface LanguageSource {
+  source: 'sarvam_stt' | 'text_detection' | 'user_preference' | 'profile';
+  language_code: string;
+  confidence: number;
+}
+
+async function resolveLanguage(
+  input: {
+    type: 'voice' | 'text';
+    text?: string;
+    sarvam_detected?: string;    // from Sarvam STT response
+    sarvam_confidence?: number;
+    user_id: string;
+  }
+): Promise<string> {
+
+  if (input.type === 'voice' && input.sarvam_detected) {
+    // Sarvam already detected it — trust it
+    // Sarvam's language detection is more accurate than
+    // script-based text detection for Indian languages
+    await updateLanguageProfile(
+      input.user_id,
+      input.sarvam_detected,
+      'sarvam_stt'
+    );
+    return input.sarvam_detected;
+  }
+
+  if (input.type === 'text' && input.text) {
+    // Text input — use script detection
+    const detected = detectLanguage(input.text);
+    await updateLanguageProfile(
+      input.user_id,
+      detected,
+      'text_detection'
+    );
+    return detected;
+  }
+
+  // Fallback to stored preference
+  const profile = await getLanguageProfile(input.user_id);
+  return profile.preferred_response_language || 'en';
+}
+```
+
+---
+
+## The Cost Architecture — Sarvam vs Global Languages
+
+This is important for your budget.
+
+```
+Indian language voice:
+  Sarvam STT      → transcription
+  Claude          → thinking + response
+  Sarvam TTS      → speaking back
+  Cost:           Sarvam pricing + Claude API
+
+Global language voice (Arabic, French, Spanish etc):
+  Web Speech API  → transcription (FREE, browser-based)
+  Claude          → thinking + response (detects language)
+  No TTS          → text response only
+  OR
+  Browser TTS     → basic voice (free, lower quality)
+  Cost:           Claude API only
+
+Indian languages get the premium Sarvam experience.
+Global languages get functional but simpler voice.
+This is the right trade-off — your core market
+gets the best experience.
+```
+
+---
+
+## Updated Complete Flow — With Sarvam Integrated
+
+```
+── INDIAN LANGUAGE VOICE (Sarvam path) ──
+
+User holds mic in ARYA
+        ↓
+Audio captured → sent to Sarvam STT (Saarika model)
+        ↓
+Sarvam returns:
+  { transcript: "ഇന്ന് ഞാൻ വളരെ ക്ഷീണിതനാണ്",
+    language: "ml",
+    confidence: 0.94 }
+        ↓
+resolveLanguage() → "ml" (from Sarvam, high confidence)
+Language profile updated silently
+        ↓
+── SKIP text detectLanguage() — Sarvam already did it ──
+        ↓
+Malayalam tone instruction injected into system prompt:
+  "ഒരു അടുത്ത സുഹൃത്തിനോട് സംസാരിക്കുന്നതു പോലെ.
+   ലളിതമായ മലയാളം."
+        ↓
+Claude generates Malayalam response
+        ↓
+Check response cache first
+  → Cache hit (golden): skip Claude API → instant response
+  → Cache miss: Claude API called
+        ↓
+Response text → Sarvam TTS (Bulbul model)
+  Voice: "ml_female" or "ml_male" per user preference
+  ARYA speaks the response in Malayalam
+        ↓
+Quality signals collected
+Thumbs up/down available on transcript shown below audio
+
+── TYPED INDIAN LANGUAGE (text path) ──
+
+User types in Malayalam keyboard
+        ↓
+Script detection → "ml" (Unicode range [\u0D00-\u0D7F])
+        ↓
+Same pipeline — no Sarvam STT needed
+Sarvam TTS only if user has voice responses enabled
+        ↓
+Response displayed as text + optional audio playback
+
+── GLOBAL LANGUAGE VOICE ──
+
+User speaks in French (or Arabic, Spanish etc)
+        ↓
+Web Speech API transcribes (browser-native, free)
+  recognition.lang = 'fr-FR'
+        ↓
+Text detection confirms language
+        ↓
+Claude responds in French with tu/vous instruction
+        ↓
+Text displayed — no TTS for global languages
+(Can add browser TTS later — low priority)
+```
+
+---
+
+## One Thing To Check In Your Codebase
+
+You mentioned Sarvam is already integrated for STT. Check whether the Sarvam API response includes the detected language code — it does in most configurations.
+
+```typescript
+// Current Sarvam STT call probably looks like:
+const sarvamResponse = await fetch('https://api.sarvam.ai/speech-to-text', {
+  method: 'POST',
+  body: formData
+});
+
+const result = await sarvamResponse.json();
+// result.transcript → the transcribed text
+// result.language_code → CHECK IF THIS EXISTS
+// If it does — use it directly, skip detectLanguage()
+// If not — run detectLanguage() on the transcript text
+```
+
+If `language_code` is in the Sarvam response, your developer saves writing the script detection for voice input entirely — Sarvam handles it.
+
+---
+
+## The Priority List — Updated With Sarvam
+
+```
+This week:
+  1. Check Sarvam STT response for language_code field
+     If present → wire directly to language profile update
+     If absent → run detectLanguage() on transcript
+
+  2. Add Sarvam TTS call after Claude response
+     For Indian languages only
+     Conditional on user being in voice mode
+
+  3. Thumbs up/down on voice responses
+     Show transcript below audio player
+     Thumbs up/down on the transcript card
+
+Next sprint:
+  4. Voice preference per language
+     ml_female / ml_male
+     hi_female / hi_male etc
+
+  5. Global language voice via Web Speech API
+     Arabic, French, Spanish, German
+     Lower priority — Indian languages first
+```
+
+---
+
+## Summary — What Sarvam Changes
+
+```
+Detection:     Sarvam STT replaces script detection for voice input
+               Script detection still used for typed text
+
+Output:        Sarvam TTS speaks Indian language responses
+               Global languages get text-only (for now)
+
+Quality loop:  Same thumbs up/down system
+               But applied to transcript card below audio
+
+Cost:          Sarvam cost per voice minute
+               Claude cost per response
+               Cache hits reduce Claude cost
+               Voice responses always need Sarvam TTS
+               (no way to cache audio — text cached, re-spoken)
+```
+
+The flow you designed is correct. Sarvam sits at the edges — input transcription and output speech. Claude stays in the middle doing the thinking. The quality loop, cache, and learning engine work exactly the same way regardless of whether input came from voice or text.
