@@ -1829,6 +1829,187 @@ const PRODUCTIVITY_FACTS_DATA = [
   { fact: "People make better decisions when they are mildly hungry, not full.", emoji: "🍎" },
 ];
 
+const STATIC_HOME_QUOTES = [
+  "The clearest sign of wisdom is continued cheerfulness. — Montaigne",
+  "You don't have to see the whole staircase, just take the first step. — MLK",
+  "The mind is everything. What you think, you become. — Buddha",
+  "An investment in knowledge pays the best interest. — Franklin",
+  "Where focus goes, energy flows. — Tony Robbins",
+  "Clarity is the counterbalance of profound thoughts. — Luc de Clapiers",
+  "Begin anywhere. — John Cage",
+  "A year from now you'll wish you had started today.",
+  "Think lightly of yourself and deeply of the world. — Miyamoto Musashi",
+  "The quieter you become, the more you can hear. — Ram Dass",
+];
+
+// ── Feature tour cards shown once to new users on first login ──────────────
+const FEATURE_TOUR_CARDS = [
+  {
+    icon: "🎤",
+    title: "Speak to ARYA",
+    desc: "Tap the mic and talk naturally — ARYA listens and responds in any of 11 Indian languages.",
+    color: "#059669",
+    bg: "linear-gradient(135deg, #d1fae5, #ecfdf5)",
+    border: "rgba(6,78,59,0.15)",
+  },
+  {
+    icon: "📎",
+    title: "Upload documents",
+    desc: "Share a PDF, image, or photo. ARYA reads it and answers your questions about it instantly.",
+    color: "#7c3aed",
+    bg: "linear-gradient(135deg, #ede9fe, #f5f3ff)",
+    border: "rgba(109,40,217,0.15)",
+  },
+  {
+    icon: "🎧",
+    title: "Voice responses",
+    desc: "Tap the headphone icon to hear ARYA speak. Perfect for hands-free use on the go.",
+    color: "#0891b2",
+    bg: "linear-gradient(135deg, #cffafe, #ecfeff)",
+    border: "rgba(8,145,178,0.15)",
+  },
+  {
+    icon: "🌐",
+    title: "Voice language",
+    desc: "The globe icon lets you switch the voice language — Hindi, Tamil, Telugu, and more.",
+    color: "#d97706",
+    bg: "linear-gradient(135deg, #fef3c7, #fffbeb)",
+    border: "rgba(180,83,9,0.15)",
+  },
+  {
+    icon: "🎯",
+    title: "Goals",
+    desc: "Open the Goals panel from the sidebar — set any goal and ARYA helps you build a plan.",
+    color: "#dc2626",
+    bg: "linear-gradient(135deg, #fee2e2, #fff5f5)",
+    border: "rgba(185,28,28,0.15)",
+  },
+  {
+    icon: "🧠",
+    title: "Memory",
+    desc: "ARYA remembers what matters about you across sessions — your context, always fresh.",
+    color: "#7c3aed",
+    bg: "linear-gradient(135deg, #ede9fe, #faf5ff)",
+    border: "rgba(109,40,217,0.15)",
+  },
+  {
+    icon: "📝",
+    title: "Voice Notes",
+    desc: "The Notes tab in the sidebar stores quick voice memos — transcribed and searchable.",
+    color: "#0284c7",
+    bg: "linear-gradient(135deg, #dbeafe, #eff6ff)",
+    border: "rgba(2,132,199,0.15)",
+  },
+];
+
+function FirstLoginFeatureTour({ userId, onDone }: { userId: string; onDone: () => void }) {
+  const [step, setStep] = useState(0);
+  const [exiting, setExiting] = useState(false);
+  const total = FEATURE_TOUR_CARDS.length;
+  const card = FEATURE_TOUR_CARDS[step];
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (step < total - 1) {
+        setStep(s => s + 1);
+      } else {
+        handleDone();
+      }
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [step]);
+
+  const handleDone = () => {
+    try { localStorage.setItem(`arya_feature_tour_done_${userId}`, "1"); } catch {}
+    setExiting(true);
+    setTimeout(onDone, 300);
+  };
+
+  const handleNext = () => {
+    if (step < total - 1) setStep(s => s + 1);
+    else handleDone();
+  };
+
+  return (
+    <AnimatePresence>
+      {!exiting && (
+        <motion.div
+          data-testid="card-feature-tour"
+          key={step}
+          initial={{ opacity: 0, y: 60, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -40, scale: 0.95 }}
+          transition={{ type: "spring", stiffness: 320, damping: 28 }}
+          className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[60] w-[calc(100%-2rem)] max-w-sm"
+        >
+          <div
+            className="rounded-2xl shadow-2xl overflow-hidden"
+            style={{ background: card.bg, border: `1px solid ${card.border}` }}
+          >
+            <div className="px-5 py-4">
+              <div className="flex items-center gap-3 mb-3">
+                <span
+                  className="w-11 h-11 rounded-xl flex items-center justify-center text-2xl flex-shrink-0"
+                  style={{ background: "rgba(255,255,255,0.7)", border: `1px solid ${card.border}` }}
+                >
+                  {card.icon}
+                </span>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest" style={{ color: card.color }}>
+                    {step + 1} of {total}
+                  </p>
+                  <p className="text-sm font-semibold text-gray-800 leading-tight">{card.title}</p>
+                </div>
+              </div>
+              <p className="text-sm text-gray-600 leading-relaxed mb-3">{card.desc}</p>
+              {/* Progress dots */}
+              <div className="flex items-center gap-1.5 mb-3">
+                {FEATURE_TOUR_CARDS.map((_, i) => (
+                  <div
+                    key={i}
+                    className="rounded-full transition-all duration-300"
+                    style={{
+                      width: i === step ? 18 : 6,
+                      height: 6,
+                      background: i === step ? card.color : "rgba(0,0,0,0.12)",
+                    }}
+                  />
+                ))}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  data-testid="button-tour-next"
+                  onClick={handleNext}
+                  className="flex-1 py-2 rounded-xl text-xs font-semibold text-white transition-all"
+                  style={{ background: card.color }}
+                >
+                  {step < total - 1 ? "Next →" : "Got it ✓"}
+                </button>
+                <button
+                  data-testid="button-tour-skip"
+                  onClick={handleDone}
+                  className="px-4 py-2 rounded-xl text-xs font-medium text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  Skip
+                </button>
+              </div>
+            </div>
+            {/* Auto-advance progress bar */}
+            <motion.div
+              key={`bar-${step}`}
+              className="h-0.5"
+              style={{ background: card.color, opacity: 0.4 }}
+              initial={{ width: "100%" }}
+              animate={{ width: "0%" }}
+              transition={{ duration: 3, ease: "linear" }}
+            />
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 function DailyQuoteCard({ token }: { token: string | null }) {
   const today = new Date().toDateString();
   const cacheKey = `arya_quote_v3_${today}`;
@@ -1855,9 +2036,38 @@ function DailyQuoteCard({ token }: { token: string | null }) {
     retry: false,
   });
 
-  if (!token) return null;
-
+  const [staticQuoteIdx] = useState(() => Math.floor(Math.random() * STATIC_HOME_QUOTES.length));
   const currentFact = PRODUCTIVITY_FACTS_DATA[factIndex];
+
+  // Logged-out users: show a static inspirational quote directly (no API call needed)
+  if (!token) {
+    return (
+      <motion.div
+        data-testid="card-daily-quote"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+        className="w-full max-w-md mx-auto mb-3 rounded-2xl overflow-hidden"
+        style={{
+          background: "linear-gradient(135deg, rgba(6,78,59,0.07) 0%, rgba(245,158,11,0.07) 100%)",
+          border: "1px solid rgba(6,78,59,0.14)",
+        }}
+      >
+        <div className="px-5 py-4">
+          <p
+            className="text-sm leading-relaxed text-gray-700 dark:text-gray-200 font-medium mb-2"
+            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+            data-testid="text-daily-quote"
+          >
+            "{STATIC_HOME_QUOTES[staticQuoteIdx]}"
+          </p>
+          <p className="text-[10px] uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-semibold">
+            — ARYA · daily wisdom
+          </p>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
@@ -1876,7 +2086,7 @@ function DailyQuoteCard({ token }: { token: string | null }) {
       }}
     >
       <div className="px-5 py-3.5">
-        {isLoading ? (
+        {token && isLoading ? (
           <div className="flex items-center gap-2 py-1">
             <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-600 dark:text-emerald-400" />
             <span className="text-xs text-gray-400 dark:text-gray-500 italic">Preparing your reflection for today…</span>
@@ -1896,10 +2106,10 @@ function DailyQuoteCard({ token }: { token: string | null }) {
                   style={{ fontFamily: "'Space Grotesk', sans-serif" }}
                   data-testid="text-daily-quote"
                 >
-                  "{data?.quote}"
+                  "{quoteText}"
                 </p>
                 <p className="text-[10px] uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-semibold" data-testid="text-quote-source">
-                  — ARYA · today's reflection
+                  — {quoteSource}
                 </p>
               </motion.div>
             ) : (
@@ -2275,6 +2485,7 @@ export default function AryaChat() {
   const [showPricing, setShowPricing] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showLoginToast, setShowLoginToast] = useState(false);
+  const [showFeatureTour, setShowFeatureTour] = useState(false);
   const [showFutureLetter, setShowFutureLetter] = useState(false);
   const [futureLetterDraft, setFutureLetterDraft] = useState("");
   const [futureLetterSaving, setFutureLetterSaving] = useState(false);
@@ -2480,6 +2691,16 @@ export default function AryaChat() {
       // Auto-dismiss after 6 seconds
       setTimeout(() => setShowLoginToast(false), 6000);
     }, 800);
+    return () => clearTimeout(timer);
+  }, [isLoggedIn, user?.id]);
+
+  // Show feature tour flash cards once ever for new users
+  useEffect(() => {
+    if (!isLoggedIn || !user) return;
+    const done = (() => { try { return localStorage.getItem(`arya_feature_tour_done_${user.id}`); } catch { return null; } })();
+    if (done) return;
+    // Small delay so the welcome screen fully renders first
+    const timer = setTimeout(() => setShowFeatureTour(true), 1800);
     return () => clearTimeout(timer);
   }, [isLoggedIn, user?.id]);
 
@@ -4761,6 +4982,14 @@ export default function AryaChat() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* First-login feature tour — shown once ever to new users */}
+      {showFeatureTour && isLoggedIn && user && (
+        <FirstLoginFeatureTour
+          userId={String(user.id)}
+          onDone={() => setShowFeatureTour(false)}
+        />
+      )}
 
       {/* Login welcome toast — slides in from bottom once per session */}
       <AnimatePresence>
