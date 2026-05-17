@@ -68,6 +68,7 @@ import {
   Headphones,
   ShieldCheck,
   Activity,
+  Download,
 } from "lucide-react";
 import { getTranslation, LANGUAGE_OPTIONS, type UiLanguage } from "@/lib/i18n";
 import { useLanguage } from "@/lib/language-context";
@@ -801,10 +802,10 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
             <div className="flex items-start justify-between gap-2">
               <div>
                 <div className="text-xs font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-1.5">
-                  <span>🤝</span> Share your week with someone
+                  <span>🔗</span> Weekly reflection link
                 </div>
                 <div className="text-[10px] text-gray-400 mt-0.5 leading-snug">
-                  Every Sunday, ARYA generates a private reflection — your wins, your struggles, your focus. You choose one person to share it with. They get a simple read-only link. No app needed.
+                  Each Sunday ARYA creates a private summary of your week. Turn this on to get a shareable link you can optionally send to a trusted person.
                 </div>
               </div>
               <button
@@ -2378,8 +2379,8 @@ function NotificationBell({ token }: { token: string }) {
               >
                 <div className="font-medium text-gray-700 dark:text-gray-200">{n.title}</div>
                 <div className="text-gray-400 mt-0.5">{n.message}</div>
-                <div className="text-gray-200 mt-1 text-[10px]">
-                  {new Date(n.createdAt).toLocaleDateString()}
+                <div className="text-gray-400 mt-1 text-[10px]">
+                  {new Date(n.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" })}
                 </div>
               </div>
             ))
@@ -2399,6 +2400,7 @@ export default function AryaChat() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [showVoiceMode, setShowVoiceMode] = useState(false);
   const [activeConversation, setActiveConversation] = useState<number | null>(null);
   const [input, setInput] = useState("");
@@ -2442,6 +2444,30 @@ export default function AryaChat() {
     const reg = await navigator.serviceWorker.getRegistration();
     if (reg?.waiting) reg.waiting.postMessage({ type: "SKIP_WAITING" });
     else window.location.reload();
+  };
+
+  // Capture PWA install prompt so we can offer "Add to Home Screen" in the user menu
+  useEffect(() => {
+    const isStandalone = () =>
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (window.navigator as any).standalone === true;
+    if (isStandalone()) return;
+    const handler = (e: Event) => {
+      e.preventDefault();
+      const dismissed = localStorage.getItem("arya_pwa_install_dismissed");
+      if (!dismissed) setInstallPrompt(e);
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
+  const handleInstallApp = async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    if (outcome === "accepted") localStorage.removeItem("arya_pwa_install_dismissed");
+    setInstallPrompt(null);
+    setShowUserMenu(false);
   };
 
   useEffect(() => {
@@ -3444,7 +3470,11 @@ export default function AryaChat() {
         <div className="flex-1 overflow-y-auto space-y-1 px-2 py-2" data-testid="list-conversations">
           {conversations.map((conv) => {
             const date = new Date(conv.createdAt);
-            const timeStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+            const now = new Date();
+            const isToday = date.toDateString() === now.toDateString();
+            const timeStr = isToday
+              ? date.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" })
+              : date.toLocaleDateString("en-IN", { month: "short", day: "numeric", timeZone: "Asia/Kolkata" });
             return (
               <div
                 key={conv.id}
@@ -3604,6 +3634,16 @@ export default function AryaChat() {
                     >
                       <CalendarDays className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" /> Sunday Review
                     </button>
+                    {installPrompt && (
+                      <button
+                        data-testid="button-install-app-sidebar"
+                        onClick={handleInstallApp}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 font-medium"
+                      >
+                        <Download className="w-3.5 h-3.5 shrink-0" />
+                        <span>Add to Home Screen</span>
+                      </button>
+                    )}
                     {updateAvailable && (
                       <button
                         data-testid="button-update-app-sidebar"
@@ -3804,6 +3844,16 @@ export default function AryaChat() {
                       >
                         <CalendarDays className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" /> Sunday Review
                       </button>
+                      {installPrompt && (
+                        <button
+                          data-testid="button-install-app"
+                          onClick={handleInstallApp}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-xs text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 font-medium"
+                        >
+                          <Download className="w-3.5 h-3.5 shrink-0" />
+                          <span>Add to Home Screen</span>
+                        </button>
+                      )}
                       {updateAvailable && (
                         <button
                           data-testid="button-update-app"
@@ -4400,10 +4450,7 @@ export default function AryaChat() {
                       <a href="/language" className="text-[10px] text-cyan-600 dark:text-cyan-400 hover:underline">Tone preview →</a>
                     </div>
                     <div className="max-h-72 overflow-y-auto py-1">
-                      <div className="px-3 py-1">
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">India — Sarvam AI</p>
-                      </div>
-                      {DEFAULT_LANGUAGES.filter(l => SARVAM_LANGUAGE_CODES.has(l.code) || l.code === "en-IN").map((lang) => (
+                        {DEFAULT_LANGUAGES.filter(l => SARVAM_LANGUAGE_CODES.has(l.code) || l.code === "en-IN").map((lang) => (
                         <button
                           key={lang.code}
                           data-testid={`button-lang-${lang.code}`}
@@ -4419,10 +4466,7 @@ export default function AryaChat() {
                           <span className="text-xs text-muted-foreground">{lang.native}</span>
                         </button>
                       ))}
-                      <div className="mx-3 my-1 border-t border-gray-200 dark:border-slate-700" />
-                      <div className="px-3 py-1">
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">Global — Browser</p>
-                      </div>
+                      <div className="mx-3 my-1 border-t border-gray-100 dark:border-slate-700" />
                       {DEFAULT_LANGUAGES.filter(l => isGlobalVoiceLang(l.code)).map((lang) => (
                         <button
                           key={lang.code}

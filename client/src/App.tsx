@@ -10,6 +10,28 @@ import { UserAuthProvider, useUserAuth } from "@/lib/user-auth";
 import { ThemeProvider } from "@/lib/theme";
 import { LanguageProvider, LanguageDetectionBanner } from "@/lib/language-context";
 import PWAPrompt from "@/components/PWAPrompt";
+import { Component, type ErrorInfo, type ReactNode } from "react";
+
+class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  state = { error: null };
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  componentDidCatch(error: Error, info: ErrorInfo) { console.error("[ARYA] Render error:", error, info); }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#f8fafc", padding: "2rem", textAlign: "center" }}>
+          <div style={{ fontSize: "2.5rem", marginBottom: "1rem" }}>✦</div>
+          <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: "1.5rem", fontWeight: 700, color: "#047857", marginBottom: "0.5rem" }}>ARYA</h1>
+          <p style={{ color: "#6b7280", marginBottom: "1.5rem", maxWidth: "24rem" }}>Something went wrong. Please refresh the page — your conversations are safe.</p>
+          <button onClick={() => window.location.reload()} style={{ background: "#059669", color: "#fff", border: "none", borderRadius: "0.75rem", padding: "0.625rem 1.5rem", fontSize: "0.875rem", fontWeight: 600, cursor: "pointer" }}>
+            Refresh
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 import NotFound from "@/pages/not-found";
 
 import AryaChat from "@/pages/AryaChat";
@@ -249,24 +271,26 @@ function Router() {
 
 function App() {
   return (
-    <ThemeProvider>
-      <LanguageProvider>
-        <QueryClientProvider client={queryClient}>
-          <TooltipProvider>
-            <AdminAuthProvider>
-              <UserAuthProvider>
-                <Toaster />
-                <PWAPrompt />
-                <LanguageDetectionBanner />
-                <OnboardingGuard>
-                  <Router />
-                </OnboardingGuard>
-              </UserAuthProvider>
-            </AdminAuthProvider>
-          </TooltipProvider>
-        </QueryClientProvider>
-      </LanguageProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <LanguageProvider>
+          <QueryClientProvider client={queryClient}>
+            <TooltipProvider>
+              <AdminAuthProvider>
+                <UserAuthProvider>
+                  <Toaster />
+                  <PWAPrompt />
+                  <LanguageDetectionBanner />
+                  <OnboardingGuard>
+                    <Router />
+                  </OnboardingGuard>
+                </UserAuthProvider>
+              </AdminAuthProvider>
+            </TooltipProvider>
+          </QueryClientProvider>
+        </LanguageProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 
