@@ -1773,11 +1773,68 @@ function VoiceNotesPanel({ onClose, token, uiLang = "en" }: { onClose: () => voi
   );
 }
 
+function LoginToastContent({ token }: { token: string | null }) {
+  const today = new Date().toDateString();
+  const cacheKey = `arya_quote_v3_${today}`;
+  const [content, setContent] = useState<{ type: "quote"; text: string } | { type: "fact"; text: string; emoji: string } | null>(null);
+
+  useEffect(() => {
+    // Try cached quote first (instant, no extra API call)
+    try {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed?.quote) {
+          setContent({ type: "quote", text: parsed.quote });
+          return;
+        }
+      }
+    } catch {}
+    // Fallback: random fun fact
+    const facts = PRODUCTIVITY_FACTS_DATA;
+    const pick = facts[Math.floor(Math.random() * facts.length)];
+    setContent({ type: "fact", text: pick.fact, emoji: pick.emoji });
+  }, []);
+
+  if (!content) return <span className="text-xs text-gray-400 italic">Glad you're here.</span>;
+
+  if (content.type === "quote") {
+    return (
+      <p className="text-xs text-gray-700 leading-snug italic">
+        "{content.text}"
+      </p>
+    );
+  }
+  return (
+    <p className="text-xs text-gray-700 leading-snug">
+      <span className="mr-1" role="img">{content.emoji}</span>
+      {content.text}
+    </p>
+  );
+}
+
+const PRODUCTIVITY_FACTS_DATA = [
+  { fact: "People who write down their goals are 42% more likely to achieve them.", emoji: "✍️" },
+  { fact: "The brain processes information 60,000× faster with images than with text.", emoji: "🧠" },
+  { fact: "A 10-minute walk can boost creative thinking by up to 81%.", emoji: "🚶" },
+  { fact: "The most productive people work in 90-minute focused bursts.", emoji: "⏱️" },
+  { fact: "Sleep is your brain's cleanup crew — it consolidates memories during deep sleep.", emoji: "😴" },
+  { fact: "Saying your goal out loud to someone doubles your commitment to it.", emoji: "🗣️" },
+  { fact: "Multitasking reduces productivity by up to 40%. Single-tasking is a superpower.", emoji: "🎯" },
+  { fact: "The first 2 hours after waking are your brain's peak creativity window.", emoji: "🌅" },
+  { fact: "Gratitude journaling for 5 minutes daily rewires the brain toward optimism.", emoji: "🙏" },
+  { fact: "A clutter-free desk reduces cortisol (stress hormone) measurably.", emoji: "🧹" },
+  { fact: "Deep breathing for 60 seconds lowers heart rate and sharpens focus.", emoji: "🌬️" },
+  { fact: "People make better decisions when they are mildly hungry, not full.", emoji: "🍎" },
+];
+
 function DailyQuoteCard({ token }: { token: string | null }) {
   const today = new Date().toDateString();
   const cacheKey = `arya_quote_v3_${today}`;
+  const [showFact, setShowFact] = useState(false);
+  const [factIndex] = useState(() => Math.floor(Math.random() * PRODUCTIVITY_FACTS_DATA.length));
 
-  const { data, isLoading } = useQuery<{ quote: string; source: string }>({
+  const { data, isLoading } = useQuery<{ quote: string; source?: string }>({
     queryKey: ["/api/arya/daily-quote"],
     queryFn: async () => {
       const cached = localStorage.getItem(cacheKey);
@@ -1799,37 +1856,105 @@ function DailyQuoteCard({ token }: { token: string | null }) {
 
   if (!token) return null;
 
+  const currentFact = PRODUCTIVITY_FACTS_DATA[factIndex];
+
   return (
     <motion.div
       data-testid="card-daily-quote"
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.25 }}
-      className="w-full max-w-md mx-auto mb-3 px-5 py-3.5 rounded-2xl relative"
+      className="w-full max-w-md mx-auto mb-3 rounded-2xl relative overflow-hidden"
       style={{
-        background: "linear-gradient(135deg, rgba(6,78,59,0.06) 0%, rgba(245,158,11,0.06) 100%)",
-        border: "1px solid rgba(6,78,59,0.12)",
+        background: showFact
+          ? "linear-gradient(135deg, rgba(59,130,246,0.06) 0%, rgba(139,92,246,0.06) 100%)"
+          : "linear-gradient(135deg, rgba(6,78,59,0.06) 0%, rgba(245,158,11,0.06) 100%)",
+        border: showFact
+          ? "1px solid rgba(59,130,246,0.15)"
+          : "1px solid rgba(6,78,59,0.12)",
       }}
     >
-      {isLoading ? (
-        <div className="flex items-center gap-2 py-1">
-          <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-600 dark:text-emerald-400" />
-          <span className="text-xs text-gray-400 dark:text-gray-500 italic">Preparing your reflection for today...</span>
-        </div>
-      ) : data ? (
-        <>
-          <p
-            className="text-sm leading-relaxed text-gray-700 dark:text-gray-200 font-medium mb-2 break-words"
-            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-            data-testid="text-daily-quote"
+      <div className="px-5 py-3.5">
+        {isLoading ? (
+          <div className="flex items-center gap-2 py-1">
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-600 dark:text-emerald-400" />
+            <span className="text-xs text-gray-400 dark:text-gray-500 italic">Preparing your reflection for today…</span>
+          </div>
+        ) : (
+          <AnimatePresence mode="wait">
+            {!showFact ? (
+              <motion.div
+                key="quote"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.25 }}
+              >
+                <p
+                  className="text-sm leading-relaxed text-gray-700 dark:text-gray-200 font-medium mb-2 break-words"
+                  style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                  data-testid="text-daily-quote"
+                >
+                  "{data?.quote}"
+                </p>
+                <p className="text-[10px] uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-semibold" data-testid="text-quote-source">
+                  — ARYA · today's reflection
+                </p>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="fact"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.25 }}
+              >
+                <div className="flex items-start gap-2.5">
+                  <span className="text-xl leading-none mt-0.5" role="img" aria-label="fact">{currentFact.emoji}</span>
+                  <p
+                    className="text-sm leading-relaxed text-gray-700 dark:text-gray-200 font-medium break-words"
+                    data-testid="text-fun-fact"
+                  >
+                    {currentFact.fact}
+                  </p>
+                </div>
+                <p className="text-[10px] uppercase tracking-widest text-blue-500 dark:text-blue-400 font-semibold mt-2">
+                  Fun fact · did you know?
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        )}
+      </div>
+
+      {/* Toggle pill */}
+      {!isLoading && (
+        <div className="flex border-t border-black/5 dark:border-white/5">
+          <button
+            onClick={() => setShowFact(false)}
+            className={`flex-1 py-2 text-[10px] font-semibold tracking-wide transition-colors ${
+              !showFact
+                ? "text-emerald-600 dark:text-emerald-400 bg-emerald-50/60 dark:bg-emerald-900/20"
+                : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            }`}
+            data-testid="button-show-quote"
           >
-            "{data.quote}"
-          </p>
-          <p className="text-[10px] uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-semibold" data-testid="text-quote-source">
-            — ARYA
-          </p>
-        </>
-      ) : null}
+            ✦ Today's Reflection
+          </button>
+          <div className="w-px bg-black/5 dark:bg-white/5" />
+          <button
+            onClick={() => setShowFact(true)}
+            className={`flex-1 py-2 text-[10px] font-semibold tracking-wide transition-colors ${
+              showFact
+                ? "text-blue-500 dark:text-blue-400 bg-blue-50/60 dark:bg-blue-900/20"
+                : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            }`}
+            data-testid="button-show-fact"
+          >
+            ⚡ Fun Fact
+          </button>
+        </div>
+      )}
     </motion.div>
   );
 }
@@ -2149,6 +2274,7 @@ export default function AryaChat() {
   const [showTutorial, setShowTutorial] = useState(false);
   const [showPricing, setShowPricing] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [showLoginToast, setShowLoginToast] = useState(false);
   const [showFutureLetter, setShowFutureLetter] = useState(false);
   const [futureLetterDraft, setFutureLetterDraft] = useState("");
   const [futureLetterSaving, setFutureLetterSaving] = useState(false);
@@ -2341,6 +2467,21 @@ export default function AryaChat() {
     setActiveConversation(null);
     queryClient.invalidateQueries({ queryKey: ["/api/arya/conversations"] });
   }, [isLoggedIn, token]);
+
+  // Show login welcome toast once per session when user logs in
+  useEffect(() => {
+    if (!isLoggedIn || !user) return;
+    const sessionKey = `arya_login_toast_${user.id}_${new Date().toDateString()}`;
+    const alreadyShown = (() => { try { return sessionStorage.getItem(sessionKey); } catch { return null; } })();
+    if (alreadyShown) return;
+    const timer = setTimeout(() => {
+      setShowLoginToast(true);
+      try { sessionStorage.setItem(sessionKey, "1"); } catch {}
+      // Auto-dismiss after 6 seconds
+      setTimeout(() => setShowLoginToast(false), 6000);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [isLoggedIn, user?.id]);
 
   useEffect(() => {
     if (isLoggedIn && token && "Notification" in window && Notification.permission === "default") {
@@ -4570,6 +4711,55 @@ export default function AryaChat() {
                 </div>
               )}
             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Login welcome toast — slides in from bottom once per session */}
+      <AnimatePresence>
+        {showLoginToast && isLoggedIn && user && (
+          <motion.div
+            data-testid="card-login-toast"
+            initial={{ opacity: 0, y: 80, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 60, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 300, damping: 28 }}
+            className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-sm"
+          >
+            <div
+              className="rounded-2xl shadow-2xl overflow-hidden"
+              style={{
+                background: "linear-gradient(135deg, #f0fdf4 0%, #fefce8 100%)",
+                border: "1px solid rgba(6,78,59,0.15)",
+              }}
+            >
+              <div className="flex items-start gap-3 px-4 py-3.5">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
+                  style={{ background: "linear-gradient(135deg, #d1fae5 0%, #fef3c7 100%)", border: "1px solid rgba(6,78,59,0.12)" }}>
+                  <span className="text-base" role="img" aria-label="welcome">✦</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-emerald-700 mb-0.5">
+                    Welcome back, {user.name?.split(" ")[0] || "friend"}
+                  </p>
+                  <LoginToastContent token={token} />
+                </div>
+                <button
+                  data-testid="button-dismiss-login-toast"
+                  onClick={() => setShowLoginToast(false)}
+                  className="p-1 rounded-lg hover:bg-black/5 text-gray-400 flex-shrink-0 mt-0.5"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              {/* Auto-dismiss progress bar */}
+              <motion.div
+                className="h-0.5 bg-emerald-400/50"
+                initial={{ width: "100%" }}
+                animate={{ width: "0%" }}
+                transition={{ duration: 6, ease: "linear" }}
+              />
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
