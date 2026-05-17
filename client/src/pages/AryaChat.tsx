@@ -2040,6 +2040,10 @@ function DailyQuoteCard({ token }: { token: string | null }) {
   const [staticQuoteIdx] = useState(() => Math.floor(Math.random() * STATIC_HOME_QUOTES.length));
   const currentFact = PRODUCTIVITY_FACTS_DATA[factIndex];
 
+  // These are used in the logged-in render path below — must be declared before any early return
+  const quoteText = token ? data?.quote : STATIC_HOME_QUOTES[staticQuoteIdx];
+  const quoteSource = token ? "ARYA · today's reflection" : "ARYA · daily wisdom";
+
   // Logged-out users: show a static inspirational quote directly (no API call needed)
   if (!token) {
     return (

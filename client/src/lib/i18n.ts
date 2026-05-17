@@ -98,8 +98,6 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "Community",
     calendar:          "Calendar",
     reminders:         "Reminders",
-    sign_in_goals:     "Sign in to track goals",
-    take_tour:         "Take a Tour",
   },
 
   // ── Hindi ─────────────────────────────────────────────────────────────────────
@@ -148,8 +146,6 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "समुदाय",
     calendar:          "कैलेंडर",
     reminders:         "रिमाइंडर",
-    sign_in_goals:     "लक्ष्य ट्रैक करने के लिए साइन इन करें",
-    take_tour:         "परिचय लें",
   },
 
   // ── Marathi ───────────────────────────────────────────────────────────────────
@@ -198,8 +194,6 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "समुदाय",
     calendar:          "दिनदर्शिका",
     reminders:         "स्मरणपत्रे",
-    sign_in_goals:     "उद्दिष्टे ट्रॅक करण्यासाठी साइन इन करा",
-    take_tour:         "परिचय घ्या",
   },
 
   // ── Bengali ───────────────────────────────────────────────────────────────────
@@ -248,8 +242,6 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "সম্প্রদায়",
     calendar:          "ক্যালেন্ডার",
     reminders:         "অনুস্মারক",
-    sign_in_goals:     "লক্ষ্য ট্র্যাক করতে সাইন ইন করুন",
-    take_tour:         "পরিচয় নিন",
   },
 
   // ── Tamil ─────────────────────────────────────────────────────────────────────
@@ -298,8 +290,6 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "சமூகம்",
     calendar:          "நாட்காட்டி",
     reminders:         "நினைவூட்டல்கள்",
-    sign_in_goals:     "இலக்குகளை கண்காணிக்க உள்நுழையுங்கள்",
-    take_tour:         "சுற்றுப்பயணம் செய்யுங்கள்",
   },
 
   // ── Telugu ────────────────────────────────────────────────────────────────────
@@ -348,8 +338,6 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "కమ్యూనిటీ",
     calendar:          "కేలండర్",
     reminders:         "రిమైండర్లు",
-    sign_in_goals:     "లక్ష్యాలను ట్రాక్ చేయడానికి సైన్ ఇన్ చేయండి",
-    take_tour:         "పర్యటన చేయండి",
   },
 
   // ── Kannada ───────────────────────────────────────────────────────────────────
@@ -398,8 +386,6 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "ಸಮುದಾಯ",
     calendar:          "ಕ್ಯಾಲೆಂಡರ್",
     reminders:         "ಜ್ಞಾಪಕಗಳು",
-    sign_in_goals:     "ಗುರಿಗಳನ್ನು ಟ್ರ್ಯಾಕ್ ಮಾಡಲು ಸೈನ್ ಇನ್ ಮಾಡಿ",
-    take_tour:         "ಪ್ರವಾಸ ಮಾಡಿ",
   },
 
   // ── Malayalam ─────────────────────────────────────────────────────────────────
@@ -448,8 +434,6 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "കമ്മ്യൂണിറ്റി",
     calendar:          "കലണ്ടർ",
     reminders:         "ഓർമ്മപ്പെടുത്തലുകൾ",
-    sign_in_goals:     "ലക്ഷ്യങ്ങൾ ട്രാക്ക് ചെയ്യാൻ സൈൻ ഇൻ ചെയ്യൂ",
-    take_tour:         "ടൂർ ആരംഭിക്കൂ",
   },
 
   // ── Gujarati ──────────────────────────────────────────────────────────────────
@@ -498,8 +482,6 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "સમુદાય",
     calendar:          "કૅલેન્ડર",
     reminders:         "રિમાઇન્ડર",
-    sign_in_goals:     "ધ્યેયો ટ્રૅક કરવા સાઇન ઇન કરો",
-    take_tour:         "પ્રવાસ કરો",
   },
 
   // ── Punjabi ───────────────────────────────────────────────────────────────────
@@ -548,8 +530,6 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "ਭਾਈਚਾਰਾ",
     calendar:          "ਕੈਲੰਡਰ",
     reminders:         "ਰੀਮਾਈਂਡਰ",
-    sign_in_goals:     "ਟੀਚੇ ਟਰੈਕ ਕਰਨ ਲਈ ਸਾਈਨ ਇਨ ਕਰੋ",
-    take_tour:         "ਦੌਰਾ ਕਰੋ",
   },
 
   // ── Odia ──────────────────────────────────────────────────────────────────────
@@ -598,8 +578,6 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "ସମୁଦାୟ",
     calendar:          "କ୍ୟାଲେଣ୍ଡର",
     reminders:         "ରିମାଇଣ୍ଡର",
-    sign_in_goals:     "ଲକ୍ଷ୍ୟ ଟ୍ର୍ୟାକ୍ କରିବାକୁ ସାଇନ୍ ଇନ୍ କରନ୍ତୁ",
-    take_tour:         "ଭ୍ରମଣ କରନ୍ତୁ",
   },
 
   // ── Sanskrit ──────────────────────────────────────────────────────────────────
@@ -648,8 +626,6 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "समुदायः",
     calendar:          "पञ्चाङ्गम्",
     reminders:         "स्मरणिकाः",
-    sign_in_goals:     "लक्ष्याणि अनुगन्तुं प्रवेशतु",
-    take_tour:         "परिचयः",
   },
 
   // ── Arabic (RTL) ──────────────────────────────────────────────────────────────
@@ -698,8 +674,6 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "المجتمع",
     calendar:          "التقويم",
     reminders:         "التذكيرات",
-    sign_in_goals:     "سجّل الدخول لتتبع أهدافك",
-    take_tour:         "جولة سريعة",
   },
 
   // ── Hebrew (RTL) ──────────────────────────────────────────────────────────────
@@ -748,8 +722,6 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "קהילה",
     calendar:          "לוח שנה",
     reminders:         "תזכורות",
-    sign_in_goals:     "התחבר כדי לעקוב אחר יעדים",
-    take_tour:         "סיור מהיר",
   },
 
   // ── French ────────────────────────────────────────────────────────────────────
@@ -798,8 +770,6 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "Communauté",
     calendar:          "Calendrier",
     reminders:         "Rappels",
-    sign_in_goals:     "Connecte-toi pour suivre tes objectifs",
-    take_tour:         "Faire la visite",
   },
 
   // ── Spanish ───────────────────────────────────────────────────────────────────
@@ -848,8 +818,6 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "Comunidad",
     calendar:          "Calendario",
     reminders:         "Recordatorios",
-    sign_in_goals:     "Inicia sesión para seguir tus metas",
-    take_tour:         "Hacer el recorrido",
   },
 
   // ── German ────────────────────────────────────────────────────────────────────
@@ -898,8 +866,6 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "Gemeinschaft",
     calendar:          "Kalender",
     reminders:         "Erinnerungen",
-    sign_in_goals:     "Anmelden um Ziele zu verfolgen",
-    take_tour:         "Rundgang starten",
   },
 
   // ── Japanese ──────────────────────────────────────────────────────────────────
@@ -948,8 +914,6 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "コミュニティ",
     calendar:          "カレンダー",
     reminders:         "リマインダー",
-    sign_in_goals:     "目標を追跡するためにサインイン",
-    take_tour:         "ツアーを見る",
   },
 
   // ── Chinese ───────────────────────────────────────────────────────────────────
@@ -998,8 +962,6 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "社区",
     calendar:          "日历",
     reminders:         "提醒",
-    sign_in_goals:     "登录以跟踪目标",
-    take_tour:         "查看导览",
   },
 
   // ── Korean ────────────────────────────────────────────────────────────────────
@@ -1048,8 +1010,6 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "커뮤니티",
     calendar:          "캘린더",
     reminders:         "알림",
-    sign_in_goals:     "목표를 추적하려면 로그인하세요",
-    take_tour:         "둘러보기",
   },
 
   // ── Portuguese ────────────────────────────────────────────────────────────────
@@ -1098,8 +1058,6 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "Comunidade",
     calendar:          "Calendário",
     reminders:         "Lembretes",
-    sign_in_goals:     "Entre para acompanhar seus objetivos",
-    take_tour:         "Fazer o tour",
   },
 
   // ── Russian ───────────────────────────────────────────────────────────────────
@@ -1148,8 +1106,6 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "Сообщество",
     calendar:          "Календарь",
     reminders:         "Напоминания",
-    sign_in_goals:     "Войдите для отслеживания целей",
-    take_tour:         "Начать экскурсию",
   },
 
   // ── Turkish ───────────────────────────────────────────────────────────────────
@@ -1198,8 +1154,6 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "Topluluk",
     calendar:          "Takvim",
     reminders:         "Hatırlatıcılar",
-    sign_in_goals:     "Hedefleri takip etmek için giriş yap",
-    take_tour:         "Turu Başlat",
   },
 
   // ── Indonesian ────────────────────────────────────────────────────────────────
@@ -1248,8 +1202,6 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "Komunitas",
     calendar:          "Kalender",
     reminders:         "Pengingat",
-    sign_in_goals:     "Masuk untuk melacak target",
-    take_tour:         "Lihat Tur",
   },
 
   // ── Swahili ───────────────────────────────────────────────────────────────────
@@ -1298,8 +1250,6 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "Jamii",
     calendar:          "Kalenda",
     reminders:         "Vikumbusho",
-    sign_in_goals:     "Ingia ili kufuatilia malengo",
-    take_tour:         "Angalia Ziara",
   },
 };
 
