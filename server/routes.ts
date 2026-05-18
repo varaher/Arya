@@ -2061,7 +2061,7 @@ export async function registerRoutes(
       console.error("[VOICE ERROR]", error.message || "Unknown error");
       const userMessage = "I'm having difficulty right now. Please try again in a moment.";
       if (res.headersSent) {
-        res.write(`data: ${JSON.stringify({ type: "error", error: userMessage })}\n\n`);
+        res.write(`data: ${JSON.stringify({ type: "error", content: userMessage })}\n\n`);
         res.end();
       } else {
         res.status(500).json({ error: userMessage });

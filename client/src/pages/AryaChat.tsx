@@ -2102,15 +2102,15 @@ function DailyQuoteCard({ token }: { token: string | null }) {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.3 }}
-        className="w-full max-w-md mx-auto mb-3 rounded-2xl overflow-hidden"
+        className="w-full max-w-md mx-auto mb-2 md:mb-3 rounded-2xl overflow-hidden"
         style={{
           background: "linear-gradient(135deg, rgba(6,78,59,0.07) 0%, rgba(245,158,11,0.07) 100%)",
           border: "1px solid rgba(6,78,59,0.14)",
         }}
       >
-        <div className="px-5 py-4">
+        <div className="px-4 py-3 md:px-5 md:py-4">
           <p
-            className="text-sm leading-relaxed text-gray-700 dark:text-gray-200 font-medium mb-2"
+            className="text-sm leading-relaxed text-gray-700 dark:text-gray-200 font-medium mb-1.5"
             style={{ fontFamily: "'Space Grotesk', sans-serif" }}
             data-testid="text-daily-quote"
           >
@@ -2130,13 +2130,13 @@ function DailyQuoteCard({ token }: { token: string | null }) {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.25 }}
-      className="w-full max-w-md mx-auto mb-3 rounded-2xl overflow-hidden"
+      className="w-full max-w-md mx-auto mb-2 md:mb-3 rounded-2xl overflow-hidden"
       style={{
         background: "linear-gradient(135deg, rgba(6,78,59,0.06) 0%, rgba(245,158,11,0.06) 100%)",
         border: "1px solid rgba(6,78,59,0.12)",
       }}
     >
-      <div className="px-5 py-4">
+      <div className="px-4 py-3 md:px-5 md:py-4">
         {isLoading ? (
           <div className="flex items-center gap-2 py-1">
             <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-600 dark:text-emerald-400" />
@@ -2149,7 +2149,7 @@ function DailyQuoteCard({ token }: { token: string | null }) {
             transition={{ duration: 0.25 }}
           >
             <p
-              className="text-sm leading-relaxed text-gray-700 dark:text-gray-200 font-medium mb-2 break-words"
+              className="text-sm leading-relaxed text-gray-700 dark:text-gray-200 font-medium mb-1.5 break-words"
               style={{ fontFamily: "'Space Grotesk', sans-serif" }}
               data-testid="text-daily-quote"
             >
@@ -4047,19 +4047,20 @@ export default function AryaChat() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.4 }}
-            className="flex-1 flex flex-col items-center justify-start text-center px-4 pt-3 md:pt-8 pb-4 md:pb-10 overflow-y-auto"
+            className="flex-1 flex flex-col items-center justify-start text-center px-4 pt-2 md:pt-8 pb-4 md:pb-10 overflow-y-auto"
+            style={{ WebkitOverflowScrolling: "touch" }}
           >
             <motion.div
               data-testid="img-arya-logo"
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="mb-2 flex flex-col items-center gap-1.5"
+              className="mb-1 md:mb-2 flex flex-col items-center gap-1"
             >
               <span
+                className="text-4xl md:text-5xl"
                 style={{
                   fontFamily: "'Space Grotesk', sans-serif",
-                  fontSize: "3rem",
                   fontWeight: 700,
                   letterSpacing: "0.18em",
                   lineHeight: 1,
@@ -4069,7 +4070,7 @@ export default function AryaChat() {
               >
                 ARYA
               </span>
-              <span className="flex gap-1.5">
+              <span className="flex gap-1">
                 <span className="w-1.5 h-1.5 rounded-full" style={{ background: "radial-gradient(circle at 40% 40%, #6ee7b7, #059669)" }} />
                 <span className="w-2 h-2 rounded-full" style={{ background: "radial-gradient(circle at 40% 40%, #34d399, #047857)" }} />
                 <span className="w-1.5 h-1.5 rounded-full" style={{ background: "radial-gradient(circle at 40% 40%, #6ee7b7, #059669)" }} />
@@ -4079,7 +4080,7 @@ export default function AryaChat() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.2 }}
-              className="text-[10px] uppercase tracking-widest font-bold text-emerald-600 dark:text-emerald-400 mb-2"
+              className="text-[10px] uppercase tracking-widest font-bold text-emerald-600 dark:text-emerald-400 mb-1 md:mb-2"
             >
               {t("your_pa")}
             </motion.p>
@@ -5507,6 +5508,15 @@ function VoiceConversationMode({
         signal: abortController.signal,
       });
 
+      if (!fetchRes.ok) {
+        let errMsg = "Could not connect to ARYA. Please try again.";
+        try {
+          const errData = await fetchRes.json();
+          if (errData?.error) errMsg = errData.error;
+        } catch {}
+        throw new Error(errMsg);
+      }
+
       const streamReader = fetchRes.body?.getReader();
       if (!streamReader) throw new Error("No stream");
 
@@ -5538,8 +5548,8 @@ function VoiceConversationMode({
             if (event.type === "audio_response" && event.audio) {
               responseAudioBase64 = event.audio;
             }
-            if (event.type === "error" && event.content) {
-              setError(event.content);
+            if (event.type === "error" && (event.content || event.error)) {
+              setError(event.content || event.error);
               processingRef.current = false;
               setTimeout(() => {
                 setError(null);
