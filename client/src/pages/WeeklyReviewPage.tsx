@@ -549,12 +549,12 @@ export default function WeeklyReviewPage() {
               data-testid="input-custom-intention"
               value={customIntention}
               onChange={e => { setCustomIntention(e.target.value); setSelectedChip(""); setIntentionSaved(false); }}
-              placeholder="Or write your own…"
+              placeholder={t("review_intention_ph")}
               style={{ width: "100%", background: P.surface2, border: `1px solid ${P.border}`, borderRadius: 8, padding: "10px 12px", color: P.body, fontSize: 13, marginBottom: 10 }}
             />
             {intentionSaved ? (
               <div style={{ padding: "13px 16px", borderRadius: 10, background: P.greenBg, border: `1px solid rgba(38,96,64,0.18)`, fontSize: 13, color: P.green, textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
-                <Check size={13} /> ARYA will hold this intention through your week.
+                <Check size={13} /> {t("review_intention_done")}
               </div>
             ) : (
               <button
@@ -587,7 +587,7 @@ export default function WeeklyReviewPage() {
           {/* Footer */}
           <div style={{ marginTop: 44, paddingTop: 24, borderTop: `1px solid ${P.borderLight}`, textAlign: "center" }}>
             <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 12, color: P.steel, letterSpacing: "0.1em" }}>
-              ARYA · Your personal thinking partner
+              {t("review_footer")}
             </div>
           </div>
 

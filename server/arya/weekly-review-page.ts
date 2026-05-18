@@ -4,6 +4,7 @@ import {
   aryaUsers, aryaGoals, aryaMoodCheckins, aryaNitiSessions, aryaMemory,
 } from "@shared/schema";
 import { eq, and, gte, desc } from "drizzle-orm";
+import { getLanguageInstruction } from "./language-instruction";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -13,7 +14,7 @@ const openai = new OpenAI({
 const MOOD_EMOJIS = ["", "😔", "😟", "😐", "🙂", "😊"];
 const DAY_SHORTS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-const INTENTION_CHIPS = [
+const INTENTION_CHIPS_EN = [
   "Be more present",
   "Finish what I started",
   "Rest without guilt",
@@ -22,7 +23,20 @@ const INTENTION_CHIPS = [
   "Call someone I care about",
 ];
 
-const COSMIC_THEMES = [
+const INTENTION_CHIPS_HI = [
+  "और उपस्थित रहूँ",
+  "जो शुरू किया वो पूरा करूँ",
+  "बिना guilt के आराम करूँ",
+  "एक ज़रूरी बात कहूँ",
+  "रोज़ शरीर को हिलाऊँ",
+  "किसी अपने को call करूँ",
+];
+
+function getIntentionChips(lang: string): string[] {
+  return lang === "hi" ? INTENTION_CHIPS_HI : INTENTION_CHIPS_EN;
+}
+
+const COSMIC_THEMES_EN = [
   {
     name: "Mercury",
     summary: "A Mercury week — the mind was sharper than usual, decisions moved faster. If you had any important conversations this week, they mattered more than they appeared to. Communication was the hidden engine.",
@@ -66,6 +80,55 @@ const COSMIC_THEMES = [
     stars: 5,
   },
 ];
+
+const COSMIC_THEMES_HI = [
+  {
+    name: "Mercury",
+    summary: "Mercury का हफ्ता — दिमाग़ सामान्य से तेज़ था, फ़ैसले जल्दी हुए। इस हफ्ते जो भी ज़रूरी बातचीत हुई, वो दिखने से ज़्यादा मायने रखती थी। communication ही असली engine था।",
+    nextHint: "अगला हफ्ता धीमा होगा। उसे गहराई के लिए इस्तेमाल करो, तेज़ी के लिए नहीं।",
+    stars: 4,
+  },
+  {
+    name: "Saturn",
+    summary: "Saturn की energy थी इस हफ्ते — धीमी, भारी, लेकिन टिकाऊ। जो तुमने चुपचाप बनाया वो उनसे ज़्यादा चलेगा जिन्होंने शोर में launch किया। जो discipline किसी ने नहीं देखी, वो भी discipline है।",
+    nextHint: "Jupiter अगले हफ्ते उठेगा। जो अभी बोया है उसे बढ़ने की जगह मिलेगी।",
+    stars: 3,
+  },
+  {
+    name: "Jupiter",
+    summary: "Jupiter का हफ्ता — जो पहुँचना चाहते थे उनके लिए विस्तार उपलब्ध था। अवसर अचानक आए होंगे। सवाल यह है — क्या तुमने उन्हें अंदर आने दिया या पक्केपन का इंतज़ार करते रहे?",
+    nextHint: "Jupiter के बाद Saturn आता है। अगला हफ्ता जो खुला उसे समेटने का है।",
+    stars: 5,
+  },
+  {
+    name: "Mars",
+    summary: "Mars ने इस हफ्ते चलाया — ऊर्जा ज़्यादा, घर्षण भी, धकेलने की प्रवृत्ति भी। अगर चीज़ें सामान्य से ज़्यादा urgent लगीं, तो वो Mars था। काम का सवाल यह है — urgency असली थी या बनाई हुई?",
+    nextHint: "Venus अगले हफ्ते नरम करेगी। होने दो उसे।",
+    stars: 3,
+  },
+  {
+    name: "Venus",
+    summary: "Venus ने इस हफ्ते आकार दिया — सहजता, रचनात्मकता और रिश्ते सामान्य से ज़्यादा उपलब्ध थे। अगर कुछ अप्रत्याशित रूप से आसान लगा, वो luck नहीं था। अगर रिश्तों को नज़रअंदाज़ किया, तो इस हफ्ते की कीमत वो था।",
+    nextHint: "एक अंतर्मुखी हफ्ता आएगा। reflection के लिए अच्छा, बाहरी धक्के के लिए कम।",
+    stars: 4,
+  },
+  {
+    name: "Moon",
+    summary: "चंद्र हफ्ता — भावनाएँ सतह के करीब थीं, सहज-ज्ञान तर्क से मज़बूत था। हफ्ते के बीच जो उभरा वो कुछ असली दिखा रहा था। जो तुमने महसूस किया वो data था, कमज़ोरी नहीं।",
+    nextHint: "अगले हफ्ते Solar energy लौटेगी — ज़्यादा बाहरी, ज़्यादा दृश्यमान।",
+    stars: 4,
+  },
+  {
+    name: "Sun",
+    summary: "Sun की energy थी इस हफ्ते — आत्मविश्वास, दृश्यता, नेतृत्व सब amplify हुए। अगर आगे बढ़े तो असर हुआ। अगर रुके रहे तो खिड़की खुली थी और अनइस्तेमाल गई। दोनों ही जानकारी हैं।",
+    nextHint: "Mercury का हफ्ता आएगा — बातचीत और फ़ैसले हावी होंगे।",
+    stars: 5,
+  },
+];
+
+function getCosmicThemes(lang: string) {
+  return lang === "hi" ? COSMIC_THEMES_HI : COSMIC_THEMES_EN;
+}
 
 function getWeekBounds() {
   const now = new Date();
@@ -124,7 +187,7 @@ export async function getWeeklyLetter(userId: string): Promise<WeeklyLetterData>
   const { monday: mon, sunday: sun } = getWeekBounds();
 
   const [userRows, allGoals, moodRows, nitiSessions, memories] = await Promise.all([
-    db.select({ name: aryaUsers.name }).from(aryaUsers).where(eq(aryaUsers.id, userId)).limit(1),
+    db.select({ name: aryaUsers.name, uiLanguage: aryaUsers.uiLanguage }).from(aryaUsers).where(eq(aryaUsers.id, userId)).limit(1),
     db.select({
       id: aryaGoals.id,
       title: aryaGoals.title,
@@ -153,6 +216,8 @@ export async function getWeeklyLetter(userId: string): Promise<WeeklyLetterData>
   ]);
 
   const firstName = userRows[0]?.name?.split(" ")[0] || "friend";
+  const lang = (userRows[0] as any)?.uiLanguage || "en";
+  const langInstruction = getLanguageInstruction(lang, firstName);
 
   const dayMoods = DAY_SHORTS.map((dayShort, i) => {
     const dayDate = new Date(mon);
@@ -171,11 +236,17 @@ export async function getWeeklyLetter(userId: string): Promise<WeeklyLetterData>
 
   const checkIns = dayMoods.filter(d => d.hasData);
   const avgMood = checkIns.length > 0 ? checkIns.reduce((s, d) => s + d.mood, 0) / checkIns.length : 0;
-  const moodRead = checkIns.length === 0
-    ? "No mood check-ins this week — nothing to read from."
-    : avgMood >= 4 ? "A genuinely good week by the numbers. What made it that way?"
-    : avgMood >= 3 ? "A middle-ground week — not low, not high. Something worth examining there."
-    : "A harder week, emotionally. That's data, not failure.";
+  const moodRead = lang === "hi"
+    ? checkIns.length === 0
+      ? "इस हफ्ते कोई मूड check-in नहीं — कुछ पढ़ने को नहीं है।"
+      : avgMood >= 4 ? "numbers के हिसाब से वाकई अच्छा हफ्ता था। इसे क्या बना रहा था?"
+      : avgMood >= 3 ? "बीच का हफ्ता — न नीचे, न ऊपर। इसमें कुछ examine करने लायक है।"
+      : "भावनात्मक रूप से कठिन हफ्ता था। यह data है, failure नहीं।"
+    : checkIns.length === 0
+      ? "No mood check-ins this week — nothing to read from."
+      : avgMood >= 4 ? "A genuinely good week by the numbers. What made it that way?"
+      : avgMood >= 3 ? "A middle-ground week — not low, not high. Something worth examining there."
+      : "A harder week, emotionally. That's data, not failure.";
 
   const activeGoals = allGoals.filter(g => g.status === "active");
   const activeThisWeek = activeGoals.filter(g => g.lastActivityAt && g.lastActivityAt >= mon).length;
@@ -195,9 +266,28 @@ export async function getWeeklyLetter(userId: string): Promise<WeeklyLetterData>
     : "No business sessions";
   const memCtx = memories.slice(0, 4).map(m => `${m.key}: ${m.value.slice(0, 80)}`).join("; ");
 
-  let headline = "This week wrote itself quietly — worth reading between the lines.";
-  let aryaNoticed = "Something ARYA noticed: the gap between what you say matters and where your time actually goes is still waiting to be closed.";
-  let aryaQuestion = "What did you avoid this week that you'll need to face next week?";
+  const defaultHeadline = lang === "hi"
+    ? "यह हफ्ता चुपचाप गुज़रा — पंक्तियों के बीच पढ़ने लायक है।"
+    : "This week wrote itself quietly — worth reading between the lines.";
+  const defaultAryaNoticed = lang === "hi"
+    ? "ARYA ने देखा: जो तुम कहते हो कि ज़रूरी है और जहाँ तुम्हारा समय असल में जाता है — उस gap को बंद करना अभी बाकी है।"
+    : "Something ARYA noticed: the gap between what you say matters and where your time actually goes is still waiting to be closed.";
+  const defaultAryaQuestion = lang === "hi"
+    ? "इस हफ्ते क्या था जिससे तुम बचे, और अगले हफ्ते उसका सामना करना होगा?"
+    : "What did you avoid this week that you'll need to face next week?";
+
+  let headline = defaultHeadline;
+  let aryaNoticed = defaultAryaNoticed;
+  let aryaQuestion = defaultAryaQuestion;
+
+  const jsonInstruction = lang === "hi"
+    ? `Generate ALL three values in Hindi. Warm friend tone using "तुम". Keep "ARYA" in English.
+"headline": एक वाक्य — इस हफ्ते की भावना, सारांश नहीं। Max 18 शब्द। नाम से शुरू मत करो।
+"aryaNoticed": "ARYA ने देखा:" से शुरू करो। 2-3 वाक्य। Goals, mood और behaviour को जोड़ने वाला specific pattern। Uncomfortable, honest — generic wisdom नहीं।
+"aryaQuestion": इस हफ्ते की specific घटनाओं पर आधारित एक reflection question। सीधे पूछो, कोई preamble नहीं।`
+    : `"headline": One sentence capturing the CHARACTER of this week — a feeling, not a summary. Max 18 words. Never start with their name.
+"aryaNoticed": Start with 'Something ARYA noticed:'. 2-3 sentences. A specific pattern connecting their goals, mood, and behaviour. Uncomfortable, honest, specific — not generic wisdom.
+"aryaQuestion": One reflection question specific to this exact week's events. The single most useful question. Ask it directly, no preamble.`;
 
   try {
     const resp = await openai.chat.completions.create({
@@ -205,6 +295,8 @@ export async function getWeeklyLetter(userId: string): Promise<WeeklyLetterData>
       messages: [{
         role: "user",
         content: `You are ARYA — ${firstName}'s personal thinking partner. Generate three pieces of their Sunday weekly review.
+
+${langInstruction}
 
 Week data for ${firstName}:
 - Goals: ${goalsCtx}
@@ -214,9 +306,7 @@ Week data for ${firstName}:
 
 Return ONLY valid JSON with exactly these three keys:
 {
-  "headline": "One sentence capturing the CHARACTER of this week — a feeling, not a summary. Max 18 words. Never start with their name.",
-  "aryaNoticed": "Start with 'Something ARYA noticed:'. 2-3 sentences. A specific pattern connecting their goals, mood, and behaviour. Uncomfortable, honest, specific — not generic wisdom.",
-  "aryaQuestion": "One reflection question specific to this exact week's events. The single most useful question. Ask it directly, no preamble."
+  ${jsonInstruction}
 }`,
       }],
       response_format: { type: "json_object" } as any,
@@ -263,9 +353,9 @@ Return ONLY valid JSON with exactly these three keys:
       })),
       hasData: nitiSessions.length > 0,
     },
-    cosmicWeek: getCosmicWeek(),
+    cosmicWeek: getCosmicThemes(lang)[Math.floor(Date.now() / (7 * 24 * 3600 * 1000)) % getCosmicThemes(lang).length],
     aryaQuestion,
-    intentionChips: INTENTION_CHIPS,
+    intentionChips: getIntentionChips(lang),
     savedIntention: intentionMemory?.value,
   };
 }
