@@ -319,6 +319,7 @@ function BirthScreen({ path, birthDate, setBirthDate, birthPlace, setBirthPlace,
   birthTimeExact: string; setBirthTimeExact: (v: string) => void;
   onBack: () => void; onContinue: () => void; onSkip: () => void; saving: boolean;
 }) {
+  const { t } = useLanguage();
   const a = ACCENT[path];
   const isNeutral = path === "neutral";
   const step = isNeutral ? 1 : 2;
@@ -340,25 +341,23 @@ function BirthScreen({ path, birthDate, setBirthDate, birthPlace, setBirthPlace,
           Your birth <em style={{ color: a.main }}>details</em>
         </h1>
         <p style={{ fontSize: 13, color: C.textDim, lineHeight: 1.7, marginBottom: 20 }}>
-          {isNeutral
-            ? "This lets ARYA map your personal timing patterns — the windows when you think most clearly and act most effectively."
-            : "This lets ARYA build your personal profile — precise life cycles and timing, blended with your goals."}
+          {isNeutral ? t("kaal_birth_neutral") : t("kaal_birth_vedic")}
         </p>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 20 }}>
           <div>
-            <div style={{ fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: C.textDim, marginBottom: 6 }}>Date of birth</div>
+            <div style={{ fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: C.textDim, marginBottom: 6 }}>{t("kaal_dob")}</div>
             <input data-testid="input-birth-date" type="date" value={birthDate} onChange={e => setBirthDate(e.target.value)} style={inputStyle} />
           </div>
           <div>
-            <div style={{ fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: C.textDim, marginBottom: 6 }}>Birth city or town</div>
+            <div style={{ fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: C.textDim, marginBottom: 6 }}>{t("kaal_birth_city")}</div>
             <input data-testid="input-birth-place" type="text" value={birthPlace} onChange={e => setBirthPlace(e.target.value)} placeholder="e.g. Mumbai, Chennai, Delhi…" style={inputStyle} />
           </div>
         </div>
 
         {/* 6 time windows */}
         <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: C.textDim, marginBottom: 10 }}>Approximate birth time</div>
+          <div style={{ fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: C.textDim, marginBottom: 10 }}>{t("kaal_birth_time")}</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 10 }}>
             {TIME_WINDOWS.map(tw => {
               const active = birthTimeApprox === tw.key;
@@ -378,8 +377,8 @@ function BirthScreen({ path, birthDate, setBirthDate, birthPlace, setBirthPlace,
             data-testid="time-dont-know"
             style={{ width: "100%", padding: "13px 16px", borderRadius: 12, border: `1.5px solid ${birthTimeApprox === "unknown" ? a.main : C.border2}`, background: birthTimeApprox === "unknown" ? a.dim : "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", transition: "all 0.2s", textAlign: "left" as const }}>
             <div>
-              <div style={{ fontSize: 13, color: birthTimeApprox === "unknown" ? a.main : C.textDim, fontWeight: birthTimeApprox === "unknown" ? 600 : 400 }}>I don't know my birth time</div>
-              <div style={{ fontSize: 10, color: C.textDim, marginTop: 2 }}>Still meaningful — just not to the precise hour</div>
+              <div style={{ fontSize: 13, color: birthTimeApprox === "unknown" ? a.main : C.textDim, fontWeight: birthTimeApprox === "unknown" ? 600 : 400 }}>{t("kaal_no_birth_time")}</div>
+              <div style={{ fontSize: 10, color: C.textDim, marginTop: 2 }}>{t("kaal_no_time_sub")}</div>
             </div>
             {birthTimeApprox === "unknown" && <span style={{ color: a.main, fontSize: 14, marginLeft: 8 }}>✓</span>}
           </button>
@@ -387,7 +386,7 @@ function BirthScreen({ path, birthDate, setBirthDate, birthPlace, setBirthPlace,
           {/* Exact time — only if not "unknown" */}
           {birthTimeApprox && birthTimeApprox !== "unknown" && (
             <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} style={{ marginTop: 12 }}>
-              <div style={{ fontSize: 11, color: C.textDim, marginBottom: 6 }}>Exact time from birth certificate (optional)</div>
+              <div style={{ fontSize: 11, color: C.textDim, marginBottom: 6 }}>{t("kaal_exact_time")}</div>
               <input data-testid="input-birth-time" type="time" value={birthTimeExact} onChange={e => setBirthTimeExact(e.target.value)}
                 style={{ ...inputStyle, width: "auto", minWidth: 150 }} />
             </motion.div>
@@ -396,14 +395,14 @@ function BirthScreen({ path, birthDate, setBirthDate, birthPlace, setBirthPlace,
 
         <div style={{ background: "rgba(124,106,255,0.04)", border: `1px solid rgba(124,106,255,0.12)`, borderRadius: 12, padding: "13px 16px", fontSize: 12, color: C.textDim, lineHeight: 1.7, display: "flex", gap: 10, marginBottom: 20 }}>
           <span style={{ fontSize: 16, flexShrink: 0 }}>🔒</span>
-          <span>Your birth details are stored privately and used solely to personalise your ARYA Lens. Never shared. Delete any time via Privacy &amp; Control.</span>
+          <span>{t("kaal_privacy_note")}</span>
         </div>
 
         <Btn color={a.main} onClick={onContinue} disabled={saving}>
-          {saving ? "Building your profile…" : "Build my profile →"}
+          {saving ? t("kaal_building") : t("kaal_build_profile")}
         </Btn>
         <div style={{ height: 8 }} />
-        <Btn ghost onClick={onSkip} disabled={saving}>Skip — use what I've given</Btn>
+        <Btn ghost onClick={onSkip} disabled={saving}>{t("kaal_skip_use")}</Btn>
       </div>
     </div>
   );
@@ -494,6 +493,7 @@ function ReadyScreen({ path, profile, westernSign, selectedRashi, onBack, onCont
 function BriefingScreen({ briefing, loading, error, onHome, onRetry, path }: {
   briefing: VedicBriefing | null; loading: boolean; error: "login" | "error" | null; onHome: () => void; onRetry: () => void; path: VedicPath;
 }) {
+  const { t } = useLanguage();
   const { data: goalsData } = useQuery<any[]>({
     queryKey: ["/api/arya/goals"],
     queryFn: async () => { const r = await fetch("/api/arya/goals"); return r.ok ? r.json() : []; },
@@ -520,7 +520,7 @@ function BriefingScreen({ briefing, loading, error, onHome, onRetry, path }: {
         {path === "western" ? "⭐" : path === "vedic" ? "🪐" : "🌐"}
       </div>
       <p style={{ color: C.textDim, fontSize: 14 }}>
-        {path === "neutral" ? "Reading your patterns…" : "Reading the signals…"}
+        {path === "neutral" ? t("kaal_loading_neutral") : t("kaal_loading_signals")}
       </p>
     </div>
   );
@@ -531,21 +531,19 @@ function BriefingScreen({ briefing, loading, error, onHome, onRetry, path }: {
       <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: 24, background: C.bg }}>
         <div style={{ fontSize: 44 }}>{isLogin ? "🔐" : "🌙"}</div>
         <div style={{ fontFamily: serif, fontSize: 20, color: C.text, textAlign: "center" as const }}>
-          {isLogin ? "Sign in to see your briefing" : "Couldn't load your briefing"}
+          {isLogin ? t("kaal_login_title") : t("kaal_error_title")}
         </div>
         <div style={{ fontSize: 13, color: C.textDim, textAlign: "center" as const, maxWidth: 280, lineHeight: 1.7 }}>
-          {isLogin
-            ? "Your personal timing briefing is available after signing in to ARYA."
-            : "This sometimes happens when the connection drops. Tap below to try again."}
+          {isLogin ? t("kaal_login_desc") : t("kaal_error_desc")}
         </div>
         <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
           {!isLogin && (
             <button onClick={onRetry} style={{ padding: "11px 24px", borderRadius: 24, border: "none", background: C.indigo, color: "white", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: sans }}>
-              Try again
+              {t("kaal_try_again")}
             </button>
           )}
           <button onClick={onHome} style={{ padding: "11px 24px", borderRadius: 24, border: `1px solid ${C.border2}`, background: "transparent", color: C.textDim, fontSize: 13, cursor: "pointer", fontFamily: sans }}>
-            ← Back to ARYA
+            {t("kaal_back_arya")}
           </button>
         </div>
       </div>
@@ -566,7 +564,7 @@ function BriefingScreen({ briefing, loading, error, onHome, onRetry, path }: {
         <div style={{ fontFamily: serif, fontSize: 22, color: C.text, marginBottom: 4 }}>
           {greetingTime()}, <em style={{ color: a.main }}>{b.userName}.</em>
         </div>
-        <div style={{ fontSize: 13, color: C.textDim, marginBottom: path !== "neutral" ? 16 : 8 }}>Here's what today looks like — for you, specifically.</div>
+        <div style={{ fontSize: 13, color: C.textDim, marginBottom: path !== "neutral" ? 16 : 8 }}>{t("kaal_today_looks")}</div>
         {path !== "neutral" && (
           <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" as any }}>
             {(b.planetaryPills || []).map((p, i) => (
@@ -590,7 +588,7 @@ function BriefingScreen({ briefing, loading, error, onHome, onRetry, path }: {
         <div style={{ background: a.dim, border: `1px solid ${a.border}`, borderRadius: 14, padding: 16, marginBottom: 14 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
             <div style={{ width: 28, height: 28, borderRadius: "50%", background: `linear-gradient(135deg, ${a.main}, ${a.main}88)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: "#0d0b0f", fontWeight: 700 }}>A</div>
-            <div style={{ fontSize: 11, color: a.main, letterSpacing: "0.08em" }}>ARYA · {path === "neutral" ? "Personal Insight" : "Blended Insight"}</div>
+            <div style={{ fontSize: 11, color: a.main, letterSpacing: "0.08em" }}>ARYA · {path === "neutral" ? t("kaal_personal_insight") : t("kaal_blended_insight")}</div>
           </div>
           <div style={{ fontSize: 14, color: C.text, lineHeight: 1.75 }}
             dangerouslySetInnerHTML={{ __html: (b.aryaInsight || "").replace(/\*\*(.*?)\*\*/g, `<strong style="color:${a.main}">$1</strong>`) }} />
@@ -601,11 +599,11 @@ function BriefingScreen({ briefing, loading, error, onHome, onRetry, path }: {
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span style={{ fontSize: 22 }}>⏰</span>
             <div>
-              <div style={{ fontSize: 11, color: C.textDim, marginBottom: 2 }}>Best window today</div>
+              <div style={{ fontSize: 11, color: C.textDim, marginBottom: 2 }}>{t("kaal_best_window")}</div>
               <div style={{ fontSize: 16, color: a.main, fontWeight: 600, letterSpacing: "0.05em" }}>{b.muhurat?.startTime ?? "—"} – {b.muhurat?.endTime ?? "—"}</div>
             </div>
           </div>
-          <div style={{ fontSize: 11, color: C.textDim, textAlign: "right" as const }}>For {b.muhurat?.purpose ?? "important tasks"}</div>
+          <div style={{ fontSize: 11, color: C.textDim, textAlign: "right" as const }}>{t("kaal_window_for")} {b.muhurat?.purpose ?? "important tasks"}</div>
         </div>
 
         {/* Cosmic cards — Western + Vedic only */}
@@ -614,7 +612,7 @@ function BriefingScreen({ briefing, loading, error, onHome, onRetry, path }: {
             <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 16px", borderBottom: `1px solid ${C.border}` }}>
               <span style={{ fontSize: 18 }}>{path === "western" ? "⭐" : "🪐"}</span>
               <div style={{ fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase" as const, color: C.textDim, fontWeight: 600 }}>
-                {path === "western" ? "This Week's Energy" : "Today's Guidance"}
+                {path === "western" ? t("kaal_week_energy") : t("kaal_todays_guidance")}
               </div>
               <div style={{ marginLeft: "auto", fontSize: 9, padding: "3px 8px", borderRadius: 10, color: a.main, background: a.dim, border: `1px solid ${a.border}`, letterSpacing: "0.08em", textTransform: "uppercase" as const }}>ARYA Lens</div>
             </div>
@@ -633,9 +631,9 @@ function BriefingScreen({ briefing, loading, error, onHome, onRetry, path }: {
                 );
               })}
               {[
-                { emoji: "💰", label: "Money & decisions",  text: b.guidance?.money ?? "" },
-                { emoji: "❤️", label: "Relationships",      text: b.guidance?.relationships ?? "" },
-                { emoji: "🏃", label: "Body & energy",      text: b.guidance?.body ?? "" },
+                { emoji: "💰", label: t("kaal_money"),         text: b.guidance?.money ?? "" },
+                { emoji: "❤️", label: t("kaal_relationships"), text: b.guidance?.relationships ?? "" },
+                { emoji: "🏃", label: t("kaal_body_energy"),   text: b.guidance?.body ?? "" },
               ].map((row, i, arr) => (
                 <div key={row.label} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 0", borderBottom: i < arr.length - 1 ? `1px solid ${C.border}` : "none" }}>
                   <span style={{ fontSize: 20, flexShrink: 0, marginTop: 2 }}>{row.emoji}</span>
@@ -654,14 +652,14 @@ function BriefingScreen({ briefing, loading, error, onHome, onRetry, path }: {
           <div style={{ background: C.surface, border: `1px solid ${a.border}`, borderRadius: 16, overflow: "hidden", marginBottom: 14 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 16px", borderBottom: `1px solid ${C.border}` }}>
               <span style={{ fontSize: 18 }}>📊</span>
-              <div style={{ fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase" as const, color: C.textDim, fontWeight: 600 }}>Your Personal Pattern Today</div>
-              <div style={{ marginLeft: "auto", fontSize: 9, padding: "3px 8px", borderRadius: 10, color: a.main, background: a.dim, border: `1px solid ${a.border}`, letterSpacing: "0.08em", textTransform: "uppercase" as const }}>Data-backed</div>
+              <div style={{ fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase" as const, color: C.textDim, fontWeight: 600 }}>{t("kaal_pattern_today")}</div>
+              <div style={{ marginLeft: "auto", fontSize: 9, padding: "3px 8px", borderRadius: 10, color: a.main, background: a.dim, border: `1px solid ${a.border}`, letterSpacing: "0.08em", textTransform: "uppercase" as const }}>{t("kaal_data_backed")}</div>
             </div>
             <div style={{ padding: 16 }}>
               {[
-                { emoji: "💰", label: "Money & decisions", text: b.guidance?.money ?? "" },
-                { emoji: "❤️", label: "Relationships",     text: b.guidance?.relationships ?? "" },
-                { emoji: "🏃", label: "Energy & focus",    text: b.guidance?.body ?? "" },
+                { emoji: "💰", label: t("kaal_money"),         text: b.guidance?.money ?? "" },
+                { emoji: "❤️", label: t("kaal_relationships"), text: b.guidance?.relationships ?? "" },
+                { emoji: "🏃", label: t("kaal_energy_focus"),  text: b.guidance?.body ?? "" },
               ].map((row, i, arr) => (
                 <div key={row.label} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 0", borderBottom: i < arr.length - 1 ? `1px solid ${C.border}` : "none" }}>
                   <span style={{ fontSize: 20, flexShrink: 0, marginTop: 2 }}>{row.emoji}</span>
@@ -680,7 +678,7 @@ function BriefingScreen({ briefing, loading, error, onHome, onRetry, path }: {
           <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden", marginBottom: 14 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 16px", borderBottom: `1px solid ${C.border}` }}>
               <span style={{ fontSize: 18 }}>🎯</span>
-              <div style={{ fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase" as const, color: C.textDim, fontWeight: 600 }}>Your Focus Today</div>
+              <div style={{ fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase" as const, color: C.textDim, fontWeight: 600 }}>{t("kaal_focus_today")}</div>
             </div>
             <div style={{ padding: "0 16px" }}>
               {activeGoals.map((g: any) => {
@@ -705,10 +703,10 @@ function BriefingScreen({ briefing, loading, error, onHome, onRetry, path }: {
           <div style={{ background: "rgba(124,106,255,0.04)", border: `1px solid rgba(124,106,255,0.12)`, borderRadius: 14, padding: 16, marginBottom: 14 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
               <span style={{ fontSize: 18 }}>🌊</span>
-              <div style={{ fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase" as const, color: C.textDim, fontWeight: 600 }}>Your Current Chapter</div>
+              <div style={{ fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase" as const, color: C.textDim, fontWeight: 600 }}>{t("kaal_current_chapter")}</div>
             </div>
             <div style={{ fontSize: 13, color: C.textDim, marginBottom: 6 }}>
-              <span style={{ color: C.indigo, fontWeight: 600 }}>{b.dasha.lord} cycle</span> · {b.dasha.yearsLeft} years remaining
+              <span style={{ color: C.indigo, fontWeight: 600 }}>{b.dasha.lord} cycle</span> · {b.dasha.yearsLeft} {t("kaal_years_remaining")}
             </div>
             <div style={{ fontSize: 14, color: C.text, lineHeight: 1.75 }}>{b.dasha.chapterText}</div>
           </div>
@@ -716,7 +714,7 @@ function BriefingScreen({ briefing, loading, error, onHome, onRetry, path }: {
 
         <div style={{ height: 8 }} />
         <button onClick={onHome} style={{ width: "100%", padding: "14px 16px", borderRadius: 14, background: "transparent", border: `1px solid ${C.border}`, color: C.textDim, fontFamily: sans, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-          <Home size={16} /> Back to ARYA
+          <Home size={16} /> {t("kaal_back_home")}
         </button>
       </div>
     </div>

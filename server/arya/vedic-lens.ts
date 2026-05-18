@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import { db } from "../db";
 import { aryaUsers, aryaGoals } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
+import { getLanguageInstruction } from "./language-instruction";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -59,9 +60,46 @@ const PLANET_EMOJIS: Record<string, string> = {
   Sun: "☀️", Moon: "🌙", Mars: "♂", Mercury: "☿", Jupiter: "♃", Venus: "♀", Saturn: "♄", Rahu: "☊", Ketu: "☋",
 };
 
-function sampleBriefing(name: string, rashi?: string): VedicBriefing {
+function sampleBriefing(name: string, rashi?: string, lang = "en"): VedicBriefing {
   const today = new Date();
   const dayRuler = DAY_RULERS[today.getDay()];
+
+  if (lang === "hi") {
+    return {
+      userName: name,
+      planetaryPills: [
+        { emoji: "☿", text: "संचार के लिए अच्छा दिन", tone: "good" },
+        { emoji: "♄", text: "देरी में धैर्य रखें", tone: "caution" },
+        { emoji: "♃", text: "निर्णय अधिक स्पष्ट लगेंगे", tone: "good" },
+        { emoji: "♂", text: "शाम 6 बजे के बाद विवाद से बचें", tone: "watch" },
+      ],
+      aryaInsight: `आप हाल ही में सामान्य से अधिक केंद्रित रहे हैं। आज की ऊर्जा उस स्पष्टता को सहारा देती है। जो आप पहले से जानते हैं उस पर भरोसा करें — आपकी अंतर्दृष्टि अभी बहुत सटीक है।`,
+      muhurat: { startTime: "10:15 AM", endTime: "11:45 AM", purpose: "कुछ नया शुरू करने के लिए" },
+      cosmicCards: [
+        {
+          tone: "good", label: "आज की शक्ति",
+          text: `"आज आपकी सोच असाधारण रूप से स्पष्ट है। अगर आप किसी निर्णय पर अटके हैं — यह उसे लेने का अच्छा दिन है।"`,
+          source: `${dayRuler} प्रभाव${rashi ? ` · ${rashi} राशि` : ""} · बृहत् पाराशर होरा शास्त्र`,
+        },
+        {
+          tone: "caution", label: "सावधानी से संभालें",
+          text: `"आज अपने आसपास के लोगों के साथ थोड़ा अधिक धैर्य रखें। छोटी गलतफहमियाँ जरूरत से बड़ी लग सकती हैं।"`,
+          source: "शनि गोचर · फलदीपिका संदर्भ",
+        },
+      ],
+      guidance: {
+        money: "नियमित खर्च के लिए ठीक है। बड़े वित्तीय निर्णय कुछ दिन टालें — जब ऊर्जा स्थिर हो जाए।",
+        relationships: "आज कुछ ऐसा कहने का अच्छा दिन है जो आप कहना चाहते थे। छोटे इशारे आज अच्छे से उतरते हैं।",
+        body: "ऊर्जा मध्यम है। शारीरिक रूप से बहुत अधिक जोर न दें। अगर आराम की जरूरत लगे तो करें।",
+      },
+      dasha: {
+        lord: "Jupiter",
+        yearsLeft: 4.2,
+        chapterText: "आप बृहस्पति काल में हैं — एक ऐसा समय जब आपकी अंतर्दृष्टि तेज होती है और अवसर खुद चले आते हैं। अभी सामान्य से अधिक खुद पर भरोसा करें। यह विस्तार का समय है, पीछे हटने का नहीं।",
+      },
+    };
+  }
+
   return {
     userName: name,
     planetaryPills: [
@@ -108,7 +146,7 @@ export interface VedicBriefing {
 }
 
 export async function generateVedicBriefing(userId: string): Promise<VedicBriefing> {
-  let user: { name: string; rashi: string | null; nakshatra: string | null; dashaLord: string | null; dashaYearsLeft: string | null; vedicLensEnabled: boolean } | null = null;
+  let user: { name: string; rashi: string | null; nakshatra: string | null; dashaLord: string | null; dashaYearsLeft: string | null; vedicLensEnabled: boolean; uiLanguage: string | null } | null = null;
   try {
     const rows = await db.select({
       name: aryaUsers.name,
@@ -117,6 +155,7 @@ export async function generateVedicBriefing(userId: string): Promise<VedicBriefi
       dashaLord: aryaUsers.dashaLord,
       dashaYearsLeft: aryaUsers.dashaYearsLeft,
       vedicLensEnabled: aryaUsers.vedicLensEnabled,
+      uiLanguage: aryaUsers.uiLanguage,
     }).from(aryaUsers).where(eq(aryaUsers.id, userId)).limit(1);
     user = rows[0] || null;
   } catch (err: any) {
@@ -126,12 +165,14 @@ export async function generateVedicBriefing(userId: string): Promise<VedicBriefi
 
   if (!user) return sampleBriefing("friend");
 
+  const lang = user.uiLanguage || "en";
+  const firstName = user.name?.split(" ")[0] || user.name || "friend";
   const rashi = user.rashi || null;
   const dashaLord = user.dashaLord || "Jupiter";
   const dashaYearsLeft = parseFloat(user.dashaYearsLeft || "4.0");
 
   if (!user.vedicLensEnabled || !rashi) {
-    return sampleBriefing(user.name, rashi || undefined);
+    return sampleBriefing(user.name, rashi || undefined, lang);
   }
 
   let goalsTitles = "none specified";
@@ -148,7 +189,11 @@ export async function generateVedicBriefing(userId: string): Promise<VedicBriefi
   const dayRuler = DAY_RULERS[today.getDay()];
   const dateStr = today.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
 
+  const langInstruction = getLanguageInstruction(lang, firstName);
+
   const prompt = `You are a Vedic astrology scholar steeped in Brihat Parashara Hora Shastra, Phaladeepika, and Saravali. Generate a practical daily cosmic briefing.
+
+${langInstruction}
 
 User context:
 - Name: ${user.name}
