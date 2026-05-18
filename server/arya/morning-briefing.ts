@@ -49,6 +49,18 @@ export async function generateMorningBriefing(userId: string): Promise<string> {
     const day = now.toLocaleDateString("en-IN", { weekday: "long", timeZone: "Asia/Kolkata" });
     const fallbackBriefing = uiLang === "hi"
       ? `सुप्रभात, ${firstName}! आज का दिन शानदार हो। अपने goals पर एक नज़र डालो और एक छोटा कदम आगे बढ़ाओ। 🌅`
+      : uiLang === "ta"
+      ? `காலை வணக்கம், ${firstName}! இன்றை நாளை சிறப்பாக ஆக்கு. உன் goals-ஐ ஒரு முறை பார்த்து ஒரு சின்ன அடி எடுத்து வை. 🌅`
+      : uiLang === "te"
+      ? `శుభోదయం, ${firstName}! ఈ రోజు చాలా బాగుంటుంది. నీ goals ఒకసారి చూసి ఒక చిన్న అడుగు వెయ్యి. 🌅`
+      : uiLang === "ml"
+      ? `ശുഭ പ്രഭാതം, ${firstName}! ഇന്ന് ഒരു നല്ല ദിവസം ആകട്ടെ. നിന്റെ goals ഒരു തവണ നോക്കി ഒരു ചെറിയ ചുവടെടുക്കൂ. 🌅`
+      : uiLang === "bn"
+      ? `শুভ সকাল, ${firstName}! আজকের দিনটা দারুণ হোক। তোমার goals একবার দেখো আর একটা ছোট পদক্ষেপ নাও। 🌅`
+      : uiLang === "mr"
+      ? `शुभ प्रभात, ${firstName}! आजचा दिवस जबरदस्त जाऊ दे. तुझ्या goals वर एक नजर टाक आणि एक छोटं पाऊल टाक. 🌅`
+      : uiLang === "gu"
+      ? `શુભ સવાર, ${firstName}! આજનો દિવસ અદ્ભુત રહે. તારા goals એક વાર જો અને એક નાનું પગલું ભર. 🌅`
       : `Good morning, ${firstName}! Ready to make today count? Check your goals and stay focused. 🌅`;
 
     const prompt = `Generate a warm, concise morning briefing for ${firstName} on this ${day}. Keep it under 180 words, personal and energizing.
@@ -103,6 +115,11 @@ export async function sendMorningBriefings(sendPush: (userId: string, title: str
         const lang = (user as any)?.uiLanguage || "en";
         const notifTitle = lang === "hi" ? `सुप्रभात, ${firstName}! ☀️`
           : lang === "ta" ? `காலை வணக்கம், ${firstName}! ☀️`
+          : lang === "te" ? `శుభోదయం, ${firstName}! ☀️`
+          : lang === "ml" ? `ശുഭ പ്രഭാതം, ${firstName}! ☀️`
+          : lang === "bn" ? `শুভ সকাল, ${firstName}! ☀️`
+          : lang === "mr" ? `शुभ प्रभात, ${firstName}! ☀️`
+          : lang === "gu" ? `શુભ સવાર, ${firstName}! ☀️`
           : `Good morning, ${firstName}! ☀️`;
         await db.insert(aryaNotifications).values({
           userId: user.id,

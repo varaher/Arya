@@ -41,6 +41,18 @@ export async function generateWeeklyReview(userId: string): Promise<string> {
     const langInstruction = getLanguageInstruction(uiLang, firstName);
     const fallbackReview = uiLang === "hi"
       ? `${firstName}, एक और हफ़्ता तुम्हारी कहानी में लिखा गया। तुमने इस हफ़्ते जो चुना — और जो नहीं चुना — वो सब information है। इसे use करो।`
+      : uiLang === "ta"
+      ? `${firstName}, இன்னொரு வாரம் உன் கதையில் எழுதப்பட்டது. இந்த வாரம் நீ என்ன தேர்ந்தெடுத்தாய் — என்ன தேர்ந்தெடுக்கவில்லை — எல்லாமே தகவல். இதை பயன்படுத்திக்கோ.`
+      : uiLang === "te"
+      ? `${firstName}, మరో వారం నీ కథలో రాయబడింది. ఈ వారం నువ్వు ఏం ఎంచుకున్నావో — ఏం ఎంచుకోలేదో — అన్నీ information. దీన్ని use చేయి.`
+      : uiLang === "ml"
+      ? `${firstName}, ഇനിയൊരാഴ്ച നിന്റെ കഥയിൽ എഴുതിച്ചേർക്കപ്പെട്ടു. ഈ ആഴ്ച നീ തിരഞ്ഞെടുത്തതും — തിരഞ്ഞെടുക്കാതിരുന്നതും — എല്ലാം information ആണ്. ഇത് ഉപയോഗിക്കൂ.`
+      : uiLang === "bn"
+      ? `${firstName}, আরো একটা সপ্তাহ তোমার গল্পে লেখা হলো। এই সপ্তাহ তুমি যা বেছে নিলে — আর যা নিলে না — সবটাই তথ্য। এটা কাজে লাগাও।`
+      : uiLang === "mr"
+      ? `${firstName}, आणखी एक आठवडा तुझ्या कहाणीत लिहिला गेला. या आठवड्यात तू जे निवडलंस — आणि जे नाही निवडलंस — ते सगळं information आहे. यातून शीक.`
+      : uiLang === "gu"
+      ? `${firstName}, વધુ એક અઠવાડિયું તારી કહાણીમાં લખાઈ ગયું. આ અઠવાડિયે તેં જે પસંદ કર્યું — અને જે ન કર્યું — તે બધું information છે. તેનો ઉપયોગ કર.`
       : `${firstName}, another week written into your story. What you chose — and didn't choose — this week is information. Use it.`;
 
     const goalsText = activeGoals.length > 0
@@ -141,6 +153,11 @@ export async function sendWeeklyReviews(sendPush: (userId: string, title: string
         const lang = (user as any)?.uiLanguage || "en";
         const reviewTitle = lang === "hi" ? `📊 ${firstName}, तुम्हारी साप्ताहिक समीक्षा`
           : lang === "ta" ? `${firstName}, உன் வார மதிப்பீடு தயார் 📖`
+          : lang === "te" ? `${firstName}, నీ వారాంత సమీక్ష సిద్ధం 📖`
+          : lang === "ml" ? `${firstName}, നിന്റെ ആഴ്ചയിലെ അവലോകനം തയ്യാർ 📖`
+          : lang === "bn" ? `${firstName}, তোমার সাপ্তাহিক পর্যালোচনা তৈরি 📖`
+          : lang === "mr" ? `${firstName}, तुझा आठवड्याचा आढावा तयार 📖`
+          : lang === "gu" ? `${firstName}, તારી સાપ્તાહિક સમીક્ષા તૈયાર 📖`
           : `📊 Your Weekly Review`;
         await db.insert(aryaNotifications).values({
           userId: user.id,
