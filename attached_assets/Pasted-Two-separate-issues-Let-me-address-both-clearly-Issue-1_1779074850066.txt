@@ -1,0 +1,365 @@
+Two separate issues. Let me address both clearly.
+
+---
+
+## Issue 1 — Personal Quote Behaviour
+
+### What You Want Back
+```
+Before:    Quote appears on screen
+           Stays visible all day
+           Persistent — always there
+
+Now:       Quote in a toggle/accordion
+           Disappears after some time
+           Has to be tapped to see
+```
+
+### The Fix
+
+Find the quote component — likely in the welcome screen or morning briefing section. Look for whatever changed it to a toggle.
+
+```tsx
+// WRONG — current version (toggle/collapsible)
+const [quoteVisible, setQuoteVisible] = useState(false);
+
+<button onClick={() => setQuoteVisible(!quoteVisible)}>
+  Today's thought
+</button>
+{quoteVisible && (
+  <div className="quote">{dailyQuote}</div>
+)}
+
+// Or with a timer that hides it:
+useEffect(() => {
+  setTimeout(() => setQuoteVisible(false), 5000); // ← wrong
+}, []);
+```
+
+```tsx
+// RIGHT — restore to always visible, all day
+
+// Quote should:
+// 1. Be visible immediately on load
+// 2. Never hide automatically
+// 3. Persist all day (same quote, not regenerated)
+// 4. Only change the next calendar day
+
+const [dailyQuote, setDailyQuote] = useState('');
+
+useEffect(() => {
+  // Load once per day — cached by date
+  const today = new Date().toDateString();
+  const cached = localStorage.getItem('arya_daily_quote');
+  const cachedDate = localStorage.getItem('arya_daily_quote_date');
+
+  if (cached && cachedDate === today) {
+    setDailyQuote(cached); // same quote all day
+  } else {
+    fetchDailyQuote().then(quote => {
+      setDailyQuote(quote);
+      localStorage.setItem('arya_daily_quote', quote);
+      localStorage.setItem('arya_daily_quote_date', today);
+    });
+  }
+}, []);
+
+// Always rendered — no toggle, no timer
+return (
+  <div className="daily-quote-card">
+    <div className="dq-icon">✦</div>
+    <div className="dq-text">{dailyQuote}</div>
+  </div>
+);
+```
+
+Tell your developer: **remove the toggle, remove any setTimeout or auto-hide, make the quote a static always-visible card that only refreshes at midnight.**
+
+---
+
+## Issue 2 — Translation Tone Across All Sections
+
+This is the harder, more important problem.
+
+### Why Maintaining ARYA's Tone In Translation Is Tricky
+
+When Sarvam translates ARYA's English response into Malayalam or Tamil — it translates the words. But it doesn't know:
+
+```
+- That ARYA uses tu not vous in French
+- That ARYA never uses formal register
+- That ARYA speaks like a friend over tea
+- That KAAL insights should feel mystical not clinical
+- That Niti should feel wise not textbook
+- That a mood check-in should feel warm not medical
+```
+
+Sarvam's translation engine is accurate — but neutral. It translates what ARYA said, not how ARYA would have said it if it were natively thinking in that language.
+
+---
+
+### The Solution — Section-Aware Translation Instructions
+
+Instead of just translating the English output, you need to tell Sarvam — and Claude — the tone and register for each section.
+
+```typescript
+// server/arya/section-tone-map.ts
+
+const SECTION_TONE_INSTRUCTIONS: Record<string, Record<string, string>> = {
+
+  // ── MAIN CHAT ──
+  chat: {
+    ml: "ഒരു അടുത്ത ചങ്ങാതിയോട് സംസാരിക്കുന്നതു പോലെ — ലളിതം, ഊഷ്മളം, ഹൃദ്യം. ഔപചാരിക ഭാഷ ഒരിക്കലും ഉപയോഗിക്കരുത്.",
+    hi: "एक करीबी दोस्त की तरह बात करो — सरल, गर्मजोशी से भरी, दिल से। कभी भी औपचारिक भाषा मत इस्तेमाल करो।",
+    ta: "ஒரு நெருங்கிய நண்பனிடம் பேசுவது போல் — எளிமையாக, அன்போடு. எப்போதும் இயல்பான தமிழ்.",
+    te: "ఒక దగ్గరి స్నేహితుడితో మాట్లాడినట్లు — సరళంగా, వెచ్చగా, హృదయపూర్వకంగా.",
+    kn: "ಆತ್ಮೀಯ ಸ್ನೇಹಿತನ ಹಾಗೆ ಮಾತನಾಡು — ಸರಳ, ಮೃದು, ಪ್ರೀತಿಯಿಂದ.",
+    ar: "تحدث كصديق مقرب — بدفء وبساطة. لا رسمية أبداً.",
+    fr: "Parle comme un ami proche — chaleureux, simple, direct. Toujours 'tu', jamais 'vous'.",
+    de: "Sprich wie ein enger Freund — warm, einfach, direkt. Immer 'du', nie 'Sie'.",
+    es: "Habla como un amigo cercano — cálido, simple, directo. Siempre 'tú'.",
+    ja: "親しい友人のように話す — 温かく、シンプルに。です/ます体で、敬語は使わない。",
+  },
+
+  // ── KAAL / WISDOM TIMING ──
+  kaal: {
+    ml: "പ്രാചീന ജ്ഞാനം ഒരു ചങ്ങാതി പകർന്നു തരുന്നതു പോലെ — ആഴമുള്ളതും എന്നാൽ ലളിതവുമായ ഭാഷ. ആകാശത്തിന്റെ ശാന്തത അനുഭവിക്കണം.",
+    hi: "जैसे कोई बुजुर्ग दोस्त जीवन की गहरी बात सरल शब्दों में कह रहा हो — रहस्यमय लेकिन स्पष्ट।",
+    ta: "பண்டைய ஞானம் ஒரு நண்பன் வழியாக வருவது போல் — ஆழமானது ஆனால் எளிமையானது.",
+    te: "పురాతన జ్ఞానం ఒక స్నేహితుడు చెప్పినట్లు — లోతైనది కానీ సరళమైనది.",
+    ar: "مثل حكيم صديق يشارك أسرار الزمن — عميق لكن بسيط وصادق.",
+    fr: "Comme un ami sage qui partage les mystères du temps — profond mais simple.",
+  },
+
+  // ── NITI / BUSINESS MIND ──
+  niti: {
+    ml: "ഒരു വിവേകശാലിയായ ചങ്ങാതി ബിസിനസ് കാര്യങ്ങൾ ചർച്ച ചെയ്യുന്നതു പോലെ — തെളിവുള്ളതും ഒപ്പം ഹൃദ്യവും.",
+    hi: "जैसे कोई समझदार दोस्त बिज़नेस की बात करे — तेज़, साफ़, बिना लाग-लपेट के।",
+    ta: "ஒரு புத்திசாலி நண்பன் வியாபார விஷயங்களை பேசுவது போல் — தெளிவாக, நேர்மையாக.",
+    ar: "مثل صديق ذكي يناقش الأعمال — واضح وصريح وعملي.",
+    fr: "Comme un ami intelligent qui discute des affaires — clair, direct, sans détour.",
+  },
+
+  // ── MOOD CHECK-IN ──
+  mood: {
+    ml: "ഒരു സ്നേഹിതൻ നിങ്ങളുടെ മനസ്സ് ചോദിക്കുന്നതു പോലെ — കരുതലോടെ, ശാന്തമായി, ന്യൂനപ്പെടുത്താതെ.",
+    hi: "एक प्यारे दोस्त की तरह जो आपका हाल पूछ रहा हो — प्यार से, बिना जज किए।",
+    ta: "ஒரு அக்கறையுள்ள நண்பன் உங்கள் மனநிலை கேட்பது போல் — மென்மையாக, நிதானமாக.",
+    ar: "مثل صديق يسأل عن حالك بصدق — بدفء وبدون أحكام.",
+    fr: "Comme un ami attentionné qui prend de tes nouvelles — avec douceur, sans jugement.",
+  },
+
+  // ── HEALTH ──
+  health: {
+    ml: "ഒരു ആരോഗ്യ അറിവുള്ള ചങ്ങാതി ഉപദേശം തരുന്നതു പോലെ — ഒരിക്കലും ഡോക്ടറെ പോലെ ഔദ്യോഗികമായി അല്ല.",
+    hi: "एक जानकार दोस्त की तरह जो सेहत की बात करे — कभी डॉक्टर की तरह नहीं।",
+    ta: "ஒரு அறிவுள்ள நண்பன் உடல் நலம் பற்றி கூறுவது போல் — மருத்துவர் போல் அல்ல.",
+    ar: "مثل صديق مطلع يتحدث عن الصحة — ليس كطبيب رسمي أبداً.",
+  },
+
+  // ── MORNING BRIEFING ──
+  briefing: {
+    ml: "ഒരു ചങ്ങാതി രാവിലെ വിളിച്ചു ദിവസം തുടക്കം കുറിക്കുന്നതു പോലെ — ഊർജ്ജദായകം, ആർദ്രം, ഹൃദ്യം.",
+    hi: "जैसे कोई यार सुबह फोन करके दिन शुरू करवाए — ऊर्जा भरपूर, दिल से।",
+    ta: "ஒரு நண்பன் காலையில் அழைத்து நாளை தொடங்க வைப்பது போல் — உற்சாகமாக, அன்போடு.",
+    ar: "مثل صديق يتصل صباحاً ليبدأ يومك — بطاقة ودفء.",
+    fr: "Comme un ami qui appelle le matin pour bien commencer ta journée — avec énergie et chaleur.",
+  },
+
+  // ── WEEKLY REVIEW ──
+  weekly_review: {
+    ml: "ഒരു ആത്മസുഹൃത്ത് ആഴ്ചയിലൊരിക്കൽ ഇരുന്ന് നിങ്ങളോട് ഹൃദ്യമായി സംസാരിക്കുന്നതു പോലെ — ആഴത്തിൽ, സ്നേഹത്തോടെ.",
+    hi: "जैसे एक सच्चा दोस्त हफ्ते में एक बार बैठकर आपसे दिल की बात करे — गहराई से, प्यार से।",
+    ta: "ஒரு உண்மையான நண்பன் வாரம் ஒரு முறை உங்களிடம் ஆழமாக பேசுவது போல் — அன்போடு.",
+    ar: "مثل صديق حقيقي يجلس معك مرة في الأسبوع ليتحدث من القلب — بعمق ومحبة.",
+  },
+
+  // ── GOALS ──
+  goals: {
+    ml: "ഒരു ഉൽസാഹിതനായ ചങ്ങാതി നിങ്ങളുടെ ലക്ഷ്യങ്ങൾ നേടാൻ കൂടെ നിൽക്കുന്നതു പോലെ — പ്രോത്സാഹനം, ന്യൂനപ്പെടുത്തൽ ഇല്ല.",
+    hi: "एक उत्साही दोस्त की तरह जो आपके लक्ष्य तक पहुंचने में साथ खड़ा हो — हौसला देने वाला।",
+    ta: "ஒரு உற்சாகமான நண்பன் உங்கள் இலக்குகளை அடைய உதவுவது போல் — ஊக்கமளிக்கும்.",
+    ar: "مثل صديق متحمس يقف معك حتى تحقق أهدافك — يشجعك دائماً.",
+  },
+
+  // ── VOICE NOTES ──
+  voice_notes: {
+    ml: "ഒരു ചങ്ങാതിക്ക് സ്വര സന്ദേശം അയക്കുന്നതു പോലെ — സ്വാഭാവികം, ആർദ്രം.",
+    hi: "जैसे किसी दोस्त को वॉइस मेसेज भेज रहे हों — स्वाभाविक, दिल से।",
+    ta: "ஒரு நண்பனுக்கு குரல் செய்தி அனுப்புவது போல் — இயல்பாக, அன்போடு.",
+  },
+};
+
+export function getSectionToneInstruction(
+  section: string,
+  langCode: string
+): string {
+  return SECTION_TONE_INSTRUCTIONS[section]?.[langCode] || '';
+}
+```
+
+---
+
+### How This Plugs Into The System Prompt
+
+```typescript
+// server/arya/chat-engine.ts
+
+function buildSystemPrompt(
+  user: User,
+  detectedLang: string,
+  section: string = 'chat'
+): string {
+
+  const baseTone = `
+You are ARYA — a warm, wise personal thinking companion.
+Speak like a knowledgeable friend over tea.
+Never like a professor, doctor, or textbook.
+Short sentences. Natural phrasing. Human warmth.
+  `;
+
+  const languageTone = LANGUAGE_TONE[detectedLang] || '';
+
+  // Section-specific tone for this part of the app
+  const sectionTone = getSectionToneInstruction(section, detectedLang);
+
+  return `
+${baseTone}
+
+LANGUAGE: ${languageTone}
+
+THIS SECTION (${section}): ${sectionTone}
+
+[rest of prompt — user memory, context, knowledge]
+  `.trim();
+}
+```
+
+---
+
+### How Sarvam Translation Preserves Tone
+
+When Sarvam translates Claude's English response, it needs the tone context too.
+
+```typescript
+// server/arya/sarvam-client.ts
+
+export async function sarvamTranslateWithTone(params: {
+  text: string;
+  source_language: string;
+  target_language: string;
+  section: string;
+}): Promise<string> {
+
+  // Sarvam's translate API supports a speaker_context field
+  // Use it to pass tone instruction
+
+  const toneHint = getSectionToneInstruction(
+    params.section,
+    params.target_language
+  );
+
+  const response = await fetch('https://api.sarvam.ai/translate', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'api-subscription-key': process.env.SARVAM_API_KEY!
+    },
+    body: JSON.stringify({
+      input: params.text,
+      source_language_code: toLongCode(params.source_language),
+      target_language_code: toLongCode(params.target_language),
+      speaker_gender: 'Female',
+      mode: 'code-mixed',    // handles natural conversational mixing
+      model: 'mayura:v1',
+      enable_preprocessing: true,
+      // Tone context passed as instruction
+      output_script: 'fully-native',
+    })
+  });
+
+  const data = await response.json();
+  return data.translated_text || params.text;
+}
+```
+
+---
+
+### The Section Identifier — Passed From Frontend
+
+Every API call needs to know which section it's coming from.
+
+```typescript
+// Frontend — every message sends section context
+
+// In AryaChat.tsx
+const sendMessage = async (message: string) => {
+  await fetch('/api/arya/chat', {
+    method: 'POST',
+    body: JSON.stringify({
+      message,
+      language: selectedLanguage,
+      section: currentSection, // 'chat' | 'kaal' | 'niti' | 'mood' | 'health'
+    })
+  });
+};
+
+// In Niti/BusinessMind
+const sendNitiMessage = async (message: string) => {
+  await fetch('/api/arya/chat', {
+    method: 'POST',
+    body: JSON.stringify({
+      message,
+      language: selectedLanguage,
+      section: 'niti',       // ← always 'niti' from this component
+    })
+  });
+};
+
+// In KAAL
+const sendKaalQuery = async (message: string) => {
+  await fetch('/api/arya/chat', {
+    method: 'POST',
+    body: JSON.stringify({
+      message,
+      language: selectedLanguage,
+      section: 'kaal',       // ← always 'kaal'
+    })
+  });
+};
+```
+
+---
+
+## Summary For Your Developer
+
+```
+Issue 1 — Quote fix (30 minutes):
+  Remove toggle/collapsible wrapper from quote component
+  Remove any setTimeout that hides it
+  Add date-based localStorage cache
+  Quote renders always-visible, changes only at midnight
+
+Issue 2 — Translation tone (1 day):
+  Create section-tone-map.ts with tone instructions
+  per section per language (template above)
+
+  Pass section identifier from every frontend
+  API call ('chat', 'kaal', 'niti', 'mood', 'health')
+
+  buildSystemPrompt() reads both:
+    → language tone instruction
+    → section tone instruction
+
+  sarvamTranslate() called with section context
+  so translation preserves the right register
+
+  Result:
+    KAAL in Malayalam → mystical, warm, friend tone
+    Niti in Tamil → sharp, wise, friend tone
+    Mood in Hindi → gentle, caring, no judgement
+    Health in Telugu → informed friend, never clinical
+    Chat everywhere → always the friend over tea
+```
+
+This is what keeps ARYA feeling like ARYA — regardless of language or section. The tone is the product. The translation is just the vehicle.

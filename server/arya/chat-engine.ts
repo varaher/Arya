@@ -12,6 +12,7 @@ import { detectAndCreateGoals } from "./goal-detector";
 import { eq } from "drizzle-orm";
 import { fetchLatestNews, fetchMarketNews, formatNewsForChat } from "./news-service";
 import { detectLanguage, buildLanguageInstruction, autoUpdateLanguagePreference, sarvamLangToShort } from "./language-detector";
+import { buildSectionTonePromptAddition } from "./section-tone-map";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -434,7 +435,9 @@ export async function generateAryaResponse(
   conversationId?: number,
   userId?: string | null,
   voiceMode: boolean = false,
-  sarvamDetectedLang?: string   // Pre-detected by Sarvam STT — skips script detection
+  sarvamDetectedLang?: string,   // Pre-detected by Sarvam STT — skips script detection
+  targetLanguage?: string,        // User's selected display language (globe picker)
+  section: string = "chat"        // App section — chat | kaal | niti | mood | health | goals
 ): Promise<{ stream: AsyncIterable<string>; meta: AryaResponseMeta }> {
   const startTime = Date.now();
 
@@ -612,12 +615,20 @@ export async function generateAryaResponse(
   // (< 3 chars); pass length so it can apply the 10-min switch cooldown.
   autoUpdateLanguagePreference(userId, detectedLang, conversationHistory, msgLen).catch(() => {});
 
+  // Section + target-language tone injection.
+  // If the user typed in English but has a regional language selected (globe),
+  // we use targetLanguage so ARYA shapes its phrasing for natural translation.
+  const effectiveLangForTone = (detectedLang === "en" && targetLanguage && targetLanguage !== "en-IN")
+    ? targetLanguage
+    : detectedLang;
+  const sectionToneAddition = buildSectionTonePromptAddition(section, effectiveLangForTone);
+
   const voiceInstruction = voiceMode
     ? "\n\nVOICE MODE ACTIVE: The user is speaking to you via voice. Keep your response SHORT and conversational — 2-3 sentences max. No bullet points, no markdown, no numbered lists. Speak naturally as if talking to a friend. Get to the point immediately."
     : "";
 
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-    { role: "system", content: ARYA_SYSTEM_PROMPT + userPrefs + (langInstruction ? `\n\n${langInstruction}` : "") + knowledgeContext + newsContext + memoryContext + uncertaintyGuidance + voiceInstruction },
+    { role: "system", content: ARYA_SYSTEM_PROMPT + userPrefs + (langInstruction ? `\n\n${langInstruction}` : "") + sectionToneAddition + knowledgeContext + newsContext + memoryContext + uncertaintyGuidance + voiceInstruction },
     ...conversationHistory.slice(-20).map(m => ({
       role: m.role as "user" | "assistant",
       content: m.content,

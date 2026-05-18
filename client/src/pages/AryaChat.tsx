@@ -2015,8 +2015,6 @@ function FirstLoginFeatureTour({ userId, onDone }: { userId: string; onDone: () 
 function DailyQuoteCard({ token }: { token: string | null }) {
   const today = new Date().toDateString();
   const cacheKey = `arya_quote_v3_${today}`;
-  const [showFact, setShowFact] = useState(false);
-  const [factIndex] = useState(() => Math.floor(Math.random() * PRODUCTIVITY_FACTS_DATA.length));
 
   const { data, isLoading } = useQuery<{ quote: string; source?: string }>({
     queryKey: ["/api/arya/daily-quote"],
@@ -2039,13 +2037,9 @@ function DailyQuoteCard({ token }: { token: string | null }) {
   });
 
   const [staticQuoteIdx] = useState(() => Math.floor(Math.random() * STATIC_HOME_QUOTES.length));
-  const currentFact = PRODUCTIVITY_FACTS_DATA[factIndex];
-
-  // These are used in the logged-in render path below — must be declared before any early return
   const quoteText = token ? data?.quote : STATIC_HOME_QUOTES[staticQuoteIdx];
   const quoteSource = token ? "ARYA · today's reflection" : "ARYA · daily wisdom";
 
-  // Logged-out users: show a static inspirational quote directly (no API call needed)
   if (!token) {
     return (
       <motion.div
@@ -2081,97 +2075,37 @@ function DailyQuoteCard({ token }: { token: string | null }) {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.25 }}
-      className="w-full max-w-md mx-auto mb-3 rounded-2xl relative overflow-hidden"
+      className="w-full max-w-md mx-auto mb-3 rounded-2xl overflow-hidden"
       style={{
-        background: showFact
-          ? "linear-gradient(135deg, rgba(59,130,246,0.06) 0%, rgba(139,92,246,0.06) 100%)"
-          : "linear-gradient(135deg, rgba(6,78,59,0.06) 0%, rgba(245,158,11,0.06) 100%)",
-        border: showFact
-          ? "1px solid rgba(59,130,246,0.15)"
-          : "1px solid rgba(6,78,59,0.12)",
+        background: "linear-gradient(135deg, rgba(6,78,59,0.06) 0%, rgba(245,158,11,0.06) 100%)",
+        border: "1px solid rgba(6,78,59,0.12)",
       }}
     >
-      <div className="px-5 py-3.5">
-        {token && isLoading ? (
+      <div className="px-5 py-4">
+        {isLoading ? (
           <div className="flex items-center gap-2 py-1">
             <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-600 dark:text-emerald-400" />
             <span className="text-xs text-gray-400 dark:text-gray-500 italic">Preparing your reflection for today…</span>
           </div>
         ) : (
-          <AnimatePresence mode="wait">
-            {!showFact ? (
-              <motion.div
-                key="quote"
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                transition={{ duration: 0.25 }}
-              >
-                <p
-                  className="text-sm leading-relaxed text-gray-700 dark:text-gray-200 font-medium mb-2 break-words"
-                  style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-                  data-testid="text-daily-quote"
-                >
-                  "{quoteText}"
-                </p>
-                <p className="text-[10px] uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-semibold" data-testid="text-quote-source">
-                  — {quoteSource}
-                </p>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="fact"
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                transition={{ duration: 0.25 }}
-              >
-                <div className="flex items-start gap-2.5">
-                  <span className="text-xl leading-none mt-0.5" role="img" aria-label="fact">{currentFact.emoji}</span>
-                  <p
-                    className="text-sm leading-relaxed text-gray-700 dark:text-gray-200 font-medium break-words"
-                    data-testid="text-fun-fact"
-                  >
-                    {currentFact.fact}
-                  </p>
-                </div>
-                <p className="text-[10px] uppercase tracking-widest text-blue-500 dark:text-blue-400 font-semibold mt-2">
-                  Fun fact · did you know?
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25 }}
+          >
+            <p
+              className="text-sm leading-relaxed text-gray-700 dark:text-gray-200 font-medium mb-2 break-words"
+              style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+              data-testid="text-daily-quote"
+            >
+              "{quoteText}"
+            </p>
+            <p className="text-[10px] uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-semibold" data-testid="text-quote-source">
+              — {quoteSource}
+            </p>
+          </motion.div>
         )}
       </div>
-
-      {/* Toggle pill */}
-      {!isLoading && (
-        <div className="flex border-t border-black/5 dark:border-white/5">
-          <button
-            onClick={() => setShowFact(false)}
-            className={`flex-1 py-2 text-[10px] font-semibold tracking-wide transition-colors ${
-              !showFact
-                ? "text-emerald-600 dark:text-emerald-400 bg-emerald-50/60 dark:bg-emerald-900/20"
-                : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-            }`}
-            data-testid="button-show-quote"
-          >
-            ✦ Today's Reflection
-          </button>
-          <div className="w-px bg-black/5 dark:bg-white/5" />
-          <button
-            onClick={() => setShowFact(true)}
-            className={`flex-1 py-2 text-[10px] font-semibold tracking-wide transition-colors ${
-              showFact
-                ? "text-blue-500 dark:text-blue-400 bg-blue-50/60 dark:bg-blue-900/20"
-                : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-            }`}
-            data-testid="button-show-fact"
-          >
-            ⚡ Fun Fact
-          </button>
-        </div>
-      )}
     </motion.div>
   );
 }
@@ -2917,7 +2851,7 @@ export default function AryaChat() {
       const response = await fetch(`/api/arya/conversations/${convId}/messages`, {
         method: "POST",
         headers,
-        body: JSON.stringify({ content: text, tenant_id: "varah", language: selectedLanguage }),
+        body: JSON.stringify({ content: text, tenant_id: "varah", language: selectedLanguage, section: "chat" }),
       });
 
       if (!response.ok) {

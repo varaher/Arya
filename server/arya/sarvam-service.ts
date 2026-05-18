@@ -100,9 +100,10 @@ export async function sarvamTranslate(
       input: text,
       source_language_code: sourceLanguage,
       target_language_code: targetLanguage,
+      speaker_gender: "Female",
       model: "mayura:v1",
-      mode: "formal",
-      enable_preprocessing: false,
+      mode: "code-mixed",
+      enable_preprocessing: true,
     }),
   });
 
