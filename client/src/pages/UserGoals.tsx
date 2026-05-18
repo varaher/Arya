@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUserAuth } from "@/lib/user-auth";
 import UserAuth from "@/pages/UserAuth";
+import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
@@ -313,7 +314,7 @@ function GoalsView({ token, userName, onBack }: { token: string; userName: strin
       </AnimatePresence>
 
       {/* Goal list */}
-      <div className="flex-1 overflow-y-auto px-4 pb-6 space-y-3">
+      <div className="flex-1 overflow-y-auto px-4 pb-24 space-y-3">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
@@ -359,6 +360,7 @@ function GoalsView({ token, userName, onBack }: { token: string; userName: strin
           </>
         )}
       </div>
+      <BottomNav />
     </div>
   );
 }
