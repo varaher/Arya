@@ -1792,7 +1792,7 @@ export async function registerRoutes(
   app.post("/api/arya/conversations/:id/messages", optionalUser, async (req: Request, res: Response) => {
     try {
       const conversationId = parseInt(req.params.id);
-      const { content, tenant_id } = req.body;
+      const { content, tenant_id, language } = req.body;
       const userId = (req as any).userId || null;
 
       if (!content || !content.trim()) {
@@ -1868,6 +1868,17 @@ export async function registerRoutes(
       }
 
       await chatStorage.createMessage(conversationId, "assistant", fullResponse);
+
+      // Translate to selected Indian language if not English
+      const isIndianNonEnglish = language && language !== "en-IN" && language.endsWith("-IN");
+      if (isIndianNonEnglish && fullResponse.trim()) {
+        try {
+          const translation = await sarvamTranslate(fullResponse, "en-IN", language as any);
+          res.write(`data: ${JSON.stringify({ type: "translated_response", content: translation.translatedText })}\n\n`);
+        } catch (e: any) {
+          console.error("[TRANSLATION ERROR]", e?.message);
+        }
+      }
 
       res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
       res.end();

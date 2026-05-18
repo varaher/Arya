@@ -2883,7 +2883,7 @@ export default function AryaChat() {
       const response = await fetch(`/api/arya/conversations/${convId}/messages`, {
         method: "POST",
         headers,
-        body: JSON.stringify({ content: text, tenant_id: "varah" }),
+        body: JSON.stringify({ content: text, tenant_id: "varah", language: selectedLanguage }),
       });
 
       if (!response.ok) {
@@ -2925,6 +2925,7 @@ export default function AryaChat() {
       const decoder = new TextDecoder();
       let buffer = "";
       let fullContent = "";
+      let translatedText: string | null = null;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -2946,6 +2947,10 @@ export default function AryaChat() {
               if (event.memoryUsed) setResponseMemoryUsed(true);
               if (event.fromCache) setResponseFromCache(true);
             }
+            if (event.type === "translated_response") {
+              translatedText = event.content;
+              setTranslatedContent(event.content);
+            }
             if (event.content) {
               fullContent += event.content;
               setStreamingContent(fullContent);
@@ -2962,8 +2967,8 @@ export default function AryaChat() {
                 })
               );
               queryClient.invalidateQueries({ queryKey: ["/api/arya/memory"] });
-              if (speakerOnRef.current && fullContent) {
-                speakText(fullContent);
+              if (speakerOnRef.current && (translatedText || fullContent)) {
+                speakText(translatedText || fullContent);
               }
             }
           } catch {}
@@ -2984,7 +2989,7 @@ export default function AryaChat() {
         queryKey: ["/api/arya/conversations", convId],
       });
     }
-  }, [activeConversation, isStreaming, queryClient, createConversation, speakText]);
+  }, [activeConversation, isStreaming, queryClient, createConversation, speakText, selectedLanguage]);
 
   const handleImageSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
