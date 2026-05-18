@@ -248,7 +248,7 @@ function GoalsView({ token, userName, onBack }: { token: string; userName: strin
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-xl font-bold text-white" data-testid="text-goals-title">{t("goals_title")}</h1>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white" data-testid="text-goals-title">{t("goals_title")}</h1>
             <p className="text-xs text-muted-foreground">{t("goals_subtitle")}</p>
           </div>
         </div>

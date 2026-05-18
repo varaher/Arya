@@ -66,18 +66,19 @@ interface MarketConv {
 }
 
 // ── Static data ──────────────────────────────────────────────
-const PHILOSOPHER_META: Record<string, { emoji: string; domain: string; color: string }> = {
-  chanakya:      { emoji: "⚔️",  domain: "Strategy & Competition",  color: "#d4a853" },
-  vidura:        { emoji: "🏛️",  domain: "Ethics & Trust",           color: "#7c6aff" },
-  thiruvalluvar: { emoji: "📜",  domain: "Resilience & Timing",      color: "#5ecfb0" },
-  krishna:       { emoji: "🪷",  domain: "Founder Clarity",          color: "#e87070" },
-  shukra:        { emoji: "💎",  domain: "Finance & Structure",      color: "#4a9d7a" },
+const PHILOSOPHER_META: Record<string, { emoji: string; domain: string; domainHi: string; color: string }> = {
+  chanakya:      { emoji: "⚔️",  domain: "Strategy & Competition",  domainHi: "रणनीति और प्रतिस्पर्धा",  color: "#d4a853" },
+  vidura:        { emoji: "🏛️",  domain: "Ethics & Trust",           domainHi: "नैतिकता और विश्वास",        color: "#7c6aff" },
+  thiruvalluvar: { emoji: "📜",  domain: "Resilience & Timing",      domainHi: "लचीलापन और समय",            color: "#5ecfb0" },
+  krishna:       { emoji: "🪷",  domain: "Founder Clarity",          domainHi: "संस्थापक स्पष्टता",          color: "#e87070" },
+  shukra:        { emoji: "💎",  domain: "Finance & Structure",      domainHi: "वित्त और संरचना",            color: "#4a9d7a" },
 };
 
 const BUSINESS_TYPES  = ["Startup", "Small Business", "Enterprise", "Freelancer", "Consultant"];
 const BUSINESS_STAGES = ["Idea Stage", "Early (< 1 yr)", "Growth (1–3 yrs)", "Scale (3–7 yrs)", "Established (7+ yrs)"];
 const BUSINESS_ROLES  = ["Founder", "Co-founder", "CEO / MD", "Manager", "Consultant", "Professional"];
 const FOCUS_AREAS     = ["Strategy", "Finance", "Team & People", "Customers", "Competition", "Founder Mindset", "Ethics & Trust", "Execution"];
+const FOCUS_AREAS_HI  = ["रणनीति (Strategy)", "वित्त (Finance)", "टीम और लोग (Team & People)", "ग्राहक (Customers)", "प्रतिस्पर्धा (Competition)", "संस्थापक मानसिकता (Founder Mindset)", "नैतिकता और विश्वास (Ethics & Trust)", "क्रियान्वयन (Execution)"];
 
 const SESSION_TYPES = [
   { key: "decision",       Icon: Scale,       label: "Help me decide",       desc: "A decision that's been sitting with you",   philKey: "chanakya" },
@@ -166,7 +167,7 @@ function Label({ text }: { text: string }) {
 export default function NitiPage() {
   const [, setLocation] = useLocation();
   const { token } = useUserAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   // Onboarding & navigation
   const [screen, setScreen]       = useState<NitiScreen>("intro");
@@ -438,7 +439,9 @@ export default function NitiPage() {
             <div key={key} style={{ background: N.surface2, border: `1px solid ${N.border}`, borderLeft: `3px solid ${p.color}`, borderRadius: "0 10px 10px 0", padding: "12px 16px", display: "flex", alignItems: "center", gap: 14 }}>
               <span style={{ fontSize: 22, lineHeight: 1 }}>{p.emoji}</span>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, color: N.cream, fontWeight: 600 }}>{p.domain}</div>
+                <div style={{ fontSize: 13, color: N.cream, fontWeight: 600 }}>
+                  {language === "hi" ? `${p.domainHi} (${p.domain})` : p.domain}
+                </div>
               </div>
             </div>
           ))}
@@ -483,13 +486,14 @@ export default function NitiPage() {
         <div style={{ fontSize: 13, color: N.steel, marginTop: 4, lineHeight: 1.5 }}>{t("niti_focus_sub")}</div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        {FOCUS_AREAS.map(area => {
+        {FOCUS_AREAS.map((area, idx) => {
           const active = focusAreas.includes(area);
+          const label = language === "hi" ? FOCUS_AREAS_HI[idx] : area;
           return (
             <button key={area} onClick={() => toggleFocus(area)} data-testid={`focus-${area.replace(/\s+/g, "-").toLowerCase()}`}
               style={{ padding: "14px 12px", borderRadius: 10, border: `1px solid ${active ? N.gold : N.border2}`, background: active ? N.goldFaint : N.surface2, color: active ? N.gold : N.steel, fontSize: 13, fontWeight: active ? 600 : 400, cursor: "pointer", transition: "all 0.2s", textAlign: "center" as const, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
               {active && <CheckCircle2 size={13} />}
-              {area}
+              {label}
             </button>
           );
         })}

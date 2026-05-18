@@ -501,7 +501,7 @@ function MemoryPanel({ onClose, token }: { onClose: () => void; token?: string |
 
 function CustomizePanel({ onClose, token }: { onClose: () => void; token: string }) {
   const queryClient = useQueryClient();
-  const { language: ctxLanguage, setLanguage: setGlobalLang } = useLanguage();
+  const { language: ctxLanguage, setLanguage: setGlobalLang, t: tl } = useLanguage();
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -700,7 +700,7 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
 
           <div>
             <div className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">Focus Areas</div>
-            <div className="text-[10px] text-gray-300 dark:text-gray-600 mb-2">Pick up to 4 topics ARYA will relate advice to</div>
+            <div className="text-[10px] text-gray-500 dark:text-gray-400 mb-2">Pick up to 4 topics ARYA will relate advice to</div>
             <div className="grid grid-cols-2 gap-1.5">
               {focusOptions.map(opt => (
                 <button
@@ -2544,6 +2544,7 @@ export default function AryaChat() {
   const [futureLetterSaving, setFutureLetterSaving] = useState(false);
   const [futureLetterSaved, setFutureLetterSaved] = useState(false);
   const [showRehearsalSetup, setShowRehearsalSetup] = useState(false);
+  const [showWelcomeCards, setShowWelcomeCards] = useState(false);
   const [rehearsalPerson, setRehearsalPerson] = useState("");
   const [rehearsalSituation, setRehearsalSituation] = useState("");
   const [rehearsalLoading, setRehearsalLoading] = useState(false);
@@ -4119,7 +4120,7 @@ export default function AryaChat() {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.35, delay: 0.32 }}
-                className="w-full max-w-md mb-3"
+                className="w-full max-w-md mb-1"
               >
                 <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1"
                   style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
@@ -4153,11 +4154,35 @@ export default function AryaChat() {
               </motion.div>
             )}
 
+            {/* ── Collapsible toggle for suggestion cards ── */}
+            <motion.button
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3, delay: 0.45 }}
+              onClick={() => setShowWelcomeCards(v => !v)}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 border border-dashed border-gray-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all mb-1"
+              data-testid="button-toggle-welcome-cards"
+            >
+              <span>{showWelcomeCards ? "▲" : "▼"}</span>
+              <span>{showWelcomeCards ? t("hide_suggestions") : t("show_suggestions")}</span>
+            </motion.button>
+
+            <AnimatePresence initial={false}>
+            {showWelcomeCards && (
+            <motion.div
+              key="welcome-cards"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.28 }}
+              style={{ overflow: "hidden" }}
+              className="w-full max-w-lg"
+            >
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.4 }}
-              className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3 max-w-lg w-full"
+              transition={{ duration: 0.4, delay: 0.1 }}
+              className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3 w-full"
             >
               {[
                 { text: t("suggest_think"),   badge: t("badge_think"),   icon: "🧠" },
@@ -4290,6 +4315,9 @@ export default function AryaChat() {
                 </div>
               </motion.button>
             </motion.div>
+            </motion.div>
+            )}
+            </AnimatePresence>
           </motion.div>
         )}
 

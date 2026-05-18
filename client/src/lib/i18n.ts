@@ -123,6 +123,8 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     badge_wisdom:      "Wisdom",
     badge_rehearse:    "Rehearse",
     badge_talk:        "Talk to ARYA",
+    show_suggestions:  "Get inspired ▾",
+    hide_suggestions:  "Hide suggestions ▴",
     // User menu items
     menu_my_profile:   "My Profile",
     menu_my_goals:     "My Goals",
@@ -371,6 +373,8 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     badge_wisdom:      "ज्ञान",
     badge_rehearse:    "Practice",
     badge_talk:        "ARYA से बात करो",
+    show_suggestions:  "प्रेरणा लो ▾",
+    hide_suggestions:  "छुपाएं ▴",
     // User menu items
     menu_my_profile:   "मेरी profile",
     menu_my_goals:     "मेरे लक्ष्य",

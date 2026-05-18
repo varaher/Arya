@@ -1,0 +1,340 @@
+Looking at all 6 screenshots carefully. Huge progress — most screens are now in Hindi. Let me give you a complete analysis.
+
+---
+
+## What's Working Well ✅
+
+```
+Image 1 — Main screen
+  ✅ "दैनिक चेक-इन" — Daily Check-in translated
+  ✅ "आज आप कैसा महसूस कर रहे हैं?" — mood question
+  ✅ Mood labels: बुरा, ठीक नहीं, ठीक है, अच्छा, शानदार ✅
+  ✅ "ऊर्जा स्तर" — Energy level
+  ✅ "ARYA से कुछ भी पूछें..." — chat placeholder
+  ✅ Subtitle in Hindi working
+
+Image 3 — Goals page
+  ✅ "काम · रिमाइंडर · आदतें · इरादे" — all 4 tabs
+  ✅ "आज · काम · रिमाइंडर · आदतें · इरादे · सब"
+  ✅ "आज के लिए कोई काम या रिमाइंडर जोड़ें"
+  ✅ "+ काम जोड़ें" button
+  ✅ "+ नया" button
+
+Image 4 — Goal add form
+  ✅ "क्या करना चाहते हैं?" — What do you want to do
+  ✅ "याद दिलाएं" — Reminder tab
+  ✅ "संबंधित लोग (वैकल्पिक)" — People involved
+  ✅ "संदर्भ / नोट (वैकल्पिक)" — Context note
+  ✅ "रद्द करें · सहेजें" — Cancel/Save buttons
+
+Image 5 — Niti
+  ✅ "आपका बिज़नेस सोच-साथी" — Your business thinking partner
+  ✅ "ARYA आपके साथ कैसे सोचती है" — How ARYA thinks
+  ✅ "कोई सामान्य सलाह नहीं। आपके लिए बनी सोच।"
+  ✅ "ARYA को मेरे लिए तैयार करें →"
+
+Image 6 — Sunday Review
+  ✅ "रविवार की समीक्षा" — Sunday Review
+  ✅ "ARYA का रविवार पत्र" — ARYA's Sunday Letter
+  ✅ "हफ्ते में आपका मूड" — Your week in mood
+```
+
+---
+
+## Issues Still Remaining 🔴
+
+### Issue 1 — App crashed (Image 2)
+
+```
+"Something went wrong. Please refresh the page"
+
+This happened during the translation update.
+Likely a syntax error in one of the translation files
+or a missing key that a component tried to access.
+
+Fix: Check browser console for the exact error.
+Most likely: a t('key') call where the key doesn't
+exist in hi.json yet — returns undefined — crashes.
+
+Add fallback to all t() calls:
+t('key') || 'English fallback'
+Or use i18next defaultValue option.
+```
+
+---
+
+### Issue 2 — Niti category names still in English (Image 5)
+
+```
+Still English:
+  "Strategy & Competition"
+  "Ethics & Trust"
+  "Resilience & Timing"
+  "Founder Clarity"
+  "Finance & Structure"
+
+You specifically asked:
+  Keep English in brackets + Hindi main
+
+Should be:
+  "रणनीति और प्रतिस्पर्धा (Strategy & Competition)"
+  "नैतिकता और विश्वास (Ethics & Trust)"
+  "लचीलापन और समय (Resilience & Timing)"
+  "संस्थापक स्पष्टता (Founder Clarity)"
+  "वित्त और संरचना (Finance & Structure)"
+```
+
+---
+
+### Issue 3 — Sunday Review inner content still English (Image 6)
+
+```
+Still English:
+  Quote: "A week of quiet introspection..." ← English
+  "No mood check-ins this week."
+  "Start tomorrow — it takes 10 seconds."
+  "to varah" ← should be "varah को"
+
+Should be:
+  Quote in Hindi (ARYA generates this — needs Hindi
+  instruction in weekly review system prompt)
+  "इस हफ्ते कोई मूड चेक-इन नहीं हुआ।"
+  "कल से शुरू करो — 10 seconds लगते हैं।"
+```
+
+---
+
+### Issue 4 — Mobile layout: chat input too small
+
+```
+You said: "Space for writing is very little
+and very uncomfortable in mobile version"
+
+Current layout:
+  Header takes space
+  Suggestion cards take space
+  Daily check-in card takes space
+  Input bar at bottom — very cramped
+
+Fix: Move all subsections to dropdown/collapsible
+so chat area is the primary visible space
+```
+
+---
+
+### Issue 5 — Contrast issue "मेरा लक्ष्य" not visible
+
+```
+Likely white text on white/light background
+or very low contrast Hindi text
+
+Fix: Check the goals section text color
+Ensure --text color variable applies to Hindi text
+Add explicit color to goal title
+```
+
+---
+
+### Issue 6 — Quick tabs missing
+
+```
+You mentioned quick tabs visible in KAAL and Niti
+but missing somewhere else — likely the main chat
+Goals · Memory · Notes · Mood quick tabs
+```
+
+---
+
+### Issue 7 — Customize ARYA has issues
+
+```
+Not visible in screenshots but you mentioned it.
+Likely the language selector inside customize
+is not updating correctly or showing wrong state.
+```
+
+---
+
+## The Mobile Layout Fix — Most Important
+
+This is the biggest UX issue. Here's the fix:
+
+```tsx
+// Make all cards collapsible on mobile
+// Chat input always visible and full-width
+
+function HomeScreen() {
+  const [showCheckin, setShowCheckin] = useState(true);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  return (
+    <div className="home-screen">
+
+      {/* Collapsible Daily Check-in */}
+      <div className="collapsible-section">
+        <button
+          className="section-toggle"
+          onClick={() => setShowCheckin(!showCheckin)}
+        >
+          😊 {t('mood.checkin')}
+          <span>{showCheckin ? '▲' : '▼'}</span>
+        </button>
+        {showCheckin && <MoodCheckInCard />}
+      </div>
+
+      {/* Collapsible Suggestions */}
+      <div className="collapsible-section">
+        <button
+          className="section-toggle"
+          onClick={() => setShowSuggestions(!showSuggestions)}
+        >
+          💡 {t('suggest.label')}
+          <span>{showSuggestions ? '▲' : '▼'}</span>
+        </button>
+        {showSuggestions && <SuggestionCards />}
+      </div>
+
+      {/* Chat — always visible, takes remaining space */}
+      <div className="chat-area">
+        <ChatMessages />
+      </div>
+
+      {/* Input — always at bottom, comfortable height */}
+      <div className="chat-input-bar">
+        <textarea
+          className="chat-input"
+          placeholder={t('chat.placeholder')}
+          rows={2}           // minimum 2 rows
+          style={{
+            minHeight: '52px',
+            maxHeight: '120px',
+            fontSize: '16px'  // prevents iOS zoom
+          }}
+        />
+      </div>
+
+    </div>
+  );
+}
+```
+
+```css
+/* Mobile chat input — comfortable size */
+@media (max-width: 768px) {
+  .chat-input-bar {
+    padding: 12px 16px;
+    padding-bottom: env(safe-area-inset-bottom, 16px);
+    /* accounts for iPhone home bar */
+  }
+
+  .chat-input {
+    font-size: 16px;  /* critical — prevents iOS auto-zoom */
+    min-height: 52px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    width: 100%;
+  }
+
+  /* Make suggestion cards horizontal scroll
+     instead of vertical stack */
+  .suggestions-grid {
+    display: flex;
+    overflow-x: auto;
+    gap: 10px;
+    padding-bottom: 8px;
+    scrollbar-width: none;
+  }
+  .suggestion-card {
+    min-width: 200px;
+    flex-shrink: 0;
+  }
+}
+```
+
+---
+
+## The Niti Bilingual Fix
+
+```tsx
+// NitiPage.tsx — categories with Hindi + English
+
+const NITI_CATEGORIES = [
+  {
+    hi: 'रणनीति और प्रतिस्पर्धा',
+    en: 'Strategy & Competition',
+    icon: '⚔️'
+  },
+  {
+    hi: 'नैतिकता और विश्वास',
+    en: 'Ethics & Trust',
+    icon: '🏛️'
+  },
+  {
+    hi: 'लचीलापन और समय',
+    en: 'Resilience & Timing',
+    icon: '🟡'
+  },
+  {
+    hi: 'संस्थापक स्पष्टता',
+    en: 'Founder Clarity',
+    icon: '🎯'
+  },
+  {
+    hi: 'वित्त और संरचना',
+    en: 'Finance & Structure',
+    icon: '💎'
+  },
+];
+
+function NitiCategory({ category, lang }) {
+  return (
+    <div className="niti-category">
+      <span className="cat-icon">{category.icon}</span>
+      <div className="cat-text">
+        {lang === 'hi' ? (
+          <>
+            <span className="cat-main">{category.hi}</span>
+            <span className="cat-sub">({category.en})</span>
+          </>
+        ) : (
+          <span className="cat-main">{category.en}</span>
+        )}
+      </div>
+    </div>
+  );
+}
+```
+
+---
+
+## Summary — What To Fix Now
+
+```
+Priority 1 — Crash fix
+  Check browser console error
+  Add fallback to all t() calls
+  Identify missing key causing crash
+
+Priority 2 — Mobile input
+  Make check-in + suggestions collapsible
+  Input bar minimum 52px height
+  Font size 16px (prevents iOS zoom)
+
+Priority 3 — Niti bilingual
+  Hindi main + (English in brackets)
+  5 category strings updated
+
+Priority 4 — Sunday Review
+  Weekly generated quote → must be in Hindi
+  Add Hindi instruction to weekly review prompt
+  Static strings: mood empty state in Hindi
+
+Priority 5 — Contrast fix
+  "मेरा लक्ष्य" — check text color
+  Ensure sufficient contrast ratio
+
+Once these 5 are fixed → Hindi is complete ✅
+Then replicate for all other languages
+```
+
+The app is 85% in Hindi now. Very close. These fixes will complete it.
