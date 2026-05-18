@@ -1,0 +1,445 @@
+Smart approach. Perfect one language first, then replicate.
+
+Let me read what Hindi translation currently looks like in your codebase.
+
+Good — the transcript is the full session history, not the codebase. I can't read the actual `i18n.ts` file from here. Let me work from what I can see in the screenshots and what you've shared about the codebase structure.
+
+Here is the complete Hindi refinement plan — every string, every screen, every tone rule.
+
+---
+
+## The Hindi Standard — What We're Building
+
+**The principle:** When Hindi is selected, every single thing the user sees and hears should feel like ARYA was born speaking Hindi — not translated from English.
+
+```
+Wrong (translated feel):
+  "आपके लक्ष्य" — correct grammar, feels like Google Translate
+  "ARYA के साथ बात करें" — stiff, textbook
+
+Right (native friend feel):
+  "तुम्हारे goals" — how friends actually talk
+  "ARYA से बात करो" — natural, warm
+```
+
+---
+
+## Step 1 — Complete Hindi String Audit
+
+Every string in the app. Your developer replaces all of these in `locales/hi.json`.
+
+```json
+{
+  "nav.today": "आज",
+  "nav.chat": "बात करो",
+  "nav.goals": "मेरे लक्ष्य",
+  "nav.kaal": "काल",
+  "nav.health": "सेहत",
+  "nav.settings": "सेटिंग्स",
+  "nav.memory": "यादें",
+  "nav.notes": "नोट्स",
+  "nav.mood": "मूड",
+  "nav.calendar": "कैलेंडर",
+
+  "chat.placeholder": "ARYA से कुछ भी पूछो...",
+  "chat.send": "भेजो",
+  "chat.new": "नई बात",
+  "chat.history": "पुरानी बातें",
+  "chat.voice_hold": "बोलने के लिए दबाओ",
+  "chat.voice_release": "छोड़ो भेजने के लिए",
+  "chat.thinking": "ARYA सोच रही है...",
+
+  "goals.title": "मेरे लक्ष्य",
+  "goals.add": "+ लक्ष्य जोड़ो",
+  "goals.streak": "दिन की streak",
+  "goals.hit": "हो गया ✓",
+  "goals.missed": "रह गया",
+  "goals.empty": "कोई लक्ष्य नहीं है अभी। ARYA को बताओ क्या हासिल करना है।",
+  "goals.add_prompt": "क्या पाना चाहते हो?",
+  "goals.done": "पूरा हुआ",
+
+  "mood.title": "आज कैसा महसूस हो रहा है?",
+  "mood.checkin": "चेक-इन",
+  "mood.rough": "बुरा",
+  "mood.low": "ठीक नहीं",
+  "mood.okay": "ठीक है",
+  "mood.good": "अच्छा",
+  "mood.great": "शानदार",
+  "mood.energy": "ऊर्जा का स्तर",
+  "mood.note_placeholder": "इस feeling के पीछे क्या है? (optional)",
+  "mood.save": "✓ चेक-इन सेव करो",
+
+  "briefing.greeting_morning": "सुप्रभात",
+  "briefing.greeting_afternoon": "नमस्ते",
+  "briefing.greeting_evening": "शुभ संध्या",
+  "briefing.greeting_night": "शुभ रात्रि",
+  "briefing.sub": "आज तुम्हारे लिए क्या है — खास तुम्हारे लिए।",
+  "briefing.goals_label": "आज का focus",
+  "briefing.kaal_label": "आज का समय",
+  "briefing.take_tour": "tour लो",
+
+  "kaal.title": "काल — ज्ञान का समय",
+  "kaal.best_window": "आज तुम्हारा सबसे अच्छा समय",
+  "kaal.caution": "सावधानी से संभालो",
+  "kaal.insight_label": "तुम्हारी insight आज",
+
+  "health.title": "सेहत और शरीर",
+  "health.log": "आज log करो",
+  "health.streak": "दिन की logging streak",
+  "health.disclaimer": "ARYA की insights सिर्फ जागरूकता के लिए हैं — medical advice नहीं।",
+
+  "voice.record": "voice note रिकॉर्ड करो",
+  "voice.recording": "रिकॉर्ड हो रहा है...",
+  "voice.transcribing": "लिखा जा रहा है...",
+  "voice.saved": "voice note सेव हो गई",
+
+  "onboarding.welcome": "ARYA में आपका स्वागत है",
+  "onboarding.name_prompt": "ARYA तुम्हें क्या बुलाए?",
+  "onboarding.name_placeholder": "तुम्हारा नाम",
+  "onboarding.what_matters": "तुम्हारे लिए सबसे ज़रूरी क्या है?",
+  "onboarding.ready": "तैयार हो",
+  "onboarding.start": "शुरू करो →",
+
+  "customize.title": "ARYA को customize करो",
+  "customize.language": "भाषा",
+  "customize.theme": "दिखावट",
+  "customize.tone": "ARYA का अंदाज़",
+
+  "profile.title": "मेरी profile",
+  "profile.name": "नाम",
+  "profile.phone": "फोन",
+  "profile.save": "सेव करो",
+  "profile.upgrade": "Plan upgrade करो",
+
+  "pricing.monthly": "हर महीने",
+  "pricing.annual": "हर साल",
+  "pricing.get_started": "मुफ्त शुरू करो",
+  "pricing.upgrade": "Upgrade करो",
+
+  "auth.signout": "Sign out करो",
+  "auth.signin": "Sign in करो",
+
+  "menu.my_profile": "मेरी profile",
+  "menu.my_goals": "मेरे लक्ष्य",
+  "menu.customize": "ARYA customize करो",
+  "menu.tutorial": "Quick tutorial",
+  "menu.kaal": "काल — Cosmic Timing",
+  "menu.niti": "नीति — Business Wisdom",
+  "menu.health": "प्राण — Health Tracking",
+  "menu.review": "Sunday Review",
+  "menu.install": "Home screen पर जोड़ो",
+  "menu.report": "Issue report करो",
+  "menu.privacy": "Privacy & Control",
+  "menu.signout": "Sign out करो",
+
+  "suggest.think": "एक मुश्किल फैसले के बारे में सोचने में मदद करो",
+  "suggest.goals": "रोज़ पढ़ने की आदत बनाना चाहता हूँ — goal set करो",
+  "suggest.reflect": "दिन की शुरुआत clarity से हो — morning reflection दो",
+  "suggest.wisdom": "तनाव में शांत और focused कैसे रहूँ?",
+  "suggest.rehearse": "एक मुश्किल बातचीत की practice करनी है — ARYA दूसरा इंसान बने",
+  "suggest.talk": "बस बात करनी है — ARYA सुनेगी, सोचेगी, अपनी भाषा में जवाब देगी",
+
+  "niti.title": "नीति — Business Wisdom",
+  "niti.decisions": "फैसले",
+  "niti.market": "बाज़ार",
+
+  "weekly_review.title": "हफ्ते का review",
+  "weekly_review.sub": "तुम्हारा हफ्ता — ARYA की नज़र से",
+
+  "common.save": "सेव करो",
+  "common.cancel": "रद्द करो",
+  "common.done": "हो गया",
+  "common.close": "बंद करो",
+  "common.back": "वापस",
+  "common.loading": "लोड हो रहा है...",
+  "common.error": "कुछ गड़बड़ हुई। फिर से कोशिश करो।",
+  "common.optional": "ऐच्छिक"
+}
+```
+
+---
+
+## Step 2 — Hindi Tone Rules In System Prompt
+
+This is what makes ARYA sound like a friend, not a translator.
+
+```typescript
+// server/arya/section-tone-map.ts — Hindi entries
+
+const HINDI_TONE = {
+
+  // Base rule — applies everywhere
+  base: `
+जब user हिंदी में बात करे तो:
+- एक करीबी दोस्त की तरह बोलो — "तुम" इस्तेमाल करो, "आप" नहीं
+  (जब तक user खुद "आप" से शुरू न करे)
+- छोटे, सीधे वाक्य। जैसे यार आपस में बात करते हैं।
+- Hinglish natural है — "goals", "mood", "streak", "check-in"
+  जैसे English words रखो जो Indians naturally use करते हैं
+- कभी भी textbook Hindi मत लिखो — "आपके लक्ष्यों की प्राप्ति"
+  जैसी भाषा बिल्कुल नहीं
+- हमेशा warm रहो — कभी clinical या formal नहीं
+`,
+
+  chat: `
+यह main conversation है।
+दोस्त की तरह बात करो — "क्या हुआ यार?", "बताओ ना", "समझ आया"
+ARYA के core values: सुनना, समझना, साथ सोचना।
+कभी lecture मत दो। सवाल पूछो।
+`,
+
+  kaal: `
+यह काल — cosmic timing section है।
+यहाँ भाषा थोड़ी काव्यात्मक हो सकती है लेकिन फिर भी natural।
+जैसे कोई समझदार बुज़ुर्ग दोस्त cosmic insight share कर रहा हो।
+"आज का समय ऐसा है कि...", "इस वक्त तुम्हारी ऊर्जा..."
+कभी जोतिषी की तरह formal Sanskrit नहीं।
+`,
+
+  niti: `
+यह Niti — Business Wisdom section है।
+Sharp और clear रहो। Business की बात direct करो।
+जैसे एक smart दोस्त business advice दे रहा हो।
+"देखो, इस situation में...", "मेरी राय में..."
+Chanakya/Vidura की wisdom को simple Hindi में ढालो।
+`,
+
+  mood: `
+यह mood check-in है।
+बहुत gentle रहो। कभी judge मत करो।
+"बताओ क्या हो रहा है" वाला feel।
+अगर user बुरा feel कर रहा है — पहले सुनो, फिर बात करो।
+`,
+
+  health: `
+यह health tracking है।
+ARYA कभी doctor की तरह नहीं बोलती।
+एक caring दोस्त की तरह जो health के बारे में thoda jaanta hai।
+"देखो, पिछले कुछ दिनों से..."
+कभी diagnose मत करो।
+`,
+
+  briefing: `
+यह morning briefing है।
+एनर्जी भरी शुरुआत। दोस्त ने सुबह call किया हो जैसे।
+"यार, आज का दिन ऐसा है...", "देखो आज क्या interesting है..."
+Motivating but real — fake positivity नहीं।
+`,
+
+  goals: `
+यह goals section है।
+Encouraging दोस्त की तरह।
+"चलो यार, आज इसे करते हैं", "देखो कितना हो गया"
+Celebrate wins — छोटी जीत भी मायने रखती है।
+कभी shame मत दो अगर goal miss हो।
+`,
+
+  weekly_review: `
+यह Sunday weekly review है।
+थोड़ा introspective। जैसे दोस्त के साथ हफ्ते का हिसाब।
+"यार इस हफ्ते देखा तुमने...", "जो miss हुआ वो क्यों हुआ सोचो"
+Honest लेकिन kind।
+`,
+};
+```
+
+---
+
+## Step 3 — The Three Components That Need Fixing
+
+**Component 1 — MoodCheckInCard**
+
+```tsx
+// Add mood label translations
+function MoodCheckInCard() {
+  const { t } = useTranslation();
+
+  const moods = [
+    { emoji: '😞', key: 'mood.rough' },
+    { emoji: '😐', key: 'mood.low' },
+    { emoji: '😶', key: 'mood.okay' },
+    { emoji: '🙂', key: 'mood.good' },
+    { emoji: '😊', key: 'mood.great' },
+  ];
+
+  return (
+    <div className="mood-card">
+      <h3>{t('mood.title')}</h3>
+      <div className="mood-options">
+        {moods.map(m => (
+          <button key={m.key}>
+            <span className="emoji">{m.emoji}</span>
+            <span className="label">{t(m.key)}</span>
+          </button>
+        ))}
+      </div>
+      <div className="energy-row">
+        <span>{t('mood.energy')}</span>
+      </div>
+      <textarea placeholder={t('mood.note_placeholder')} />
+      <button className="save-btn">{t('mood.save')}</button>
+    </div>
+  );
+}
+```
+
+**Component 2 — Suggestion Cards**
+
+```tsx
+// SuggestionCards.tsx
+function SuggestionCards() {
+  const { t } = useTranslation();
+
+  const suggestions = [
+    { label: 'THINK',    key: 'suggest.think' },
+    { label: 'GOALS',    key: 'suggest.goals' },
+    { label: 'REFLECT',  key: 'suggest.reflect' },
+    { label: 'WISDOM',   key: 'suggest.wisdom' },
+    { label: 'REHEARSE', key: 'suggest.rehearse' },
+    { label: 'TALK TO ARYA', key: 'suggest.talk' },
+  ];
+
+  return (
+    <div className="suggestions">
+      {suggestions.map(s => (
+        <div key={s.key} className="suggestion-card">
+          <span className="suggestion-label">{s.label}</span>
+          <p>{t(s.key)}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+**Component 3 — Profile dropdown menu**
+
+```tsx
+// ProfileMenu.tsx
+function ProfileMenu() {
+  const { t } = useTranslation();
+
+  return (
+    <div className="profile-menu">
+      <div className="menu-item">{t('menu.my_profile')}</div>
+      <div className="menu-item">{t('menu.my_goals')}</div>
+      <div className="menu-item">{t('menu.customize')}</div>
+      <div className="menu-item">{t('menu.tutorial')}</div>
+      <div className="menu-item">{t('menu.kaal')}</div>
+      <div className="menu-item">{t('menu.niti')}</div>
+      <div className="menu-item">{t('menu.health')}</div>
+      <div className="menu-item">{t('menu.review')}</div>
+      <div className="menu-item">{t('menu.install')}</div>
+      <div className="menu-item">{t('menu.report')}</div>
+      <div className="menu-item">{t('menu.privacy')}</div>
+      <div className="menu-item red">{t('menu.signout')}</div>
+    </div>
+  );
+}
+```
+
+---
+
+## Step 4 — Test Checklist For Hindi
+
+Once implemented, verify every screen.
+
+```
+Screen 1 — Main / Welcome
+  ✓ "सुप्रभात, varah" — greeting in Hindi
+  ✓ "निंगळुदे..." subtitle → "तुम्हारी personal thinking..." in Hindi
+  ✓ Quote card → Hindi quote from ARYA
+  ✓ Daily Check-in → "ऐनंदिन चेक-इन" → "दैनिक चेक-इन"
+  ✓ Mood labels → बुरा / ठीक नहीं / ठीक है / अच्छा / शानदार
+  ✓ Energy label → "ऊर्जा का स्तर"
+  ✓ Save button → "✓ चेक-इन सेव करो"
+
+Screen 2 — Suggestion cards
+  ✓ All 6 cards in natural Hindi
+  ✓ "ARYA से कुछ भी पूछो..." in input
+
+Screen 3 — Profile dropdown
+  ✓ "मेरी profile"
+  ✓ "मेरे लक्ष्य"
+  ✓ "ARYA customize करो"
+  ✓ "काल — Cosmic Timing"
+  ✓ "Sign out करो"
+
+Screen 4 — ARYA conversation
+  ✓ ARYA responds in Hindi friend tone
+  ✓ Uses "तुम" not "आप"
+  ✓ Natural Hinglish where appropriate
+  ✓ Section tone correct (chat/kaal/niti/mood)
+
+Screen 5 — Goals page
+  ✓ "मेरे लक्ष्य" title
+  ✓ "+ लक्ष्य जोड़ो" button
+  ✓ Streak shows "🔥 13 दिन की streak"
+
+Screen 6 — KAAL section
+  ✓ "काल — ज्ञान का समय"
+  ✓ Insights in warm, slightly poetic Hindi
+  ✓ Not formal Sanskrit
+
+Screen 7 — History sidebar
+  ✓ "पुरानी बातें" (or "चैट इतिहास")
+  ✓ "+ नई बात" button
+
+Screen 8 — Mood/Health
+  ✓ All labels in Hindi
+  ✓ ARYA's health response — caring friend tone
+
+Screen 9 — Niti
+  ✓ "नीति — Business Wisdom"
+  ✓ ARYA sharp and direct in Hindi
+  ✓ Chanakya wisdom in simple Hindi
+```
+
+---
+
+## Step 5 — What To Give Your Developer
+
+One clear task:
+
+```
+1. Replace locales/hi.json with the complete
+   string set above (67 keys)
+
+2. Add Hindi tone rules to section-tone-map.ts
+   (8 sections × Hindi tone instruction above)
+
+3. Replace hardcoded strings in these components:
+   MoodCheckInCard.tsx  → emoji labels
+   SuggestionCards.tsx  → 6 suggestion texts
+   ProfileMenu.tsx      → all menu items
+   Header.tsx           → "New Chat" button
+   HistorySidebar.tsx   → chat history labels
+
+4. Test every screen with Hindi selected
+   Use the checklist above
+
+Once Hindi passes all 9 screens →
+copy the pattern for Malayalam, Tamil, Telugu
+(fonts + translation file + tone rules)
+then for global languages (French, Spanish, Arabic)
+```
+
+---
+
+## The Quality Test — One Conversation
+
+After implementation, send this message in Hindi:
+
+> "यार, मुझे समझ नहीं आ रहा। आज बहुत overwhelmed feel हो रहा है।"
+
+ARYA should respond something like:
+
+> "अरे यार, बताओ क्या हो रहा है। इतना सब एक साथ आ जाए तो हो जाता है ऐसा। **एक चीज़ बताओ** — इस वक्त सबसे ज़्यादा क्या भारी लग रहा है?"
+
+Not like:
+
+> "आपकी भावनाओं को समझता हूँ। अभिभूत महसूस करना कठिन हो सकता है।"
+
+The first response is ARYA. The second is Google Translate. That's the standard we're building to.
+
+Share the current `locales/hi.json` file content and I'll tell you exactly what needs changing.

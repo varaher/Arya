@@ -2171,11 +2171,11 @@ function MoodCheckInCard({ token, onComplete, uiLang = "en" }: { token: string; 
   const [saving, setSaving] = useState(false);
 
   const moods = [
-    { value: 1, emoji: "😞", label: "Rough" },
-    { value: 2, emoji: "😕", label: "Low" },
-    { value: 3, emoji: "😐", label: "Okay" },
-    { value: 4, emoji: "🙂", label: "Good" },
-    { value: 5, emoji: "😊", label: "Great" },
+    { value: 1, emoji: "😞", label: tl("mood_rough") },
+    { value: 2, emoji: "😕", label: tl("mood_low") },
+    { value: 3, emoji: "😐", label: tl("mood_okay") },
+    { value: 4, emoji: "🙂", label: tl("mood_good") },
+    { value: 5, emoji: "😊", label: tl("mood_great") },
   ];
 
   const handleSave = async () => {
@@ -2239,7 +2239,7 @@ function MoodCheckInCard({ token, onComplete, uiLang = "en" }: { token: string; 
             <Zap className="w-3 h-3 text-amber-500" /> {tl("energy_level")}
           </span>
           <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400">
-            {["", "Drained", "Low", "Okay", "Good", "Energized"][energy]}
+            {["", tl("energy_drained"), tl("energy_low"), tl("energy_okay"), tl("energy_good"), tl("energy_energized")][energy]}
           </span>
         </div>
         <input
@@ -3614,35 +3614,35 @@ export default function AryaChat() {
                       onClick={() => { setShowUserMenu(false); setShowProfile(true); }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                     >
-                      <User className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" /> My Profile
+                      <User className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" /> {t("menu_my_profile")}
                     </button>
                     <button
                       data-testid="button-my-goals-sidebar"
                       onClick={() => { setShowUserMenu(false); setLocation("/my-goals"); }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                     >
-                      <Target className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /> My Goals
+                      <Target className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /> {t("menu_my_goals")}
                     </button>
                     <button
                       data-testid="button-customize-arya-sidebar"
                       onClick={() => { setShowUserMenu(false); setShowCustomize(true); setShowMemory(false); setShowGoals(false); }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                     >
-                      <Palette className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> Customize ARYA
+                      <Palette className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> {t("menu_customize")}
                     </button>
                     <button
                       data-testid="button-quick-tutorial-sidebar"
                       onClick={() => { setShowUserMenu(false); setShowTutorial(true); }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                     >
-                      <HelpCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /> Quick Tutorial
+                      <HelpCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /> {t("menu_tutorial")}
                     </button>
                     <button
                       data-testid="button-vedic-lens-sidebar"
                       onClick={() => { setShowUserMenu(false); setLocation("/vedic-lens"); }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                     >
-                      <Sparkles className="w-3.5 h-3.5 text-amber-500" /> KAAL — Cosmic Timing
+                      <Sparkles className="w-3.5 h-3.5 text-amber-500" /> {t("menu_kaal")}
                     </button>
                     <button
                       data-testid="button-niti-sidebar"
@@ -3650,7 +3650,7 @@ export default function AryaChat() {
                       className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                     >
                       <Briefcase className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-500 shrink-0" />
-                      <span className="truncate">Niti — Business Wisdom</span>
+                      <span className="truncate">{t("menu_niti")}</span>
                     </button>
                     <button
                       data-testid="button-prana-sidebar"
@@ -3658,14 +3658,14 @@ export default function AryaChat() {
                       className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                     >
                       <Activity className="w-3.5 h-3.5 text-teal-500 shrink-0" />
-                      <span className="truncate">Prana — Health Tracking</span>
+                      <span className="truncate">{t("menu_prana")}</span>
                     </button>
                     <button
                       data-testid="button-weekly-review-sidebar"
                       onClick={() => { setShowUserMenu(false); setLocation("/review"); }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                     >
-                      <CalendarDays className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" /> Sunday Review
+                      <CalendarDays className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" /> {t("menu_review")}
                     </button>
                     {installPrompt && (
                       <button
@@ -3674,7 +3674,7 @@ export default function AryaChat() {
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 font-medium"
                       >
                         <Download className="w-3.5 h-3.5 shrink-0" />
-                        <span>Add to Home Screen</span>
+                        <span>{t("menu_install")}</span>
                       </button>
                     )}
                     {updateAvailable && (
@@ -3684,7 +3684,7 @@ export default function AryaChat() {
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 font-medium"
                       >
                         <RefreshCw className="w-3.5 h-3.5 animate-spin" style={{ animationDuration: "2s" }} />
-                        <span>Update available</span>
+                        <span>{t("menu_update")}</span>
                         <span className="ml-auto w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                       </button>
                     )}
@@ -3693,21 +3693,21 @@ export default function AryaChat() {
                       onClick={() => { setShowUserMenu(false); setShowFeedbackModal(true); }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                     >
-                      <MessageCircleWarning className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400" /> Report Issue
+                      <MessageCircleWarning className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400" /> {t("menu_report")}
                     </button>
                     <button
                       data-testid="button-privacy-control-sidebar"
                       onClick={() => { setShowUserMenu(false); setLocation("/privacy-control"); }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                     >
-                      <Shield className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" /> Privacy & Control
+                      <Shield className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" /> {t("menu_privacy")}
                     </button>
                     <button
                       data-testid="button-user-logout-sidebar"
                       onClick={() => { setShowUserMenu(false); userLogout(); }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-500 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-slate-700"
                     >
-                      <LogOut className="w-3.5 h-3.5" /> Sign Out
+                      <LogOut className="w-3.5 h-3.5" /> {t("menu_signout")}
                     </button>
                   </motion.div>
                 )}
@@ -3841,35 +3841,35 @@ export default function AryaChat() {
                         onClick={() => { setShowUserMenu(false); setShowProfile(true); }}
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                       >
-                        <User className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" /> My Profile
+                        <User className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" /> {t("menu_my_profile")}
                       </button>
                       <button
                         data-testid="button-my-goals"
                         onClick={() => { setShowUserMenu(false); setLocation("/my-goals"); }}
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                       >
-                        <Target className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /> My Goals
+                        <Target className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /> {t("menu_my_goals")}
                       </button>
                       <button
                         data-testid="button-customize-arya"
                         onClick={() => { setShowUserMenu(false); setShowCustomize(true); setShowMemory(false); setShowGoals(false); }}
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                       >
-                        <Palette className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> Customize ARYA
+                        <Palette className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> {t("menu_customize")}
                       </button>
                       <button
                         data-testid="button-quick-tutorial"
                         onClick={() => { setShowUserMenu(false); setShowTutorial(true); }}
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                       >
-                        <HelpCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /> Quick Tutorial
+                        <HelpCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /> {t("menu_tutorial")}
                       </button>
                       <button
                         data-testid="button-vedic-lens"
                         onClick={() => { setShowUserMenu(false); setLocation("/vedic-lens"); }}
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                       >
-                        <Sparkles className="w-3.5 h-3.5 text-amber-500" /> KAAL — Cosmic Timing
+                        <Sparkles className="w-3.5 h-3.5 text-amber-500" /> {t("menu_kaal")}
                       </button>
                       <button
                         data-testid="button-niti"
@@ -3877,7 +3877,7 @@ export default function AryaChat() {
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                       >
                         <Briefcase className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-500 shrink-0" />
-                        <span className="truncate">Niti — Business Wisdom</span>
+                        <span className="truncate">{t("menu_niti")}</span>
                       </button>
                       <button
                         data-testid="button-prana"
@@ -3885,14 +3885,14 @@ export default function AryaChat() {
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                       >
                         <Activity className="w-3.5 h-3.5 text-teal-500 shrink-0" />
-                        <span className="truncate">Prana — Health Tracking</span>
+                        <span className="truncate">{t("menu_prana")}</span>
                       </button>
                       <button
                         data-testid="button-weekly-review"
                         onClick={() => { setShowUserMenu(false); setLocation("/review"); }}
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                       >
-                        <CalendarDays className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" /> Sunday Review
+                        <CalendarDays className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" /> {t("menu_review")}
                       </button>
                       {installPrompt && (
                         <button
@@ -3901,7 +3901,7 @@ export default function AryaChat() {
                           className="w-full flex items-center gap-2 px-3 py-2 text-xs text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 font-medium"
                         >
                           <Download className="w-3.5 h-3.5 shrink-0" />
-                          <span>Add to Home Screen</span>
+                          <span>{t("menu_install")}</span>
                         </button>
                       )}
                       {updateAvailable && (
@@ -3911,7 +3911,7 @@ export default function AryaChat() {
                           className="w-full flex items-center gap-2 px-3 py-2 text-xs text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 font-medium"
                         >
                           <RefreshCw className="w-3.5 h-3.5 animate-spin" style={{ animationDuration: "2s" }} />
-                          <span>Update available</span>
+                          <span>{t("menu_update")}</span>
                           <span className="ml-auto w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                         </button>
                       )}
@@ -3920,21 +3920,21 @@ export default function AryaChat() {
                         onClick={() => { setShowUserMenu(false); setShowFeedbackModal(true); }}
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                       >
-                        <MessageCircleWarning className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400" /> Report Issue
+                        <MessageCircleWarning className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400" /> {t("menu_report")}
                       </button>
                       <button
                         data-testid="button-privacy-control"
                         onClick={() => { setShowUserMenu(false); setLocation("/privacy-control"); }}
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                       >
-                        <Shield className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" /> Privacy & Control
+                        <Shield className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" /> {t("menu_privacy")}
                       </button>
                       <button
                         data-testid="button-user-logout"
                         onClick={() => { setShowUserMenu(false); userLogout(); }}
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-500 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-slate-700"
                       >
-                        <LogOut className="w-3.5 h-3.5" /> Sign Out
+                        <LogOut className="w-3.5 h-3.5" /> {t("menu_signout")}
                       </button>
                     </motion.div>
                   )}
@@ -4159,10 +4159,10 @@ export default function AryaChat() {
               className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3 max-w-lg w-full"
             >
               {[
-                { text: "Help me think through a tough decision I'm facing", badge: "Think", icon: "🧠" },
-                { text: "I want to build a daily reading habit — help me set a goal", badge: "Goals", icon: "🎯" },
-                { text: "Give me a morning reflection to start my day with clarity", badge: "Reflect", icon: "🌅" },
-                { text: "How can I stay calm and focused when things get stressful?", badge: "Wisdom", icon: "🧘" },
+                { text: t("suggest_think"),   badge: t("badge_think"),   icon: "🧠" },
+                { text: t("suggest_goals"),   badge: t("badge_goals"),   icon: "🎯" },
+                { text: t("suggest_reflect"), badge: t("badge_reflect"), icon: "🌅" },
+                { text: t("suggest_wisdom"),  badge: t("badge_wisdom"),  icon: "🧘" },
               ].map((suggestion, i) => (
                 <motion.button
                   key={i}
@@ -4196,10 +4196,10 @@ export default function AryaChat() {
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <span className="text-[9px] uppercase tracking-wider font-semibold text-violet-600 dark:text-violet-400/80 group-hover:text-violet-600 dark:group-hover:text-violet-400 mb-1 flex items-center gap-1">
-                      <Theater className="w-2.5 h-2.5" /> Rehearse
+                      <Theater className="w-2.5 h-2.5" /> {t("badge_rehearse")}
                     </span>
                     <span className="block text-xs text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200 mt-0.5">
-                      Practise a tough conversation before it happens — ARYA plays the other person
+                      {t("suggest_rehearse_desc")}
                     </span>
                   </div>
                   <div className="ml-3 w-8 h-8 rounded-full bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center flex-shrink-0 group-hover:bg-violet-200 dark:group-hover:bg-violet-800/60 transition-colors">
@@ -4277,10 +4277,10 @@ export default function AryaChat() {
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <span className="text-[9px] uppercase tracking-wider font-semibold text-emerald-600 dark:text-emerald-400/80 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 mb-1 flex items-center gap-1">
-                      <Mic className="w-2.5 h-2.5" /> Talk to ARYA
+                      <Mic className="w-2.5 h-2.5" /> {t("badge_talk")}
                     </span>
                     <span className="block text-xs text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200 mt-0.5">
-                      Speak freely — ARYA listens, thinks, and replies in your language. Hands-free, like talking to your PA.
+                      {t("suggest_talk_desc")}
                     </span>
                   </div>
                   <div className="ml-3 w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center flex-shrink-0 group-hover:bg-emerald-200 dark:group-hover:bg-emerald-800/60 transition-colors">
@@ -4520,8 +4520,7 @@ export default function AryaChat() {
                 {showLanguageMenu && (
                   <div className="absolute bottom-full left-0 mb-2 w-52 bg-card border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden z-50">
                     <div className="px-3 py-2 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
-                      <p className="text-xs font-medium text-muted-foreground">Language</p>
-                      <a href="/language" className="text-[10px] text-cyan-600 dark:text-cyan-400 hover:underline">Tone preview →</a>
+                      <p className="text-xs font-medium text-muted-foreground">{t("voice_lang_header")}</p>
                     </div>
                     <div className="max-h-72 overflow-y-auto py-1">
                         {DEFAULT_LANGUAGES.filter(l => SARVAM_LANGUAGE_CODES.has(l.code) || l.code === "en-IN").map((lang) => (
