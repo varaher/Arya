@@ -266,6 +266,7 @@ function InsightCard({ insight }: { insight: Insight }) {
 type Tab = "log" | "trends" | "insights";
 
 function DailyLogTab({ readings, onLog, onDelete, token }: { readings: HealthReading[]; onLog: (metric: string, val: string, val2?: string) => void; onDelete: (id: string) => void; token?: string | null }) {
+  const { t } = useLanguage();
   const [active, setActive] = useState<typeof METRICS[0] | typeof BP_METRIC | typeof GLUCOSE_METRIC | typeof SLEEP_METRIC | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -373,6 +374,7 @@ function DailyLogTab({ readings, onLog, onDelete, token }: { readings: HealthRea
 }
 
 function TrendsTab({ readings }: { readings: HealthReading[] }) {
+  const { t } = useLanguage();
   const trendMetrics = [METRICS[0], METRICS[1], METRICS[2], METRICS[3]];
   const sleepReadings = readings.filter(r => r.metric === "sleep_hours");
   const hasSleep = sleepReadings.length > 0;

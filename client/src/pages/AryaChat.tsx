@@ -12,6 +12,7 @@ import {
   Send,
   Mic,
   Paperclip,
+  MoreHorizontal,
   Plus,
   Trash2,
   MessageSquare,
@@ -605,30 +606,30 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
   };
 
   const styleOptions = [
-    { value: "concise", label: "Short & Sweet", desc: "Quick, to-the-point answers" },
-    { value: "balanced", label: "Balanced", desc: "Thorough but focused" },
-    { value: "detailed", label: "In-Depth", desc: "Comprehensive with examples" },
+    { value: "concise", label: tl("c_short"), desc: tl("c_short_desc") },
+    { value: "balanced", label: tl("c_balanced"), desc: tl("c_balanced_desc") },
+    { value: "detailed", label: tl("c_indepth"), desc: tl("c_indepth_desc") },
   ];
   const toneOptions = [
-    { value: "motivating", label: "Motivating", icon: "🔥" },
-    { value: "gentle", label: "Gentle", icon: "🌿" },
-    { value: "direct", label: "Direct", icon: "🎯" },
-    { value: "friendly", label: "Friendly", icon: "😊" },
+    { value: "motivating", label: tl("c_motivating"), icon: "🔥" },
+    { value: "gentle", label: tl("c_gentle"), icon: "🌿" },
+    { value: "direct", label: tl("c_direct"), icon: "🎯" },
+    { value: "friendly", label: tl("c_friendly"), icon: "😊" },
   ];
   const focusOptions = [
-    { value: "career", label: "Career", icon: "💼" },
-    { value: "health", label: "Health", icon: "🏥" },
-    { value: "spirituality", label: "Spirituality", icon: "🧘" },
-    { value: "finance", label: "Finance", icon: "💰" },
-    { value: "relationships", label: "Relationships", icon: "❤️" },
-    { value: "learning", label: "Learning", icon: "📚" },
-    { value: "creativity", label: "Creativity", icon: "🎨" },
-    { value: "fitness", label: "Fitness", icon: "💪" },
+    { value: "career", label: tl("c_career"), icon: "💼" },
+    { value: "health", label: tl("c_health"), icon: "🏥" },
+    { value: "spirituality", label: tl("c_spirituality"), icon: "🧘" },
+    { value: "finance", label: tl("c_finance"), icon: "💰" },
+    { value: "relationships", label: tl("c_relationships"), icon: "❤️" },
+    { value: "learning", label: tl("c_learning"), icon: "📚" },
+    { value: "creativity", label: tl("c_creativity"), icon: "🎨" },
+    { value: "fitness", label: tl("c_fitness"), icon: "💪" },
   ];
   const wisdomOptions = [
-    { value: "always", label: "Always", desc: "Wisdom in every response" },
-    { value: "sometimes", label: "Sometimes", desc: "When it adds value" },
-    { value: "never", label: "Never", desc: "Keep it purely practical" },
+    { value: "always", label: tl("c_wisdom_always"), desc: tl("c_wisdom_always_desc") },
+    { value: "sometimes", label: tl("c_wisdom_sometimes"), desc: tl("c_wisdom_sometimes_desc") },
+    { value: "never", label: tl("c_wisdom_never"), desc: tl("c_wisdom_never_desc") },
   ];
 
   return (
@@ -636,7 +637,7 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
       <div className="p-3 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Palette className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-          <span className="text-sm font-semibold text-gray-900 dark:text-white">Customize ARYA</span>
+          <span className="text-sm font-semibold text-gray-900 dark:text-white">{tl("customize_arya")}</span>
         </div>
         <button onClick={onClose} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-400" data-testid="button-close-customize">
           <X className="w-4 h-4" />
@@ -648,11 +649,11 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
       ) : (
         <div className="flex-1 overflow-y-auto p-4 space-y-5">
           <div className="text-[11px] text-gray-400 leading-relaxed">
-            Personalize how ARYA responds to you. Changes take effect in your next conversation.
+            {tl("customize_intro")}
           </div>
 
           <div>
-            <div className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2">Response Length</div>
+            <div className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2">{tl("response_length")}</div>
             <div className="space-y-1.5">
               {styleOptions.map(opt => (
                 <button
@@ -678,7 +679,7 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
           </div>
 
           <div>
-            <div className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2">Conversation Tone</div>
+            <div className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2">{tl("conversation_tone")}</div>
             <div className="grid grid-cols-2 gap-1.5">
               {toneOptions.map(opt => (
                 <button
@@ -699,8 +700,8 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
           </div>
 
           <div>
-            <div className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">Focus Areas</div>
-            <div className="text-[10px] text-gray-500 dark:text-gray-400 mb-2">Pick up to 4 topics ARYA will relate advice to</div>
+            <div className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">{tl("focus_areas")}</div>
+            <div className="text-[10px] text-gray-500 dark:text-gray-400 mb-2">{tl("c_focus_pick")}</div>
             <div className="grid grid-cols-2 gap-1.5">
               {focusOptions.map(opt => (
                 <button
@@ -918,7 +919,7 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
             className="w-full py-2.5 rounded-lg bg-gradient-to-r from-emerald-500/20 to-emerald-600/20 border border-emerald-300 dark:border-emerald-700 text-emerald-600 dark:text-emerald-400 text-xs font-semibold hover:from-emerald-500/30 hover:to-emerald-600/30 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : saved ? <Check className="w-3.5 h-3.5" /> : <Settings className="w-3.5 h-3.5" />}
-            {saving ? "Saving..." : saved ? "Saved!" : "Save Preferences"}
+            {saving ? tl("c_saving") : saved ? tl("c_saved") : tl("c_save")}
           </button>
         </div>
       )}
@@ -2408,6 +2409,7 @@ export default function AryaChat() {
     try { return localStorage.getItem("arya_lang") || "hi-IN"; } catch { return "hi-IN"; }
   });
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
+  const [showToolMore, setShowToolMore] = useState(false);
 
   // Sync globe when IP detection banner is accepted
   useEffect(() => {
@@ -2560,6 +2562,7 @@ export default function AryaChat() {
   const isWebSpeechModeRef = useRef(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const langMenuRef = useRef<HTMLDivElement>(null);
+  const toolMoreRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
 
   const { data: futureLetterData } = useQuery<{ letter: string | null; writtenAt: string | null }>({
@@ -2783,6 +2786,9 @@ export default function AryaChat() {
     function handleClickOutside(e: MouseEvent) {
       if (langMenuRef.current && !langMenuRef.current.contains(e.target as Node)) {
         setShowLanguageMenu(false);
+      }
+      if (toolMoreRef.current && !toolMoreRef.current.contains(e.target as Node)) {
+        setShowToolMore(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -4525,97 +4531,6 @@ export default function AryaChat() {
           )}
           <Card className="bg-white/90 dark:bg-slate-900/90 border-gray-200 dark:border-slate-700 backdrop-blur-sm">
             <div className="flex items-end gap-1.5 md:gap-2 p-2 md:p-3">
-              <div className="relative" ref={langMenuRef}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      data-testid="button-language-select"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setShowLanguageMenu(!showLanguageMenu)}
-                      className={`flex-shrink-0 rounded-full h-9 w-9 md:h-10 md:w-10 ${
-                        selectedLanguage !== "en-IN"
-                          ? "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/30"
-                          : "text-muted-foreground hover:text-gray-900 dark:hover:text-white hover:bg-card"
-                      }`}
-                    >
-                      <Globe className="w-4 h-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="text-xs">
-                    Voice language: {currentLang?.name || "English"}
-                  </TooltipContent>
-                </Tooltip>
-                {showLanguageMenu && (
-                  <div className="absolute bottom-full left-0 mb-2 w-52 bg-card border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden z-50">
-                    <div className="px-3 py-2 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
-                      <p className="text-xs font-medium text-muted-foreground">{t("voice_lang_header")}</p>
-                    </div>
-                    <div className="max-h-72 overflow-y-auto py-1">
-                        {DEFAULT_LANGUAGES.filter(l => SARVAM_LANGUAGE_CODES.has(l.code) || l.code === "en-IN").map((lang) => (
-                        <button
-                          key={lang.code}
-                          data-testid={`button-lang-${lang.code}`}
-                          onClick={() => {
-                            setSelectedLanguage(lang.code);
-                            setShowLanguageMenu(false);
-                            try { localStorage.setItem("arya_lang", lang.code); } catch {}
-                            const sc = lang.code.split("-")[0] as UiLanguage;
-                            const validUi: UiLanguage[] = ["en","hi","mr","bn","ta","te","kn","ml","gu","pa","od"];
-                            if (validUi.includes(sc)) setGlobalLanguage(sc);
-                          }}
-                          className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors ${
-                            selectedLanguage === lang.code ? "text-primary bg-primary/10" : "text-gray-700 dark:text-gray-200"
-                          }`}
-                        >
-                          <span>{lang.name}</span>
-                          <span className="text-xs text-muted-foreground">{lang.native}</span>
-                        </button>
-                      ))}
-                      <div className="mx-3 my-1 border-t border-gray-100 dark:border-slate-700" />
-                      {DEFAULT_LANGUAGES.filter(l => isGlobalVoiceLang(l.code)).map((lang) => (
-                        <button
-                          key={lang.code}
-                          data-testid={`button-lang-${lang.code}`}
-                          onClick={() => {
-                            setSelectedLanguage(lang.code);
-                            setShowLanguageMenu(false);
-                            try { localStorage.setItem("arya_lang", lang.code); } catch {}
-                          }}
-                          className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors ${
-                            selectedLanguage === lang.code ? "text-primary bg-primary/10" : "text-gray-700 dark:text-gray-200"
-                          }`}
-                        >
-                          <span>{lang.name}</span>
-                          <span className="text-xs text-muted-foreground">{lang.native}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    data-testid="button-speaker-toggle"
-                    variant="ghost"
-                    size="icon"
-                    onClick={toggleSpeaker}
-                    className={`flex-shrink-0 rounded-full h-9 w-9 md:h-10 md:w-10 ${
-                      speakerOn
-                        ? "text-primary bg-primary/10 hover:bg-primary/20"
-                        : "text-muted-foreground hover:text-gray-900 dark:hover:text-white hover:bg-card"
-                    }`}
-                  >
-                    {speakerOn ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="text-xs">
-                  {speakerOn ? "ARYA speaks responses — tap to mute" : "Tap to hear ARYA speak"}
-                </TooltipContent>
-              </Tooltip>
-
               <input
                 ref={imageInputRef}
                 type="file"
@@ -4624,24 +4539,8 @@ export default function AryaChat() {
                 onChange={handleImageSelect}
                 data-testid="input-image-upload"
               />
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    data-testid="button-attach-image"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => imageInputRef.current?.click()}
-                    disabled={isStreaming || isScanningDoc}
-                    className="flex-shrink-0 rounded-full h-9 w-9 md:h-10 md:w-10 bg-gradient-to-br from-purple-500/20 to-purple-600/10 text-purple-600 dark:text-purple-400 hover:from-purple-500/30 hover:to-purple-600/20 border border-purple-200 dark:border-purple-800"
-                  >
-                    <Paperclip className="w-4 h-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="text-xs">
-                  Attach image or PDF
-                </TooltipContent>
-              </Tooltip>
 
+              {/* Mic — always visible */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -4664,23 +4563,136 @@ export default function AryaChat() {
                 </TooltipContent>
               </Tooltip>
 
+              {/* Speaker — always visible */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    data-testid="button-voice-chat"
+                    data-testid="button-speaker-toggle"
                     variant="ghost"
                     size="icon"
-                    onClick={() => setShowVoiceMode(true)}
-                    disabled={isStreaming || isRecording}
-                    className="flex-shrink-0 rounded-full h-9 w-9 md:h-10 md:w-10 bg-gradient-to-br from-indigo-500/20 to-indigo-600/10 text-indigo-600 dark:text-indigo-400 hover:from-indigo-500/30 hover:to-indigo-600/20 border border-indigo-200 dark:border-indigo-800"
+                    onClick={toggleSpeaker}
+                    className={`flex-shrink-0 rounded-full h-9 w-9 md:h-10 md:w-10 ${
+                      speakerOn
+                        ? "text-primary bg-primary/10 hover:bg-primary/20"
+                        : "text-muted-foreground hover:text-gray-900 dark:hover:text-white hover:bg-card"
+                    }`}
                   >
-                    <Headphones className="w-4 h-4" />
+                    {speakerOn ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="text-xs">
-                  Live voice conversation
+                  {speakerOn ? "ARYA speaks responses — tap to mute" : "Tap to hear ARYA speak"}
                 </TooltipContent>
               </Tooltip>
+
+              {/* ⋯ More — Globe, Attach, Live voice */}
+              <div className="relative" ref={toolMoreRef}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      data-testid="button-toolbar-more"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setShowToolMore(v => !v)}
+                      className={`flex-shrink-0 rounded-full h-9 w-9 md:h-10 md:w-10 ${
+                        showToolMore || selectedLanguage !== "en-IN"
+                          ? "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/30"
+                          : "text-muted-foreground hover:text-gray-900 dark:hover:text-white hover:bg-card"
+                      }`}
+                    >
+                      <MoreHorizontal className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs">{t("toolbar_more")}</TooltipContent>
+                </Tooltip>
+                {showToolMore && (
+                  <div className="absolute bottom-full left-0 mb-2 w-48 bg-card border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl z-50 py-1 overflow-visible">
+                    {/* Voice language row */}
+                    <div className="relative" ref={langMenuRef}>
+                      <button
+                        data-testid="button-language-select"
+                        onClick={() => setShowLanguageMenu(v => !v)}
+                        className={`w-full text-left px-3 py-2.5 text-sm flex items-center gap-2.5 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors rounded-t-xl ${
+                          selectedLanguage !== "en-IN" ? "text-amber-600 dark:text-amber-400" : "text-gray-700 dark:text-gray-200"
+                        }`}
+                      >
+                        <Globe className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span className="flex-1 font-medium">{t("toolbar_lang")}</span>
+                        {selectedLanguage !== "en-IN" && <span className="text-[11px] opacity-75">{currentLang?.native}</span>}
+                      </button>
+                      {showLanguageMenu && (
+                        <div className="absolute bottom-0 left-full ml-2 w-52 bg-card border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden z-50">
+                          <div className="px-3 py-2 border-b border-gray-200 dark:border-slate-700">
+                            <p className="text-xs font-medium text-muted-foreground">{t("voice_lang_header")}</p>
+                          </div>
+                          <div className="max-h-72 overflow-y-auto py-1">
+                            {DEFAULT_LANGUAGES.filter(l => SARVAM_LANGUAGE_CODES.has(l.code) || l.code === "en-IN").map((lang) => (
+                              <button
+                                key={lang.code}
+                                data-testid={`button-lang-${lang.code}`}
+                                onClick={() => {
+                                  setSelectedLanguage(lang.code);
+                                  setShowLanguageMenu(false);
+                                  setShowToolMore(false);
+                                  try { localStorage.setItem("arya_lang", lang.code); } catch {}
+                                  const sc = lang.code.split("-")[0] as UiLanguage;
+                                  const validUi: UiLanguage[] = ["en","hi","mr","bn","ta","te","kn","ml","gu","pa","od"];
+                                  if (validUi.includes(sc)) setGlobalLanguage(sc);
+                                }}
+                                className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors ${
+                                  selectedLanguage === lang.code ? "text-primary bg-primary/10" : "text-gray-700 dark:text-gray-200"
+                                }`}
+                              >
+                                <span>{lang.name}</span>
+                                <span className="text-xs text-muted-foreground">{lang.native}</span>
+                              </button>
+                            ))}
+                            <div className="mx-3 my-1 border-t border-gray-100 dark:border-slate-700" />
+                            {DEFAULT_LANGUAGES.filter(l => isGlobalVoiceLang(l.code)).map((lang) => (
+                              <button
+                                key={lang.code}
+                                data-testid={`button-lang-${lang.code}`}
+                                onClick={() => {
+                                  setSelectedLanguage(lang.code);
+                                  setShowLanguageMenu(false);
+                                  setShowToolMore(false);
+                                  try { localStorage.setItem("arya_lang", lang.code); } catch {}
+                                }}
+                                className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors ${
+                                  selectedLanguage === lang.code ? "text-primary bg-primary/10" : "text-gray-700 dark:text-gray-200"
+                                }`}
+                              >
+                                <span>{lang.name}</span>
+                                <span className="text-xs text-muted-foreground">{lang.native}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    {/* Attach file row */}
+                    <button
+                      data-testid="button-attach-image"
+                      onClick={() => { imageInputRef.current?.click(); setShowToolMore(false); }}
+                      disabled={isStreaming || isScanningDoc}
+                      className="w-full text-left px-3 py-2.5 text-sm flex items-center gap-2.5 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 disabled:opacity-50 transition-colors"
+                    >
+                      <Paperclip className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400 flex-shrink-0" />
+                      <span className="font-medium">{t("toolbar_attach")}</span>
+                    </button>
+                    {/* Live voice row */}
+                    <button
+                      data-testid="button-voice-chat"
+                      onClick={() => { setShowVoiceMode(true); setShowToolMore(false); }}
+                      disabled={isStreaming || isRecording}
+                      className="w-full text-left px-3 py-2.5 text-sm flex items-center gap-2.5 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 disabled:opacity-50 transition-colors rounded-b-xl"
+                    >
+                      <Headphones className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 flex-shrink-0" />
+                      <span className="font-medium">{t("toolbar_live_voice")}</span>
+                    </button>
+                  </div>
+                )}
+              </div>
 
               {isRecording ? (
                 <div className="flex-1 flex items-center justify-center gap-2 md:gap-3 py-2">
@@ -4792,7 +4804,7 @@ export default function AryaChat() {
             )}
             <p className="text-[10px] md:text-xs text-muted-foreground text-center flex items-center gap-1.5">
               <Sparkles className="w-3 h-3 text-purple-600 dark:text-purple-400/50" />
-              ARYA — Think clearly. Set goals. Grow daily.
+              {t("app_tagline")}
             </p>
           </div>
         </div>
@@ -6444,6 +6456,7 @@ const TUTORIAL_STEPS = [
 ];
 
 function QuickStartTutorial({ onClose, onStartChat, token }: { onClose: () => void; onStartChat: (text: string) => void; token?: string | null }) {
+  const { t } = useLanguage();
   const [step, setStep] = useState(0);
   const current = TUTORIAL_STEPS[step];
   const Icon = current.icon;
@@ -6550,7 +6563,7 @@ function QuickStartTutorial({ onClose, onStartChat, token }: { onClose: () => vo
               onClick={() => handleStartChat("Hello ARYA! I just finished the tutorial. What can you help me with today?")}
               className="flex-1 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-medium py-2.5 rounded-xl"
             >
-              Start Chatting <ArrowRight className="w-4 h-4 ml-2" />
+              {t("tutorial_start")} <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           ) : (
             <Button
@@ -6558,7 +6571,7 @@ function QuickStartTutorial({ onClose, onStartChat, token }: { onClose: () => vo
               onClick={() => setStep(s => s + 1)}
               className="flex-1 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-medium py-2.5 rounded-xl"
             >
-              {isFirst ? "Show Me Around" : "Next"} <ArrowRight className="w-4 h-4 ml-2" />
+              {isFirst ? t("tutorial_show_me") : t("tutorial_next")} <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           )}
         </div>
@@ -6569,7 +6582,7 @@ function QuickStartTutorial({ onClose, onStartChat, token }: { onClose: () => vo
             onClick={handleClose}
             className="w-full text-xs text-muted-foreground hover:text-gray-900 dark:hover:text-white py-2 mt-2"
           >
-            Skip tutorial
+            {t("tutorial_skip")}
           </button>
         )}
       </motion.div>

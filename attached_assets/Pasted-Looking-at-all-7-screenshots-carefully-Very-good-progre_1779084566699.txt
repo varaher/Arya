@@ -1,0 +1,401 @@
+Looking at all 7 screenshots carefully. Very good progress. Let me give you a complete analysis.
+
+---
+
+## What's Working Well ✅
+
+```
+Image 1 — Customize ARYA
+  ✅ Panel opens correctly
+  ✅ Response Length options visible
+  ✅ Conversation Tone options visible
+  ✅ Focus Areas visible
+  ⚠ Still in English — needs Hindi translation
+
+Image 2 — Goals page
+  ✅ "मेरे लक्ष्य" — title now VISIBLE (contrast fixed!)
+  ✅ "काम · रिमाइंडर · आदतें · इरादे" — tabs in Hindi
+  ✅ "आज के लिए कोई काम या रिमाइंडर जोड़ें।"
+  ✅ "+ काम जोड़ें" button
+
+Image 3 — Sunday Review
+  ✅ "रविवार की समीक्षा" — title in Hindi
+  ✅ "ARYA का रविवार पत्र" — letter label
+  ✅ "हफ्ते में आपका मूड" — mood section
+  ✅ Quote generated in English (needs Hindi)
+  ⚠ "No mood check-ins this week" still English
+
+Image 5 — KAAL fully in Hindi
+  ✅ "मुझे मेरी राशि पता है (वैदिक)"
+  ✅ "कोई नहीं — बस बताओ कब"
+  ✅ "आगे बढ़ें →" button
+  ✅ "इसे कभी भी अपनी सेटिंग में बदल सकते हैं।"
+  ✅ Excellent — best translated section
+
+Image 7 — Quick tabs now in Hindi!
+  ✅ "लक्ष्य · स्मृति · नोट्स · मनोदशा" — translated
+  ✅ "✓ चेक-इन सहेजें" — save button
+  ✅ "ARYA से कुछ भी पूछें..." — placeholder
+  ✅ "▼ प्रेरणा लो" — suggestions dropdown
+```
+
+---
+
+## Issues To Fix 🔴
+
+### Issue 1 — Prana crashes (Image 4)
+
+```
+/prana route → "Something went wrong"
+
+This is the same crash pattern.
+The Prana component has a translation key
+that doesn't exist in hi.json yet.
+
+Fix: Open browser console on /prana
+     Find the exact error
+     Add missing key to hi.json
+
+Missing keys likely:
+  "health.wearable_teaser" or similar
+  "health.minimum_readings_message"
+  "health.7_day_trends_header"
+```
+
+---
+
+### Issue 2 — Customize ARYA still in English (Image 1)
+
+```
+Needs Hindi translation:
+  "Customize ARYA" → "ARYA को customize करो"
+  "Personalize how ARYA responds..." 
+    → "ARYA कैसे जवाब दे, यह तुम तय करो।"
+  "Response Length" → "जवाब की लंबाई"
+  "Short & Sweet" → "छोटा और सटीक"
+  "Quick, to-the-point answers" → "सीधे, कम शब्दों में"
+  "Balanced" → "संतुलित"
+  "Thorough but focused" → "पूरा लेकिन focused"
+  "In-Depth" → "विस्तृत"
+  "Comprehensive with examples" → "उदाहरण के साथ पूरा"
+  "Conversation Tone" → "बातचीत का अंदाज़"
+  "Motivating" → "प्रेरक"
+  "Gentle" → "सौम्य"
+  "Direct" → "सीधा"
+  "Friendly" → "दोस्ताना"
+  "Focus Areas" → "Focus क्षेत्र"
+  "Pick up to 4 topics..." → "4 topics चुनो जिन पर ARYA ध्यान दे"
+  "Career" → "करियर"
+  "Health" → "सेहत"
+  "Spirituality" → "आध्यात्मिकता"
+  "Finance" → "वित्त"
+```
+
+---
+
+### Issue 3 — Quick Tutorial in English (Image 6)
+
+```
+"Welcome to ARYA"
+"ARYA is your personal thinking and growth assistant"
+"Show Me Around →"
+"Skip tutorial"
+
+Needs Hindi:
+  "ARYA में आपका स्वागत है"
+  "ARYA आपका personal thinking और growth साथी है —
+   decisions, goals, reflection और focus के लिए
+   हमेशा उपलब्ध।"
+  "चलो देखते हैं →"
+  "tutorial छोड़ो"
+```
+
+---
+
+### Issue 4 — Bottom tagline still English (Image 7)
+
+```
+"ARYA — Think clearly. Set goals. Grow daily."
+
+Should be:
+"ARYA — साफ सोचो। लक्ष्य बनाओ। रोज़ बढ़ो।"
+```
+
+---
+
+### Issue 5 — Sunday Review quote in English (Image 3)
+
+```
+"A week of quiet introspection and uncharted
+potential, waiting for direction."
+
+This is ARYA-generated content.
+The weekly review system prompt needs:
+"Generate the opening reflection in Hindi.
+Warm, poetic, friend tone. 1-2 lines only."
+
+Also still English:
+"No mood check-ins this week."
+"Start tomorrow — it takes 10 seconds."
+
+Add to hi.json:
+"इस हफ्ते कोई मूड चेक-इन नहीं हुआ।"
+"कल से शुरू करो — बस 10 seconds लगते हैं।"
+```
+
+---
+
+## The Three New Requests
+
+### Request 1 — Quick tabs in ALL subsections
+
+You want the लक्ष्य · स्मृति · नोट्स · मनोदशा pill row visible in every subsection, not just main chat.
+
+```tsx
+// QuickAccessTabs.tsx — add to every page
+
+function QuickAccessTabs() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+
+  const tabs = [
+    { icon: '🎯', label: t('nav.goals'),    path: '/goals' },
+    { icon: '🧠', label: t('nav.memory'),   path: '/memory' },
+    { icon: '📝', label: t('nav.notes'),    path: '/notes' },
+    { icon: '😊', label: t('nav.mood'),     path: '/mood' },
+    { icon: '🔔', label: t('nav.reminders'),path: '/reminders' },
+    { icon: '📅', label: t('nav.calendar'), path: '/calendar' },
+  ];
+
+  return (
+    <div className="quick-tabs">
+      {tabs.map(tab => (
+        <button
+          key={tab.path}
+          className="quick-tab-pill"
+          onClick={() => navigate(tab.path)}
+        >
+          <span>{tab.icon}</span>
+          <span>{tab.label}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// Add this component to:
+// PranaPage.tsx ← top of page
+// NitiPage.tsx  ← top of page
+// KaalPage.tsx  ← already has it
+// ReviewPage.tsx ← top of page
+// GoalsPage.tsx  ← top of page
+```
+
+---
+
+### Request 2 — Chat toolbar: make globe, attachment, headphones a dropdown
+
+Keep mic and mute separate. Everything else collapses into one "⋯" button.
+
+```tsx
+// ChatToolbar.tsx — restructure
+
+function ChatToolbar({ onSend, language, onLanguageChange }) {
+  const [showMore, setShowMore] = useState(false);
+
+  return (
+    <div className="chat-toolbar">
+
+      {/* Primary — always visible */}
+      <button className="tool-mic" title="Voice input">
+        🎙️
+      </button>
+      <button className="tool-mute" title="Mute">
+        🔇
+      </button>
+
+      {/* More options — dropdown */}
+      <div className="tool-more-wrap">
+        <button
+          className="tool-more-btn"
+          onClick={() => setShowMore(!showMore)}
+          title="More options"
+        >
+          ⋯
+        </button>
+
+        {showMore && (
+          <div className="tool-more-dropdown">
+            <button onClick={() => { openGlobe(); setShowMore(false); }}>
+              🌐 {t('toolbar.language')}
+            </button>
+            <button onClick={() => { openAttachment(); setShowMore(false); }}>
+              📎 {t('toolbar.attach')}
+            </button>
+            <button onClick={() => { openHeadphones(); setShowMore(false); }}>
+              🎧 {t('toolbar.listen')}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Input field */}
+      <textarea
+        className="chat-input"
+        placeholder={t('chat.placeholder')}
+      />
+
+      {/* Send */}
+      <button className="tool-send">→</button>
+
+    </div>
+  );
+}
+```
+
+```css
+/* Toolbar layout */
+.chat-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+}
+
+/* Mic and mute — always visible, prominent */
+.tool-mic {
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  background: var(--primary-dim);
+  border: 1px solid var(--primary-border);
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.tool-mute {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid var(--border);
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+/* More dropdown */
+.tool-more-btn {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid var(--border);
+  font-size: 18px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.tool-more-dropdown {
+  position: absolute;
+  bottom: 60px;
+  left: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  z-index: 100;
+}
+
+.tool-more-dropdown button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.tool-more-dropdown button:hover {
+  background: var(--surface2);
+}
+
+/* Input takes remaining space */
+.chat-input {
+  flex: 1;
+  min-height: 44px;
+  max-height: 120px;
+  font-size: 16px; /* prevents iOS zoom */
+  border-radius: 12px;
+  padding: 10px 14px;
+  resize: none;
+}
+```
+
+---
+
+## Complete Fix List For Developer
+
+```
+Priority 1 — Crash fixes
+  Prana /prana route → find missing hi.json key
+  Check browser console → add missing translation
+
+Priority 2 — Customize ARYA translation
+  Add all customize strings to hi.json (listed above)
+  Wire with t() in CustomizePanel.tsx
+
+Priority 3 — Tutorial translation
+  "Welcome to ARYA" → "ARYA में आपका स्वागत है"
+  "Show Me Around" → "चलो देखते हैं"
+  "Skip tutorial" → "tutorial छोड़ो"
+
+Priority 4 — Bottom tagline
+  "Think clearly. Set goals. Grow daily."
+  → "साफ सोचो। लक्ष्य बनाओ। रोज़ बढ़ो।"
+  Add to hi.json: "app.tagline"
+
+Priority 5 — Sunday Review Hindi
+  Weekly review system prompt → generate quote in Hindi
+  Static strings: mood empty state in Hindi
+
+Priority 6 — Quick tabs on all pages
+  Add QuickAccessTabs component to:
+  PranaPage, NitiPage, ReviewPage, GoalsPage
+
+Priority 7 — Chat toolbar restructure
+  Globe + attachment + headphones → ⋯ dropdown
+  Mic + mute → always visible separately
+  Input gets more space on mobile
+```
+
+---
+
+## Hindi Completion Status After These Fixes
+
+```
+✅ Main screen
+✅ Goals page
+✅ Goal add form
+✅ KAAL — fully translated (best section)
+✅ Niti — partially done
+✅ Sunday Review — header done, content needs Hindi
+✅ Quick tabs — now in Hindi
+
+🔜 Prana — crashes, needs fix
+🔜 Customize ARYA — all English
+🔜 Tutorial — all English
+🔜 Tagline — English
+🔜 Review generated content — needs Hindi prompt
+
+After these → Hindi is 100% complete ✅
+```
+
+Hindi is approximately 80% complete. These remaining items will finish it. Then the exact same pattern applies to all other languages — just swap the translation file and tone rule.

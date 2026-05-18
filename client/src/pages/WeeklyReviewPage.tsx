@@ -345,7 +345,7 @@ export default function WeeklyReviewPage() {
             <SLabel text={t("review_mood_section")} />
             {data.moodArc.checkInCount === 0 ? (
               <div style={{ background: P.surface2, borderRadius: 10, padding: "16px 18px", textAlign: "center", fontSize: 13, color: P.steel, lineHeight: 1.6 }}>
-                No mood check-ins this week.<br />Start tomorrow — it takes 10 seconds.
+                {t("review_no_mood")}<br />{t("review_mood_start")}
               </div>
             ) : (
               <>
