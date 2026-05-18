@@ -2068,17 +2068,18 @@ function FirstLoginFeatureTour({ userId, onDone }: { userId: string; onDone: () 
 }
 
 function DailyQuoteCard({ token }: { token: string | null }) {
+  const lang = getStoredUiLanguage();
   const today = new Date().toDateString();
-  const cacheKey = `arya_quote_v3_${today}`;
+  const cacheKey = `arya_quote_v3_${today}_${lang}`;
 
   const { data, isLoading } = useQuery<{ quote: string; source?: string }>({
-    queryKey: ["/api/arya/daily-quote"],
+    queryKey: ["/api/arya/daily-quote", lang],
     queryFn: async () => {
       const cached = localStorage.getItem(cacheKey);
       if (cached) {
         try { return JSON.parse(cached); } catch {}
       }
-      const res = await fetch("/api/arya/daily-quote", {
+      const res = await fetch(`/api/arya/daily-quote?lang=${lang}`, {
         headers: { "x-user-token": token! },
       });
       if (!res.ok) throw new Error("failed");

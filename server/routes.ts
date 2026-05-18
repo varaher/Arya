@@ -2741,8 +2741,9 @@ export async function registerRoutes(
   app.get("/api/arya/daily-quote", requireUser, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).userId;
+      const lang = (req.query.lang as string) || "en";
       const today = new Date().toDateString();
-      const cacheKey = `v3_${userId}_${today}`;
+      const cacheKey = `v3_${userId}_${today}_${lang}`;
 
       if (dailyQuoteCache.has(cacheKey)) {
         const cached = dailyQuoteCache.get(cacheKey)!;
@@ -2771,6 +2772,19 @@ export async function registerRoutes(
         baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
       });
 
+      const LANG_NAMES: Record<string, string> = {
+        en: "English", hi: "Hindi", mr: "Marathi", bn: "Bengali",
+        ta: "Tamil", te: "Telugu", kn: "Kannada", ml: "Malayalam",
+        gu: "Gujarati", pa: "Punjabi", od: "Odia", sa: "Sanskrit",
+        ar: "Arabic", he: "Hebrew", fr: "French", es: "Spanish",
+        de: "German", ja: "Japanese", zh: "Chinese", ko: "Korean",
+        pt: "Portuguese", ru: "Russian", tr: "Turkish", id: "Indonesian", sw: "Swahili",
+      };
+      const langName = LANG_NAMES[lang] || "English";
+      const langInstruction = lang !== "en"
+        ? `\n- WRITE THE ENTIRE REFLECTION IN ${langName.toUpperCase()} — not in English`
+        : "";
+
       const prompt = `You are ARYA — a personal thinking and growth assistant who speaks to ${firstName} like a wise, warm friend. You carry deep knowledge of India's civilizational wisdom: the Upanishads, Gita, Yoga Sutras, Chanakya, the great saints and thinkers — but you never quote or cite them directly. That wisdom simply flows through your words naturally.
 
 Write ONE original reflection for ${firstName} to begin their day. It should feel like ARYA wrote it personally — not a quote from a book, not a proverb, just a direct, warm, powerful thought addressed to them.
@@ -2783,7 +2797,7 @@ Rules:
 - EXACTLY 1 sentence. Maximum 20 words. Short, sharp, memorable
 - NEVER mention Gita, Vedas, Chanakya, or any religious text — let the wisdom be invisible
 - NEVER use clichés ("every day is a new beginning", "you've got this", etc.)
-- The tone should be calm, grounding, and energising at once
+- The tone should be calm, grounding, and energising at once${langInstruction}
 
 Respond ONLY with valid JSON: {"quote": "..."}`;
 
