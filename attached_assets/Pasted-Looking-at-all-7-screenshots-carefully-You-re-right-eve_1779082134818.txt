@@ -1,0 +1,231 @@
+Looking at all 7 screenshots carefully. You're right — every subsection is still in English despite the language work done.
+
+---
+
+## What I Can See Screen By Screen
+
+**Image 1 — My Profile**
+```
+Still English:
+  "My Profile"
+  "YOUR ACCOUNT"
+  "Display name"
+  "Email"
+  "Phone"
+  "Save Profile"
+  "Everything here is optional..."
+  "The more ARYA knows about you..."
+```
+
+**Image 2 — KAAL Setup**
+```
+Still English:
+  "KAAL · COSMIC SETUP"
+  "How do you connect with timing?"
+  "I know my star sign"
+  "I know my Rashi"
+  "Neither — just tell me when"
+  All descriptions
+```
+
+**Image 3 — Goals Page**
+```
+Still English:
+  "Tasks · Reminders · Habits · Intentions"
+  "Today · Tasks · Reminders · Habits · Intentions · All"
+  "Add a task or reminder for today to see it here"
+  "+ Add a task"
+```
+
+**Image 4 — Niti**
+```
+Still English:
+  "NITI — DECISIONS & THINKING"
+  "YOUR BUSINESS THINKING PARTNER"
+  "Strategy & Competition"
+  "Ethics & Trust"
+  "Resilience & Timing"
+```
+
+**Image 5 — Prana / Health**
+```
+Still English:
+  "ARYA PRANA"
+  "Your health, connected to your life"
+  "Daily Log · Trends · ARYA Insights"
+  "QUICK METRICS"
+  "HEART RATE · BLOOD OXYGEN · STEPS · STRESS · CALORIES · WEIGHT"
+  "Tap to log"
+  "SLEEP"
+```
+
+**Image 6 — Sunday Review**
+```
+Still English:
+  "Sunday Review"
+  "ARYA'S SUNDAY LETTER"
+  "YOUR WEEK IN MOOD"
+  "No mood check-ins this week"
+  "Start tomorrow — it takes 10 seconds"
+```
+
+**Image 7 — Goals Add Form**
+```
+Still English:
+  "Task · Reminder · Habit · Intention"
+  "What do you want to do?"
+  "e.g., Message Priya about the project"
+  "Due date"
+  "People involved (optional)"
+  "Context / note (optional)"
+  "Cancel · Save"
+```
+
+---
+
+## The Root Cause
+
+These are all **separate components** with their own hardcoded English strings. They are not using `t()` from i18next at all. The main chat screen got translated but these subsection components were never touched.
+
+---
+
+## The Complete Fix — Every String For Every Screen
+
+Give your developer this as a single task. All strings to add to `locales/hi.json` and wire with `t()`.
+
+```json
+{
+  "profile.title": "मेरी Profile",
+  "profile.subtitle": "जो comfortable हो वो share करो",
+  "profile.info": "ARYA जितना जानती है, उतनी बात personal होती है। जो चाहो भरो — बाद में update कर सकते हो।",
+  "profile.your_account": "तुम्हारा Account",
+  "profile.display_name": "Display नाम",
+  "profile.email": "Email",
+  "profile.email_note": "Email sign in के लिए है, यहाँ change नहीं होगी।",
+  "profile.phone": "Phone",
+  "profile.save": "Profile सेव करो",
+  "profile.privacy_note": "तुम्हारी profile private है और सिर्फ ARYA experience को बेहतर बनाने के लिए है।",
+
+  "kaal.setup_title": "KAAL · Cosmic Setup",
+  "kaal.connect_question": "तुम समय से कैसे जुड़ते हो?",
+  "kaal.connect_sub": "ARYA अपनी भाषा उस तरह ढालती है जैसे तुम दुनिया देखते हो। जो natural लगे वो चुनो।",
+  "kaal.star_sign_title": "मुझे अपना Star Sign पता है",
+  "kaal.star_sign_desc": "Western zodiac (Scorpio, Aries...) को personal insights का आधार बनाओ।",
+  "kaal.rashi_title": "मुझे अपनी Rashi पता है",
+  "kaal.rashi_desc": "Moon sign (Vrishchik, Mesh...) से गहरी cycle-based guidance लो।",
+  "kaal.neither_title": "कोई नहीं — बस बताओ कब",
+  "kaal.neither_desc": "कोई sign नहीं, कोई zodiac नहीं। सिर्फ तुम्हारे birth data पर based personal timing।",
+
+  "goals.page_title": "Tasks · Reminders · Habits · Intentions",
+  "goals.tab_today": "आज",
+  "goals.tab_tasks": "Tasks",
+  "goals.tab_reminders": "Reminders",
+  "goals.tab_habits": "Habits",
+  "goals.tab_intentions": "Intentions",
+  "goals.tab_all": "सब",
+  "goals.empty_today": "आज के लिए कोई task या reminder नहीं है।",
+  "goals.add_task": "+ Task जोड़ो",
+  "goals.new": "+ नया",
+  "goals.form_task": "Task",
+  "goals.form_reminder": "Reminder",
+  "goals.form_habit": "Habit",
+  "goals.form_intention": "Intention",
+  "goals.form_what": "क्या करना है?",
+  "goals.form_placeholder": "जैसे — Priya को message करो, Report submit करो",
+  "goals.form_due_date": "कब तक?",
+  "goals.form_people": "किसके साथ? (optional)",
+  "goals.form_people_placeholder": "जैसे — Priya, Rahul",
+  "goals.form_context": "कुछ और बताना है? (optional)",
+  "goals.form_context_placeholder": "थोड़ा context...",
+  "goals.form_cancel": "रद्द करो",
+  "goals.form_save": "सेव करो",
+
+  "niti.title": "नीति",
+  "niti.subtitle": "DECISIONS & THINKING",
+  "niti.tagline": "तुम्हारा Business Thinking Partner",
+  "niti.description": "ARYA business decisions में गहरी strategic सोच लाती है — strategy, लोग, finance, ethics, और founder clarity। तुम्हारी actual situation के हिसाब से। Generic advice नहीं।",
+  "niti.how_arya_thinks": "ARYA तुम्हारे साथ कैसे सोचती है",
+  "niti.strategy": "Strategy & Competition",
+  "niti.ethics": "Ethics & Trust",
+  "niti.resilience": "Resilience & Timing",
+  "niti.placeholder": "अपनी business situation बताओ...",
+
+  "health.title": "ARYA PRANA",
+  "health.subtitle": "तुम्हारी सेहत, तुम्हारी ज़िंदगी से जुड़ी",
+  "health.tab_daily": "Daily Log",
+  "health.tab_trends": "Trends",
+  "health.tab_insights": "ARYA Insights",
+  "health.quick_metrics": "Quick Metrics",
+  "health.heart_rate": "Heart Rate",
+  "health.blood_oxygen": "Blood Oxygen",
+  "health.steps": "Steps",
+  "health.stress": "Stress",
+  "health.calories": "Calories",
+  "health.weight": "Weight",
+  "health.sleep": "Sleep",
+  "health.tap_to_log": "Tap करके log करो",
+  "health.disclaimer": "ARYA की health insights सिर्फ जागरूकता के लिए हैं — medical advice नहीं।",
+
+  "review.title": "Sunday Review",
+  "review.date_range": "18 मई — 24 मई 2026",
+  "review.letter_label": "ARYA का Sunday Letter",
+  "review.to": "को",
+  "review.week_in_mood": "इस हफ्ते का Mood",
+  "review.no_mood": "इस हफ्ते कोई mood check-in नहीं हुआ।",
+  "review.start_tomorrow": "कल से शुरू करो — 10 seconds लगते हैं।",
+  "review.share": "Share करो",
+  "review.back": "वापस"
+}
+```
+
+---
+
+## The Developer Task — One Clear Brief
+
+```
+Every subsection component needs two changes:
+
+1. Import useTranslation at the top:
+   import { useTranslation } from 'react-i18next';
+   const { t } = useTranslation();
+
+2. Replace every hardcoded English string with t('key')
+
+Components to update:
+  UserProfileModal.tsx    → profile.* keys
+  KaalSetup.tsx           → kaal.* keys
+  GoalsPage.tsx           → goals.* keys
+  GoalAddForm.tsx         → goals.form_* keys
+  NitiPage.tsx            → niti.* keys
+  PranaHealth.tsx         → health.* keys
+  SundayReview.tsx        → review.* keys
+
+Add all keys above to:
+  locales/hi.json   ← Hindi (primary, fix first)
+  locales/en.json   ← English (add keys, same English values)
+
+Test: Select Hindi → open each subsection
+      Every string should be in Hindi
+```
+
+---
+
+## Why This Is Happening
+
+The main chat screen was translated because it was built with `t()` from the start. These subsections were built later or separately and use hardcoded strings directly.
+
+The fix is mechanical — not architectural. Same pattern for every component:
+
+```tsx
+// Before (every subsection currently):
+<h1>Sunday Review</h1>
+<p>No mood check-ins this week.</p>
+<button>Share</button>
+
+// After (what it needs to be):
+<h1>{t('review.title')}</h1>
+<p>{t('review.no_mood')}</p>
+<button>{t('review.share')}</button>
+```
+
+Once Hindi is perfect across all 7 screens — the same `t()` wiring works for all 25 languages automatically. Just add the translation file for each language.

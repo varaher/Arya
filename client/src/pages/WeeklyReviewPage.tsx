@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { ArrowLeft, Check, Loader2, Share2 } from "lucide-react";
 import { useUserAuth } from "@/lib/user-auth";
+import { useLanguage } from "@/lib/language-context";
 import BottomNav from "@/components/BottomNav";
 
 const P = {
@@ -166,6 +167,7 @@ const SESSION_LABELS: Record<string, string> = {
 export default function WeeklyReviewPage() {
   const [, setLocation] = useLocation();
   const { token } = useUserAuth();
+  const { t } = useLanguage();
 
   const [data, setData] = useState<WeeklyLetterData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -258,7 +260,7 @@ export default function WeeklyReviewPage() {
         </button>
         <div style={{ flex: 1 }}>
           <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 14, color: P.gold, fontWeight: 700, lineHeight: 1.2 }}>
-            Sunday Review
+            {t("review_title")}
           </div>
           {data && (
             <div style={{ fontSize: 10, color: P.steel, letterSpacing: "0.1em", textTransform: "uppercase" }}>
@@ -281,7 +283,7 @@ export default function WeeklyReviewPage() {
       {loading && (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "72vh", gap: 14 }}>
           <div style={{ fontSize: 36 }}>🌿</div>
-          <div style={{ fontSize: 14, color: P.muted }}>ARYA is reading your week…</div>
+          <div style={{ fontSize: 14, color: P.muted }}>{t("review_loading")}</div>
           <Loader2 size={18} color={P.gold} className="wr-spin" />
         </div>
       )}
@@ -290,7 +292,7 @@ export default function WeeklyReviewPage() {
       {!loading && error === "not_authed" && (
         <div style={{ padding: "60px 28px", textAlign: "center" }}>
           <div style={{ fontSize: 36, marginBottom: 16 }}>🔒</div>
-          <div style={{ fontSize: 15, color: P.text, marginBottom: 8, fontWeight: 600 }}>Sign in to see your Sunday Review</div>
+          <div style={{ fontSize: 15, color: P.text, marginBottom: 8, fontWeight: 600 }}>{t("review_auth_h")}</div>
           <div style={{ fontSize: 13, color: P.muted }}>Your personal weekly letter from ARYA lives here.</div>
         </div>
       )}
@@ -322,7 +324,7 @@ export default function WeeklyReviewPage() {
           <div style={{ padding: "28px 0 24px", textAlign: "center" }}>
             <div style={{ fontSize: 30, marginBottom: 10 }}>🌿</div>
             <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 11, color: P.muted, letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 4 }}>
-              ARYA's Sunday Letter
+              {t("review_letter")}
             </div>
             <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 27, color: P.text, fontWeight: 700, marginBottom: 4 }}>
               to {data.userName}
@@ -340,7 +342,7 @@ export default function WeeklyReviewPage() {
 
           {/* ── Mood Arc ───────────────────────────────────── */}
           <div>
-            <SLabel text="Your week in mood" />
+            <SLabel text={t("review_mood_section")} />
             {data.moodArc.checkInCount === 0 ? (
               <div style={{ background: P.surface2, borderRadius: 10, padding: "16px 18px", textAlign: "center", fontSize: 13, color: P.steel, lineHeight: 1.6 }}>
                 No mood check-ins this week.<br />Start tomorrow — it takes 10 seconds.
@@ -362,7 +364,7 @@ export default function WeeklyReviewPage() {
 
           {/* ── Goals ──────────────────────────────────────── */}
           <div>
-            <SLabel text="Goals this week" />
+            <SLabel text={t("review_goals_section")} />
             {data.goals.active === 0 ? (
               <div style={{ background: P.surface2, borderRadius: 10, padding: "16px 18px", textAlign: "center", fontSize: 13, color: P.steel, lineHeight: 1.6 }}>
                 No active goals yet. Set one in the chat — ARYA will track it here.
@@ -417,7 +419,7 @@ export default function WeeklyReviewPage() {
           {/* ── ARYA Noticed (dark card) ────────────────────── */}
           <div style={{ margin: "28px -2px 0", background: P.darkCard, border: `1px solid ${P.darkBorder}`, borderRadius: 16, padding: "20px 18px" }}>
             <div style={{ fontSize: 10, letterSpacing: "0.15em", color: P.darkMuted, textTransform: "uppercase", marginBottom: 14, display: "flex", alignItems: "center", gap: 7 }}>
-              <span style={{ color: P.darkGold, fontSize: 11 }}>◆</span> Something ARYA noticed
+              <span style={{ color: P.darkGold, fontSize: 11 }}>◆</span> {t("review_arya_noticed")}
             </div>
             <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 14, color: P.darkCream, lineHeight: 1.78, fontStyle: "italic" }}>
               {data.aryaNoticed.insight}
@@ -486,7 +488,7 @@ export default function WeeklyReviewPage() {
 
           {/* ── ARYA's Question ──────────────────────────────── */}
           <div>
-            <SLabel text="ARYA's question for you" />
+            <SLabel text={t("review_arya_q")} />
             <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 17, color: P.text, lineHeight: 1.7, fontStyle: "italic", marginBottom: 18 }}>
               "{data.aryaQuestion}"
             </div>
@@ -510,7 +512,7 @@ export default function WeeklyReviewPage() {
                 style={{ marginTop: 10, padding: "9px 16px", borderRadius: 8, border: `1px solid ${P.gold}`, background: "transparent", color: P.gold, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
               >
                 {savingAnswer && <Loader2 size={12} className="wr-spin" />}
-                Save to journal
+                {t("review_save_journal")}
               </button>
             ) : null}
           </div>
@@ -519,7 +521,7 @@ export default function WeeklyReviewPage() {
 
           {/* ── Next Week Intention ─────────────────────────── */}
           <div>
-            <SLabel text="Your intention next week" />
+            <SLabel text={t("review_intention")} />
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
               {data.intentionChips.map(chip => (
                 <button
@@ -577,7 +579,7 @@ export default function WeeklyReviewPage() {
                 }}
               >
                 {savingIntention && <Loader2 size={14} className="wr-spin" />}
-                Set my intention for next week
+                {t("review_set_intention")}
               </button>
             )}
           </div>

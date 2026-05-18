@@ -6,6 +6,7 @@ import {
   Microscope, ChevronRight, Sparkles, Settings, Plus, X, Trash2,
 } from "lucide-react";
 import { useUserAuth } from "@/lib/user-auth";
+import { useLanguage } from "@/lib/language-context";
 import BottomNav from "@/components/BottomNav";
 
 // ── Palette ──────────────────────────────────────────────────
@@ -165,6 +166,7 @@ function Label({ text }: { text: string }) {
 export default function NitiPage() {
   const [, setLocation] = useLocation();
   const { token } = useUserAuth();
+  const { t } = useLanguage();
 
   // Onboarding & navigation
   const [screen, setScreen]       = useState<NitiScreen>("intro");
@@ -420,17 +422,17 @@ export default function NitiPage() {
       <ProgDots screen={screen} />
       <div style={{ textAlign: "center" as const, padding: "4px 0" }}>
         <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 58, color: N.gold, fontWeight: 700, letterSpacing: "0.04em", lineHeight: 1 }}>Niti</div>
-        <div style={{ fontSize: 12, letterSpacing: "0.2em", color: N.steel, marginTop: 8, textTransform: "uppercase" as const }}>Your Business Thinking Partner</div>
+        <div style={{ fontSize: 12, letterSpacing: "0.2em", color: N.steel, marginTop: 8, textTransform: "uppercase" as const }}>{t("niti_partner")}</div>
         <div style={{ width: 48, height: 2, background: `linear-gradient(90deg, transparent, ${N.gold}, transparent)`, margin: "14px auto 0" }} />
       </div>
       <div style={{ background: N.surface2, border: `1px solid ${N.border}`, borderRadius: 14, padding: "18px 20px" }}>
         <div style={{ fontSize: 14, color: N.cream, lineHeight: 1.75 }}>
           ARYA brings deep strategic thinking to your business decisions — on strategy, people, finance, ethics, and founder clarity. It adapts to your actual situation, not a generic playbook.
         </div>
-        <div style={{ fontSize: 13, color: N.steel, lineHeight: 1.7, marginTop: 10 }}>Not generic advice. Thinking built around you.</div>
+        <div style={{ fontSize: 13, color: N.steel, lineHeight: 1.7, marginTop: 10 }}>{t("niti_intro_sub")}</div>
       </div>
       <div>
-        <Label text="How ARYA thinks with you" />
+        <Label text={t("niti_how_arya")} />
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {Object.entries(PHILOSOPHER_META).map(([key, p]) => (
             <div key={key} style={{ background: N.surface2, border: `1px solid ${N.border}`, borderLeft: `3px solid ${p.color}`, borderRadius: "0 10px 10px 0", padding: "12px 16px", display: "flex", alignItems: "center", gap: 14 }}>
@@ -442,7 +444,7 @@ export default function NitiPage() {
           ))}
         </div>
       </div>
-      <GoldBtn label="Personalize ARYA for me →" onClick={() => setScreen("context")} />
+      <GoldBtn label={t("niti_personalize")} onClick={() => setScreen("context")} />
     </motion.div>
   );
 
@@ -452,16 +454,16 @@ export default function NitiPage() {
       style={{ padding: "0 20px 36px", display: "flex", flexDirection: "column", gap: 22 }}>
       <ProgDots screen={screen} />
       <div>
-        <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 21, color: N.cream, fontWeight: 700 }}>Your business</div>
-        <div style={{ fontSize: 13, color: N.steel, marginTop: 4, lineHeight: 1.5 }}>So ARYA speaks to your actual situation — not someone else's.</div>
+        <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 21, color: N.cream, fontWeight: 700 }}>{t("niti_your_biz")}</div>
+        <div style={{ fontSize: 13, color: N.steel, marginTop: 4, lineHeight: 1.5 }}>{t("niti_context_sub")}</div>
       </div>
       <div><Label text="Type" /><ChipSelector options={BUSINESS_TYPES}  value={bizType}  onChange={setBizType}  /></div>
       <div><Label text="Stage" /><ChipSelector options={BUSINESS_STAGES} value={bizStage} onChange={setBizStage} /></div>
       <div><Label text="Your role" /><ChipSelector options={BUSINESS_ROLES}  value={bizRole}  onChange={setBizRole}  /></div>
       <div>
-        <Label text="What's on your mind right now?" />
+        <Label text={t("niti_challenge_q")} />
         <textarea value={bizChallenge} onChange={e => setBizChallenge(e.target.value)} rows={3}
-          placeholder="The decision I'm wrestling with, the problem I keep returning to..."
+          placeholder={t("niti_challenge_ph")}
           style={{ width: "100%", background: N.surface2, border: `1px solid ${N.border2}`, borderRadius: 10, padding: "12px 14px", color: N.cream, fontSize: 13, fontFamily: "Inter, sans-serif", resize: "none", outline: "none", lineHeight: 1.6, boxSizing: "border-box" as const }} />
       </div>
       <div style={{ display: "flex", gap: 10 }}>
@@ -477,8 +479,8 @@ export default function NitiPage() {
       style={{ padding: "0 20px 36px", display: "flex", flexDirection: "column", gap: 22 }}>
       <ProgDots screen={screen} />
       <div>
-        <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 21, color: N.cream, fontWeight: 700 }}>What should ARYA focus on?</div>
-        <div style={{ fontSize: 13, color: N.steel, marginTop: 4, lineHeight: 1.5 }}>Select the areas most relevant to where you are right now.</div>
+        <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 21, color: N.cream, fontWeight: 700 }}>{t("niti_focus_h")}</div>
+        <div style={{ fontSize: 13, color: N.steel, marginTop: 4, lineHeight: 1.5 }}>{t("niti_focus_sub")}</div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         {FOCUS_AREAS.map(area => {
@@ -497,7 +499,7 @@ export default function NitiPage() {
       </div>
       <div style={{ display: "flex", gap: 10 }}>
         <BackBtn onClick={() => setScreen("context")} />
-        <div style={{ flex: 1 }}><GoldBtn label="Save and continue →" onClick={saveSetup} loading={saving} disabled={focusAreas.length === 0} /></div>
+        <div style={{ flex: 1 }}><GoldBtn label={t("niti_save_cont")} onClick={saveSetup} loading={saving} disabled={focusAreas.length === 0} /></div>
       </div>
     </motion.div>
   );
@@ -509,8 +511,8 @@ export default function NitiPage() {
       <ProgDots screen={screen} />
       <div style={{ padding: "12px 0 4px" }}>
         <div style={{ fontSize: 44, marginBottom: 12, lineHeight: 1 }}>🏛️</div>
-        <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 22, color: N.gold, fontWeight: 700 }}>ARYA is ready for you</div>
-        <div style={{ fontSize: 13, color: N.steel, marginTop: 8, lineHeight: 1.6 }}>Personalised to your business. Ready to think with you.</div>
+        <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 22, color: N.gold, fontWeight: 700 }}>{t("niti_ready_h")}</div>
+        <div style={{ fontSize: 13, color: N.steel, marginTop: 8, lineHeight: 1.6 }}>{t("niti_ready_sub")}</div>
       </div>
       <div style={{ background: N.surface2, border: `1px solid ${N.border}`, borderRadius: 14, padding: 20, textAlign: "left" as const }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: bizChallenge ? 16 : 0 }}>
@@ -523,7 +525,7 @@ export default function NitiPage() {
         </div>
         {bizChallenge && (
           <div style={{ borderTop: `1px solid ${N.border}`, paddingTop: 14 }}>
-            <div style={{ fontSize: 10, letterSpacing: "0.1em", color: N.muted, textTransform: "uppercase" as const, marginBottom: 4 }}>On your mind</div>
+            <div style={{ fontSize: 10, letterSpacing: "0.1em", color: N.muted, textTransform: "uppercase" as const, marginBottom: 4 }}>{t("niti_on_mind")}</div>
             <div style={{ fontSize: 13, color: N.cream, lineHeight: 1.6, fontStyle: "italic" }}>"{bizChallenge}"</div>
           </div>
         )}
@@ -539,7 +541,7 @@ export default function NitiPage() {
           ))}
         </div>
       )}
-      <GoldBtn label="Begin first session →" onClick={() => setScreen("home")} />
+      <GoldBtn label={t("niti_begin")} onClick={() => setScreen("home")} />
     </motion.div>
   );
 

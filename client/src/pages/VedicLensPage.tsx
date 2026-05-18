@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useUserAuth } from "@/lib/user-auth";
+import { useLanguage } from "@/lib/language-context";
 import { Home } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 
@@ -146,23 +147,24 @@ function Btn({ children, onClick, color, ghost, disabled, style: s }: {
 // ── Screen 1: Path selection ──────────────────────────────────────────────────
 function PathSelectionScreen({ onSelect }: { onSelect: (p: VedicPath) => void }) {
   const [chosen, setChosen] = useState<VedicPath | null>(null);
+  const { t } = useLanguage();
   const paths: Array<{ key: VedicPath; emoji: string; title: string; desc: string }> = [
-    { key: "western", emoji: "⭐", title: "I know my star sign",          desc: "Use your Western zodiac (Scorpio, Aries…) as the base for personal insights." },
-    { key: "vedic",   emoji: "🪔", title: "I know my Rashi",              desc: "Use your Moon sign (Vrishchik, Mesh…) for deeper cycle-based guidance." },
-    { key: "neutral", emoji: "🌐", title: "Neither — just tell me when",  desc: "No signs, no zodiac. Pure personal timing patterns based on your birth data." },
+    { key: "western", emoji: "⭐", title: t("kaal_path_w_title"), desc: t("kaal_path_w_desc") },
+    { key: "vedic",   emoji: "🪔", title: t("kaal_path_v_title"), desc: t("kaal_path_v_desc") },
+    { key: "neutral", emoji: "🌐", title: t("kaal_path_n_title"), desc: t("kaal_path_n_desc") },
   ];
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "32px 24px 0", display: "flex", justifyContent: "center" }}>
-        <div style={{ fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase" as const, color: C.textDim }}>KAAL · Cosmic Setup</div>
+        <div style={{ fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase" as const, color: C.textDim }}>{t("kaal_cosmic")}</div>
       </div>
       <div style={{ padding: "28px 24px 90px", maxWidth: 460, margin: "0 auto", width: "100%", display: "flex", flexDirection: "column", gap: 20 }}>
         <div>
           <h1 style={{ fontFamily: serif, fontSize: 28, fontWeight: 400, lineHeight: 1.3, color: C.text, marginBottom: 10 }}>
-            How do you connect<br />with <em style={{ color: C.saffron }}>timing?</em>
+            {t("kaal_path_heading")}
           </h1>
           <p style={{ fontSize: 14, color: C.textDim, lineHeight: 1.7 }}>
-            ARYA adapts its language to how you see the world. Pick the path that feels natural.
+            {t("kaal_path_sub")}
           </p>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -183,9 +185,9 @@ function PathSelectionScreen({ onSelect }: { onSelect: (p: VedicPath) => void })
           })}
         </div>
         <Btn color={chosen ? ACCENT[chosen].main : C.indigo} disabled={!chosen} onClick={() => chosen && onSelect(chosen)}>
-          Continue →
+          {t("kaal_continue")}
         </Btn>
-        <p style={{ fontSize: 11, color: C.textDim, textAlign: "center" as const, lineHeight: 1.6 }}>You can change this any time in your settings.</p>
+        <p style={{ fontSize: 11, color: C.textDim, textAlign: "center" as const, lineHeight: 1.6 }}>{t("kaal_change_later")}</p>
       </div>
     </div>
   );
@@ -197,6 +199,7 @@ function WesternSignScreen({ selected, onSelect, selectedRashi, onSelectRashi, o
   selectedRashi: string; onSelectRashi: (r: string) => void;
   onBack: () => void; onContinue: () => void;
 }) {
+  const { t } = useLanguage();
   const [showRashi, setShowRashi] = useState(false);
   const a = ACCENT.western;
   return (
@@ -259,9 +262,9 @@ function WesternSignScreen({ selected, onSelect, selectedRashi, onSelectRashi, o
           </AnimatePresence>
         </div>
 
-        <Btn color={a.main} disabled={!selected} onClick={onContinue}>Continue →</Btn>
+        <Btn color={a.main} disabled={!selected} onClick={onContinue}>{t("kaal_continue")}</Btn>
         <div style={{ height: 8 }} />
-        <Btn ghost onClick={onContinue}>I don't know my sign — skip</Btn>
+        <Btn ghost onClick={onContinue}>{t("kaal_skip")}</Btn>
       </div>
     </div>
   );
@@ -271,6 +274,7 @@ function WesternSignScreen({ selected, onSelect, selectedRashi, onSelectRashi, o
 function VedicRashiScreen({ selected, onSelect, onBack, onContinue }: {
   selected: string; onSelect: (r: string) => void; onBack: () => void; onContinue: () => void;
 }) {
+  const { t } = useLanguage();
   const a = ACCENT.vedic;
   return (
     <div style={{ minHeight: "100vh" }}>
@@ -298,9 +302,9 @@ function VedicRashiScreen({ selected, onSelect, onBack, onContinue }: {
             );
           })}
         </div>
-        <Btn color={a.main} onClick={onContinue}>Continue →</Btn>
+        <Btn color={a.main} onClick={onContinue}>{t("kaal_continue")}</Btn>
         <div style={{ height: 8 }} />
-        <Btn ghost onClick={onContinue}>I don't know my sign — skip</Btn>
+        <Btn ghost onClick={onContinue}>{t("kaal_skip")}</Btn>
       </div>
     </div>
   );
@@ -723,6 +727,7 @@ function BriefingScreen({ briefing, loading, error, onHome, onRetry, path }: {
 export default function VedicLensPage() {
   const [, setLocation] = useLocation();
   const { token, isLoggedIn } = useUserAuth();
+  const { t } = useLanguage();
 
   const [screen,            setScreen]            = useState<VedicScreen>("path");
   const [path,              setPath]              = useState<VedicPath>("vedic");

@@ -12,6 +12,7 @@ import {
   CheckCheck,
 } from "lucide-react";
 import { useLocation } from "wouter";
+import { useLanguage } from "@/lib/language-context";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -136,6 +137,7 @@ export default function UserGoals() {
 
 function GoalsView({ token, userName, onBack }: { token: string; userName: string; onBack: () => void }) {
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<Tab>("today");
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [createType, setCreateType] = useState<GoalType>("task");
@@ -246,8 +248,8 @@ function GoalsView({ token, userName, onBack }: { token: string; userName: strin
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-xl font-bold text-white" data-testid="text-goals-title">My Goals</h1>
-            <p className="text-xs text-muted-foreground">Tasks · Reminders · Habits · Intentions</p>
+            <h1 className="text-xl font-bold text-white" data-testid="text-goals-title">{t("goals_title")}</h1>
+            <p className="text-xs text-muted-foreground">{t("goals_subtitle")}</p>
           </div>
         </div>
         <Button
@@ -256,7 +258,7 @@ function GoalsView({ token, userName, onBack }: { token: string; userName: strin
           size="sm"
           className="bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white rounded-xl"
         >
-          <Plus className="w-4 h-4 mr-1" /> New
+          <Plus className="w-4 h-4 mr-1" /> {t("goals_new")}
         </Button>
       </div>
 
@@ -277,7 +279,7 @@ function GoalsView({ token, userName, onBack }: { token: string; userName: strin
               }`}
             >
               <tab.icon className="w-3 h-3" />
-              {tab.label}
+              {t(`goals_tab_${tab.id}`)}
               {count > 0 && (
                 <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
                   isActive ? "bg-primary/30 text-primary" : "bg-white/10 text-muted-foreground"
@@ -342,7 +344,7 @@ function GoalsView({ token, userName, onBack }: { token: string; userName: strin
             {activeTab === "all" && completedGoals.length > 0 && (
               <div className="pt-2">
                 <h3 className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-2">
-                  <Trophy className="w-3.5 h-3.5 text-amber-400" /> Completed ({completedGoals.length})
+                  <Trophy className="w-3.5 h-3.5 text-amber-400" /> {t("goals_completed")} ({completedGoals.length})
                 </h3>
                 {completedGoals.map((goal) => (
                   <GoalCard
@@ -364,47 +366,48 @@ function GoalsView({ token, userName, onBack }: { token: string; userName: strin
 // ─── Empty State ─────────────────────────────────────────────────────────────
 
 function EmptyState({ tab, onAdd }: { tab: Tab; onAdd: (type: GoalType) => void }) {
+  const { t } = useLanguage();
   const configs: Record<Tab, { icon: React.ElementType; heading: string; sub: string; cta: string; type: GoalType }> = {
     today: {
       icon: Clock,
-      heading: "Nothing due today",
-      sub: "Add a task or reminder for today to see it here.",
-      cta: "Add a task",
+      heading: t("goals_empty_today_h"),
+      sub: t("goals_empty_today_s"),
+      cta: t("goals_empty_today_cta"),
       type: "task",
     },
     tasks: {
       icon: ListTodo,
-      heading: "No tasks yet",
-      sub: "Tasks are one-time actions — message Priya, finish report, pay a bill.",
-      cta: "Add a task",
+      heading: t("goals_empty_tasks_h"),
+      sub: t("goals_empty_tasks_s"),
+      cta: t("goals_empty_tasks_cta"),
       type: "task",
     },
     reminders: {
       icon: AlarmClock,
-      heading: "No reminders",
-      sub: "Set a reminder for anything you don't want to forget.",
-      cta: "Set a reminder",
+      heading: t("goals_empty_remind_h"),
+      sub: t("goals_empty_remind_s"),
+      cta: t("goals_empty_remind_cta"),
       type: "reminder",
     },
     habits: {
       icon: Repeat,
-      heading: "No habits yet",
-      sub: "Habits are daily or weekly routines. ARYA tracks streaks to keep you consistent.",
-      cta: "Start a habit",
+      heading: t("goals_empty_habits_h"),
+      sub: t("goals_empty_habits_s"),
+      cta: t("goals_empty_habits_cta"),
       type: "habit",
     },
     intentions: {
       icon: Lightbulb,
-      heading: "No intentions set",
-      sub: "Intentions are soft goals — things you want to be, not just do. ARYA checks in periodically.",
-      cta: "Add an intention",
+      heading: t("goals_empty_intent_h"),
+      sub: t("goals_empty_intent_s"),
+      cta: t("goals_empty_intent_cta"),
       type: "intention",
     },
     all: {
       icon: Target,
-      heading: "No goals yet",
-      sub: "Just tell ARYA what you need to do, and it will track it for you.",
-      cta: "Add something",
+      heading: t("goals_empty_all_h"),
+      sub: t("goals_empty_all_s"),
+      cta: t("goals_empty_all_cta"),
       type: "task",
     },
   };
@@ -641,6 +644,7 @@ function CreateGoalForm({
   isLoading: boolean;
   error?: string;
 }) {
+  const { t } = useLanguage();
   const [goalType, setGoalType] = useState<GoalType>(defaultType);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -697,7 +701,7 @@ function CreateGoalForm({
     >
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-          <Plus className="w-4 h-4 text-primary" /> New entry
+          <Plus className="w-4 h-4 text-primary" /> {t("goals_form_new")}
         </h3>
         <button type="button" onClick={onCancel} className="text-muted-foreground hover:text-white">
           <X className="w-4 h-4" />
@@ -730,7 +734,7 @@ function CreateGoalForm({
 
       {/* Title */}
       <div className="space-y-1">
-        <label className="text-[11px] text-muted-foreground">What do you want to do?</label>
+        <label className="text-[11px] text-muted-foreground">{t("goals_form_what")}</label>
         <Input
           data-testid="input-goal-title"
           value={title}
@@ -745,7 +749,7 @@ function CreateGoalForm({
       {goalType === "task" && (
         <div className="flex gap-2">
           <div className="flex-1 space-y-1">
-            <label className="text-[11px] text-muted-foreground flex items-center gap-1"><Calendar className="w-3 h-3" /> Due date</label>
+            <label className="text-[11px] text-muted-foreground flex items-center gap-1"><Calendar className="w-3 h-3" /> {t("goals_form_due")}</label>
             <Input
               type="date"
               data-testid="input-due-date"
@@ -757,7 +761,7 @@ function CreateGoalForm({
           </div>
           {dueDate && (
             <div className="space-y-1">
-              <label className="text-[11px] text-muted-foreground">Time (opt.)</label>
+              <label className="text-[11px] text-muted-foreground">{t("goals_form_time")}</label>
               <Input
                 type="time"
                 data-testid="input-due-time"
@@ -774,7 +778,7 @@ function CreateGoalForm({
       {goalType === "reminder" && (
         <div className="flex gap-2">
           <div className="flex-1 space-y-1">
-            <label className="text-[11px] text-muted-foreground flex items-center gap-1"><Bell className="w-3 h-3" /> Remind on</label>
+            <label className="text-[11px] text-muted-foreground flex items-center gap-1"><Bell className="w-3 h-3" /> {t("goals_form_remind")}</label>
             <Input
               type="date"
               data-testid="input-reminder-date"
@@ -785,7 +789,7 @@ function CreateGoalForm({
             />
           </div>
           <div className="space-y-1">
-            <label className="text-[11px] text-muted-foreground">At time</label>
+            <label className="text-[11px] text-muted-foreground">{t("goals_form_at")}</label>
             <Input
               type="time"
               data-testid="input-reminder-time"
@@ -801,20 +805,20 @@ function CreateGoalForm({
       {goalType === "habit" && (
         <div className="flex gap-2">
           <div className="flex-1 space-y-1">
-            <label className="text-[11px] text-muted-foreground flex items-center gap-1"><Repeat className="w-3 h-3" /> Frequency</label>
+            <label className="text-[11px] text-muted-foreground flex items-center gap-1"><Repeat className="w-3 h-3" /> {t("goals_form_freq")}</label>
             <select
               data-testid="select-recurrence"
               value={recurrence}
               onChange={e => setRecurrence(e.target.value)}
               className="w-full bg-background/50 border border-white/10 rounded-md text-white text-sm p-2 focus:outline-none focus:border-primary/50"
             >
-              <option value="daily">Daily</option>
-              <option value="weekdays">Weekdays</option>
-              <option value="weekly">Weekly</option>
+              <option value="daily">{t("goals_recur_daily")}</option>
+              <option value="weekdays">{t("goals_recur_weekdays")}</option>
+              <option value="weekly">{t("goals_recur_weekly")}</option>
             </select>
           </div>
           <div className="space-y-1">
-            <label className="text-[11px] text-muted-foreground flex items-center gap-1"><Clock className="w-3 h-3" /> Min/day</label>
+            <label className="text-[11px] text-muted-foreground flex items-center gap-1"><Clock className="w-3 h-3" /> {t("goals_form_min")}</label>
             <Input
               type="number"
               data-testid="input-daily-minutes"
@@ -831,7 +835,7 @@ function CreateGoalForm({
       {(goalType === "task" || goalType === "reminder") && (
         <div className="space-y-1">
           <label className="text-[11px] text-muted-foreground flex items-center gap-1">
-            <Users className="w-3 h-3" /> People involved (optional)
+            <Users className="w-3 h-3" /> {t("goals_form_people")}
           </label>
           <Input
             data-testid="input-people"
@@ -845,12 +849,12 @@ function CreateGoalForm({
 
       {/* Note / description */}
       <div className="space-y-1">
-        <label className="text-[11px] text-muted-foreground">Context / note (optional)</label>
+        <label className="text-[11px] text-muted-foreground">{t("goals_form_context")}</label>
         <Input
           data-testid="input-goal-description"
           value={description}
           onChange={e => setDescription(e.target.value)}
-          placeholder="Any extra context…"
+          placeholder={t("goals_form_context_ph")}
           className="bg-background/50 border-white/10 text-white text-sm"
         />
       </div>
@@ -868,7 +872,7 @@ function CreateGoalForm({
           className="text-muted-foreground"
           data-testid="button-cancel-goal"
         >
-          Cancel
+          {t("goals_form_cancel")}
         </Button>
         <Button
           type="submit"
@@ -877,7 +881,7 @@ function CreateGoalForm({
           className="bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white rounded-xl"
           data-testid="button-submit-goal"
         >
-          {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}
+          {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : t("goals_form_save")}
         </Button>
       </div>
     </form>

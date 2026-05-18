@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { useUserAuth } from "@/lib/user-auth";
+import { useLanguage } from "@/lib/language-context";
 import { X, Loader2, Trash2, ChevronLeft, Wifi, AlertCircle } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 
@@ -285,7 +286,7 @@ function DailyLogTab({ readings, onLog, onDelete, token }: { readings: HealthRea
 
   return (
     <div style={{ padding: "0 20px 120px" }}>
-      <div style={{ fontSize: 11, color: C.textDim, letterSpacing: "0.14em", textTransform: "uppercase" as const, marginBottom: 14, marginTop: 4 }}>Quick Metrics</div>
+      <div style={{ fontSize: 11, color: C.textDim, letterSpacing: "0.14em", textTransform: "uppercase" as const, marginBottom: 14, marginTop: 4 }}>{t("health_quick_metrics")}</div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 24 }}>
         {METRICS.map(m => (
           <MetricCard key={m.key} metric={m} reading={latest[m.key]} onTap={() => setActive(m)} />
@@ -309,7 +310,7 @@ function DailyLogTab({ readings, onLog, onDelete, token }: { readings: HealthRea
         )}
       </div>
 
-      <div style={{ fontSize: 11, color: C.textDim, letterSpacing: "0.14em", textTransform: "uppercase" as const, marginBottom: 14 }}>Blood Pressure</div>
+      <div style={{ fontSize: 11, color: C.textDim, letterSpacing: "0.14em", textTransform: "uppercase" as const, marginBottom: 14 }}>{t("health_bp")}</div>
       <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: "16px", marginBottom: 24 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: bpReading ? 14 : 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -330,7 +331,7 @@ function DailyLogTab({ readings, onLog, onDelete, token }: { readings: HealthRea
         </div>
       </div>
 
-      <div style={{ fontSize: 11, color: C.textDim, letterSpacing: "0.14em", textTransform: "uppercase" as const, marginBottom: 14 }}>Blood Glucose</div>
+      <div style={{ fontSize: 11, color: C.textDim, letterSpacing: "0.14em", textTransform: "uppercase" as const, marginBottom: 14 }}>{t("health_glucose")}</div>
       <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: "16px", marginBottom: 24 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -350,7 +351,7 @@ function DailyLogTab({ readings, onLog, onDelete, token }: { readings: HealthRea
       <div style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 16, padding: "16px", marginBottom: 24, display: "flex", gap: 12, alignItems: "center" }}>
         <Wifi size={20} color={C.teal} style={{ flexShrink: 0 }} />
         <div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 3 }}>Wearable sync — coming soon</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 3 }}>{t("health_wearable_t")}</div>
           <div style={{ fontSize: 12, color: C.textDim }}>Apple Health, Google Fit, boAt & Noise integration will auto-fill your daily readings.</div>
         </div>
       </div>
@@ -358,7 +359,7 @@ function DailyLogTab({ readings, onLog, onDelete, token }: { readings: HealthRea
       <div style={{ background: C.roseDim, border: `1px solid ${C.roseBorder}`, borderRadius: 14, padding: "14px 16px", display: "flex", gap: 10, alignItems: "flex-start" }}>
         <AlertCircle size={16} color={C.rose} style={{ flexShrink: 0, marginTop: 1 }} />
         <div style={{ fontSize: 12, color: C.textDim, lineHeight: 1.7 }}>
-          <strong style={{ color: C.text }}>Health disclaimer:</strong> ARYA helps you track your own readings and notice lifestyle patterns. ARYA is not a medical device and does not provide medical advice. All observations are for personal awareness only. For any health concerns, please consult a qualified doctor.
+          <strong style={{ color: C.text }}>{t("health_disclaimer_t")}</strong> {t("health_disclaimer_b")}
         </div>
       </div>
 
@@ -378,7 +379,7 @@ function TrendsTab({ readings }: { readings: HealthReading[] }) {
 
   return (
     <div style={{ padding: "0 20px 120px" }}>
-      <div style={{ fontSize: 11, color: C.textDim, letterSpacing: "0.14em", textTransform: "uppercase" as const, marginBottom: 14, marginTop: 4 }}>7-Day Trends</div>
+      <div style={{ fontSize: 11, color: C.textDim, letterSpacing: "0.14em", textTransform: "uppercase" as const, marginBottom: 14, marginTop: 4 }}>{t("health_trends_t")}</div>
       {trendMetrics.map(m => {
         const mReadings = readings.filter(r => r.metric === m.key);
         if (mReadings.length < 2) return (
@@ -386,7 +387,7 @@ function TrendsTab({ readings }: { readings: HealthReading[] }) {
             <span style={{ fontSize: 20 }}>{m.emoji}</span>
             <div>
               <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{m.label}</div>
-              <div style={{ fontSize: 12, color: C.textMuted }}>Log at least 2 readings to see trend</div>
+              <div style={{ fontSize: 12, color: C.textMuted }}>{t("health_min_readings")}</div>
             </div>
           </div>
         );
@@ -474,6 +475,7 @@ function InsightsTab({ token }: { token?: string | null }) {
 export default function PranaPage() {
   const [, setLocation] = useLocation();
   const { token, isLoggedIn } = useUserAuth();
+  const { t } = useLanguage();
   const [tab, setTab] = useState<Tab>("log");
   const [readings, setReadings] = useState<HealthReading[]>([]);
   const [loadingData, setLoadingData] = useState(true);
@@ -513,9 +515,9 @@ export default function PranaPage() {
   }, [token]);
 
   const tabs: Array<{ key: Tab; label: string }> = [
-    { key: "log", label: "Daily Log" },
-    { key: "trends", label: "Trends" },
-    { key: "insights", label: "ARYA Insights" },
+    { key: "log", label: t("health_tab_log") },
+    { key: "trends", label: t("health_tab_trends") },
+    { key: "insights", label: t("health_tab_insights") },
   ];
 
   return (
@@ -526,18 +528,18 @@ export default function PranaPage() {
       <div style={{ position: "relative", zIndex: 1 }}>
         <div style={{ padding: "20px 20px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <button onClick={() => setLocation("/")} style={{ background: "none", border: "none", color: C.textDim, cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", gap: 6, fontFamily: sans }}>
-            <ChevronLeft size={16} /> Back
+            <ChevronLeft size={16} /> {t("health_back")}
           </button>
           <div style={{ textAlign: "center" as const }}>
             <div style={{ fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase" as const, color: C.teal, opacity: 0.8 }}>ARYA PRANA</div>
-            <div style={{ fontSize: 10, color: C.textMuted, letterSpacing: "0.1em" }}>Your health, connected to your life</div>
+            <div style={{ fontSize: 10, color: C.textMuted, letterSpacing: "0.1em" }}>{t("health_subtitle")}</div>
           </div>
           <div style={{ width: 60 }} />
         </div>
 
         {!isLoggedIn && (
           <div style={{ margin: "16px 20px", background: C.amberDim, border: `1px solid ${C.amberBorder}`, borderRadius: 12, padding: "12px 16px", fontSize: 13, color: C.textDim }}>
-            Sign in to save and track your readings.
+            {t("health_sign_in")}
           </div>
         )}
 

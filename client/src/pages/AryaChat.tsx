@@ -934,6 +934,7 @@ const INTEREST_OPTIONS = [
 
 function UserProfileModal({ token, onClose, userName }: { token: string; onClose: () => void; userName: string }) {
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [interestInput, setInterestInput] = useState("");
@@ -1038,8 +1039,8 @@ function UserProfileModal({ token, onClose, userName }: { token: string; onClose
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-slate-700 flex-shrink-0">
           <div>
-            <h2 className="text-base font-semibold text-gray-900 dark:text-white font-['Space_Grotesk']">My Profile</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">Everything here is optional — share what you're comfortable with</p>
+            <h2 className="text-base font-semibold text-gray-900 dark:text-white font-['Space_Grotesk']">{t("profile_title")}</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">{t("profile_subtitle")}</p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-400" data-testid="button-close-profile">
             <X className="w-4 h-4" />
@@ -1050,7 +1051,7 @@ function UserProfileModal({ token, onClose, userName }: { token: string; onClose
         <div className="mx-5 mt-4 px-4 py-3 rounded-xl bg-cyan-50 dark:bg-cyan-900/20 border border-cyan-100 dark:border-cyan-800 flex items-start gap-3 flex-shrink-0">
           <Sparkles className="w-4 h-4 text-cyan-600 dark:text-cyan-400 flex-shrink-0 mt-0.5" />
           <p className="text-xs text-cyan-700 dark:text-cyan-300 leading-relaxed">
-            The more ARYA knows about you, the more personal and useful every conversation becomes. Fill in as much or as little as you like — you can always update this later.
+            {t("profile_nudge")}
           </p>
         </div>
 
@@ -1064,37 +1065,37 @@ function UserProfileModal({ token, onClose, userName }: { token: string; onClose
             <>
               {/* Account info */}
               <div>
-                <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Your account</div>
+                <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">{t("profile_account")}</div>
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-xs text-muted-foreground mb-1.5">Display name</label>
+                    <label className="block text-xs text-muted-foreground mb-1.5">{t("profile_display_name")}</label>
                     <input
                       data-testid="input-profile-name"
                       type="text"
-                      placeholder="Your name"
+                      placeholder={t("profile_name_ph")}
                       value={form.name}
                       onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                       className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl text-sm text-gray-900 dark:text-white px-3 py-2.5 focus:outline-none focus:border-cyan-300 dark:focus:border-cyan-700"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-muted-foreground mb-1.5">Email</label>
+                    <label className="block text-xs text-muted-foreground mb-1.5">{t("profile_email")}</label>
                     <input
                       data-testid="input-profile-email"
                       type="email"
                       readOnly
                       value={profile?.email || ""}
                       className="w-full bg-gray-100 dark:bg-slate-700/50 border border-gray-200 dark:border-slate-600 rounded-xl text-sm text-gray-500 dark:text-gray-400 px-3 py-2.5 cursor-not-allowed"
-                      title="Email cannot be changed here. Contact support if needed."
+                      title={t("profile_email_hint")}
                     />
-                    <p className="text-[10px] text-muted-foreground mt-1">Email is used for sign in and cannot be changed here.</p>
+                    <p className="text-[10px] text-muted-foreground mt-1">{t("profile_email_hint")}</p>
                   </div>
                   <div>
-                    <label className="block text-xs text-muted-foreground mb-1.5">Phone</label>
+                    <label className="block text-xs text-muted-foreground mb-1.5">{t("profile_phone")}</label>
                     <input
                       data-testid="input-profile-phone"
                       type="tel"
-                      placeholder="e.g. +91 9876543210"
+                      placeholder={t("profile_phone_ph")}
                       value={form.phone}
                       onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
                       className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl text-sm text-gray-900 dark:text-white px-3 py-2.5 focus:outline-none focus:border-cyan-300 dark:focus:border-cyan-700"
@@ -1107,10 +1108,10 @@ function UserProfileModal({ token, onClose, userName }: { token: string; onClose
 
               {/* About you */}
               <div>
-                <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">About you</div>
+                <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">{t("profile_about")}</div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs text-muted-foreground mb-1.5">Age</label>
+                    <label className="block text-xs text-muted-foreground mb-1.5">{t("profile_age")}</label>
                     <input
                       data-testid="input-profile-age"
                       type="number"
@@ -1122,7 +1123,7 @@ function UserProfileModal({ token, onClose, userName }: { token: string; onClose
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-muted-foreground mb-1.5">City</label>
+                    <label className="block text-xs text-muted-foreground mb-1.5">{t("profile_city")}</label>
                     <input
                       data-testid="input-profile-city"
                       type="text"
@@ -1134,11 +1135,11 @@ function UserProfileModal({ token, onClose, userName }: { token: string; onClose
                   </div>
                 </div>
                 <div className="mt-3">
-                  <label className="block text-xs text-muted-foreground mb-1.5">What do you do?</label>
+                  <label className="block text-xs text-muted-foreground mb-1.5">{t("profile_occupation")}</label>
                   <input
                     data-testid="input-profile-occupation"
                     type="text"
-                    placeholder="e.g. Doctor, Software engineer, Student, Business owner…"
+                    placeholder={t("profile_occ_ph")}
                     value={form.occupation}
                     onChange={e => setForm(f => ({ ...f, occupation: e.target.value }))}
                     className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl text-sm text-gray-900 dark:text-white px-3 py-2.5 focus:outline-none focus:border-cyan-300 dark:focus:border-cyan-700"
@@ -1148,7 +1149,7 @@ function UserProfileModal({ token, onClose, userName }: { token: string; onClose
 
               {/* Life stage */}
               <div>
-                <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Life stage</div>
+                <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">{t("profile_life_stage")}</div>
                 <div className="flex flex-wrap gap-2">
                   {btn("lifeStage", "student", "Student")}
                   {btn("lifeStage", "early_career", "Early career")}
@@ -1162,7 +1163,7 @@ function UserProfileModal({ token, onClose, userName }: { token: string; onClose
 
               {/* Family */}
               <div>
-                <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Personal life</div>
+                <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">{t("profile_personal_life")}</div>
                 <div className="flex flex-wrap gap-2">
                   {btn("familySituation", "single", "Single")}
                   {btn("familySituation", "partnered", "In a relationship")}
@@ -1174,7 +1175,7 @@ function UserProfileModal({ token, onClose, userName }: { token: string; onClose
 
               {/* Working style */}
               <div>
-                <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">How you work best</div>
+                <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">{t("profile_work_style")}</div>
                 <div className="flex flex-wrap gap-2">
                   {btn("workingStyle", "early_bird", "🌅 Early bird")}
                   {btn("workingStyle", "night_owl", "🌙 Night owl")}
@@ -1186,8 +1187,8 @@ function UserProfileModal({ token, onClose, userName }: { token: string; onClose
               {/* Interests */}
               <div>
                 <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
-                  Interests & hobbies
-                  <span className="ml-2 font-normal text-gray-400 normal-case">({form.interests.length}/10 selected)</span>
+                  {t("profile_interests")}
+                  <span className="ml-2 font-normal text-gray-400 normal-case">({form.interests.length}/10 {t("profile_add") === "Add" ? "selected" : "चुने"})</span>
                 </div>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {INTEREST_OPTIONS.map(opt => (
@@ -1207,7 +1208,7 @@ function UserProfileModal({ token, onClose, userName }: { token: string; onClose
                   <input
                     data-testid="input-profile-custom-interest"
                     type="text"
-                    placeholder="Add your own…"
+                    placeholder={t("profile_interests_add")}
                     value={interestInput}
                     onChange={e => setInterestInput(e.target.value)}
                     onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addCustomInterest(); } }}
@@ -1217,7 +1218,7 @@ function UserProfileModal({ token, onClose, userName }: { token: string; onClose
                     data-testid="button-add-custom-interest"
                     onClick={addCustomInterest}
                     className="px-3 py-2 rounded-xl bg-cyan-50 dark:bg-cyan-900/30 border border-cyan-200 dark:border-cyan-800 text-cyan-600 dark:text-cyan-400 text-xs font-medium hover:bg-cyan-100 dark:hover:bg-cyan-900/50 transition-all"
-                  >Add</button>
+                  >{t("profile_add")}</button>
                 </div>
                 {form.interests.filter(i => !INTEREST_OPTIONS.includes(i)).length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-2">
@@ -1233,12 +1234,12 @@ function UserProfileModal({ token, onClose, userName }: { token: string; onClose
 
               {/* Current challenges */}
               <div>
-                <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">What are you working through right now?</div>
-                <p className="text-xs text-muted-foreground mb-2">ARYA will be especially tuned in to help you with this.</p>
+                <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">{t("profile_challenges")}</div>
+                <p className="text-xs text-muted-foreground mb-2">{t("profile_challenges_hint")}</p>
                 <textarea
                   data-testid="input-profile-challenges"
                   rows={3}
-                  placeholder="e.g. Building discipline, managing work-life balance, growing my startup, improving my health…"
+                  placeholder={t("profile_challenges_ph")}
                   value={form.currentChallenges}
                   onChange={e => setForm(f => ({ ...f, currentChallenges: e.target.value }))}
                   className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl text-sm text-gray-900 dark:text-white px-3 py-2.5 focus:outline-none focus:border-cyan-300 dark:focus:border-cyan-700 resize-none"
@@ -1257,7 +1258,7 @@ function UserProfileModal({ token, onClose, userName }: { token: string; onClose
             className="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white text-sm font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <Check className="w-4 h-4" /> : <User className="w-4 h-4" />}
-            {saving ? "Saving…" : saved ? "Saved!" : "Save Profile"}
+            {saving ? t("profile_saving") : saved ? t("profile_saved") : t("profile_save")}
           </button>
           <p className="text-center text-[11px] text-muted-foreground">
             🔒 Your profile is private and used only to personalise your ARYA experience. We never share it. See our{" "}
