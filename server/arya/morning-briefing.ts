@@ -43,9 +43,13 @@ export async function generateMorningBriefing(userId: string): Promise<string> {
     const calendarText = await formatEventsForBriefing(calendarEvents);
 
     const firstName = user?.name?.split(" ")[0] || "friend";
-    const langInstruction = getLanguageInstruction((user as any)?.uiLanguage || "en", firstName);
+    const uiLang = (user as any)?.uiLanguage || "en";
+    const langInstruction = getLanguageInstruction(uiLang, firstName);
     const now = new Date();
     const day = now.toLocaleDateString("en-IN", { weekday: "long", timeZone: "Asia/Kolkata" });
+    const fallbackBriefing = uiLang === "hi"
+      ? `सुप्रभात, ${firstName}! आज का दिन शानदार हो। अपने goals पर एक नज़र डालो और एक छोटा कदम आगे बढ़ाओ। 🌅`
+      : `Good morning, ${firstName}! Ready to make today count? Check your goals and stay focused. 🌅`;
 
     const prompt = `Generate a warm, concise morning briefing for ${firstName} on this ${day}. Keep it under 180 words, personal and energizing.
 
@@ -72,7 +76,7 @@ Write a natural morning briefing: start with a warm greeting using their name. I
       max_completion_tokens: 200,
     } as any);
 
-    return (response as any).choices?.[0]?.message?.content || `Good morning, ${firstName}! Ready to make today count? Check your goals and stay focused. 🌅`;
+    return (response as any).choices?.[0]?.message?.content || fallbackBriefing;
   } catch {
     return "Good morning! Today is a fresh start. Check your goals and take one small step forward. 🌅";
   }
@@ -83,6 +87,7 @@ export async function sendMorningBriefings(sendPush: (userId: string, title: str
     const users = await db.select({
       id: aryaUsers.id,
       name: aryaUsers.name,
+      uiLanguage: aryaUsers.uiLanguage,
       morningBriefingEnabled: (aryaUsers as any).morningBriefingEnabled,
     }).from(aryaUsers)
       .where(eq(aryaUsers.isActive, true));
@@ -95,14 +100,16 @@ export async function sendMorningBriefings(sendPush: (userId: string, title: str
         const briefing = await generateMorningBriefing(user.id);
         const firstName = user.name?.split(" ")[0] || "there";
 
+        const lang = (user as any)?.uiLanguage || "en";
+        const notifTitle = lang === "hi" ? `सुप्रभात, ${firstName}! ☀️` : `Good morning, ${firstName}! ☀️`;
         await db.insert(aryaNotifications).values({
           userId: user.id,
           type: "morning_briefing" as any,
-          title: `Good morning, ${firstName}! ☀️`,
+          title: notifTitle,
           message: briefing.slice(0, 500),
         }).catch(() => {});
 
-        await sendPush(user.id, `☀️ Good morning, ${firstName}!`, briefing.slice(0, 120) + "...", "/icons/icon-192.png");
+        await sendPush(user.id, `☀️ ${notifTitle}`, briefing.slice(0, 120) + "...", "/icons/icon-192.png");
       } catch (err: any) {
         console.error(`[BRIEFING] Failed for user ${user.id}:`, err.message);
       }

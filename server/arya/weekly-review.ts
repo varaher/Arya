@@ -37,7 +37,11 @@ export async function generateWeeklyReview(userId: string): Promise<string> {
     const activeGoals = goals.filter(g => g.status === "active");
     const completedGoals = goals.filter(g => g.status === "completed" && g.updatedAt && g.updatedAt >= weekAgo);
     const firstName = user?.name?.split(" ")[0] || "friend";
-    const langInstruction = getLanguageInstruction((user as any)?.uiLanguage || "en", firstName);
+    const uiLang = (user as any)?.uiLanguage || "en";
+    const langInstruction = getLanguageInstruction(uiLang, firstName);
+    const fallbackReview = uiLang === "hi"
+      ? `${firstName}, एक और हफ़्ता तुम्हारी कहानी में लिखा गया। तुमने इस हफ़्ते जो चुना — और जो नहीं चुना — वो सब information है। इसे use करो।`
+      : `${firstName}, another week written into your story. What you chose — and didn't choose — this week is information. Use it.`;
 
     const goalsText = activeGoals.length > 0
       ? activeGoals.map(g => `"${g.title}" — ${g.progress}% progress, ${g.streakCount}-day streak`).join("\n")
@@ -111,8 +115,7 @@ Rules:
       max_completion_tokens: 280,
     } as any);
 
-    return (response as any).choices?.[0]?.message?.content
-      || `${firstName}, another week written into your story. What you chose — and didn't choose — this week is information. Use it.`;
+    return (response as any).choices?.[0]?.message?.content || fallbackReview;
   } catch {
     return "Another week complete. What you chose this week tells you something about who you're becoming. Sit with that before the next one begins.";
   }
@@ -123,6 +126,7 @@ export async function sendWeeklyReviews(sendPush: (userId: string, title: string
     const users = await db.select({
       id: aryaUsers.id,
       name: aryaUsers.name,
+      uiLanguage: aryaUsers.uiLanguage,
       weeklyReviewEnabled: (aryaUsers as any).weeklyReviewEnabled,
     }).from(aryaUsers).where(eq(aryaUsers.isActive, true));
 
@@ -134,14 +138,16 @@ export async function sendWeeklyReviews(sendPush: (userId: string, title: string
         const review = await generateWeeklyReview(user.id);
         const firstName = user.name?.split(" ")[0] || "there";
 
+        const lang = (user as any)?.uiLanguage || "en";
+        const reviewTitle = lang === "hi" ? `📊 ${firstName}, तुम्हारी साप्ताहिक समीक्षा` : `📊 Your Weekly Review`;
         await db.insert(aryaNotifications).values({
           userId: user.id,
           type: "weekly_review" as any,
-          title: `📊 Your Weekly Review`,
+          title: reviewTitle,
           message: review.slice(0, 500),
         }).catch(() => {});
 
-        await sendPush(user.id, `📊 Weekly Review, ${firstName}`, review.slice(0, 120) + "...", "/icons/icon-192.png");
+        await sendPush(user.id, reviewTitle, review.slice(0, 120) + "...", "/icons/icon-192.png");
       } catch (err: any) {
         console.error(`[WEEKLY REVIEW] Failed for user ${user.id}:`, err.message);
       }
