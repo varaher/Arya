@@ -21,9 +21,9 @@ const sans  = "'Nunito', 'Inter', sans-serif";
 
 // Path accent system
 const ACCENT = {
-  western: { main: "#f5c842", dim: "rgba(245,200,66,0.10)", border: "rgba(245,200,66,0.22)", badge: "⭐ Western" },
-  vedic:   { main: "#f5a623", dim: "rgba(245,166,35,0.10)", border: "rgba(245,166,35,0.22)", badge: "🪔 Vedic" },
-  neutral: { main: "#8fa0b8", dim: "rgba(143,160,184,0.10)", border: "rgba(143,160,184,0.22)", badge: "🌐 Neutral" },
+  western: { main: "#f5c842", dim: "rgba(245,200,66,0.10)", border: "rgba(245,200,66,0.22)", badge: "⭐ Star Signs" },
+  vedic:   { main: "#f5a623", dim: "rgba(245,166,35,0.10)", border: "rgba(245,166,35,0.22)", badge: "🪔 KAAL" },
+  neutral: { main: "#8fa0b8", dim: "rgba(143,160,184,0.10)", border: "rgba(143,160,184,0.22)", badge: "🌐 Patterns" },
 };
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -207,11 +207,11 @@ function WesternSignScreen({ selected, onSelect, selectedRashi, onSelectRashi, o
       <TopBar path="western" onBack={onBack} />
       <ProgDots step={1} total={4} color={a.main} />
       <div style={{ padding: "0 24px 90px", maxWidth: 460, margin: "0 auto", width: "100%" }}>
-        <p style={{ fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase" as const, color: a.main, opacity: 0.7, marginBottom: 10 }}>Step 1 of 3</p>
+        <p style={{ fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase" as const, color: a.main, opacity: 0.7, marginBottom: 10 }}>{t("kaal_step_1_3")}</p>
         <h1 style={{ fontFamily: serif, fontSize: 28, fontWeight: 400, lineHeight: 1.25, color: C.text, marginBottom: 8 }}>
-          What's your <em style={{ color: a.main }}>star sign?</em>
+          {t("kaal_star_sign_q")}
         </h1>
-        <p style={{ fontSize: 13, color: C.textDim, lineHeight: 1.7, marginBottom: 20 }}>Select from the grid — date ranges are shown on each card.</p>
+        <p style={{ fontSize: 13, color: C.textDim, lineHeight: 1.7, marginBottom: 20 }}>{t("kaal_star_sign_sub")}</p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 20 }}>
           {WESTERN_SIGNS.map(s => {
             const active = selected === s.name;
@@ -231,8 +231,8 @@ function WesternSignScreen({ selected, onSelect, selectedRashi, onSelectRashi, o
         <div style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 12, padding: "14px 16px", marginBottom: 20 }}>
           <div onClick={() => setShowRashi(v => !v)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}>
             <div>
-              <div style={{ fontSize: 13, color: C.text, fontWeight: 500 }}>I also know my Rashi</div>
-              <div style={{ fontSize: 11, color: C.textDim, marginTop: 2 }}>Add an extra layer of depth — optional</div>
+              <div style={{ fontSize: 13, color: C.text, fontWeight: 500 }}>{t("kaal_also_rashi")}</div>
+              <div style={{ fontSize: 11, color: C.textDim, marginTop: 2 }}>{t("kaal_rashi_optional")}</div>
             </div>
             <div style={{ width: 36, height: 20, borderRadius: 10, background: showRashi ? ACCENT.vedic.main : C.border, transition: "all 0.2s", flexShrink: 0, position: "relative" as const }}>
               <div style={{ position: "absolute" as const, top: 3, left: showRashi ? 18 : 3, width: 14, height: 14, borderRadius: "50%", background: "white", transition: "all 0.2s" }} />
@@ -242,7 +242,7 @@ function WesternSignScreen({ selected, onSelect, selectedRashi, onSelectRashi, o
             {showRashi && (
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} style={{ overflow: "hidden" }}>
                 <div style={{ marginTop: 14 }}>
-                  <p style={{ fontSize: 11, color: C.textDim, marginBottom: 10 }}>Your Moon sign — each card shows both names</p>
+                  <p style={{ fontSize: 11, color: C.textDim, marginBottom: 10 }}>{t("kaal_moon_sub")}</p>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
                     {RASHIS.map(r => {
                       const active = selectedRashi === r.name;
@@ -281,12 +281,12 @@ function VedicRashiScreen({ selected, onSelect, onBack, onContinue }: {
       <TopBar path="vedic" onBack={onBack} />
       <ProgDots step={1} total={4} color={a.main} />
       <div style={{ padding: "0 24px 90px", maxWidth: 460, margin: "0 auto", width: "100%" }}>
-        <p style={{ fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase" as const, color: a.main, opacity: 0.7, marginBottom: 10 }}>Step 1 of 3</p>
+        <p style={{ fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase" as const, color: a.main, opacity: 0.7, marginBottom: 10 }}>{t("kaal_step_1_3")}</p>
         <h1 style={{ fontFamily: serif, fontSize: 28, fontWeight: 400, lineHeight: 1.25, color: C.text, marginBottom: 8 }}>
-          What is your <em style={{ color: a.main }}>Moon sign?</em>
+          {t("kaal_moon_sign_q")}
         </h1>
         <p style={{ fontSize: 13, color: C.textDim, lineHeight: 1.7, marginBottom: 20 }}>
-          Each card shows both names — pick whichever you recognise.
+          {t("kaal_moon_sign_sub")}
         </p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 20 }}>
           {RASHIS.map(r => {
@@ -335,10 +335,10 @@ function BirthScreen({ path, birthDate, setBirthDate, birthPlace, setBirthPlace,
       <ProgDots step={step} total={total} color={a.main} />
       <div style={{ padding: "0 24px 90px", maxWidth: 460, margin: "0 auto", width: "100%" }}>
         <p style={{ fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase" as const, color: a.main, opacity: 0.7, marginBottom: 10 }}>
-          Step {step} of {total - 1}
+          {t("kaal_step_prefix")} {step} {t("kaal_step_of")} {total - 1}
         </p>
         <h1 style={{ fontFamily: serif, fontSize: 28, fontWeight: 400, lineHeight: 1.25, color: C.text, marginBottom: 8 }}>
-          Your birth <em style={{ color: a.main }}>details</em>
+          {t("kaal_birth_h1")}
         </h1>
         <p style={{ fontSize: 13, color: C.textDim, lineHeight: 1.7, marginBottom: 20 }}>
           {isNeutral ? t("kaal_birth_neutral") : t("kaal_birth_vedic")}
@@ -365,7 +365,7 @@ function BirthScreen({ path, birthDate, setBirthDate, birthPlace, setBirthPlace,
                 <button key={tw.key} onClick={() => setBirthTimeApprox(active ? "" : tw.key)} data-testid={`time-${tw.key}`}
                   style={{ padding: "12px 6px", borderRadius: 12, border: `1.5px solid ${active ? a.main : C.border}`, background: active ? a.dim : C.surface, cursor: "pointer", transition: "all 0.2s", textAlign: "center" as const }}>
                   <div style={{ fontSize: 20, marginBottom: 4 }}>{tw.emoji}</div>
-                  <div style={{ fontSize: 11, color: active ? a.main : C.text, fontWeight: active ? 600 : 400 }}>{tw.label}</div>
+                  <div style={{ fontSize: 11, color: active ? a.main : C.text, fontWeight: active ? 600 : 400 }}>{t(("kaal_tw_" + tw.key.replace(/-/g, "_")) as any)}</div>
                   <div style={{ fontSize: 9, color: C.textDim, marginTop: 2 }}>{tw.range}</div>
                 </button>
               );
@@ -413,6 +413,7 @@ function ReadyScreen({ path, profile, westernSign, selectedRashi, onBack, onCont
   path: VedicPath; profile: LensProfile | null; westernSign: string; selectedRashi: string;
   onBack: () => void; onContinue: () => void;
 }) {
+  const { t } = useLanguage();
   const a = ACCENT[path];
   const rashi = profile?.rashi || selectedRashi || "";
   const rashiData = RASHIS.find(r => r.name === rashi);
@@ -427,9 +428,9 @@ function ReadyScreen({ path, profile, westernSign, selectedRashi, onBack, onCont
           {path === "western" ? "⭐" : path === "vedic" ? "🪔" : "🌐"}
         </motion.div>
 
-        <p style={{ fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase" as const, color: a.main, opacity: 0.7, marginBottom: 8 }}>Your profile is ready</p>
+        <p style={{ fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase" as const, color: a.main, opacity: 0.7, marginBottom: 8 }}>{t("kaal_profile_ready")}</p>
         <h1 style={{ fontFamily: serif, fontSize: 28, fontWeight: 400, lineHeight: 1.25, color: C.text, marginBottom: 20 }}>
-          KAAL<br /><em style={{ color: a.main }}>is active.</em>
+          KAAL<br /><em style={{ color: a.main }}>{t("kaal_is_active")}</em>
         </h1>
 
         {/* Western completion */}
@@ -441,7 +442,7 @@ function ReadyScreen({ path, profile, westernSign, selectedRashi, onBack, onCont
             </div>
             {westernData && <div style={{ fontSize: 12, color: C.textDim, marginBottom: 20 }}>{westernData.dates}</div>}
             <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 18, width: "100%", maxWidth: 320, textAlign: "left" as const, marginBottom: 20 }}>
-              <div style={{ fontSize: 11, color: C.textDim, letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 10 }}>What ARYA will bring you</div>
+              <div style={{ fontSize: 11, color: C.textDim, letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 10 }}>{t("kaal_arya_brings")}</div>
               <div style={{ fontSize: 13, color: C.textDim, lineHeight: 1.75, fontStyle: "italic", borderLeft: `2px solid ${a.main}44`, paddingLeft: 10 }}>
                 "For {westernSign || "your sign"} this week: your best decision window looks mid-week. ARYA will pinpoint the precise moment using your mood, calendar, and open goals."
               </div>
@@ -452,11 +453,11 @@ function ReadyScreen({ path, profile, westernSign, selectedRashi, onBack, onCont
         {/* Vedic completion */}
         {path === "vedic" && (
           <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 18, width: "100%", maxWidth: 320, textAlign: "left" as const, marginBottom: 20 }}>
-            <div style={{ fontSize: 11, color: C.textDim, letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 12 }}>Your profile</div>
+            <div style={{ fontSize: 11, color: C.textDim, letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 12 }}>{t("kaal_your_profile")}</div>
             {[
-              rashi ? ["Moon sign", `${rashiData?.symbol || ""} ${rashi} · ${rashiData?.english || ""}`, a.main] : null,
-              profile?.nakshatra ? ["Birth star", profile.nakshatra, C.text] : null,
-              profile?.dashaLord ? ["Current cycle", `${profile.dashaLord} · ${profile.dashaYearsLeft} yrs left`, C.text] : null,
+              rashi ? [t("kaal_moon_sign_lbl"), `${rashiData?.symbol || ""} ${rashi} · ${rashiData?.english || ""}`, a.main] : null,
+              profile?.nakshatra ? [t("kaal_birth_star"), profile.nakshatra, C.text] : null,
+              profile?.dashaLord ? [t("kaal_current_cycle"), `${profile.dashaLord} · ${profile.dashaYearsLeft} ${t("kaal_yrs_left")}`, C.text] : null,
             ].filter(Boolean).map(row => (
               <div key={row![0] as string} style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", fontSize: 13, marginBottom: 9, gap: 8, flexWrap: "wrap" as const }}>
                 <span style={{ color: C.textDim, flexShrink: 0 }}>{row![0] as string}</span>
@@ -464,7 +465,7 @@ function ReadyScreen({ path, profile, westernSign, selectedRashi, onBack, onCont
               </div>
             ))}
             {!rashi && !profile && (
-              <div style={{ fontSize: 13, color: C.textDim, lineHeight: 1.7 }}>Profile built from your birth details — ARYA will use these for every briefing.</div>
+              <div style={{ fontSize: 13, color: C.textDim, lineHeight: 1.7 }}>{t("kaal_profile_built")}</div>
             )}
           </div>
         )}
@@ -472,7 +473,7 @@ function ReadyScreen({ path, profile, westernSign, selectedRashi, onBack, onCont
         {/* Neutral completion */}
         {path === "neutral" && (
           <div style={{ background: C.surface, border: `1px solid ${a.border}`, borderRadius: 14, padding: 18, width: "100%", maxWidth: 320, textAlign: "left" as const, marginBottom: 20 }}>
-            <div style={{ fontSize: 11, color: C.textDim, letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 10 }}>Your personal rhythm</div>
+            <div style={{ fontSize: 11, color: C.textDim, letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 10 }}>{t("kaal_personal_rhythm")}</div>
             <div style={{ fontSize: 13, color: C.textDim, lineHeight: 1.75, fontStyle: "italic", borderLeft: `2px solid ${a.main}55`, paddingLeft: 10 }}>
               "Your clearest thinking window this week is <strong style={{ color: a.main, fontStyle: "normal" }}>Tuesday before noon</strong> — that's when your pattern says you make your best calls. The data backs this up."
             </div>
@@ -481,9 +482,9 @@ function ReadyScreen({ path, profile, westernSign, selectedRashi, onBack, onCont
         )}
 
         <p style={{ fontSize: 13, color: C.textDim, lineHeight: 1.75, maxWidth: 300, marginBottom: 24 }}>
-          Every briefing now includes personal timing context — in plain language.
+          {t("kaal_briefing_inc")}
         </p>
-        <Btn color={a.main} onClick={onContinue}>See today's briefing →</Btn>
+        <Btn color={a.main} onClick={onContinue}>{t("kaal_see_briefing")}</Btn>
       </div>
     </div>
   );
@@ -551,7 +552,8 @@ function BriefingScreen({ briefing, loading, error, onHome, onRetry, path }: {
   }
 
   const b = briefing;
-  const activeGoals = (goalsData || []).filter((g: any) => g.isActive).slice(0, 4);
+  const goalsArr = Array.isArray(goalsData) ? goalsData : (goalsData as any)?.goals || [];
+  const activeGoals = goalsArr.filter((g: any) => g.isActive).slice(0, 4);
 
   return (
     <div>
