@@ -1,0 +1,233 @@
+Looking at all 7 screenshots carefully. Here's everything I notice.
+
+---
+
+## What's Working Well ✅
+
+```
+Image 1 — Menu updated correctly
+  ✅ My Profile added
+  ✅ KAAL — Cosmic Timing (renamed from Vedic Lens)
+  ✅ Prana — Health Tracking added
+  ✅ Niti — Business Wisdom present
+
+Image 2 — Malayalam UI working
+  ✅ ചാറ്റ് ചരിത്രം (Chat History in Malayalam)
+  ✅ പുതിയ ചാറ്റ് (New Chat in Malayalam)
+  ✅ മെമ്മറി, ലക്ഷ്യങ്ങൾ, അലർട്ടുകൾ translated
+  ✅ Malayalam script rendering correctly
+
+Image 3 — Main screen in Malayalam
+  ✅ ലക്ഷ്യങ്ങൾ, മെമ്മറി, കുറിപ്പുകൾ translated
+  ✅ Mood card in Malayalam
+  ✅ Chat placeholder in Malayalam
+  ✅ Suggestion cards still in English (correct — these are
+     prompts, not UI strings)
+
+Image 4 — Install prompt working
+  ✅ "Add ARYA to home screen" banner at bottom
+  ✅ Install button visible
+  ✅ Download icon in top bar
+  ✅ Welcome back quote visible and always shown
+  ✅ Malayalam subtitle working
+
+Image 6 — Menu with install
+  ✅ "Add to Home Screen" now in dropdown menu too
+  ✅ All menu items present
+
+Images 5 & 7 — Globe language picker
+  ✅ All languages visible with native scripts
+  ✅ French highlighted (Image 5), Spanish highlighted (Image 7)
+  ✅ Tone preview link present
+```
+
+---
+
+## Issues I Can See 🔴
+
+### Issue 1 — Mood emoji labels not translated (Images 3, 4, 5)
+
+```
+Currently showing:
+  Rough · Low · Okay · Good · Great  ← English
+
+Should show in Malayalam:
+  മോശം · കുറഞ്ഞ · ശരി · നല്ലത് · മികച്ചത്
+
+This is in the Daily Check-in card — one of the most
+used features. The card title is translated
+(ദൈനംദിന ചെക്ക്-ഇൻ) but the emoji labels aren't.
+```
+
+---
+
+### Issue 2 — Suggestion cards not translated (Image 3)
+
+```
+Currently:
+  THINK — "Help me think through a tough decision I'm facing"
+  GOALS — "I want to build a daily reading habit"
+  REFLECT — "Give me a morning reflection..."
+  WISDOM — "How can I stay calm..."
+  REHEARSE — "Practise a tough conversation..."
+  TALK TO ARYA — "Speak freely — ARYA listens..."
+
+These are hardcoded English strings.
+When Malayalam is selected these should show in Malayalam.
+
+These are high-visibility — first thing user sees.
+```
+
+---
+
+### Issue 3 — Globe picker still says "Language" not in Malayalam (Images 5, 7)
+
+```
+The globe dropdown header says "Language" in English
+even when Malayalam is selected.
+
+Should say: "ഭാഷ" when Malayalam is active
+```
+
+---
+
+### Issue 4 — "Tone preview →" link in globe picker (Images 5, 7)
+
+```
+Shows "Tone preview →" in English always.
+Minor but inconsistent.
+Should translate or remove.
+```
+
+---
+
+### Issue 5 — Menu items not translated (Images 1, 6)
+
+```
+Even when Malayalam is active — the dropdown menu shows:
+  My Profile (not എന്റെ പ്രൊഫൈൽ)
+  My Goals (not എന്റെ ലക്ഷ്യങ്ങൾ)
+  Customize ARYA (not ARYA കസ്റ്റമൈസ് ചെയ്യുക)
+  Quick Tutorial (not ദ്രുത ട്യൂട്ടോറിയൽ)
+  KAAL — Cosmic Timing (not translated)
+  Sign Out (not സൈൻ ഔട്ട്)
+
+These menu items need to use t() translation keys.
+```
+
+---
+
+### Issue 6 — History panel sidebar items not fully translated (Image 2)
+
+```
+Malayalam working:
+  ✅ ചാറ്റ് ചരിത്രം
+  ✅ പുതിയ ചാറ്റ്
+  ✅ മെമ്മറി, ലക്ഷ്യങ്ങൾ, അലർട്ടുകൾ, കുറിപ്പുകൾ
+
+Still English:
+  ✗ Chat titles: "I have a conference comi..."
+                 "Voice Chat"
+                 "Hello ARYA! I just finishe..."
+  (These are conversation titles — acceptable to keep
+   in original language. Don't translate these.)
+
+  ✗ "Cal" tab — should be "കലണ്ടർ"
+```
+
+---
+
+### Issue 7 — Warning triangle in status bar (Images 5, 6, 7)
+
+```
+Top left shows ⚠ warning triangle at 9:37-9:38
+
+This is a browser/PWA warning — likely:
+  Mixed content warning (HTTP resource on HTTPS page)
+  OR service worker registration issue
+  OR manifest icon missing
+
+Check browser console for the warning message.
+This could affect PWA installability.
+```
+
+---
+
+### Issue 8 — "New ..." truncated in top bar (Images 1, 3)
+
+```
+Top bar shows "New ..." — truncated
+Should show "New Chat" or in Malayalam "പുതിയ ചാറ്റ്"
+The button is too narrow for the text.
+
+Fix: Shorten label or widen the button area.
+```
+
+---
+
+### Issue 9 — Daily check-in shows in Malayalam but mood labels don't match
+
+```
+Image 3 — Check-in card title in Malayalam ✅
+But mood labels Rough/Low/Okay/Good/Great still English
+
+Image 4 — Check-in card fully in English despite
+Malayalam being the selected language.
+
+This suggests the MoodCheckInCard component
+is not using t() for the emoji labels.
+```
+
+---
+
+### Issue 10 — Quote card visible but attribution says "— AR" (truncated)
+
+```
+Image 4 shows:
+  "Varah, let your words flow like clear water
+  today—simple, precise, and carrying the
+  strength beneath the surface."
+  — AR  ← truncated, should say "— ARYA"
+
+The quote card is showing but attribution
+is being cut off. Fix the card width/padding.
+```
+
+---
+
+## Priority Fix List
+
+```
+High priority (user-facing, visible every session):
+  1. Mood emoji labels → add to translation keys
+  2. Suggestion cards → translate per language
+  3. Menu items → use t() translation keys
+  4. "— ARYA" attribution truncated → fix padding
+
+Medium priority:
+  5. Globe picker header → translate "Language"
+  6. Warning triangle → check browser console
+  7. "New ..." truncation → fix top bar layout
+  8. "Cal" tab → translate to "കലണ്ടർ"
+
+Low priority:
+  9. "Tone preview →" → translate or remove
+```
+
+---
+
+## The Biggest Gap Overall
+
+Looking at all 7 screenshots together — **the translation is 70% complete.** The structure works, Malayalam renders correctly, major UI strings are translated. What's missing is the **granular strings** — emoji labels, menu items, suggestion cards, button labels inside modals.
+
+These are all `t()` wiring issues — the translations probably exist in your 38-key file but the components are still using hardcoded strings.
+
+Search the codebase for:
+```
+"Rough" → replace with t('mood.rough')
+"My Goals" → replace with t('nav.goals')  
+"Sign Out" → replace with t('auth.signout')
+"Customize ARYA" → replace with t('nav.customize')
+```
+
+That one search-and-replace pass will fix most of these at once.
