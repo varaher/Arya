@@ -2519,6 +2519,24 @@ export default function AryaChat() {
   const [isScanningDoc, setIsScanningDoc] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const { language: uiLanguage, t, setLanguage: setGlobalLanguage } = useLanguage();
+
+  // Load language preference from DB on login (covers new device / cleared localStorage)
+  useEffect(() => {
+    if (!user?.uiLanguage) return;
+    const uiLang = user.uiLanguage as UiLanguage;
+    const hasLocalUi = (() => { try { return !!localStorage.getItem("arya_ui_language"); } catch { return false; } })();
+    if (!hasLocalUi) setGlobalLanguage(uiLang);
+    const hasLocalGlobe = (() => { try { return !!localStorage.getItem("arya_lang"); } catch { return false; } })();
+    if (!hasLocalGlobe) {
+      const DB_SARVAM: Record<string, string> = {
+        hi:"hi-IN", ta:"ta-IN", te:"te-IN", kn:"kn-IN",
+        ml:"ml-IN", bn:"bn-IN", mr:"mr-IN", gu:"gu-IN", pa:"pa-IN", od:"od-IN",
+      };
+      const full = DB_SARVAM[uiLang];
+      if (full) { setSelectedLanguage(full); try { localStorage.setItem("arya_lang", full); } catch {} }
+    }
+  }, [user?.uiLanguage]);
+
   const [moodCheckedInToday, setMoodCheckedInToday] = useState(() => {
     try { return localStorage.getItem("arya_mood_date") === new Date().toDateString(); } catch { return false; }
   });
@@ -4498,7 +4516,7 @@ export default function AryaChat() {
                 {showLanguageMenu && (
                   <div className="absolute bottom-full left-0 mb-2 w-52 bg-card border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden z-50">
                     <div className="px-3 py-2 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
-                      <p className="text-xs font-medium text-muted-foreground">Voice Language</p>
+                      <p className="text-xs font-medium text-muted-foreground">Language</p>
                       <a href="/language" className="text-[10px] text-cyan-600 dark:text-cyan-400 hover:underline">Tone preview →</a>
                     </div>
                     <div className="max-h-72 overflow-y-auto py-1">
@@ -4510,6 +4528,9 @@ export default function AryaChat() {
                             setSelectedLanguage(lang.code);
                             setShowLanguageMenu(false);
                             try { localStorage.setItem("arya_lang", lang.code); } catch {}
+                            const sc = lang.code.split("-")[0] as UiLanguage;
+                            const validUi: UiLanguage[] = ["en","hi","mr","bn","ta","te","kn","ml","gu","pa","od"];
+                            if (validUi.includes(sc)) setGlobalLanguage(sc);
                           }}
                           className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors ${
                             selectedLanguage === lang.code ? "text-primary bg-primary/10" : "text-gray-700 dark:text-gray-200"

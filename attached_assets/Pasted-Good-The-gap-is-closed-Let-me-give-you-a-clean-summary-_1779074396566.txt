@@ -1,0 +1,181 @@
+Good. The gap is closed. Let me give you a clean summary of where ARYA stands right now and what to test.
+
+---
+
+## What To Test Right Now
+
+### Test 1 — IP Detection (First Visit)
+
+```
+Steps:
+1. Open ARYA in a fresh browser tab
+   (or incognito — no localStorage)
+2. Wait 2–3 seconds
+
+Expected:
+  If you're in Kerala →
+  Banner appears: "Switch to മലയാളം for your region?"
+
+  If banner doesn't appear:
+  Check browser console for /api/detect-language response
+```
+
+---
+
+### Test 2 — Banner Acceptance
+
+```
+Steps:
+1. See the banner
+2. Tap "Switch →"
+
+Expected — ALL of these simultaneously:
+  ✓ Sidebar labels change to Malayalam
+  ✓ Chat placeholder → "ARYAയോട് സംസാരിക്കൂ..."
+  ✓ Globe icon shows Malayalam selected
+  ✓ Type a message → ARYA responds in Malayalam
+  ✓ No page reload needed
+  ✓ Banner disappears and doesn't come back
+```
+
+---
+
+### Test 3 — Globe Manual Override
+
+```
+Steps:
+1. Tap globe icon in chat header
+2. Select Tamil
+
+Expected:
+  ✓ ARYA starts responding in Tamil
+  ✓ UI strings update to Tamil
+  ✓ Selection persists if you refresh
+```
+
+---
+
+### Test 4 — Returning User
+
+```
+Steps:
+1. Select Malayalam via banner or globe
+2. Close the browser tab completely
+3. Reopen ARYA
+
+Expected:
+  ✓ Malayalam loads immediately
+  ✓ No banner shown again
+  ✓ No flash of English first
+```
+
+---
+
+### Test 5 — Voice + Language
+
+```
+Steps:
+1. Set language to Tamil via globe
+2. Tap mic, speak in Tamil
+3. Release
+
+Expected:
+  ✓ Sarvam STT transcribes Tamil
+  ✓ ARYA responds in Tamil text
+  ✓ Speaker icon speaks in Tamil voice
+```
+
+---
+
+## What To Look For In Each Test
+
+```
+Test 1 fails → /api/detect-language endpoint issue
+               Check server logs for IP detection errors
+
+Test 2 partial → banner and globe still not fully connected
+                 Check language-context.tsx event firing
+                 Check AryaChat.tsx event listener
+
+Test 2 fails UI strings → i18n.changeLanguage() not called
+                          Check applyLanguage() function
+
+Test 3 fails → globe setSelectedLanguage not saving
+               Check localStorage after selection
+
+Test 4 fails → DB not saving preference
+               Check /api/user/preferences PATCH call
+               Check on login — is preference being loaded?
+
+Test 5 fails → Sarvam language code mismatch
+               Check sarvamLangToShort() mapping
+```
+
+---
+
+## The One Thing Most Likely To Still Be Wrong
+
+Based on everything discussed — the highest risk remaining is **Test 4.**
+
+The returning user flow requires that on login, the server sends back the saved `ui_language` preference and the frontend calls `setLanguage()` with it before first render.
+
+```typescript
+// Check this in your login / session load flow
+
+const user = await fetchCurrentUser();
+
+if (user.ui_language && user.ui_language !== 'en') {
+  await setLanguage(user.ui_language); // ← is this happening?
+}
+```
+
+If this line is missing — the user sees English on every new session and has to re-accept the banner each time. That's a significant friction point.
+
+---
+
+## After Testing — The Remaining Polish Items
+
+Once all 5 tests pass, these are the only things left:
+
+```
+Priority 1 — Hide English stream
+  When Malayalam is active, don't show
+  English response streaming first.
+  Show "Translating..." then Malayalam only.
+
+Priority 2 — Language pill in chat header
+  Show current language visibly.
+  Tap to change.
+  Makes language state obvious to user.
+
+Priority 3 — Returning user loads language instantly
+  No flash of English before Malayalam appears.
+  Language applied before first render.
+
+Priority 4 — Extend IP detection internationally
+  Arabic countries → Arabic
+  Brazil → Portuguese
+  France → French
+  (When you go global)
+```
+
+---
+
+## The Clean Summary
+
+```
+✅ IP detection           Working
+✅ State → language map   Working
+✅ Soft banner            Working
+✅ Banner + globe sync    Fixed today
+✅ Voice route            Working (Sarvam)
+✅ Text route             Working (Sarvam translate)
+✅ Globe manual select    Working
+
+🔜 UI strings on change   Needs i18n unification
+🔜 English stream hidden  UX polish
+🔜 Returning user instant No flash of English
+🔜 International IP       When going global
+```
+
+Run the 5 tests. Tell me which ones pass and which fail. That will tell us exactly what's left.
