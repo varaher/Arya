@@ -139,7 +139,9 @@ export async function sendWeeklyReviews(sendPush: (userId: string, title: string
         const firstName = user.name?.split(" ")[0] || "there";
 
         const lang = (user as any)?.uiLanguage || "en";
-        const reviewTitle = lang === "hi" ? `📊 ${firstName}, तुम्हारी साप्ताहिक समीक्षा` : `📊 Your Weekly Review`;
+        const reviewTitle = lang === "hi" ? `📊 ${firstName}, तुम्हारी साप्ताहिक समीक्षा`
+          : lang === "ta" ? `${firstName}, உன் வார மதிப்பீடு தயார் 📖`
+          : `📊 Your Weekly Review`;
         await db.insert(aryaNotifications).values({
           userId: user.id,
           type: "weekly_review" as any,

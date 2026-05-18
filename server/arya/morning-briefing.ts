@@ -101,7 +101,9 @@ export async function sendMorningBriefings(sendPush: (userId: string, title: str
         const firstName = user.name?.split(" ")[0] || "there";
 
         const lang = (user as any)?.uiLanguage || "en";
-        const notifTitle = lang === "hi" ? `सुप्रभात, ${firstName}! ☀️` : `Good morning, ${firstName}! ☀️`;
+        const notifTitle = lang === "hi" ? `सुप्रभात, ${firstName}! ☀️`
+          : lang === "ta" ? `காலை வணக்கம், ${firstName}! ☀️`
+          : `Good morning, ${firstName}! ☀️`;
         await db.insert(aryaNotifications).values({
           userId: user.id,
           type: "morning_briefing" as any,
