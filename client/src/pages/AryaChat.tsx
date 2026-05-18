@@ -2420,6 +2420,19 @@ export default function AryaChat() {
   });
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
 
+  // Sync globe when IP detection banner is accepted
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const code = (e as CustomEvent<string>).detail;
+      if (code) {
+        setSelectedLanguage(code);
+        try { localStorage.setItem("arya_lang", code); } catch {}
+      }
+    };
+    window.addEventListener("arya-response-lang-update", handler);
+    return () => window.removeEventListener("arya-response-lang-update", handler);
+  }, []);
+
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
     const check = () => navigator.serviceWorker.getRegistration().then(reg => { if (reg?.waiting) setUpdateAvailable(true); });

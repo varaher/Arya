@@ -139,6 +139,17 @@ export function LanguageDetectionBanner() {
     setLanguage(detected);
     setDismissed(true);
     try { localStorage.setItem("arya_ui_language", detected); } catch {}
+    // Also sync the globe/response language so ARYA replies in the detected language
+    const SARVAM_CODES: Partial<Record<string, string>> = {
+      hi: "hi-IN", ta: "ta-IN", te: "te-IN", kn: "kn-IN",
+      ml: "ml-IN", bn: "bn-IN", mr: "mr-IN", gu: "gu-IN",
+      pa: "pa-IN", od: "od-IN",
+    };
+    const fullCode = SARVAM_CODES[detected];
+    if (fullCode) {
+      try { localStorage.setItem("arya_lang", fullCode); } catch {}
+      window.dispatchEvent(new CustomEvent("arya-response-lang-update", { detail: fullCode }));
+    }
   };
 
   const handleDismiss = () => {
