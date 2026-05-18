@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import { db } from "../db";
 import { aryaUsers, aryaMoodCheckins, aryaUsageBudget, aryaGoals, aryaNotifications } from "@shared/schema";
 import { eq, and, gte, lt } from "drizzle-orm";
+import { getLanguageInstruction } from "./language-instruction";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -32,6 +33,7 @@ export async function generateUserPatterns(userId: string): Promise<string | nul
 
     const [user] = await db.select({
       name: aryaUsers.name,
+      uiLanguage: aryaUsers.uiLanguage,
       createdAt: aryaUsers.createdAt,
     }).from(aryaUsers).where(eq(aryaUsers.id, userId)).limit(1);
 
@@ -42,6 +44,7 @@ export async function generateUserPatterns(userId: string): Promise<string | nul
     if (accountAgeDays < 30) return null;
 
     const firstName = user.name?.split(" ")[0] || "friend";
+    const langInstruction = getLanguageInstruction((user as any)?.uiLanguage || "en", firstName);
 
     // Mood check-ins over 30 days
     const moodData = await db.select({
@@ -118,6 +121,9 @@ export async function generateUserPatterns(userId: string): Promise<string | nul
       : "No goals tracked yet";
 
     const prompt = `Based on 30 days of data for ${firstName}, generate a personal "Your Patterns" insight. Be specific, true, and slightly surprising. Keep it under 160 words.
+
+${langInstruction}
+
 
 Their data:
 - ${moodSummary}

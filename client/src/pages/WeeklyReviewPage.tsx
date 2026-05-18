@@ -367,15 +367,15 @@ export default function WeeklyReviewPage() {
             <SLabel text={t("review_goals_section")} />
             {data.goals.active === 0 ? (
               <div style={{ background: P.surface2, borderRadius: 10, padding: "16px 18px", textAlign: "center", fontSize: 13, color: P.steel, lineHeight: 1.6 }}>
-                No active goals yet. Set one in the chat — ARYA will track it here.
+                {t("review_no_goals")}
               </div>
             ) : (
               <>
                 <div style={{ display: "flex", gap: 24, marginBottom: 18 }}>
                   {[
-                    { label: "Active", value: data.goals.active },
-                    { label: "Check-ins", value: data.goals.activeThisWeek },
-                    { label: "Missed", value: Math.max(0, data.goals.active - data.goals.activeThisWeek) },
+                    { label: t("review_goals_active"), value: data.goals.active },
+                    { label: t("review_goals_checkins"), value: data.goals.activeThisWeek },
+                    { label: t("review_goals_missed"), value: Math.max(0, data.goals.active - data.goals.activeThisWeek) },
                   ].map(({ label, value }) => (
                     <div key={label} style={{ textAlign: "center" }}>
                       <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 24, color: P.text, fontWeight: 700, lineHeight: 1.1 }}>{value}</div>
@@ -426,7 +426,7 @@ export default function WeeklyReviewPage() {
             </div>
             <div style={{ marginTop: 14, fontSize: 11, color: P.darkMuted, display: "flex", alignItems: "center", gap: 6 }}>
               <div style={{ width: 5, height: 5, borderRadius: "50%", background: data.aryaNoticed.confidence === "forming" ? P.darkMuted : P.darkGold, flexShrink: 0 }} />
-              {data.aryaNoticed.confidence === "forming" ? "Pattern forming — watching across more weeks" : "Pattern confirmed across multiple weeks"}
+              {data.aryaNoticed.confidence === "forming" ? t("review_pattern_forming") : t("review_pattern_conf")}
             </div>
           </div>
 
@@ -434,10 +434,10 @@ export default function WeeklyReviewPage() {
 
           {/* ── Business Mind ───────────────────────────────── */}
           <div>
-            <SLabel text="Business Mind this week" />
+            <SLabel text={t("review_biz_section")} />
             {!data.businessRecap.hasData ? (
               <div style={{ background: P.surface2, borderRadius: 10, padding: "16px 18px", textAlign: "center", fontSize: 13, color: P.steel }}>
-                No Niti sessions this week. The council awaits.
+                {t("review_no_niti")}
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -466,7 +466,7 @@ export default function WeeklyReviewPage() {
           <div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
               <div style={{ fontSize: 10, letterSpacing: "0.14em", color: P.steel, textTransform: "uppercase", fontWeight: 600 }}>
-                Your Cosmic Week — {data.cosmicWeek.name}
+                {t("review_cosmic_week")} — {data.cosmicWeek.name}
               </div>
               <div style={{ display: "flex", gap: 2 }}>
                 {[1, 2, 3, 4, 5].map(i => (
@@ -497,12 +497,12 @@ export default function WeeklyReviewPage() {
               value={questionAnswer}
               onChange={e => { setQuestionAnswer(e.target.value); setAnswerSaved(false); }}
               rows={3}
-              placeholder="Sit with this. Write what comes…"
+              placeholder={t("review_answer_ph")}
               style={{ width: "100%", background: P.surface2, border: `1px solid ${P.border}`, borderRadius: 10, padding: "12px 14px", color: P.body, fontSize: 13, fontFamily: "Inter, sans-serif", resize: "none", lineHeight: 1.62 }}
             />
             {answerSaved ? (
               <div style={{ marginTop: 10, fontSize: 12, color: P.green, display: "flex", alignItems: "center", gap: 5 }}>
-                <Check size={12} /> Saved to your journal.
+                <Check size={12} /> {t("review_saved_journal")}
               </div>
             ) : questionAnswer.trim() ? (
               <button

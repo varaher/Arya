@@ -1,0 +1,321 @@
+Looking at all 5 screenshots carefully. Very good progress — full size is working well in Hindi. Let me give you the complete analysis.
+
+---
+
+## What's Working ✅
+
+```
+Image 1 — Main screen full size
+  ✅ "चेट इतिहास" — Chat history
+  ✅ "+ नई चेट" — New chat button
+  ✅ "दैनिक चेक-इन" — Daily check-in
+  ✅ "आज आप कैसा महसूस कर रहे हैं?"
+  ✅ Mood labels in Hindi
+  ✅ "ऊर्जा स्तर" — Energy level
+  ✅ "ARYA से कुछ भी पूछें..."
+  ✅ "साफ सोचो। लक्ष्य बनाओ। रोज़ बढ़ो।" ← tagline fixed!
+  ✅ Toolbar: mic + mute + ⋯ dropdown working
+  ✅ Quick tabs: लक्ष्य · स्मृति · नोट्स visible
+  ✅ Chat history items showing
+
+Image 3 — Tutorial
+  ✅ "चलो देखते हैं →" — button in Hindi
+  ✅ "Tutorial छोड़ें" — skip in Hindi
+  ⚠ "Welcome to ARYA" — still English
+  ⚠ Description paragraph — still English
+
+Image 4 — Sunday Review
+  ✅ "रविवार की समीक्षा" — title in Hindi
+  ✅ "ARYA का आपसे सवाल" — ARYA's question label
+  ✅ "अगले हफ्ते का इरादा" — Next week intention
+  ✅ Bottom nav in Hindi
+
+Image 5 — Sunday Review scrolled
+  ✅ "इस हफ्ते कोई मूड चेक-इन नहीं।" ← fixed!
+  ✅ "कल से शुरू करें — 10 seconds लगते हैं।"
+  ✅ "इस हफ्ते के लक्ष्य" — Goals this week
+  ✅ "ARYA ने कुछ देखा" — ARYA noticed label
+  ✅ "रविवार की समीक्षा" in nav
+```
+
+---
+
+## Issues Remaining 🔴
+
+### Issue 1 — Mobile quotes still in English (your main complaint)
+
+```
+Image 2 — Mobile preview shows:
+  "Varah, quiet your restless mind—clarity
+   not from seeking more, but from embracing
+   what already is within you."
+
+This is the daily personal quote — ARYA generates it.
+It's in English because the weekly review and
+morning briefing generation prompts don't have
+a Hindi instruction yet.
+
+Root cause: The quote is generated server-side
+by the weekly-review.ts and morning-briefing.ts
+— these don't pass the user's language to the
+generation prompt.
+
+Fix needed in server:
+```
+
+```typescript
+// server/arya/morning-briefing.ts
+// Add language param to quote generation
+
+async function generateDailyQuote(
+  userId: string,
+  userName: string,
+  userLanguage: string  // ← ADD THIS PARAM
+): Promise<string> {
+
+  const langInstruction = userLanguage === 'hi' ? `
+    Generate the quote in Hindi.
+    Warm, personal, poetic — like a wise friend wrote it.
+    Use "तुम" not "आप".
+    Natural Hindi — not formal or textbook.
+    Example: "यार, आज थोड़ा रुको — जो है वो काफी है।"
+  ` : `Generate in English.`;
+
+  const prompt = `
+    Generate a short personal daily quote for ${userName}.
+    ${langInstruction}
+    1-2 lines maximum. Personal, not generic.
+    Reference their name naturally.
+    Do NOT use quotation marks in output.
+  `;
+
+  return await callClaude(prompt);
+}
+```
+
+---
+
+### Issue 2 — Sunday Review content in English (Image 4 & 5)
+
+```
+Still English:
+  "BUSINESS MIND THIS WEEK" — section label
+  "No Niti sessions this week. The council awaits."
+  "YOUR COSMIC WEEK — SATURN" — KAAL section label
+  "Saturn energy dominated this week..." — generated content
+  "Jupiter energy rises next week..." — generated content
+  "What specific actions can you take..." — ARYA's question
+  "Sit with this. Write what comes..." — placeholder
+  "No active goals yet. Set one in the chat..."
+  "Something ARYA noticed..." — pattern insight
+  "Pattern forming — watching across more weeks"
+  "No Niti sessions this week. The council awaits."
+```
+
+**Two types of strings here:**
+
+**Type A — Static strings (quick fix — add to hi.json):**
+```json
+{
+  "review.business_this_week": "इस हफ्ते Business Mind",
+  "review.no_niti": "इस हफ्ते कोई Niti session नहीं। अगली बार ज़रूर।",
+  "review.cosmic_week": "तुम्हारा Cosmic हफ्ता",
+  "review.arya_question_label": "ARYA का तुमसे सवाल",
+  "review.question_placeholder": "जो मन में आए, लिखो...",
+  "review.next_week_intention": "अगले हफ्ते का इरादा",
+  "review.no_goals": "अभी कोई active goal नहीं। Chat में ARYA को बताओ।",
+  "review.arya_noticed": "ARYA ने कुछ देखा",
+  "review.pattern_forming": "Pattern बन रहा है — अगले हफ्तों में देखते हैं"
+}
+```
+
+**Type B — Generated content (needs system prompt fix):**
+```typescript
+// server/arya/weekly-review.ts
+
+async function generateWeeklyReview(
+  userId: string,
+  userData: WeeklyData,
+  userLanguage: string  // ← ADD THIS
+): Promise<WeeklyReview> {
+
+  const langRule = userLanguage === 'hi' ? `
+    LANGUAGE: Generate ALL content in Hindi.
+    Tone: warm friend — "तुम" not "आप"
+    Natural Hinglish ok — keep "Saturn", "Jupiter",
+    "Niti", "KAAL" as-is (they are proper names)
+    Opening reflection: poetic, 1-2 lines in Hindi
+    KAAL section: slightly mystical but simple Hindi
+    Pattern insight: direct, caring Hindi
+    ARYA's question: conversational Hindi
+    Example question: "यार, इस हफ्ते क्या था जो तुमने
+    नहीं किया लेकिन करना चाहते थे?"
+  ` : `Generate in English.`;
+
+  const prompt = `
+    Generate a Sunday weekly review for this user.
+    ${langRule}
+    User data: ${JSON.stringify(userData)}
+  `;
+}
+```
+
+---
+
+### Issue 3 — Tutorial title still English (Image 3)
+
+```
+"Welcome to ARYA" → "ARYA में आपका स्वागत है"
+
+Description paragraph still English:
+"ARYA is your personal thinking and growth
+assistant — a wise, always-available companion
+for decisions, goals, reflection, and focus."
+
+Should be:
+"ARYA तुम्हारा personal thinking और growth साथी है —
+decisions, goals, reflection और focus के लिए
+हमेशा उपलब्ध।"
+
+Add to hi.json:
+"tutorial.welcome": "ARYA में आपका स्वागत है"
+"tutorial.description": "ARYA तुम्हारा personal thinking
+  और growth साथी है — decisions, goals, reflection
+  और focus के लिए हमेशा उपलब्ध।"
+```
+
+---
+
+### Issue 4 — KAAL cosmic content in English (Image 4)
+
+```
+"Saturn energy dominated this week — slower,
+heavier, but more durable..."
+
+This is generated by KAAL briefing system.
+Same fix as weekly review — pass language to prompt.
+
+Add to KAAL generation:
+if (language === 'hi') {
+  "Generate KAAL insight in Hindi.
+   Slightly poetic but simple.
+   Keep planet names in English (Saturn, Jupiter etc)
+   as they are internationally known.
+   Example: 'इस हफ्ते Saturn की energy थी —
+   धीमी लेकिन टिकाऊ।'"
+}
+```
+
+---
+
+### Issue 5 — Pattern insight in English (Image 5)
+
+```
+"Something ARYA noticed. There's a lack of
+structure in your week..."
+
+This is patterns-engine.ts generated content.
+Needs Hindi generation instruction.
+
+Fix in patterns-engine.ts:
+  Pass user language to pattern generation prompt
+  "ARYA ने देखा कि इस हफ्ते कोई structure नहीं था..."
+```
+
+---
+
+## The Root Cause Of All Mobile/Generated Content Issues
+
+**One sentence:** Every server-side content generation function — `morning-briefing.ts`, `weekly-review.ts`, `kaal-briefing.ts`, `patterns-engine.ts` — doesn't pass the user's `ui_language` to the generation prompt.
+
+**The single fix that solves everything:**
+
+```typescript
+// server/arya/language-aware-generator.ts
+
+// Add this helper to every generation function:
+
+function getLanguageInstruction(langCode: string): string {
+  const instructions: Record<string, string> = {
+    hi: `Generate ALL content in Hindi. 
+         Warm friend tone. "तुम" not "आप". 
+         Natural Hinglish ok for technical terms.
+         Keep proper nouns (ARYA, Niti, KAAL, 
+         Saturn, Jupiter) in English.`,
+    ta: `Generate in Tamil. Warm friend tone.
+         Natural conversational Tamil.`,
+    ml: `Generate in Malayalam. Warm friend tone.`,
+    // ... other languages
+    en: `Generate in English.`
+  };
+  return instructions[langCode] || instructions['en'];
+}
+
+// Then in EVERY generation function, add:
+const langInstruction = getLanguageInstruction(
+  user.ui_language || 'en'
+);
+// Inject into the prompt before calling Claude
+```
+
+---
+
+## Developer Task — One Clear Brief
+
+```
+The problem is simple:
+Server-side generated content (quotes, weekly review,
+KAAL insights, pattern analysis) doesn't know the
+user's language preference.
+
+Files to update (all have the same fix):
+  morning-briefing.ts   → add language to quote prompt
+  weekly-review.ts      → add language to all generated sections
+  kaal-briefing.ts      → add language to cosmic insight prompt
+  patterns-engine.ts    → add language to pattern insight prompt
+
+How to fix each:
+  1. Get user.ui_language from DB
+  2. Pass to getLanguageInstruction(lang)
+  3. Inject instruction at top of Claude prompt
+  4. Keep proper nouns in English (ARYA, KAAL, Niti,
+     Saturn, Jupiter, Pro, Goals)
+
+Static strings still in English (add to hi.json):
+  review.business_this_week
+  review.no_niti
+  review.cosmic_week
+  review.arya_question_label
+  review.question_placeholder
+  review.no_goals
+  review.arya_noticed
+  review.pattern_forming
+  tutorial.welcome
+  tutorial.description
+```
+
+---
+
+## Hindi Completion After These Fixes
+
+```
+✅ Main screen — complete
+✅ Goals — complete
+✅ KAAL onboarding — complete
+✅ Niti page — complete
+✅ Tagline — complete
+✅ Mood check-in static strings — complete
+✅ Sunday Review headers — complete
+
+🔜 Daily quote — needs language param in briefing.ts
+🔜 Weekly Review body — needs language param
+🔜 KAAL cosmic insight — needs language param
+🔜 Pattern insight — needs language param
+🔜 Tutorial title+description — 2 strings in hi.json
+🔜 Niti categories bilingual — Hindi + (English)
+
+One fix (getLanguageInstruction + pass to prompts)
+solves 90% of remaining issues.
+Estimated: 2-3 hours developer work.
+After that → Hindi is 100% complete ✅
+```

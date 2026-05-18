@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import { db } from "../db";
 import { aryaUsers, aryaGoals, aryaNotifications, aryaMoodCheckins, aryaVoiceNotes } from "@shared/schema";
 import { eq, and, gte, lte, sql } from "drizzle-orm";
+import { getLanguageInstruction } from "./language-instruction";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -12,6 +13,7 @@ export async function generateWeeklyReview(userId: string): Promise<string> {
   try {
     const [user] = await db.select({
       name: aryaUsers.name,
+      uiLanguage: aryaUsers.uiLanguage,
       futureYouLetter: (aryaUsers as any).futureYouLetter,
     }).from(aryaUsers).where(eq(aryaUsers.id, userId)).limit(1);
 
@@ -35,6 +37,7 @@ export async function generateWeeklyReview(userId: string): Promise<string> {
     const activeGoals = goals.filter(g => g.status === "active");
     const completedGoals = goals.filter(g => g.status === "completed" && g.updatedAt && g.updatedAt >= weekAgo);
     const firstName = user?.name?.split(" ")[0] || "friend";
+    const langInstruction = getLanguageInstruction((user as any)?.uiLanguage || "en", firstName);
 
     const goalsText = activeGoals.length > 0
       ? activeGoals.map(g => `"${g.title}" — ${g.progress}% progress, ${g.streakCount}-day streak`).join("\n")
@@ -75,7 +78,10 @@ export async function generateWeeklyReview(userId: string): Promise<string> {
       flashbackContext = `\nFrom a voice note they recorded ${daysAgo} days ago:\n"${excerpt}${note.transcript.length > 200 ? "..." : ""}"`;
     }
 
-    const prompt = `You are ARYA — ${firstName}'s personal thinking partner. Write their Sunday weekly review. Under 200 words. Write it as a STORY, not a report.
+    const prompt = `You are ARYA — ${firstName}'s personal thinking partner. Write their Sunday weekly review. Under 200 words. Write it as a STORY, not a letter or report.
+
+${langInstruction}
+
 
 NEVER say "you completed X out of Y goals." NEVER use bullet points. This is a letter.
 

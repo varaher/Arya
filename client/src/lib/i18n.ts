@@ -125,6 +125,8 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     tutorial_skip:     "Skip tutorial",
     tutorial_next:     "Next",
     tutorial_start:    "Start Chatting",
+    tutorial_welcome:  "Welcome to ARYA",
+    tutorial_desc:     "ARYA is your personal thinking and growth assistant — a wise, always-available companion for decisions, goals, reflection, and focus. Let me show you what's here.",
     app_tagline:       "Think clearly. Set goals. Grow daily.",
     review_no_mood:    "No mood check-ins this week.",
     review_mood_start: "Start tomorrow — it takes 10 seconds.",
@@ -340,6 +342,7 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     review_footer:         "ARYA · Your personal thinking partner",
     review_pattern_forming:"Pattern forming — watching across more weeks",
     review_pattern_conf:   "Pattern confirmed across multiple weeks",
+    review_cosmic_week:    "Your Cosmic Week",
   },
 
   // ── Hindi ─────────────────────────────────────────────────────────────────────
@@ -415,6 +418,8 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     tutorial_skip:     "Tutorial छोड़ो",
     tutorial_next:     "आगे",
     tutorial_start:    "बात शुरू करो",
+    tutorial_welcome:  "ARYA में आपका स्वागत है",
+    tutorial_desc:     "ARYA तुम्हारा personal thinking और growth साथी है — decisions, goals, reflection और focus के लिए हमेशा उपलब्ध।",
     app_tagline:       "साफ सोचो। लक्ष्य बनाओ। रोज़ बढ़ो।",
     review_no_mood:    "इस हफ्ते कोई मूड चेक-इन नहीं।",
     review_mood_start: "कल से शुरू करो — बस 10 seconds।",
@@ -630,6 +635,7 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     review_footer:         "ARYA · आपकी निजी सोच-साथी",
     review_pattern_forming:"पैटर्न बन रहा है — और हफ़्तों में देख रहे हैं",
     review_pattern_conf:   "पैटर्न कई हफ़्तों में पक्का हुआ",
+    review_cosmic_week:    "तुम्हारा Cosmic हफ्ता",
   },
 
   // ── Marathi ───────────────────────────────────────────────────────────────────

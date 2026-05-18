@@ -6514,8 +6514,8 @@ function QuickStartTutorial({ onClose, onStartChat, token }: { onClose: () => vo
           >
             <Icon className={`w-8 h-8 ${current.iconColor}`} />
           </motion.div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{current.title}</h2>
-          <p className="text-sm text-muted-foreground leading-relaxed">{current.description}</p>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{step === 0 ? t("tutorial_welcome") : current.title}</h2>
+          <p className="text-sm text-muted-foreground leading-relaxed">{step === 0 ? t("tutorial_desc") : current.description}</p>
         </div>
 
         {current.tip && (
@@ -6591,6 +6591,7 @@ function QuickStartTutorial({ onClose, onStartChat, token }: { onClose: () => vo
 }
 
 function OnboardingModal({ token, onComplete }: { token: string; onComplete: () => void }) {
+  const { t: tl } = useLanguage();
   const [step, setStep] = useState(0);
   const [language, setLanguage] = useState("en");
   const [currentWork, setCurrentWork] = useState("");
@@ -6643,7 +6644,7 @@ function OnboardingModal({ token, onComplete }: { token: string; onComplete: () 
                   <span className="w-1.5 h-1.5 rounded-full" style={{ background: "radial-gradient(circle at 40% 40%, #6ee7b7, #059669)" }} />
                 </span>
               </div>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Welcome to ARYA</h2>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{tl("tutorial_welcome")}</h2>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 Let me get to know you a little so I can be more helpful. This takes less than a minute.
               </p>

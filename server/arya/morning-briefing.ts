@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import { db } from "../db";
 import { aryaUsers, aryaGoals, aryaNotifications } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
+import { getLanguageInstruction } from "./language-instruction";
 import { fetchMarketNews, fetchLatestNews } from "./news-service";
 import { getTodayEvents, formatEventsForBriefing } from "./google-calendar";
 
@@ -15,6 +16,7 @@ export async function generateMorningBriefing(userId: string): Promise<string> {
     const [user] = await db.select({
       name: aryaUsers.name,
       preferredLanguage: aryaUsers.preferredLanguage,
+      uiLanguage: aryaUsers.uiLanguage,
     }).from(aryaUsers).where(eq(aryaUsers.id, userId)).limit(1);
 
     const activeGoals = await db.select({
@@ -41,10 +43,14 @@ export async function generateMorningBriefing(userId: string): Promise<string> {
     const calendarText = await formatEventsForBriefing(calendarEvents);
 
     const firstName = user?.name?.split(" ")[0] || "friend";
+    const langInstruction = getLanguageInstruction((user as any)?.uiLanguage || "en", firstName);
     const now = new Date();
     const day = now.toLocaleDateString("en-IN", { weekday: "long", timeZone: "Asia/Kolkata" });
 
     const prompt = `Generate a warm, concise morning briefing for ${firstName} on this ${day}. Keep it under 180 words, personal and energizing.
+
+${langInstruction}
+
 
 Their active goals:
 ${goalsText}
