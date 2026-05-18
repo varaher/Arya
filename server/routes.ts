@@ -560,9 +560,11 @@ export async function registerRoutes(
   app.post("/api/user/profile", requireUser, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).userId;
-      const { age, city, occupation, lifeStage, familySituation, interests, currentChallenges, workingStyle } = req.body;
+      const { name, phone, age, city, occupation, lifeStage, familySituation, interests, currentChallenges, workingStyle } = req.body;
 
       const updates: any = {};
+      if (name !== undefined && typeof name === "string" && name.trim()) updates.name = name.trim();
+      if (phone !== undefined) updates.phone = phone ? String(phone).trim() : null;
       if (age !== undefined) updates.age = age ? Number(age) : null;
       if (city !== undefined) updates.city = city || null;
       if (occupation !== undefined) updates.occupation = occupation || null;

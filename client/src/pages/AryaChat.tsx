@@ -939,6 +939,8 @@ function UserProfileModal({ token, onClose, userName }: { token: string; onClose
   const [interestInput, setInterestInput] = useState("");
 
   const [form, setForm] = useState({
+    name: "",
+    phone: "",
     age: "",
     city: "",
     occupation: "",
@@ -960,6 +962,8 @@ function UserProfileModal({ token, onClose, userName }: { token: string; onClose
   useEffect(() => {
     if (profile) {
       setForm({
+        name: profile.name || "",
+        phone: profile.phone || "",
         age: profile.age ? String(profile.age) : "",
         city: profile.city || "",
         occupation: profile.occupation || profile.currentWork || "",
@@ -993,9 +997,15 @@ function UserProfileModal({ token, onClose, userName }: { token: string; onClose
       await fetch("/api/user/profile", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-user-token": token },
-        body: JSON.stringify({ ...form, age: form.age ? Number(form.age) : null }),
+        body: JSON.stringify({
+          ...form,
+          age: form.age ? Number(form.age) : null,
+          name: form.name.trim() || undefined,
+          phone: form.phone.trim() || undefined,
+        }),
       });
       queryClient.invalidateQueries({ queryKey: ["/api/user/profile"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/me"] });
       setSaved(true);
       setTimeout(() => { setSaved(false); onClose(); }, 1000);
     } catch {}
@@ -1052,6 +1062,49 @@ function UserProfileModal({ token, onClose, userName }: { token: string; onClose
             </div>
           ) : (
             <>
+              {/* Account info */}
+              <div>
+                <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Your account</div>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs text-muted-foreground mb-1.5">Display name</label>
+                    <input
+                      data-testid="input-profile-name"
+                      type="text"
+                      placeholder="Your name"
+                      value={form.name}
+                      onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                      className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl text-sm text-gray-900 dark:text-white px-3 py-2.5 focus:outline-none focus:border-cyan-300 dark:focus:border-cyan-700"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-muted-foreground mb-1.5">Email</label>
+                    <input
+                      data-testid="input-profile-email"
+                      type="email"
+                      readOnly
+                      value={profile?.email || ""}
+                      className="w-full bg-gray-100 dark:bg-slate-700/50 border border-gray-200 dark:border-slate-600 rounded-xl text-sm text-gray-500 dark:text-gray-400 px-3 py-2.5 cursor-not-allowed"
+                      title="Email cannot be changed here. Contact support if needed."
+                    />
+                    <p className="text-[10px] text-muted-foreground mt-1">Email is used for sign in and cannot be changed here.</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-muted-foreground mb-1.5">Phone</label>
+                    <input
+                      data-testid="input-profile-phone"
+                      type="tel"
+                      placeholder="e.g. +91 9876543210"
+                      value={form.phone}
+                      onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                      className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl text-sm text-gray-900 dark:text-white px-3 py-2.5 focus:outline-none focus:border-cyan-300 dark:focus:border-cyan-700"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-gray-100 dark:border-slate-700" />
+
               {/* About you */}
               <div>
                 <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">About you</div>
@@ -3728,6 +3781,16 @@ export default function AryaChat() {
             >
               <Plus className="w-4 h-4 text-primary" />
             </button>
+            {installPrompt && (
+              <button
+                data-testid="button-install-app-topbar"
+                onClick={handleInstallApp}
+                title="Install ARYA on your device"
+                className="p-1.5 rounded-lg text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all"
+              >
+                <Download className="w-4 h-4" />
+              </button>
+            )}
             <button
               data-testid="button-toggle-theme"
               onClick={toggleTheme}
@@ -3773,6 +3836,13 @@ export default function AryaChat() {
                           : "Upgrade Plan"}
                       </button>
                       <div className="border-t border-gray-100 dark:border-slate-700 my-1" />
+                      <button
+                        data-testid="button-my-profile"
+                        onClick={() => { setShowUserMenu(false); setShowProfile(true); }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
+                      >
+                        <User className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" /> My Profile
+                      </button>
                       <button
                         data-testid="button-my-goals"
                         onClick={() => { setShowUserMenu(false); setLocation("/my-goals"); }}
