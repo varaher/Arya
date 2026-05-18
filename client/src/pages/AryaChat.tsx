@@ -69,6 +69,7 @@ import {
   ShieldCheck,
   Activity,
   Download,
+  ChevronDown,
 } from "lucide-react";
 import { getTranslation, LANGUAGE_OPTIONS, type UiLanguage } from "@/lib/i18n";
 import { useLanguage } from "@/lib/language-context";
@@ -2496,6 +2497,7 @@ export default function AryaChat() {
     if (code) { setSelectedLanguage(code); try { localStorage.setItem("arya_lang", code); } catch {} }
   }, [user?.preferredLanguage]);
   const [translatedContent, setTranslatedContent] = useState<string | null>(null);
+  const [showOriginalStreaming, setShowOriginalStreaming] = useState(false);
   const [playingAudio, setPlayingAudio] = useState(false);
   const [speakerOn, setSpeakerOn] = useState(() => {
     try { return localStorage.getItem("arya_speaker") === "true"; } catch { return false; }
@@ -2873,6 +2875,7 @@ export default function AryaChat() {
     setIsStreaming(true);
     setStreamingContent("");
     setTranslatedContent(null);
+    setShowOriginalStreaming(false);
     setShowSidebar(false);
     setResponseConfidence(undefined);
     setResponseSourcesCount(undefined);
@@ -3275,6 +3278,7 @@ export default function AryaChat() {
     setIsStreaming(true);
     setStreamingContent("");
     setTranslatedContent(null);
+    setShowOriginalStreaming(false);
 
     try {
       const base64Audio = await new Promise<string>((resolve) => {
@@ -4294,6 +4298,19 @@ export default function AryaChat() {
           )}
         </AnimatePresence>
 
+        {selectedLanguage !== "en-IN" && (activeConversation || messages.length > 0 || streamingContent) && (
+          <div className="flex justify-center pt-2">
+            <button
+              data-testid="button-lang-pill-header"
+              onClick={() => setShowLanguageMenu(v => !v)}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-medium hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
+            >
+              <Globe className="w-3 h-3" />
+              {currentLang?.native || selectedLanguage}
+              <ChevronDown className="w-3 h-3 opacity-60" />
+            </button>
+          </div>
+        )}
         <div className={`overflow-y-auto px-2 sm:px-4 py-3 md:py-4 space-y-3 md:space-y-4 ${(!activeConversation && messages.length === 0 && !streamingContent) ? "hidden" : "flex-1"}`} data-testid="list-messages">
           {messages.map((msg, msgIndex) => (
             <motion.div
@@ -4369,19 +4386,37 @@ export default function AryaChat() {
                     <ConfidenceBadge confidence={responseConfidence} sourcesCount={responseSourcesCount} memoryUsed={responseMemoryUsed} />
                   )}
                 </div>
-                <div className="relative">
-                  <FormattedMessage content={streamingContent} />
-                  <span className="inline-block w-1.5 h-4 bg-primary/60 animate-pulse ml-0.5 align-middle" />
-                </div>
-                {translatedContent && (
-                  <div className="mt-3 pt-3 border-t border-gray-200 dark:border-slate-700">
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <Globe className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-                      <span className="text-xs text-amber-600 dark:text-amber-400">{currentLang?.native || selectedLanguage}</span>
-                    </div>
-                    <div className="text-gray-700 dark:text-gray-200">
-                      <FormattedMessage content={translatedContent} />
-                    </div>
+                {selectedLanguage !== "en-IN" ? (
+                  <>
+                    {!translatedContent && (
+                      <div className="opacity-40 text-sm">
+                        <FormattedMessage content={streamingContent} />
+                        <span className="inline-block w-1.5 h-4 bg-primary/60 animate-pulse ml-0.5 align-middle" />
+                      </div>
+                    )}
+                    {translatedContent && (
+                      <div className="text-gray-800 dark:text-gray-100">
+                        <FormattedMessage content={translatedContent} />
+                      </div>
+                    )}
+                    {translatedContent && (
+                      <button
+                        onClick={() => setShowOriginalStreaming(v => !v)}
+                        className="mt-2 text-[11px] text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1"
+                      >
+                        {showOriginalStreaming ? "Hide English" : "View in English"}
+                      </button>
+                    )}
+                    {showOriginalStreaming && translatedContent && (
+                      <div className="mt-2 pt-2 border-t border-gray-100 dark:border-slate-700 text-xs text-gray-400 dark:text-gray-500">
+                        <FormattedMessage content={streamingContent} />
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="relative">
+                    <FormattedMessage content={streamingContent} />
+                    <span className="inline-block w-1.5 h-4 bg-primary/60 animate-pulse ml-0.5 align-middle" />
                   </div>
                 )}
               </div>
@@ -4474,6 +4509,7 @@ export default function AryaChat() {
                           onClick={() => {
                             setSelectedLanguage(lang.code);
                             setShowLanguageMenu(false);
+                            try { localStorage.setItem("arya_lang", lang.code); } catch {}
                           }}
                           className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors ${
                             selectedLanguage === lang.code ? "text-primary bg-primary/10" : "text-gray-700 dark:text-gray-200"
@@ -4491,6 +4527,7 @@ export default function AryaChat() {
                           onClick={() => {
                             setSelectedLanguage(lang.code);
                             setShowLanguageMenu(false);
+                            try { localStorage.setItem("arya_lang", lang.code); } catch {}
                           }}
                           className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors ${
                             selectedLanguage === lang.code ? "text-primary bg-primary/10" : "text-gray-700 dark:text-gray-200"

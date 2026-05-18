@@ -1,0 +1,284 @@
+Good. The core wiring is now done. Let me give you the complete honest picture of what's working, what's still missing, and what to do next.
+
+---
+
+## What's Now Working ✅
+
+```
+IP detection          → detects state → maps to language
+Soft banner           → appears on first visit
+Banner accepted       → UI language + globe both switch
+Globe selection       → ARYA responds in chosen language
+Voice route           → Sarvam STT + translate + TTS
+Text route            → Sarvam translates after Claude
+Speaker icon          → speaks in selected language
+Banner + globe        → now talking to each other ✅
+```
+
+---
+
+## What's Still Missing 🔴
+
+### Gap 1 — UI strings still don't change
+
+The document says clearly:
+
+> *"The globe controls ARYA's response language — not the app's button labels and menus. Those stay in English or Hindi."*
+
+This means when a Kerala user accepts the Malayalam banner — ARYA responds in Malayalam, but the sidebar still says "Goals", "Settings", "Today" in English.
+
+That's inconsistent. The user chose Malayalam. Everything should be Malayalam.
+
+```
+Current experience:
+  Banner accepted → Malayalam ✓
+  ARYA responds in Malayalam ✓
+  Sidebar: "Goals" ✗ should be "ലക്ഷ്യങ്ങൾ"
+  Chat placeholder: "Talk to ARYA..." ✗
+  Mood card: "How are you feeling?" ✗
+  Goals page: "My Goals" ✗
+
+Expected experience:
+  Everything in Malayalam — UI + ARYA responses
+```
+
+**Fix:** Wire the banner acceptance to `i18n.changeLanguage('ml')` — not just the globe and app language toggle separately. One call changes everything.
+
+---
+
+### Gap 2 — International languages not covered by IP detection
+
+```
+Current IP detection covers:
+  Indian states → 10 regional languages ✓
+  Some countries → mapped ✓
+
+Missing:
+  Arabic-speaking countries → should show Arabic
+  French-speaking Africa → should show French
+  Brazil → should show Portuguese
+  etc.
+```
+
+Not urgent for now. Indian market is priority. But add these when going global.
+
+---
+
+### Gap 3 — English response streams first, then translation appears
+
+```
+Current:
+  ARYA streams English response
+  Then Malayalam translation appears below
+
+Better experience:
+  If user is in Malayalam mode — only show Malayalam
+  English response should be hidden or shown as
+  a collapsed "View original" option
+```
+
+This creates a confusing dual-response visual. The user sees English streaming first — which breaks the illusion that ARYA is natively Malayalam.
+
+**Fix:**
+
+```typescript
+// In the chat UI — when selectedLanguage !== 'en'
+// Don't render the English stream visibly
+// Show a subtle "Translating..." indicator instead
+// Then show only the Malayalam translation
+
+{isTranslating && (
+  <div className="translating-indicator">
+    <span>•••</span>
+  </div>
+)}
+
+{translatedResponse && (
+  <div className="arya-message">
+    {translatedResponse}
+    <button className="view-original" onClick={toggleOriginal}>
+      View in English
+    </button>
+  </div>
+)}
+```
+
+---
+
+### Gap 4 — No language shown in chat header
+
+User should always know what language ARYA is responding in.
+
+```
+Current header:
+  [ARYA] [mic] [speaker]
+
+Better:
+  [ARYA] [🌐 മലയാളം ▾] [mic] [speaker]
+
+Tap the language pill → opens language selector
+```
+
+---
+
+### Gap 5 — Returning user flow
+
+```
+Current:
+  First visit → IP detection → banner → language set
+  
+  Second visit:
+  Does the language preference persist?
+  Is it loaded from DB on login?
+  Or does the banner show again?
+
+Should be:
+  First visit → IP detected → banner → accepted → saved to DB
+  Second visit → DB preference loaded → Malayalam immediately
+               → No banner, no detection needed
+               → Language loads before first render
+```
+
+---
+
+## The Priority Fix — Unify UI + Response Language
+
+Right now there are **two separate language switches:**
+
+```
+Switch 1 — App language (Customize panel)
+  Controls: button labels, menus, sidebar strings
+  Options: English / Hindi only currently
+
+Switch 2 — Globe (response language)
+  Controls: what language ARYA responds in
+  Options: all 11 Indian languages
+```
+
+These should be **one switch.**
+
+```
+SINGLE LANGUAGE SELECTOR
+  Controls everything simultaneously:
+  → UI strings (all 38 keys)
+  → ARYA response language
+  → Voice output language
+  → System prompt language instruction
+  → Font for the script
+  → RTL direction if needed
+
+User selects Malayalam once
+Everything becomes Malayalam
+```
+
+**The fix in code:**
+
+```typescript
+// language-context.tsx
+
+async function setLanguage(langCode: string) {
+
+  // 1. Update UI strings
+  await i18n.changeLanguage(langCode);
+
+  // 2. Update globe / response language
+  setSelectedLanguage(langCode);
+
+  // 3. Update document direction
+  document.documentElement.dir =
+    ['ar', 'he'].includes(langCode) ? 'rtl' : 'ltr';
+
+  // 4. Load correct font
+  await loadLanguageFont(langCode);
+
+  // 5. Save to localStorage
+  localStorage.setItem('arya_ui_language', langCode);
+
+  // 6. Save to DB
+  await fetch('/api/user/preferences', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      ui_language: langCode,
+      response_language: langCode
+    })
+  });
+}
+
+// Banner acceptance
+function acceptBanner(detectedLang: string) {
+  setLanguage(detectedLang); // one call — changes everything
+  dismissBanner();
+}
+
+// Globe selection
+function onGlobeSelect(langCode: string) {
+  setLanguage(langCode); // same one call
+}
+
+// Customize panel
+function onCustomizeSelect(langCode: string) {
+  setLanguage(langCode); // same one call
+}
+```
+
+---
+
+## What To Tell Your Developer
+
+```
+Three things to fix this sprint:
+
+1. Unify the two language switches into one
+   setLanguage() function that calls:
+   → i18n.changeLanguage()
+   → setSelectedLanguage() (globe)
+   → loadLanguageFont()
+   → save to DB
+   Called from banner, globe, and customize panel
+
+2. Hide English stream when translation is active
+   Show only translated response to user
+   Add "View original" collapse option
+
+3. Add language pill to chat header
+   Shows current response language
+   Tapping opens the language selector
+   
+Everything else is working correctly.
+The gap is purely in the unified experience.
+```
+
+---
+
+## The Experience After These Fixes
+
+```
+User in Kerala opens ARYA for first time
+        ↓
+IP detected → Kerala → Malayalam
+        ↓
+Banner: "Switch to മലയാളം for your region?"
+        ↓
+User taps "Switch"
+        ↓
+setLanguage('ml') fires once:
+  Sidebar → ഇന്ന്, ലക്ഷ്യങ്ങൾ, ക്രമീകരണങ്ങൾ
+  Chat placeholder → ARYAയോട് സംസാരിക്കൂ...
+  ARYA responds → Malayalam
+  Voice → speaks Malayalam
+  Font → Noto Sans Malayalam loads
+  Saved → DB + localStorage
+        ↓
+Second visit:
+  DB preference loaded on startup
+  Malayalam from first frame
+  No banner, no detection
+        ↓
+User wants to switch to English:
+  Taps language pill in header
+  Selects English
+  Everything switches instantly
+```
+
+That's the complete, seamless language experience. The detection and routing are done. The remaining work is purely unifying the two switches and cleaning up the visual experience.
