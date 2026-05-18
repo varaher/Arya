@@ -88,12 +88,13 @@ const TIME_WINDOWS = [
 function todayStr() {
   return new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).toUpperCase();
 }
-function greetingTime() {
+function greetingTime(lang: string) {
   const h = new Date().getHours();
-  if (h < 12) return "Good morning";
-  if (h < 17) return "Good afternoon";
-  if (h < 21) return "Good evening";
-  return "Good night";
+  const hi = lang === "hi";
+  if (h < 12) return hi ? "सुप्रभात" : "Good morning";
+  if (h < 17) return hi ? "शुभ दोपहर" : "Good afternoon";
+  if (h < 21) return hi ? "शुभ संध्या" : "Good evening";
+  return hi ? "शुभ रात्रि" : "Good night";
 }
 
 // ── Shared tiny components ────────────────────────────────────────────────────
@@ -117,9 +118,10 @@ function PathBadge({ path }: { path: VedicPath }) {
 }
 
 function TopBar({ path, onBack }: { path: VedicPath | null; onBack: () => void }) {
+  const { t } = useLanguage();
   return (
     <div style={{ padding: "20px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-      <button onClick={onBack} style={{ color: C.textDim, fontSize: 13, background: "none", border: "none", cursor: "pointer", fontFamily: sans }}>← Back</button>
+      <button onClick={onBack} style={{ color: C.textDim, fontSize: 13, background: "none", border: "none", cursor: "pointer", fontFamily: sans }}>{t("kaal_back")}</button>
       {path ? <PathBadge path={path} /> : <div style={{ fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase" as const, color: C.textDim }}>KAAL</div>}
       <div style={{ width: 60 }} />
     </div>
@@ -438,13 +440,13 @@ function ReadyScreen({ path, profile, westernSign, selectedRashi, onBack, onCont
           <>
             {westernData && <div style={{ fontSize: 40, marginBottom: 6 }}>{westernData.symbol}</div>}
             <div style={{ fontSize: 20, color: a.main, fontWeight: 700, marginBottom: 4 }}>
-              {westernSign || "Your sign"}
+              {westernSign || t("kaal_your_sign")}
             </div>
             {westernData && <div style={{ fontSize: 12, color: C.textDim, marginBottom: 20 }}>{westernData.dates}</div>}
             <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 18, width: "100%", maxWidth: 320, textAlign: "left" as const, marginBottom: 20 }}>
               <div style={{ fontSize: 11, color: C.textDim, letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 10 }}>{t("kaal_arya_brings")}</div>
               <div style={{ fontSize: 13, color: C.textDim, lineHeight: 1.75, fontStyle: "italic", borderLeft: `2px solid ${a.main}44`, paddingLeft: 10 }}>
-                "For {westernSign || "your sign"} this week: your best decision window looks mid-week. ARYA will pinpoint the precise moment using your mood, calendar, and open goals."
+                "{t("kaal_for")} {westernSign || "…"} — {t("kaal_west_preview")}"
               </div>
             </div>
           </>
@@ -475,9 +477,9 @@ function ReadyScreen({ path, profile, westernSign, selectedRashi, onBack, onCont
           <div style={{ background: C.surface, border: `1px solid ${a.border}`, borderRadius: 14, padding: 18, width: "100%", maxWidth: 320, textAlign: "left" as const, marginBottom: 20 }}>
             <div style={{ fontSize: 11, color: C.textDim, letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 10 }}>{t("kaal_personal_rhythm")}</div>
             <div style={{ fontSize: 13, color: C.textDim, lineHeight: 1.75, fontStyle: "italic", borderLeft: `2px solid ${a.main}55`, paddingLeft: 10 }}>
-              "Your clearest thinking window this week is <strong style={{ color: a.main, fontStyle: "normal" }}>Tuesday before noon</strong> — that's when your pattern says you make your best calls. The data backs this up."
+              "{t("kaal_neutral_q1")} <strong style={{ color: a.main, fontStyle: "normal" }}>{t("kaal_neutral_q_time")}</strong> {t("kaal_neutral_q2")}"
             </div>
-            <div style={{ marginTop: 12, fontSize: 11, color: C.textDim }}>No zodiac. No signs. Just your personal pattern, traceable to actual data points in your life.</div>
+            <div style={{ marginTop: 12, fontSize: 11, color: C.textDim }}>{t("kaal_no_zodiac")}</div>
           </div>
         )}
 
@@ -494,7 +496,7 @@ function ReadyScreen({ path, profile, westernSign, selectedRashi, onBack, onCont
 function BriefingScreen({ briefing, loading, error, onHome, onRetry, path }: {
   briefing: VedicBriefing | null; loading: boolean; error: "login" | "error" | null; onHome: () => void; onRetry: () => void; path: VedicPath;
 }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { data: goalsData } = useQuery<any[]>({
     queryKey: ["/api/arya/goals"],
     queryFn: async () => { const r = await fetch("/api/arya/goals"); return r.ok ? r.json() : []; },
@@ -564,7 +566,7 @@ function BriefingScreen({ briefing, loading, error, onHome, onRetry, path }: {
           <PathBadge path={path} />
         </div>
         <div style={{ fontFamily: serif, fontSize: 22, color: C.text, marginBottom: 4 }}>
-          {greetingTime()}, <em style={{ color: a.main }}>{b.userName}.</em>
+          {greetingTime(language)}, <em style={{ color: a.main }}>{b.userName}.</em>
         </div>
         <div style={{ fontSize: 13, color: C.textDim, marginBottom: path !== "neutral" ? 16 : 8 }}>{t("kaal_today_looks")}</div>
         {path !== "neutral" && (
@@ -576,8 +578,8 @@ function BriefingScreen({ briefing, loading, error, onHome, onRetry, path }: {
         )}
         {path === "neutral" && (
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" as const }}>
-            <div style={{ padding: "6px 12px", borderRadius: 20, border: `1px solid ${a.border}`, color: a.main, background: a.dim, fontSize: 12 }}>📊 Best window: Tuesday morning</div>
-            <div style={{ padding: "6px 12px", borderRadius: 20, border: `1px solid ${C.border}`, color: C.textDim, background: C.surface2, fontSize: 12 }}>⚡ Energy: Rising</div>
+            <div style={{ padding: "6px 12px", borderRadius: 20, border: `1px solid ${a.border}`, color: a.main, background: a.dim, fontSize: 12 }}>{t("kaal_best_window_chip")}</div>
+            <div style={{ padding: "6px 12px", borderRadius: 20, border: `1px solid ${C.border}`, color: C.textDim, background: C.surface2, fontSize: 12 }}>{t("kaal_energy_rising")}</div>
           </div>
         )}
       </div>
@@ -616,7 +618,7 @@ function BriefingScreen({ briefing, loading, error, onHome, onRetry, path }: {
               <div style={{ fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase" as const, color: C.textDim, fontWeight: 600 }}>
                 {path === "western" ? t("kaal_week_energy") : t("kaal_todays_guidance")}
               </div>
-              <div style={{ marginLeft: "auto", fontSize: 9, padding: "3px 8px", borderRadius: 10, color: a.main, background: a.dim, border: `1px solid ${a.border}`, letterSpacing: "0.08em", textTransform: "uppercase" as const }}>ARYA Lens</div>
+              <div style={{ marginLeft: "auto", fontSize: 9, padding: "3px 8px", borderRadius: 10, color: a.main, background: a.dim, border: `1px solid ${a.border}`, letterSpacing: "0.08em", textTransform: "uppercase" as const }}>{t("kaal_arya_lens")}</div>
             </div>
             <div style={{ padding: 16 }}>
               {(b.cosmicCards || []).map((card, i) => {
