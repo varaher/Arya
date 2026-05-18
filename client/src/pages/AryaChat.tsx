@@ -1587,9 +1587,9 @@ function GoalsPanel({ onClose }: { onClose: () => void }) {
         ))}
         {!isLoading && goalsList.length === 0 && (
           <div className="text-center py-8">
-            <Target className="w-8 h-8 text-gray-900 dark:text-white/10 mx-auto mb-2" />
+            <Target className="w-8 h-8 text-gray-300 dark:text-white/10 mx-auto mb-2" />
             <p className="text-sm text-gray-400">No goals yet</p>
-            <p className="text-xs text-gray-200 mt-1">Set goals and track progress</p>
+            <p className="text-xs text-gray-400 dark:text-gray-600 mt-1">Add a goal above, or just tell ARYA about it in chat</p>
           </div>
         )}
       </div>
@@ -1597,7 +1597,7 @@ function GoalsPanel({ onClose }: { onClose: () => void }) {
   );
 }
 
-function VoiceNotesPanel({ onClose, token, uiLang = "en" }: { onClose: () => void; token: string; uiLang?: UiLanguage }) {
+function VoiceNotesPanel({ onClose, token, uiLang = "en", voiceLang = "en-IN" }: { onClose: () => void; token: string; uiLang?: UiLanguage; voiceLang?: string }) {
   const tl = (key: string) => getTranslation(uiLang, key);
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
@@ -1663,7 +1663,7 @@ function VoiceNotesPanel({ onClose, token, uiLang = "en" }: { onClose: () => voi
           const sttRes = await fetch("/api/arya/stt", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ audio: base64, language: "hi-IN" }),
+            body: JSON.stringify({ audio: base64, language: voiceLang }),
           });
           const sttData = await sttRes.json();
           const text = sttData.transcript || sttData.text || "";
@@ -2332,6 +2332,7 @@ function InsightsCard({ insights, onDismiss }: { insights: InsightItem[]; onDism
 }
 
 function NotificationBell({ token }: { token: string }) {
+  const queryClient = useQueryClient();
   const [showDropdown, setShowDropdown] = useState(false);
   const { data } = useQuery({
     queryKey: ["/api/user/notifications"],
@@ -2347,6 +2348,7 @@ function NotificationBell({ token }: { token: string }) {
 
   const markRead = async (id: number) => {
     await fetch(`/api/user/notifications/${id}/read`, { method: "POST", headers: { "x-user-token": token } });
+    queryClient.invalidateQueries({ queryKey: ["/api/user/notifications"] });
   };
 
   return (
@@ -3966,7 +3968,7 @@ export default function AryaChat() {
               transition={{ type: "spring", damping: 28, stiffness: 300 }}
               className="absolute right-0 top-0 bottom-0 z-40"
             >
-              <VoiceNotesPanel onClose={() => setShowNotes(false)} token={token} uiLang={uiLanguage} />
+              <VoiceNotesPanel onClose={() => setShowNotes(false)} token={token} uiLang={uiLanguage} voiceLang={selectedLanguage} />
             </motion.div>
           )}
           {showCalendar && isLoggedIn && token && (
