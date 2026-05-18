@@ -72,7 +72,7 @@ import {
   Download,
   ChevronDown,
 } from "lucide-react";
-import { getTranslation, LANGUAGE_OPTIONS, type UiLanguage } from "@/lib/i18n";
+import { getTranslation, getStoredUiLanguage, LANGUAGE_OPTIONS, type UiLanguage } from "@/lib/i18n";
 import { useLanguage } from "@/lib/language-context";
 import { useTheme } from "@/lib/theme";
 import RemindersPanel from "@/components/RemindersPanel";
