@@ -1356,7 +1356,7 @@ function CalendarPanel({ onClose, token }: { onClose: () => void; token: string 
   });
 
   return (
-    <div className="w-80 sm:w-96 h-full bg-white dark:bg-slate-900 border-l border-gray-200 dark:border-slate-700 flex flex-col" data-testid="panel-calendar">
+    <div className="w-[min(320px,100vw)] sm:w-96 h-full bg-white dark:bg-slate-900 border-l border-gray-200 dark:border-slate-700 flex flex-col" data-testid="panel-calendar">
       <div className="p-3 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <CalendarDays className="w-4 h-4 text-blue-600 dark:text-blue-400" />
@@ -2201,73 +2201,59 @@ function MoodCheckInCard({ token, onComplete, uiLang = "en" }: { token: string; 
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="w-full max-w-md mx-auto mb-4 px-4 py-4 rounded-2xl bg-gradient-to-br from-amber-50/80 to-orange-50/60 dark:from-amber-950/30 dark:to-orange-950/20 border border-amber-200 dark:border-amber-800"
+      className="w-full max-w-md mx-auto mb-2 px-3 py-2.5 rounded-xl bg-gradient-to-br from-amber-50/80 to-orange-50/60 dark:from-amber-950/30 dark:to-orange-950/20 border border-amber-200 dark:border-amber-800"
     >
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
-            <Smile className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-          </div>
-          <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{tl("daily_checkin")}</span>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-1.5">
+          <Smile className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+          <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">{tl("daily_checkin")}</span>
+          <span className="text-[10px] text-gray-400 dark:text-gray-500 hidden sm:inline">— {tl("how_feeling")}</span>
         </div>
-        <button onClick={onComplete} className="text-gray-300 hover:text-gray-500 dark:hover:text-gray-300 p-1 rounded transition-colors" data-testid="button-skip-checkin">
-          <X className="w-3.5 h-3.5" />
+        <button onClick={onComplete} className="text-gray-300 hover:text-gray-500 dark:hover:text-gray-300 p-0.5 rounded transition-colors" data-testid="button-skip-checkin">
+          <X className="w-3 h-3" />
         </button>
       </div>
 
-      <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{tl("how_feeling")}</p>
-
-      <div className="flex justify-between mb-3">
+      <div className="flex items-center justify-between gap-1 mb-2">
         {moods.map(m => (
           <button
             key={m.value}
             data-testid={`button-mood-${m.value}`}
             onClick={() => setMood(m.value)}
-            className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all ${
+            className={`flex-1 flex flex-col items-center gap-0.5 py-1 rounded-lg transition-all ${
               mood === m.value
-                ? "bg-amber-100 dark:bg-amber-900/40 ring-2 ring-amber-400 dark:ring-amber-600"
+                ? "bg-amber-100 dark:bg-amber-900/40 ring-1 ring-amber-400 dark:ring-amber-600"
                 : "hover:bg-white/60 dark:hover:bg-slate-800/60"
             }`}
           >
-            <span className="text-xl">{m.emoji}</span>
-            <span className="text-[9px] text-gray-500 dark:text-gray-400">{m.label}</span>
+            <span className="text-base leading-none">{m.emoji}</span>
+            <span className="text-[8px] text-gray-400 dark:text-gray-500 leading-tight hidden sm:block">{m.label}</span>
           </button>
         ))}
       </div>
 
-      <div className="mb-3">
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-[10px] text-gray-500 dark:text-gray-400 flex items-center gap-1">
-            <Zap className="w-3 h-3 text-amber-500" /> {tl("energy_level")}
-          </span>
-          <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400">
-            {["", tl("energy_drained"), tl("energy_low"), tl("energy_okay"), tl("energy_good"), tl("energy_energized")][energy]}
-          </span>
-        </div>
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-[10px] text-gray-400 dark:text-gray-500 flex items-center gap-0.5 flex-shrink-0">
+          <Zap className="w-2.5 h-2.5 text-amber-500" /> {tl("energy_level")}
+        </span>
         <input
           type="range" min={1} max={5} value={energy}
           onChange={e => setEnergy(Number(e.target.value))}
           data-testid="slider-energy"
-          className="w-full accent-amber-500 h-1.5 rounded"
+          className="flex-1 accent-amber-500 h-1 rounded"
         />
+        <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 flex-shrink-0 w-14 text-right">
+          {["", tl("energy_drained"), tl("energy_low"), tl("energy_okay"), tl("energy_good"), tl("energy_energized")][energy]}
+        </span>
       </div>
-
-      <textarea
-        value={note}
-        onChange={e => setNote(e.target.value)}
-        placeholder={tl("add_note")}
-        rows={2}
-        data-testid="input-mood-note"
-        className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-amber-200 dark:border-amber-800 bg-white/60 dark:bg-slate-800/60 text-gray-700 dark:text-gray-300 placeholder-gray-300 resize-none focus:outline-none focus:border-amber-400 mb-2.5"
-      />
 
       <button
         onClick={handleSave}
         disabled={!mood || saving}
         data-testid="button-save-checkin"
-        className="w-full py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-400 text-white text-xs font-semibold hover:from-amber-400 hover:to-orange-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-1.5"
+        className="w-full py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-400 text-white text-xs font-semibold hover:from-amber-400 hover:to-orange-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-1.5"
       >
-        {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+        {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
         {saving ? "Saving…" : tl("save_checkin")}
       </button>
     </motion.div>
@@ -3453,11 +3439,11 @@ export default function AryaChat() {
           </Button>
         </div>
 
-        <div className="px-2 py-2 border-b border-gray-100 dark:border-slate-700 flex gap-1">
+        <div className="px-2 py-2 border-b border-gray-100 dark:border-slate-700 flex gap-1 overflow-x-auto" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
           <button
             data-testid="button-toggle-memory"
             onClick={() => { setShowMemory(!showMemory); setShowGoals(false); setShowReminders(false); }}
-            className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-medium transition-colors ${
+            className={`flex-shrink-0 flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-colors ${
               showMemory ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800' : 'text-gray-400 hover:text-gray-500 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700'
             }`}
           >
@@ -3467,7 +3453,7 @@ export default function AryaChat() {
           <button
             data-testid="button-toggle-goals"
             onClick={() => { setShowGoals(!showGoals); setShowMemory(false); setShowReminders(false); setShowNotes(false); }}
-            className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-medium transition-colors ${
+            className={`flex-shrink-0 flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-colors ${
               showGoals ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800' : 'text-gray-400 hover:text-gray-500 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700'
             }`}
           >
@@ -3477,7 +3463,7 @@ export default function AryaChat() {
           <button
             data-testid="button-toggle-reminders"
             onClick={() => { setShowReminders(!showReminders); setShowMemory(false); setShowGoals(false); setShowNotes(false); }}
-            className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-medium transition-colors ${
+            className={`flex-shrink-0 flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-colors ${
               showReminders ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800' : 'text-gray-400 hover:text-gray-500 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700'
             }`}
           >
@@ -3487,7 +3473,7 @@ export default function AryaChat() {
           <button
             data-testid="button-toggle-notes"
             onClick={() => { setShowNotes(!showNotes); setShowReminders(false); setShowMemory(false); setShowGoals(false); setShowCalendar(false); }}
-            className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-medium transition-colors ${
+            className={`flex-shrink-0 flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-colors ${
               showNotes ? 'bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 border border-violet-200 dark:border-violet-800' : 'text-gray-400 hover:text-gray-500 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700'
             }`}
           >
@@ -3498,7 +3484,7 @@ export default function AryaChat() {
             <button
               data-testid="button-toggle-calendar"
               onClick={() => { setShowCalendar(!showCalendar); setShowNotes(false); setShowReminders(false); setShowMemory(false); setShowGoals(false); }}
-              className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-medium transition-colors ${
+              className={`flex-shrink-0 flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-colors ${
                 showCalendar ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800' : 'text-gray-400 hover:text-gray-500 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700'
               }`}
             >
