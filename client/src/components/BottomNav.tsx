@@ -2,17 +2,20 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { House, Target, Scale, Star, MoreHorizontal } from "lucide-react";
 import MoreTray from "./MoreTray";
+import { getTranslation, getStoredUiLanguage } from "@/lib/i18n";
 
-const NAV_ITEMS = [
-  { path: "/",           label: "Home",  Icon: House, action: "nav" },
-  { path: "/my-goals",   label: "Goals", Icon: Target, action: "nav" },
-  { path: "/vedic-lens", label: "KAAL",  Icon: Star,  action: "nav" },
-  { path: "/niti",       label: "Niti",  Icon: Scale,  action: "nav" },
-];
+interface BottomNavProps {
+  onOpenCustomize?: () => void;
+}
 
-export default function BottomNav() {
+export default function BottomNav({ onOpenCustomize }: BottomNavProps = {}) {
   const [location, setLocation] = useLocation();
   const [moreTrayOpen, setMoreTrayOpen] = useState(false);
+  const lang = getStoredUiLanguage();
+  const t = (key: string, fallback: string) => {
+    const result = getTranslation(lang, key as any);
+    return result === key ? fallback : result;
+  };
 
   function handleNav(path: string) {
     setLocation(path);
@@ -29,7 +32,12 @@ export default function BottomNav() {
         display: "flex",
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
       }}>
-        {NAV_ITEMS.map(({ path, label, Icon }) => {
+        {[
+          { path: "/",           label: t("nav_home", "Home"),  Icon: House },
+          { path: "/my-goals",   label: t("goals", "Goals"),    Icon: Target },
+          { path: "/vedic-lens", label: "KAAL",                 Icon: Star },
+          { path: "/niti",       label: "Niti",                 Icon: Scale },
+        ].map(({ path, label, Icon }) => {
           const active = path === "/" ? location === "/" : location.startsWith(path);
           return (
             <button
@@ -81,7 +89,11 @@ export default function BottomNav() {
         </button>
       </div>
 
-      <MoreTray isOpen={moreTrayOpen} onClose={() => setMoreTrayOpen(false)} />
+      <MoreTray
+        isOpen={moreTrayOpen}
+        onClose={() => setMoreTrayOpen(false)}
+        onOpenCustomize={onOpenCustomize}
+      />
     </>
   );
 }

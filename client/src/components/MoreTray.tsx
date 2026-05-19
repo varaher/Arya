@@ -6,9 +6,10 @@ import { getTranslation, getStoredUiLanguage } from "@/lib/i18n";
 interface MoreTrayProps {
   isOpen: boolean;
   onClose: () => void;
+  onOpenCustomize?: () => void;
 }
 
-export default function MoreTray({ isOpen, onClose }: MoreTrayProps) {
+export default function MoreTray({ isOpen, onClose, onOpenCustomize }: MoreTrayProps) {
   const [, setLocation] = useLocation();
   const lang = getStoredUiLanguage();
   const t = (key: string) => getTranslation(lang, key as any);
@@ -36,7 +37,13 @@ export default function MoreTray({ isOpen, onClose }: MoreTrayProps) {
       label: t("customize_arya") || "Customize",
       sub: t("more_customize_sub"),
       color: "#a855f7",
-      action: () => window.dispatchEvent(new CustomEvent("arya-open-customize")),
+      action: () => {
+        if (onOpenCustomize) {
+          onOpenCustomize();
+        } else {
+          window.dispatchEvent(new CustomEvent("arya-open-customize"));
+        }
+      },
     },
     {
       icon: <Brain size={22} />,

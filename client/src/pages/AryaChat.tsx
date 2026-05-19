@@ -3993,28 +3993,6 @@ export default function AryaChat() {
           </span>
           <div className="flex items-center gap-1">
             <button
-              data-testid="button-toggle-memory-mobile"
-              onClick={() => { setShowMemory(!showMemory); setShowGoals(false); }}
-              className={`p-1.5 rounded-lg transition-all ${showMemory ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' : 'text-gray-400 hover:text-gray-500 dark:hover:text-gray-400'}`}
-            >
-              <Brain className="w-4 h-4" />
-            </button>
-            <button
-              data-testid="button-toggle-goals-mobile"
-              onClick={() => { setShowGoals(!showGoals); setShowMemory(false); setShowReminders(false); }}
-              className={`p-1.5 rounded-lg transition-all ${showGoals ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' : 'text-gray-400 hover:text-gray-500 dark:hover:text-gray-400'}`}
-            >
-              <Target className="w-4 h-4" />
-            </button>
-            <button
-              data-testid="button-toggle-reminders-mobile"
-              onClick={() => { setShowReminders(!showReminders); setShowMemory(false); setShowGoals(false); }}
-              className={`p-1.5 rounded-lg transition-all ${showReminders ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'text-gray-400 hover:text-gray-500 dark:hover:text-gray-400'}`}
-              title="Reminders & Alarms"
-            >
-              <Bell className="w-4 h-4" />
-            </button>
-            <button
               data-testid="button-new-chat-mobile"
               onClick={() => {
                 setActiveConversation(null);
@@ -4341,14 +4319,16 @@ export default function AryaChat() {
                   {t("sign_in_goals")}
                 </button>
               )}
-              <button
-                data-testid="button-welcome-tutorial"
-                onClick={() => setShowTutorial(true)}
-                className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-slate-700 border border-gray-200 dark:border-slate-700 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-amber-300 transition-all flex items-center gap-1.5"
-              >
-                <HelpCircle className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-                {t("take_tour")}
-              </button>
+              {conversations.length === 0 && (
+                <button
+                  data-testid="button-welcome-tutorial"
+                  onClick={() => setShowTutorial(true)}
+                  className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-slate-700 border border-gray-200 dark:border-slate-700 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-amber-300 transition-all flex items-center gap-1.5"
+                >
+                  <HelpCircle className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                  {t("take_tour")}
+                </button>
+              )}
             </div>
             {isLoggedIn && token && !moodCheckedInToday && (
               <MoodCheckInCard

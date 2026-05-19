@@ -1452,6 +1452,95 @@ export async function registerRoutes(
   });
 
   // =============================================
+  // KNOWLEDGE GAPS — Admin Self-Learning Panel
+  // =============================================
+
+  app.get("/api/arya/knowledge-gaps", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const tenantId = req.query.tenant_id as string || 'varah';
+      const patterns = await learningEngine.getQueryPatterns(tenantId, true);
+      const gaps = (patterns as any[]).map((p: any) => ({
+        id: p.id,
+        trigger_query: p.normalizedQuery,
+        failed_response: '',
+        correction_hint: null,
+        auto_draft: null,
+        gap_category: p.domain || 'general',
+        frequency: p.queryCount || 1,
+        quality_score_at_flag: parseFloat(p.avgConfidence || '0'),
+        status: p.draftGenerated ? 'draft_ready' : 'detected',
+        created_at: p.firstSeen || p.lastSeen,
+      }));
+      res.json(gaps);
+    } catch (error: any) {
+      console.error('[KNOWLEDGE GAPS ERROR]', error.message);
+      res.status(500).json({ error: "Something went wrong. Please try again." });
+    }
+  });
+
+  app.post("/api/arya/knowledge-gaps/:id/approve", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { approved_response } = req.body;
+      const tenantId = req.query.tenant_id as string || 'varah';
+
+      await db.execute(sql`
+        UPDATE arya_query_patterns
+        SET draft_generated = true
+        WHERE id = ${id}
+      `);
+
+      if (approved_response) {
+        try {
+          await db.insert(aryaKnowledge).values({
+            tenantId,
+            content: approved_response,
+            category: 'self_learning',
+            source: 'admin_approved_gap',
+            domain: 'general',
+            tags: [],
+            confidenceScore: '0.85',
+            isActive: true,
+          } as any);
+        } catch (insertErr: any) {
+          console.warn('[GAP APPROVE] Knowledge insert skipped:', insertErr.message);
+        }
+      }
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('[APPROVE GAP ERROR]', error.message);
+      res.status(500).json({ error: "Something went wrong. Please try again." });
+    }
+  });
+
+  app.post("/api/arya/knowledge-gaps/:id/reject", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      await db.execute(sql`
+        UPDATE arya_query_patterns
+        SET is_gap = false
+        WHERE id = ${id}
+      `);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('[REJECT GAP ERROR]', error.message);
+      res.status(500).json({ error: "Something went wrong. Please try again." });
+    }
+  });
+
+  app.get("/api/arya/cache/quality-report", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const tenantId = req.query.tenant_id as string || 'varah';
+      const report = await getCacheQualityReport(tenantId);
+      res.json(report);
+    } catch (error: any) {
+      console.error('[QUALITY REPORT ERROR]', error.message);
+      res.status(500).json({ error: "Something went wrong. Please try again." });
+    }
+  });
+
+  // =============================================
   // NEURAL LINK API ROUTES
   // =============================================
 

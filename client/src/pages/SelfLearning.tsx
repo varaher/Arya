@@ -81,6 +81,19 @@ interface QualityEntry {
   negativeFeedbackCount: number;
 }
 
+interface KnowledgeGap {
+  id: string;
+  trigger_query: string;
+  failed_response: string;
+  correction_hint?: string;
+  auto_draft?: string;
+  gap_category: string;
+  frequency: number;
+  quality_score_at_flag: number;
+  status: 'draft_ready' | 'detected' | 'approved' | 'rejected';
+  created_at: string;
+}
+
 interface QualityReport {
   total: number;
   golden: number;
@@ -90,7 +103,10 @@ interface QualityReport {
 }
 
 export default function SelfLearning() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'drafts' | 'patterns' | 'quality'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'drafts' | 'patterns' | 'quality' | 'gaps'>('overview');
+  const [gapFilter, setGapFilter] = useState<'all' | 'draft_ready' | 'detected'>('draft_ready');
+  const [activeGap, setActiveGap] = useState<KnowledgeGap | null>(null);
+  const [editedDraft, setEditedDraft] = useState('');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -163,6 +179,43 @@ export default function SelfLearning() {
       queryClient.invalidateQueries({ queryKey: ['/api/learning/drafts'] });
       queryClient.invalidateQueries({ queryKey: ['/api/learning/stats'] });
       toast({ title: "Draft rejected" });
+    }
+  });
+
+  const { data: gapsData = [], refetch: refetchGaps } = useQuery<KnowledgeGap[]>({
+    queryKey: ['/api/arya/knowledge-gaps'],
+    queryFn: async () => {
+      const res = await fetch('/api/arya/knowledge-gaps?tenant_id=varah', {
+        headers: { 'x-admin-token': localStorage.getItem('arya_admin_token') || '' }
+      });
+      return res.json();
+    },
+    enabled: activeTab === 'gaps'
+  });
+
+  const approveGapMutation = useMutation({
+    mutationFn: async ({ gap, draft }: { gap: KnowledgeGap; draft: string }) => {
+      const res = await apiRequest('POST', `/api/arya/knowledge-gaps/${gap.id}/approve`, {
+        approved_response: draft
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      setActiveGap(null);
+      refetchGaps();
+      toast({ title: "Gap approved and added to knowledge base" });
+    }
+  });
+
+  const rejectGapMutation = useMutation({
+    mutationFn: async (gapId: string) => {
+      const res = await apiRequest('POST', `/api/arya/knowledge-gaps/${gapId}/reject`, {});
+      return res.json();
+    },
+    onSuccess: () => {
+      setActiveGap(null);
+      refetchGaps();
+      toast({ title: "Gap rejected" });
     }
   });
 
@@ -241,7 +294,7 @@ export default function SelfLearning() {
       </div>
 
       <div className="flex gap-2 border-b border-border/50 pb-2">
-        {(['overview', 'drafts', 'patterns', 'quality'] as const).map(tab => (
+        {(['overview', 'drafts', 'patterns', 'quality', 'gaps'] as const).map(tab => (
           <Button
             key={tab}
             variant={activeTab === tab ? 'default' : 'ghost'}
@@ -253,6 +306,7 @@ export default function SelfLearning() {
             {tab === 'drafts' && <Lightbulb className="w-4 h-4 mr-2" />}
             {tab === 'patterns' && <BarChart3 className="w-4 h-4 mr-2" />}
             {tab === 'quality' && <Star className="w-4 h-4 mr-2" />}
+            {tab === 'gaps' && <AlertTriangle className="w-4 h-4 mr-2" />}
             {tab.charAt(0).toUpperCase() + tab.slice(1)}
           </Button>
         ))}
@@ -616,6 +670,145 @@ export default function SelfLearning() {
                 <p>Loading quality report...</p>
               </CardContent>
             </Card>
+          )}
+        </div>
+      )}
+      {activeTab === 'gaps' && (
+        <div className="space-y-4">
+          {/* Filter tabs */}
+          <div className="flex gap-2 flex-wrap">
+            {(['draft_ready', 'detected', 'all'] as const).map(f => (
+              <button
+                key={f}
+                data-testid={`button-gap-filter-${f}`}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium transition-all ${
+                  gapFilter === f
+                    ? 'bg-primary border-primary text-white'
+                    : 'bg-card/50 border-border/50 text-muted-foreground hover:border-primary/40'
+                }`}
+                onClick={() => setGapFilter(f)}
+              >
+                {f === 'draft_ready' ? '📝 Draft Ready' : f === 'detected' ? '🔍 Detected' : '📋 All'}
+                <span className="bg-black/20 rounded-full px-1.5 py-0.5 font-bold">
+                  {gapsData.filter(g => f === 'all' ? true : g.status === f).length}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* Gap list */}
+          {gapsData.length === 0 ? (
+            <Card className="bg-card/50 border-border/50">
+              <CardContent className="p-8 text-center text-muted-foreground">
+                <CheckCircle className="w-12 h-12 mx-auto mb-3 opacity-30 text-emerald-400" />
+                <p>No knowledge gaps detected. ARYA is doing well ✓</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-2">
+              {gapsData
+                .filter(g => gapFilter === 'all' ? true : g.status === gapFilter)
+                .map((gap) => (
+                  <Card
+                    key={gap.id}
+                    data-testid={`card-gap-${gap.id}`}
+                    className={`bg-card/50 border-border/50 cursor-pointer transition-all hover:border-primary/40 ${
+                      activeGap?.id === gap.id ? 'border-primary bg-primary/5' : ''
+                    }`}
+                    onClick={() => { setActiveGap(gap); setEditedDraft(gap.auto_draft || ''); }}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2 mb-2 flex-wrap">
+                        <span className="text-xs bg-black/20 border border-border/30 px-2 py-0.5 rounded-full text-muted-foreground font-mono">
+                          {gap.gap_category}
+                        </span>
+                        <span className="text-xs text-muted-foreground">{gap.frequency}× asked</span>
+                        <Badge
+                          variant="outline"
+                          className={`ml-auto text-[10px] ${
+                            gap.status === 'draft_ready'
+                              ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                              : 'bg-blue-500/10 text-blue-400 border-blue-500/30'
+                          }`}
+                        >
+                          {gap.status.replace('_', ' ')}
+                        </Badge>
+                      </div>
+                      <p className="text-sm italic text-white/80">"{gap.trigger_query}"</p>
+                      {gap.correction_hint && (
+                        <p className="text-xs text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-lg mt-2 inline-block">
+                          💬 User said: "{gap.correction_hint}"
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+            </div>
+          )}
+
+          {/* Detail / review panel (modal) */}
+          {activeGap && (
+            <div
+              className="fixed inset-0 bg-black/40 z-50 flex items-end md:items-center md:justify-center"
+              onClick={() => setActiveGap(null)}
+            >
+              <Card
+                className="bg-card border-border rounded-t-2xl md:rounded-2xl w-full md:max-w-lg md:m-4 max-h-[90vh] overflow-y-auto"
+                onClick={e => e.stopPropagation()}
+              >
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base font-display">Review Gap</CardTitle>
+                    <Button variant="ghost" size="sm" onClick={() => setActiveGap(null)}>✕</Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <p className="text-xs font-mono text-muted-foreground uppercase mb-1">Original query</p>
+                    <p className="text-sm italic p-3 bg-black/20 rounded-lg">{activeGap.trigger_query}</p>
+                  </div>
+                  {activeGap.correction_hint && (
+                    <div>
+                      <p className="text-xs font-mono text-muted-foreground uppercase mb-1">User correction</p>
+                      <p className="text-sm p-3 bg-emerald-500/10 rounded-lg text-emerald-300">{activeGap.correction_hint}</p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-xs font-mono text-muted-foreground uppercase mb-1">
+                      Improved response{' '}
+                      <span className="text-blue-400 normal-case font-sans">(editable)</span>
+                    </p>
+                    <textarea
+                      data-testid="textarea-gap-draft"
+                      className="w-full p-3 bg-black/20 border border-border/50 rounded-lg text-sm text-white resize-vertical outline-none focus:border-primary min-h-[120px]"
+                      value={editedDraft}
+                      onChange={e => setEditedDraft(e.target.value)}
+                      placeholder="Write an improved response for this query..."
+                      rows={5}
+                    />
+                  </div>
+                  <div className="flex gap-3">
+                    <Button
+                      variant="destructive"
+                      className="flex-1"
+                      data-testid="button-gap-reject"
+                      onClick={() => rejectGapMutation.mutate(activeGap.id)}
+                      disabled={rejectGapMutation.isPending}
+                    >
+                      ✕ Reject
+                    </Button>
+                    <Button
+                      className="flex-1 bg-primary"
+                      data-testid="button-gap-approve"
+                      onClick={() => approveGapMutation.mutate({ gap: activeGap, draft: editedDraft })}
+                      disabled={!editedDraft.trim() || approveGapMutation.isPending}
+                    >
+                      ✓ Approve & Save
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           )}
         </div>
       )}

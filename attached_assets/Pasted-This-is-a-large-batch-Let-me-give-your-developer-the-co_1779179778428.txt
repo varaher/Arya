@@ -1,0 +1,1522 @@
+This is a large batch. Let me give your developer the complete, ready-to-paste code for every single item.
+
+---
+
+## 1. DB Tables — One Migration File
+
+```sql
+-- migrations/add_missing_tables.sql
+-- Run once — all 4 tables
+
+-- Table 1: Response quality signals
+CREATE TABLE IF NOT EXISTS response_quality_signals (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  response_id UUID NOT NULL,
+  user_id UUID NOT NULL,
+  explicit_rating SMALLINT,
+  correction_text TEXT,
+  continued_conversation BOOLEAN DEFAULT false,
+  session_continued BOOLEAN DEFAULT false,
+  immediate_followup BOOLEAN DEFAULT false,
+  bookmarked BOOLEAN DEFAULT false,
+  returned_next_day BOOLEAN DEFAULT false,
+  computed_score SMALLINT,
+  language CHAR(5),
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Table 2: User language profiles
+CREATE TABLE IF NOT EXISTS user_language_profiles (
+  user_id UUID PRIMARY KEY,
+  ui_language CHAR(5) DEFAULT 'en',
+  detected_languages JSONB DEFAULT '{}',
+  preferred_response_language CHAR(5) DEFAULT 'en',
+  last_detected CHAR(5),
+  last_switched_at TIMESTAMPTZ,
+  auto_switch_enabled BOOLEAN DEFAULT true,
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Table 3: Correction pairs
+CREATE TABLE IF NOT EXISTS correction_pairs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  original_query TEXT NOT NULL,
+  bad_response TEXT NOT NULL,
+  user_correction TEXT NOT NULL,
+  improved_draft TEXT,
+  language CHAR(5),
+  admin_reviewed BOOLEAN DEFAULT false,
+  admin_approved BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Table 4: Reflection shares (Drizzle schema)
+CREATE TABLE IF NOT EXISTS arya_reflection_shares (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL,
+  review_week_start DATE NOT NULL,
+  token TEXT NOT NULL UNIQUE,
+  content JSONB NOT NULL,
+  view_count INTEGER DEFAULT 0,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  expires_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_reflection_shares_token
+  ON arya_reflection_shares(token);
+
+CREATE INDEX IF NOT EXISTS idx_reflection_shares_user
+  ON arya_reflection_shares(user_id);
+```
+
+Add to `shared/schema.ts`:
+
+```typescript
+// shared/schema.ts — add these 4 table definitions
+
+export const responseQualitySignals = pgTable(
+  'response_quality_signals', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  responseId: uuid('response_id').notNull(),
+  userId: uuid('user_id').notNull(),
+  explicitRating: smallint('explicit_rating'),
+  correctionText: text('correction_text'),
+  continuedConversation: boolean('continued_conversation').default(false),
+  sessionContinued: boolean('session_continued').default(false),
+  immediateFollowup: boolean('immediate_followup').default(false),
+  bookmarked: boolean('bookmarked').default(false),
+  returnedNextDay: boolean('returned_next_day').default(false),
+  computedScore: smallint('computed_score'),
+  language: char('language', { length: 5 }),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const userLanguageProfiles = pgTable(
+  'user_language_profiles', {
+  userId: uuid('user_id').primaryKey(),
+  uiLanguage: char('ui_language', { length: 5 }).default('en'),
+  detectedLanguages: jsonb('detected_languages').default({}),
+  preferredResponseLanguage: char('preferred_response_language',
+    { length: 5 }).default('en'),
+  lastDetected: char('last_detected', { length: 5 }),
+  lastSwitchedAt: timestamp('last_switched_at'),
+  autoSwitchEnabled: boolean('auto_switch_enabled').default(true),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+export const correctionPairs = pgTable('correction_pairs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  originalQuery: text('original_query').notNull(),
+  badResponse: text('bad_response').notNull(),
+  userCorrection: text('user_correction').notNull(),
+  improvedDraft: text('improved_draft'),
+  language: char('language', { length: 5 }),
+  adminReviewed: boolean('admin_reviewed').default(false),
+  adminApproved: boolean('admin_approved').default(false),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const aryaReflectionShares = pgTable(
+  'arya_reflection_shares', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull(),
+  reviewWeekStart: date('review_week_start').notNull(),
+  token: text('token').notNull().unique(),
+  content: jsonb('content').notNull(),
+  viewCount: integer('view_count').default(0),
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at').defaultNow(),
+  expiresAt: timestamp('expires_at'),
+});
+```
+
+---
+
+## 2. Cache Key Fix — One Line
+
+```typescript
+// server/arya/response-cache-engine.ts
+// Find the function that builds the cache key
+// Change this:
+
+// BEFORE — wrong, language ignored
+function buildCacheKey(query: string): string {
+  return hashQuery(query.toLowerCase().trim());
+}
+
+// AFTER — correct, language included
+function buildCacheKey(query: string, language: string = 'en'): string {
+  return hashQuery(`${query.toLowerCase().trim()}::${language}`);
+}
+
+// Then find every call to this function and add language:
+// checkResponseCache(query) → checkResponseCache(query, detectedLang)
+// cacheResponse(query, response) → cacheResponse(query, response, detectedLang)
+```
+
+---
+
+## 3. More Tray — Complete Component
+
+```tsx
+// client/src/components/MoreTray.tsx
+
+import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useLocation } from 'wouter';
+
+interface MoreTrayProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onOpenCustomize: () => void;
+}
+
+export function MoreTray({
+  isOpen,
+  onClose,
+  onOpenCustomize
+}: MoreTrayProps) {
+  const { t } = useTranslation();
+  const [, navigate] = useLocation();
+
+  // Close on back button
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: PopStateEvent) => onClose();
+    window.addEventListener('popstate', handler);
+    return () => window.removeEventListener('popstate', handler);
+  }, [isOpen]);
+
+  // Prevent body scroll when open
+  useEffect(() => {
+    document.body.style.overflow = isOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [isOpen]);
+
+  function go(path: string) {
+    onClose();
+    navigate(path);
+  }
+
+  const features = [
+    {
+      icon: '🫁',
+      label: t('menu_prana'),
+      sub: t('more_prana_sub'),
+      color: '#4CAF50',
+      action: () => go('/prana')
+    },
+    {
+      icon: '📖',
+      label: t('menu_review'),
+      sub: t('more_review_sub'),
+      color: '#FF9800',
+      action: () => go('/review')
+    },
+    {
+      icon: '🎨',
+      label: t('menu_customize'),
+      sub: t('more_customize_sub'),
+      color: '#9C27B0',
+      action: () => { onClose(); onOpenCustomize(); }
+    },
+    {
+      icon: '🧠',
+      label: t('memory'),
+      sub: t('more_memory_sub'),
+      color: '#2196F3',
+      action: () => go('/memory')
+    },
+    {
+      icon: '👥',
+      label: t('community'),
+      sub: t('more_community_sub'),
+      color: '#FF5722',
+      action: () => go('/community')
+    },
+  ];
+
+  const utilities = [
+    {
+      icon: '🔒',
+      label: t('menu_privacy'),
+      action: () => go('/privacy-control')
+    },
+    {
+      icon: '📣',
+      label: t('menu_report'),
+      action: () => {
+        onClose();
+        window.dispatchEvent(new CustomEvent('open-report-issue'));
+      }
+    },
+  ];
+
+  return (
+    <>
+      {/* Backdrop */}
+      {isOpen && (
+        <div
+          className="more-tray-backdrop"
+          onClick={onClose}
+        />
+      )}
+
+      {/* Sheet */}
+      <div className={`more-tray ${isOpen ? 'more-tray--open' : ''}`}>
+        <div className="more-tray-handle" />
+
+        <div className="more-tray-header">
+          <span className="more-tray-label">
+            {t('more_title')}
+          </span>
+        </div>
+
+        <div className="more-tray-body">
+          {features.map((f, i) => (
+            <button
+              key={i}
+              className="mti"
+              onClick={f.action}
+            >
+              <div
+                className="mti-icon"
+                style={{
+                  background: f.color + '18',
+                  border: `1px solid ${f.color}35`
+                }}
+              >
+                {f.icon}
+              </div>
+              <div className="mti-text">
+                <span className="mti-label">{f.label}</span>
+                <span className="mti-sub">{f.sub}</span>
+              </div>
+              <span className="mti-chevron">›</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="more-tray-divider" />
+
+        <div className="more-tray-utils">
+          {utilities.map((u, i) => (
+            <button
+              key={i}
+              className="mtu"
+              onClick={u.action}
+            >
+              <span>{u.icon}</span>
+              <span>{u.label}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="more-tray-safe-area" />
+      </div>
+    </>
+  );
+}
+```
+
+```css
+/* Add to global CSS */
+
+.more-tray-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 200;
+  animation: fadeIn 0.2s ease;
+}
+
+.more-tray {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-surface, #fff);
+  border-radius: 20px 20px 0 0;
+  z-index: 201;
+  transform: translateY(100%);
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  max-height: 88vh;
+  overflow-y: auto;
+  box-shadow: 0 -4px 30px rgba(0,0,0,0.12);
+}
+
+.more-tray--open {
+  transform: translateY(0);
+}
+
+.more-tray-handle {
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border, #ddd);
+  margin: 12px auto 0;
+}
+
+.more-tray-header {
+  padding: 16px 20px 8px;
+}
+
+.more-tray-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted, #aaa);
+}
+
+.more-tray-body {
+  padding: 4px 12px 0;
+}
+
+/* Feature item */
+.mti {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 12px 10px;
+  border-radius: 14px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: start;
+  transition: background 0.15s;
+}
+.mti:active { background: var(--surface2, #f4f4f4); }
+
+.mti-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.mti-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mti-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text, #111);
+}
+
+.mti-sub {
+  font-size: 12px;
+  color: var(--text-muted, #999);
+}
+
+.mti-chevron {
+  font-size: 22px;
+  color: var(--text-muted, #ccc);
+}
+
+.more-tray-divider {
+  height: 1px;
+  background: var(--border, #f0f0f0);
+  margin: 8px 16px;
+}
+
+/* Utility row */
+.more-tray-utils {
+  display: flex;
+  gap: 8px;
+  padding: 4px 14px 16px;
+}
+
+.mtu {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 8px;
+  border-radius: 12px;
+  border: 1px solid var(--border, #eee);
+  background: var(--surface2, #fafafa);
+  font-size: 13px;
+  color: var(--text-muted, #888);
+  cursor: pointer;
+}
+
+.more-tray-safe-area {
+  height: env(safe-area-inset-bottom, 16px);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+```
+
+---
+
+## 4. Bottom Nav — Simplified To 5 Items
+
+```tsx
+// client/src/components/BottomNav.tsx
+// Replace existing component entirely
+
+import { useState } from 'react';
+import { useLocation } from 'wouter';
+import { useTranslation } from 'react-i18next';
+import { MoreTray } from './MoreTray';
+
+interface BottomNavProps {
+  onOpenCustomize: () => void;
+}
+
+export function BottomNav({ onOpenCustomize }: BottomNavProps) {
+  const { t } = useTranslation();
+  const [location, navigate] = useLocation();
+  const [moreTrayOpen, setMoreTrayOpen] = useState(false);
+
+  const items = [
+    {
+      icon: '🏠',
+      label: t('nav_home'),
+      path: '/',
+      match: (p: string) => p === '/'
+    },
+    {
+      icon: '🎯',
+      label: t('goals'),
+      path: '/my-goals',
+      match: (p: string) => p.startsWith('/my-goals')
+    },
+    {
+      icon: '✦',
+      label: t('menu_kaal'),
+      path: '/kaal',
+      match: (p: string) => p.startsWith('/kaal')
+    },
+    {
+      icon: '⚖️',
+      label: t('menu_niti'),
+      path: '/niti',
+      match: (p: string) => p.startsWith('/niti')
+    },
+    {
+      icon: '⋯',
+      label: t('more_label'),
+      path: null,
+      match: () => false
+    },
+  ];
+
+  return (
+    <>
+      <nav className="bottom-nav">
+        {items.map((item, i) => {
+          const isActive = item.path
+            ? item.match(location)
+            : moreTrayOpen;
+
+          return (
+            <button
+              key={i}
+              className={`bn-btn ${isActive ? 'bn-btn--active' : ''}`}
+              onClick={() => {
+                if (!item.path) {
+                  setMoreTrayOpen(true);
+                } else {
+                  navigate(item.path);
+                }
+              }}
+            >
+              <span className="bn-icon">{item.icon}</span>
+              <span className="bn-label">{item.label}</span>
+            </button>
+          );
+        })}
+      </nav>
+
+      <MoreTray
+        isOpen={moreTrayOpen}
+        onClose={() => setMoreTrayOpen(false)}
+        onOpenCustomize={onOpenCustomize}
+      />
+    </>
+  );
+}
+```
+
+```css
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  background: var(--bg-surface, #fff);
+  border-top: 1px solid var(--border, #eee);
+  padding: 6px 0 env(safe-area-inset-bottom, 8px);
+  z-index: 100;
+}
+
+.bn-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 4px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted, #aaa);
+  cursor: pointer;
+  transition: color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bn-btn--active {
+  color: var(--primary, #2e7d5e);
+}
+
+.bn-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.bn-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: 56px;
+  text-overflow: ellipsis;
+}
+```
+
+---
+
+## 5. Top Bar — Simplified To 5 Items
+
+```tsx
+// client/src/components/TopBar.tsx
+// Replace existing component
+
+import { useTranslation } from 'react-i18next';
+
+interface TopBarProps {
+  historyCount: number;
+  unreadCount: number;
+  updateAvailable: boolean;
+  userInitial: string;
+  onOpenHistory: () => void;
+  onNewChat: () => void;
+  onToggleDark: () => void;
+  onOpenNotifications: () => void;
+  onOpenProfile: () => void;
+}
+
+export function TopBar({
+  historyCount,
+  unreadCount,
+  updateAvailable,
+  userInitial,
+  onOpenHistory,
+  onNewChat,
+  onToggleDark,
+  onOpenNotifications,
+  onOpenProfile,
+}: TopBarProps) {
+  const { t } = useTranslation();
+
+  return (
+    <header className="top-bar">
+
+      {/* Left — history */}
+      <button className="tb-history" onClick={onOpenHistory}>
+        <span className="tb-hist-icon">⊟</span>
+        <span className="tb-hist-text">{t('chat_history')}</span>
+        {historyCount > 0 && (
+          <span className="tb-badge">{historyCount}</span>
+        )}
+      </button>
+
+      {/* Spacer */}
+      <div className="tb-spacer" />
+
+      {/* Right group — 3 icons */}
+      <div className="tb-right">
+
+        {/* New chat */}
+        <button
+          className="tb-new-btn"
+          onClick={onNewChat}
+          title={t('new_chat')}
+        >
+          +
+        </button>
+
+        {/* Dark mode */}
+        <button
+          className="tb-icon-btn"
+          onClick={onToggleDark}
+          title="Toggle theme"
+        >
+          🌙
+        </button>
+
+        {/* Single notification bell */}
+        <button
+          className="tb-icon-btn tb-bell"
+          onClick={onOpenNotifications}
+          title={t('alerts')}
+        >
+          🔔
+          {unreadCount > 0 && (
+            <span className="tb-bell-badge">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
+        </button>
+
+        {/* Profile avatar */}
+        <button
+          className="tb-avatar"
+          onClick={onOpenProfile}
+          title="Profile"
+        >
+          {userInitial}
+          {updateAvailable && (
+            <span className="tb-update-dot" />
+          )}
+        </button>
+
+      </div>
+    </header>
+  );
+}
+```
+
+```css
+.top-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--bg-surface, #fff);
+  border-bottom: 1px solid var(--border, #eee);
+  position: sticky;
+  top: 0;
+  z-index: 90;
+}
+
+/* History button */
+.tb-history {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border, #eee);
+  background: var(--surface2, #fafafa);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text, #333);
+  cursor: pointer;
+  white-space: nowrap;
+  max-width: 140px;
+}
+
+.tb-hist-icon { font-size: 16px; }
+
+.tb-hist-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tb-badge {
+  background: var(--primary, #2e7d5e);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 10px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.tb-spacer { flex: 1; }
+
+/* Right group */
+.tb-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* New chat button */
+.tb-new-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid var(--border, #eee);
+  background: var(--surface2, #fafafa);
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--text, #333);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Icon buttons */
+.tb-icon-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  color: var(--text-muted, #888);
+}
+
+/* Bell badge */
+.tb-bell { position: relative; }
+
+.tb-bell-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background: #e53935;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 8px;
+  min-width: 16px;
+  text-align: center;
+  border: 1.5px solid var(--bg-surface, #fff);
+}
+
+/* Avatar */
+.tb-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--primary-dim, #e8f5ee);
+  border: 1px solid var(--primary-border, rgba(46,125,94,0.3));
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary, #2e7d5e);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+/* Update dot */
+.tb-update-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #e53935;
+  border: 2px solid var(--bg-surface, #fff);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.8; }
+}
+```
+
+---
+
+## 6. Hide "Take a Tour" For Returning Users
+
+```tsx
+// In your main welcome screen component
+// Find where TakeATourButton renders and wrap it:
+
+function WelcomeScreen({ conversations, user }) {
+  const { t } = useTranslation();
+
+  // Hide tour for users who have conversations
+  const isNewUser = !conversations || conversations.length === 0;
+
+  return (
+    <div className="welcome-screen">
+      {/* ARYA logo, tagline, quote... */}
+
+      {/* Tour button — new users only */}
+      {isNewUser && (
+        <button
+          className="tour-btn"
+          onClick={startTour}
+        >
+          ⓘ {t('take_tour')}
+        </button>
+      )}
+
+      {/* Quick tabs — always visible */}
+      <QuickTabs />
+
+      {/* Suggestions — always visible */}
+      <SuggestionCards />
+    </div>
+  );
+}
+```
+
+---
+
+## 7. Admin Self-Learning Panel UI
+
+```tsx
+// client/src/pages/admin/SelfLearningPage.tsx
+// New file — complete admin UI
+
+import { useState, useEffect } from 'react';
+
+interface KnowledgeGap {
+  id: string;
+  trigger_query: string;
+  failed_response: string;
+  correction_hint?: string;
+  auto_draft?: string;
+  gap_category: string;
+  frequency: number;
+  quality_score_at_flag: number;
+  status: string;
+  created_at: string;
+}
+
+interface QualityReport {
+  golden: number;
+  neutral: number;
+  flagged: number;
+  total: number;
+  cache_hit_rate: number;
+}
+
+export function SelfLearningPage() {
+  const [gaps, setGaps] = useState<KnowledgeGap[]>([]);
+  const [report, setReport] = useState<QualityReport | null>(null);
+  const [activeGap, setActiveGap] = useState<KnowledgeGap | null>(null);
+  const [editedDraft, setEditedDraft] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<'all' | 'draft_ready' | 'detected'>('draft_ready');
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  async function loadData() {
+    setLoading(true);
+    try {
+      const [gapsRes, reportRes] = await Promise.all([
+        fetch('/api/arya/knowledge-gaps'),
+        fetch('/api/arya/cache/quality-report'),
+      ]);
+      setGaps(await gapsRes.json());
+      setReport(await reportRes.json());
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function approveGap(gap: KnowledgeGap) {
+    await fetch(`/api/arya/knowledge-gaps/${gap.id}/approve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ approved_response: editedDraft || gap.auto_draft })
+    });
+    setActiveGap(null);
+    loadData();
+  }
+
+  async function rejectGap(gapId: string) {
+    await fetch(`/api/arya/knowledge-gaps/${gapId}/reject`, {
+      method: 'POST'
+    });
+    setActiveGap(null);
+    loadData();
+  }
+
+  const filteredGaps = gaps.filter(g =>
+    filter === 'all' ? true : g.status === filter
+  );
+
+  return (
+    <div className="sl-page">
+
+      {/* Header */}
+      <div className="sl-header">
+        <h1>Self-Learning Panel</h1>
+        <p>Review knowledge gaps and approve improved responses.</p>
+      </div>
+
+      {/* Quality Report */}
+      {report && (
+        <div className="sl-report">
+          <div className="slr-card slr-golden">
+            <div className="slr-number">{report.golden}</div>
+            <div className="slr-label">Golden</div>
+            <div className="slr-sub">Skip API</div>
+          </div>
+          <div className="slr-card slr-neutral">
+            <div className="slr-number">{report.neutral}</div>
+            <div className="slr-label">Neutral</div>
+            <div className="slr-sub">Cached</div>
+          </div>
+          <div className="slr-card slr-flagged">
+            <div className="slr-number">{report.flagged}</div>
+            <div className="slr-label">Flagged</div>
+            <div className="slr-sub">Need review</div>
+          </div>
+          <div className="slr-card slr-rate">
+            <div className="slr-number">
+              {Math.round(report.cache_hit_rate * 100)}%
+            </div>
+            <div className="slr-label">Cache hit</div>
+            <div className="slr-sub">API saved</div>
+          </div>
+        </div>
+      )}
+
+      {/* Filter tabs */}
+      <div className="sl-filters">
+        {(['draft_ready', 'detected', 'all'] as const).map(f => (
+          <button
+            key={f}
+            className={`sl-filter ${filter === f ? 'active' : ''}`}
+            onClick={() => setFilter(f)}
+          >
+            {f === 'draft_ready' ? '📝 Draft Ready' :
+             f === 'detected' ? '🔍 Detected' : '📋 All'}
+            <span className="sl-filter-count">
+              {gaps.filter(g =>
+                f === 'all' ? true : g.status === f
+              ).length}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {/* Gap list */}
+      {loading ? (
+        <div className="sl-loading">Loading gaps...</div>
+      ) : filteredGaps.length === 0 ? (
+        <div className="sl-empty">
+          No gaps in this category. ARYA is doing well ✓
+        </div>
+      ) : (
+        <div className="sl-gaps">
+          {filteredGaps.map(gap => (
+            <div
+              key={gap.id}
+              className={`sl-gap-card ${
+                activeGap?.id === gap.id ? 'active' : ''
+              }`}
+              onClick={() => {
+                setActiveGap(gap);
+                setEditedDraft(gap.auto_draft || '');
+              }}
+            >
+              <div className="sgc-top">
+                <span className="sgc-category">{gap.gap_category}</span>
+                <span className="sgc-freq">
+                  {gap.frequency}× asked
+                </span>
+                <span className={`sgc-status sgc-status--${gap.status}`}>
+                  {gap.status.replace('_', ' ')}
+                </span>
+              </div>
+              <div className="sgc-query">
+                "{gap.trigger_query}"
+              </div>
+              {gap.correction_hint && (
+                <div className="sgc-hint">
+                  💬 User said: "{gap.correction_hint}"
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Active gap detail panel */}
+      {activeGap && (
+        <div className="sl-detail-overlay">
+          <div className="sl-detail">
+
+            <div className="sld-header">
+              <h3>Review Gap</h3>
+              <button
+                className="sld-close"
+                onClick={() => setActiveGap(null)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="sld-section">
+              <div className="sld-label">Original query</div>
+              <div className="sld-content sld-query">
+                {activeGap.trigger_query}
+              </div>
+            </div>
+
+            <div className="sld-section">
+              <div className="sld-label">Failed response</div>
+              <div className="sld-content sld-bad">
+                {activeGap.failed_response}
+              </div>
+            </div>
+
+            {activeGap.correction_hint && (
+              <div className="sld-section">
+                <div className="sld-label">User correction</div>
+                <div className="sld-content sld-correction">
+                  {activeGap.correction_hint}
+                </div>
+              </div>
+            )}
+
+            <div className="sld-section">
+              <div className="sld-label">
+                Improved draft
+                <span className="sld-edit-hint">
+                  (editable)
+                </span>
+              </div>
+              <textarea
+                className="sld-draft-editor"
+                value={editedDraft}
+                onChange={e => setEditedDraft(e.target.value)}
+                placeholder="Auto-draft will appear here..."
+                rows={6}
+              />
+            </div>
+
+            <div className="sld-actions">
+              <button
+                className="sld-btn sld-reject"
+                onClick={() => rejectGap(activeGap.id)}
+              >
+                ✕ Reject
+              </button>
+              <button
+                className="sld-btn sld-approve"
+                onClick={() => approveGap(activeGap)}
+                disabled={!editedDraft.trim()}
+              >
+                ✓ Approve & Save
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
+```
+
+```css
+/* Self-Learning Admin Panel */
+
+.sl-page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 24px 20px 60px;
+}
+
+.sl-header {
+  margin-bottom: 24px;
+}
+.sl-header h1 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.sl-header p { color: #888; font-size: 14px; }
+
+/* Quality report cards */
+.sl-report {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 24px;
+}
+@media(max-width:500px) {
+  .sl-report { grid-template-columns: repeat(2, 1fr); }
+}
+
+.slr-card {
+  border-radius: 14px;
+  padding: 16px 12px;
+  text-align: center;
+  border: 1px solid transparent;
+}
+.slr-golden  { background: #fff8e1; border-color: #ffe082; }
+.slr-neutral { background: #e3f2fd; border-color: #90caf9; }
+.slr-flagged { background: #fce4ec; border-color: #f48fb1; }
+.slr-rate    { background: #e8f5e9; border-color: #a5d6a7; }
+
+.slr-number {
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.slr-label { font-size: 12px; font-weight: 600; }
+.slr-sub   { font-size: 10px; color: #999; margin-top: 2px; }
+
+/* Filters */
+.sl-filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.sl-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 20px;
+  border: 1px solid #e0e0e0;
+  background: #fafafa;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sl-filter.active {
+  background: #2e7d5e;
+  border-color: #2e7d5e;
+  color: #fff;
+}
+.sl-filter-count {
+  background: rgba(0,0,0,0.1);
+  border-radius: 10px;
+  padding: 1px 8px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Gap cards */
+.sl-gaps { display: flex; flex-direction: column; gap: 10px; }
+
+.sl-gap-card {
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 14px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sl-gap-card:hover { border-color: #2e7d5e40; }
+.sl-gap-card.active {
+  border-color: #2e7d5e;
+  background: #f0f9f5;
+}
+
+.sgc-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.sgc-category {
+  font-size: 11px;
+  background: #f0f0f0;
+  padding: 2px 8px;
+  border-radius: 8px;
+  color: #555;
+  font-weight: 600;
+}
+.sgc-freq { font-size: 11px; color: #999; }
+.sgc-status {
+  margin-left: auto;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.sgc-status--draft_ready { background: #fff8e1; color: #f57f17; }
+.sgc-status--detected    { background: #e3f2fd; color: #1565c0; }
+.sgc-status--approved    { background: #e8f5e9; color: #2e7d32; }
+
+.sgc-query {
+  font-size: 14px;
+  font-style: italic;
+  color: #333;
+  margin-bottom: 6px;
+}
+.sgc-hint {
+  font-size: 12px;
+  color: #2e7d5e;
+  background: #e8f5ee;
+  padding: 4px 10px;
+  border-radius: 8px;
+  display: inline-block;
+}
+
+/* Detail panel */
+.sl-detail-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 300;
+  display: flex;
+  align-items: flex-end;
+}
+@media(min-width:600px) {
+  .sl-detail-overlay { align-items: center; justify-content: center; }
+}
+
+.sl-detail {
+  background: #fff;
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 20px;
+}
+@media(min-width:600px) {
+  .sl-detail {
+    border-radius: 20px;
+    max-width: 560px;
+    margin: 20px;
+  }
+}
+
+.sld-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.sld-header h3 { font-size: 18px; font-weight: 700; }
+.sld-close {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: #f0f0f0;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.sld-section { margin-bottom: 16px; }
+.sld-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #999;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sld-edit-hint {
+  font-size: 10px;
+  background: #e3f2fd;
+  color: #1565c0;
+  padding: 1px 6px;
+  border-radius: 6px;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+}
+
+.sld-content {
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.sld-query      { background: #f5f5f5; font-style: italic; }
+.sld-bad        { background: #fce4ec; color: #b71c1c; }
+.sld-correction { background: #e8f5e9; color: #1b5e20; }
+
+.sld-draft-editor {
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.6;
+  font-family: inherit;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.sld-draft-editor:focus { border-color: #2e7d5e; }
+
+.sld-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+.sld-btn {
+  flex: 1;
+  padding: 14px;
+  border-radius: 12px;
+  border: none;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sld-reject {
+  background: #fce4ec;
+  color: #c62828;
+}
+.sld-approve {
+  background: #2e7d5e;
+  color: #fff;
+}
+.sld-approve:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+```
+
+### Backend Endpoints For Self-Learning Panel
+
+```typescript
+// server/routes.ts — add these
+
+// Get all knowledge gaps
+app.get('/api/arya/knowledge-gaps',
+  requireAdmin, async (req, res) => {
+    const gaps = await db.query(`
+      SELECT * FROM knowledge_gaps
+      ORDER BY
+        CASE status
+          WHEN 'draft_ready' THEN 1
+          WHEN 'detected' THEN 2
+          ELSE 3
+        END,
+        frequency DESC,
+        created_at DESC
+      LIMIT 100
+    `);
+    res.json(gaps.rows);
+  }
+);
+
+// Approve a gap
+app.post('/api/arya/knowledge-gaps/:id/approve',
+  requireAdmin, async (req, res) => {
+    const { id } = req.params;
+    const { approved_response } = req.body;
+
+    await db.query(`
+      UPDATE knowledge_gaps
+      SET status = 'approved',
+          auto_draft = $1,
+          admin_approved = true,
+          reviewed_at = now()
+      WHERE id = $2
+    `, [approved_response, id]);
+
+    // Add to knowledge base for RAG
+    await db.query(`
+      INSERT INTO arya_knowledge
+        (content, category, source, created_at)
+      SELECT
+        trigger_query || ' ' || $1,
+        gap_category,
+        'self_learning',
+        now()
+      FROM knowledge_gaps WHERE id = $2
+    `, [approved_response, id]);
+
+    res.json({ success: true });
+  }
+);
+
+// Reject a gap
+app.post('/api/arya/knowledge-gaps/:id/reject',
+  requireAdmin, async (req, res) => {
+    await db.query(`
+      UPDATE knowledge_gaps
+      SET status = 'rejected',
+          admin_approved = false,
+          reviewed_at = now()
+      WHERE id = $1
+    `, [req.params.id]);
+
+    res.json({ success: true });
+  }
+);
+```
+
+---
+
+## Developer Checklist — Everything In Order
+
+```
+Step 1 — DB (10 mins)
+  Run migrations/add_missing_tables.sql
+  Add 4 table definitions to shared/schema.ts
+
+Step 2 — Cache fix (5 mins)
+  Find buildCacheKey() in response-cache-engine.ts
+  Add language param to key hash
+  Update all callers to pass detectedLang
+
+Step 3 — MoreTray component (2 hours)
+  Create client/src/components/MoreTray.tsx
+  Add CSS to global stylesheet
+  Import in App.tsx or layout component
+
+Step 4 — Bottom nav (1 hour)
+  Replace BottomNav component
+  Pass onOpenCustomize prop from parent
+  Remove old nav items (Prana, Review, Customize)
+
+Step 5 — Top bar (1 hour)
+  Replace TopBar component
+  Remove duplicate Goals icon
+  Remove second notification bell
+  Merge New and + into single button
+
+Step 6 — Tour button (15 mins)
+  Wrap tour button in isNewUser check
+  isNewUser = conversations.length === 0
+
+Step 7 — Self-Learning panel (2 hours)
+  Create client/src/pages/admin/SelfLearningPage.tsx
+  Add CSS
+  Add backend endpoints to routes.ts
+  Add route in admin router
+
+Total estimated time: 1 developer, 1 day
+```
