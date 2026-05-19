@@ -1572,6 +1572,24 @@ export async function registerRoutes(
     }
   });
 
+  app.patch("/api/arya/conversations/:id", optionalUser, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const userId = (req as any).userId || null;
+      const { title } = req.body;
+      if (!title || typeof title !== "string" || !title.trim()) {
+        return res.status(400).json({ error: "title is required" });
+      }
+      const conv = await chatStorage.getConversation(id);
+      if (!conv) return res.status(404).json({ error: "Not found" });
+      if (userId && conv.userId && conv.userId !== userId) return res.status(403).json({ error: "Access denied" });
+      await chatStorage.updateConversationTitle(id, title.trim());
+      res.json({ ok: true });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to rename conversation" });
+    }
+  });
+
   app.delete("/api/arya/conversations/:id", optionalUser, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);

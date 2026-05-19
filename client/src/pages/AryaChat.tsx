@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
@@ -72,6 +72,9 @@ import {
   Download,
   ChevronDown,
   Copy,
+  Pin,
+  PinOff,
+  Pencil,
 } from "lucide-react";
 import { getTranslation, getStoredUiLanguage, LANGUAGE_OPTIONS, type UiLanguage } from "@/lib/i18n";
 import { useLanguage } from "@/lib/language-context";
@@ -2497,6 +2500,12 @@ export default function AryaChat() {
   }, []);
 
   const [copiedMsgId, setCopiedMsgId] = useState<number | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+  const [renamingId, setRenamingId] = useState<number | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [pinnedIds, setPinnedIds] = useState<Set<number>>(() => {
+    try { return new Set(JSON.parse(localStorage.getItem("arya_pinned_convs") || "[]")); } catch { return new Set(); }
+  });
   const copyMessage = (id: number, text: string) => {
     navigator.clipboard.writeText(text).then(() => {
       setCopiedMsgId(id);
@@ -2653,6 +2662,41 @@ export default function AryaChat() {
       queryClient.invalidateQueries({ queryKey: ["/api/arya/conversations"] });
     },
   });
+
+  const renameConversation = useMutation({
+    mutationFn: async ({ id, title }: { id: number; title: string }) => {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["x-user-token"] = token;
+      const res = await fetch(`/api/arya/conversations/${id}`, {
+        method: "PATCH", headers,
+        body: JSON.stringify({ title }),
+      });
+      if (!res.ok) throw new Error("Failed to rename");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/arya/conversations"] });
+      setRenamingId(null);
+      setRenameValue("");
+    },
+  });
+
+  const togglePin = (id: number) => {
+    setPinnedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      localStorage.setItem("arya_pinned_convs", JSON.stringify([...next]));
+      return next;
+    });
+    setOpenMenuId(null);
+  };
+
+  const sortedConversations = useMemo(() => {
+    return [...conversations].sort((a, b) => {
+      const ap = pinnedIds.has(a.id) ? 1 : 0;
+      const bp = pinnedIds.has(b.id) ? 1 : 0;
+      return bp - ap;
+    });
+  }, [conversations, pinnedIds]);
 
   const startRehearsal = async () => {
     if (!rehearsalPerson.trim() || rehearsalLoading) return;
@@ -3511,49 +3555,143 @@ export default function AryaChat() {
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto space-y-1 px-2 py-2" data-testid="list-conversations">
-          {conversations.map((conv) => {
+        <div className="flex-1 overflow-y-auto space-y-1 px-2 py-2" data-testid="list-conversations" onClick={() => setOpenMenuId(null)}>
+          {sortedConversations.map((conv) => {
             const date = new Date(conv.createdAt);
             const now = new Date();
             const isToday = date.toDateString() === now.toDateString();
             const timeStr = isToday
               ? date.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" })
               : date.toLocaleDateString("en-IN", { month: "short", day: "numeric", timeZone: "Asia/Kolkata" });
+            const isPinned = pinnedIds.has(conv.id);
+            const isMenuOpen = openMenuId === conv.id;
+            const isRenaming = renamingId === conv.id;
             return (
               <div
                 key={conv.id}
                 data-testid={`card-conversation-${conv.id}`}
-                onClick={() => {
-                  setActiveConversation(conv.id);
-                  setShowSidebar(false);
-                }}
-                className={`group flex items-start gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer transition-all ${
-                  activeConversation === conv.id
-                    ? "bg-gradient-to-r from-emerald-500/15 to-transparent border border-emerald-300 dark:border-emerald-700 text-gray-900 dark:text-white"
-                    : "hover:bg-gray-100 dark:hover:bg-slate-700 text-muted-foreground hover:text-gray-900 dark:hover:text-white border border-transparent"
-                }`}
+                className="relative"
               >
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                  activeConversation === conv.id
-                    ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"
-                    : "bg-gray-100 dark:bg-slate-700 text-gray-400"
-                }`}>
-                  <MessageSquare className="w-3.5 h-3.5" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <span className="truncate text-sm block leading-tight">{conv.title}</span>
-                  <span className="text-[10px] text-gray-300 dark:text-gray-600 mt-0.5 block">{timeStr}</span>
-                </div>
-                <button
-                  data-testid={`button-delete-conversation-${conv.id}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteConversation.mutate(conv.id);
+                <div
+                  onClick={() => {
+                    if (isRenaming) return;
+                    setActiveConversation(conv.id);
+                    setShowSidebar(false);
+                    setOpenMenuId(null);
                   }}
-                  className="opacity-0 group-hover:opacity-100 hover:text-red-500 dark:hover:text-red-400 transition-opacity mt-1"
+                  className={`group flex items-start gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer transition-all ${
+                    activeConversation === conv.id
+                      ? "bg-gradient-to-r from-emerald-500/15 to-transparent border border-emerald-300 dark:border-emerald-700 text-gray-900 dark:text-white"
+                      : "hover:bg-gray-100 dark:hover:bg-slate-700 text-muted-foreground hover:text-gray-900 dark:hover:text-white border border-transparent"
+                  }`}
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 relative ${
+                    activeConversation === conv.id
+                      ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"
+                      : "bg-gray-100 dark:bg-slate-700 text-gray-400"
+                  }`}>
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    {isPinned && (
+                      <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-amber-400 rounded-full flex items-center justify-center">
+                        <Pin className="w-2 h-2 text-white" />
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    {isRenaming ? (
+                      <input
+                        data-testid={`input-rename-conversation-${conv.id}`}
+                        autoFocus
+                        value={renameValue}
+                        onChange={e => setRenameValue(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === "Enter" && renameValue.trim()) renameConversation.mutate({ id: conv.id, title: renameValue.trim() });
+                          if (e.key === "Escape") { setRenamingId(null); setRenameValue(""); }
+                        }}
+                        onClick={e => e.stopPropagation()}
+                        className="w-full text-sm bg-white dark:bg-slate-800 border border-emerald-400 rounded px-1.5 py-0.5 outline-none text-gray-900 dark:text-white"
+                      />
+                    ) : (
+                      <span className="truncate text-sm block leading-tight">{conv.title}</span>
+                    )}
+                    <span className="text-[10px] text-gray-300 dark:text-gray-600 mt-0.5 block">{timeStr}</span>
+                  </div>
+                  {isRenaming ? (
+                    <div className="flex items-center gap-1 mt-1" onClick={e => e.stopPropagation()}>
+                      <button
+                        data-testid={`button-rename-confirm-${conv.id}`}
+                        onClick={() => { if (renameValue.trim()) renameConversation.mutate({ id: conv.id, title: renameValue.trim() }); }}
+                        className="text-emerald-500 hover:text-emerald-600"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        data-testid={`button-rename-cancel-${conv.id}`}
+                        onClick={() => { setRenamingId(null); setRenameValue(""); }}
+                        className="text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      data-testid={`button-menu-conversation-${conv.id}`}
+                      onClick={e => {
+                        e.stopPropagation();
+                        setOpenMenuId(isMenuOpen ? null : conv.id);
+                      }}
+                      className={`mt-1 p-0.5 rounded transition-all ${
+                        isMenuOpen
+                          ? "opacity-100 text-emerald-500"
+                          : "opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                      }`}
+                    >
+                      <MoreHorizontal className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Context menu dropdown */}
+                {isMenuOpen && (
+                  <div
+                    data-testid={`menu-conversation-${conv.id}`}
+                    onClick={e => e.stopPropagation()}
+                    className="absolute right-1 top-full mt-0.5 z-50 w-40 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl shadow-lg py-1 text-sm"
+                  >
+                    <button
+                      data-testid={`button-pin-conversation-${conv.id}`}
+                      onClick={() => togglePin(conv.id)}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 transition-colors"
+                    >
+                      {isPinned ? <PinOff className="w-3.5 h-3.5 text-amber-500" /> : <Pin className="w-3.5 h-3.5 text-amber-500" />}
+                      {isPinned ? "Unpin" : "Pin"}
+                    </button>
+                    <button
+                      data-testid={`button-rename-conversation-${conv.id}`}
+                      onClick={() => {
+                        setRenamingId(conv.id);
+                        setRenameValue(conv.title);
+                        setOpenMenuId(null);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 transition-colors"
+                    >
+                      <Pencil className="w-3.5 h-3.5 text-blue-500" />
+                      Rename
+                    </button>
+                    <div className="border-t border-gray-100 dark:border-slate-700 my-0.5" />
+                    <button
+                      data-testid={`button-delete-conversation-${conv.id}`}
+                      onClick={() => {
+                        deleteConversation.mutate(conv.id);
+                        setOpenMenuId(null);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 dark:text-red-400 transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      Delete
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })}
