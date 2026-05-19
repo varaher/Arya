@@ -71,6 +71,7 @@ import {
   Activity,
   Download,
   ChevronDown,
+  Copy,
 } from "lucide-react";
 import { getTranslation, getStoredUiLanguage, LANGUAGE_OPTIONS, type UiLanguage } from "@/lib/i18n";
 import { useLanguage } from "@/lib/language-context";
@@ -2495,6 +2496,14 @@ export default function AryaChat() {
     return () => window.removeEventListener("arya-open-customize", handler);
   }, []);
 
+  const [copiedMsgId, setCopiedMsgId] = useState<number | null>(null);
+  const copyMessage = (id: number, text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedMsgId(id);
+      setTimeout(() => setCopiedMsgId(null), 1800);
+    }).catch(() => {});
+  };
+
   const [showReminders, setShowReminders] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
@@ -4388,6 +4397,18 @@ export default function AryaChat() {
                   </div>
                 )}
                 <FormattedMessage content={msg.content} isUser={msg.role === "user"} />
+                {msg.role === "user" && (
+                  <div className="flex justify-end mt-1">
+                    <button
+                      data-testid={`button-copy-msg-${msg.id}`}
+                      onClick={() => copyMessage(msg.id, msg.content)}
+                      className="p-1 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors opacity-0 group-hover:opacity-100"
+                      title="Copy message"
+                    >
+                      {copiedMsgId === msg.id ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                    </button>
+                  </div>
+                )}
                 {msg.role === "assistant" && (
                   <div className="flex items-center gap-1 mt-1.5">
                     <button
@@ -4397,6 +4418,14 @@ export default function AryaChat() {
                       title="Listen to this response"
                     >
                       <Volume2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      data-testid={`button-copy-msg-${msg.id}`}
+                      onClick={() => copyMessage(msg.id, msg.content)}
+                      className="p-1 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                      title="Copy response"
+                    >
+                      {copiedMsgId === msg.id ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                     </button>
                     {activeConversation && (
                       <FeedbackButtons messageId={msg.id} conversationId={activeConversation} />
