@@ -2572,6 +2572,18 @@ export default function AryaChat() {
     return () => window.removeEventListener("arya-open-customize", handler);
   }, []);
 
+  useEffect(() => {
+    const handler = () => { setShowMemory(true); setShowGoals(false); setShowCustomize(false); };
+    window.addEventListener("arya-open-memory", handler);
+    return () => window.removeEventListener("arya-open-memory", handler);
+  }, []);
+
+  useEffect(() => {
+    const handler = () => { setShowFeedbackModal(true); };
+    window.addEventListener("arya-open-report", handler);
+    return () => window.removeEventListener("arya-open-report", handler);
+  }, []);
+
   const [copiedMsgId, setCopiedMsgId] = useState<number | null>(null);
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
   const [renamingId, setRenamingId] = useState<number | null>(null);

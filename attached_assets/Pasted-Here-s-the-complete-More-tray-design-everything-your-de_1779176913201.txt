@@ -1,0 +1,582 @@
+Here's the complete More tray design — everything your developer needs.
+
+---
+
+## The More Tray — Complete Specification
+
+### What It Looks Like
+
+```
+User taps "More ⋯" in bottom nav
+        ↓
+Sheet slides up from bottom:
+
+┌─────────────────────────────────┐
+│  ▬  (drag handle)               │
+│                                 │
+│  ARYA FEATURES                  │
+│                                 │
+│  🫁  Prana          Health &    │
+│      ప్రాణ           Body        │
+│                                 │
+│  📖  Review         Sunday      │
+│      समीक्षा         Letter      │
+│                                 │
+│  🎨  Customize      Personalize  │
+│      कस्टमाइज़       ARYA         │
+│                                 │
+│  🧠  Memory         What ARYA   │
+│      स्मृति          remembers   │
+│                                 │
+│  👥  Community      Challenges  │
+│      समुदाय          & reflections│
+│                                 │
+│  ─────────────────────────────  │
+│                                 │
+│  🔒  Privacy & Control          │
+│  📣  Report an Issue            │
+│                                 │
+└─────────────────────────────────┘
+```
+
+---
+
+## Complete Code — MoreTray Component
+
+```tsx
+// client/src/components/MoreTray.tsx
+
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
+
+interface MoreTrayProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export function MoreTray({ isOpen, onClose }: MoreTrayProps) {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+
+  const mainFeatures = [
+    {
+      icon: '🫁',
+      label: t('menu_prana'),
+      sublabel: t('more.prana_sub'),
+      path: '/prana',
+      color: '#4CAF50'
+    },
+    {
+      icon: '📖',
+      label: t('menu_review'),
+      sublabel: t('more.review_sub'),
+      path: '/review',
+      color: '#FF9800'
+    },
+    {
+      icon: '🎨',
+      label: t('menu_customize'),
+      sublabel: t('more.customize_sub'),
+      path: null,
+      action: 'customize',
+      color: '#9C27B0'
+    },
+    {
+      icon: '🧠',
+      label: t('menu_memory'),
+      sublabel: t('more.memory_sub'),
+      path: '/memory',
+      color: '#2196F3'
+    },
+    {
+      icon: '👥',
+      label: t('menu_community'),
+      sublabel: t('more.community_sub'),
+      path: '/community',
+      color: '#FF5722'
+    },
+  ];
+
+  const utilityLinks = [
+    {
+      icon: '🔒',
+      label: t('menu_privacy'),
+      path: '/privacy-control'
+    },
+    {
+      icon: '📣',
+      label: t('menu_report'),
+      path: null,
+      action: 'report'
+    },
+  ];
+
+  function handleItem(item: any) {
+    onClose();
+    if (item.path) {
+      navigate(item.path);
+    } else if (item.action === 'customize') {
+      // Open customize panel
+      window.dispatchEvent(new CustomEvent('open-customize'));
+    } else if (item.action === 'report') {
+      window.dispatchEvent(new CustomEvent('open-report'));
+    }
+  }
+
+  if (!isOpen) return null;
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        className="more-tray-backdrop"
+        onClick={onClose}
+      />
+
+      {/* Tray */}
+      <div className={`more-tray ${isOpen ? 'open' : ''}`}>
+
+        {/* Drag handle */}
+        <div className="more-tray-handle" />
+
+        {/* Header */}
+        <div className="more-tray-header">
+          <span className="more-tray-title">
+            {t('more.title')}
+          </span>
+        </div>
+
+        {/* Main features */}
+        <div className="more-tray-features">
+          {mainFeatures.map(item => (
+            <button
+              key={item.label}
+              className="more-tray-item"
+              onClick={() => handleItem(item)}
+            >
+              <div
+                className="mti-icon"
+                style={{ background: `${item.color}18`,
+                         border: `1px solid ${item.color}30` }}
+              >
+                {item.icon}
+              </div>
+              <div className="mti-text">
+                <span className="mti-label">{item.label}</span>
+                <span className="mti-sub">{item.sublabel}</span>
+              </div>
+              <span className="mti-arrow">›</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Divider */}
+        <div className="more-tray-divider" />
+
+        {/* Utility links */}
+        <div className="more-tray-utility">
+          {utilityLinks.map(item => (
+            <button
+              key={item.label}
+              className="more-tray-util-item"
+              onClick={() => handleItem(item)}
+            >
+              <span className="mtu-icon">{item.icon}</span>
+              <span className="mtu-label">{item.label}</span>
+            </button>
+          ))}
+        </div>
+
+      </div>
+    </>
+  );
+}
+```
+
+---
+
+## CSS
+
+```css
+/* More Tray */
+.more-tray-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 90;
+  animation: fadeIn 0.2s ease;
+}
+
+.more-tray {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--surface, #fff);
+  border-radius: 20px 20px 0 0;
+  z-index: 91;
+  padding: 0 0 env(safe-area-inset-bottom, 20px);
+  transform: translateY(100%);
+  transition: transform 0.32s cubic-bezier(0.16,1,0.3,1);
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.more-tray.open {
+  transform: translateY(0);
+}
+
+/* Drag handle */
+.more-tray-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border, #e0e0e0);
+  margin: 12px auto 0;
+}
+
+/* Header */
+.more-tray-header {
+  padding: 16px 20px 8px;
+}
+.more-tray-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted, #999);
+}
+
+/* Feature items */
+.more-tray-features {
+  padding: 4px 12px 0;
+}
+
+.more-tray-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 13px 10px;
+  border-radius: 14px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: start;
+  transition: background 0.15s;
+}
+
+.more-tray-item:hover,
+.more-tray-item:active {
+  background: var(--surface2, #f5f5f5);
+}
+
+.mti-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.mti-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mti-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text, #1a1a1a);
+}
+
+.mti-sub {
+  font-size: 12px;
+  color: var(--text-muted, #999);
+}
+
+.mti-arrow {
+  font-size: 20px;
+  color: var(--text-muted, #ccc);
+}
+
+/* Divider */
+.more-tray-divider {
+  height: 1px;
+  background: var(--border, #f0f0f0);
+  margin: 8px 20px;
+}
+
+/* Utility links */
+.more-tray-utility {
+  padding: 4px 12px 12px;
+  display: flex;
+  gap: 8px;
+}
+
+.more-tray-util-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border, #f0f0f0);
+  background: var(--surface2, #fafafa);
+  font-size: 13px;
+  color: var(--text-muted, #888);
+  cursor: pointer;
+}
+```
+
+---
+
+## Updated Bottom Nav
+
+```tsx
+// client/src/components/BottomNav.tsx
+
+export function BottomNav() {
+  const { t } = useTranslation();
+  const [moreTrayOpen, setMoreTrayOpen] = useState(false);
+  const location = useLocation();
+
+  const navItems = [
+    { icon: '🏠', label: t('nav.home'),  path: '/' },
+    { icon: '🎯', label: t('nav.goals'), path: '/my-goals' },
+    { icon: '✦',  label: t('menu_kaal'), path: '/kaal' },
+    { icon: '⚖️', label: t('menu_niti'), path: '/niti' },
+    { icon: '⋯',  label: t('more.label'), path: null,
+      action: () => setMoreTrayOpen(true) },
+  ];
+
+  return (
+    <>
+      <nav className="bottom-nav">
+        {navItems.map(item => (
+          <button
+            key={item.label}
+            className={`bn-item ${
+              item.path && location.pathname === item.path
+                ? 'active' : ''
+            }`}
+            onClick={() => {
+              if (item.action) item.action();
+              else navigate(item.path!);
+            }}
+          >
+            <span className="bn-icon">{item.icon}</span>
+            <span className="bn-label">{item.label}</span>
+          </button>
+        ))}
+      </nav>
+
+      <MoreTray
+        isOpen={moreTrayOpen}
+        onClose={() => setMoreTrayOpen(false)}
+      />
+    </>
+  );
+}
+```
+
+```css
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  background: var(--surface, #fff);
+  border-top: 1px solid var(--border, #f0f0f0);
+  padding: 8px 0 env(safe-area-inset-bottom, 8px);
+  z-index: 80;
+}
+
+.bn-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text-muted, #999);
+  transition: color 0.15s;
+}
+
+.bn-item.active {
+  color: var(--primary, #2e7d5e);
+}
+
+.bn-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.bn-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+```
+
+---
+
+## Updated Top Bar
+
+```tsx
+// Simplified — 5 items only
+
+export function TopBar() {
+  const { t } = useTranslation();
+
+  return (
+    <div className="top-bar">
+
+      {/* Left — history */}
+      <button className="tb-history" onClick={openHistory}>
+        <span className="tb-hist-icon">⊟</span>
+        <span className="tb-hist-label">
+          {t('chat_history')}
+        </span>
+        {historyCount > 0 && (
+          <span className="tb-badge">{historyCount}</span>
+        )}
+      </button>
+
+      {/* Center — new chat */}
+      <button className="tb-new" onClick={startNewChat}>
+        + {t('new_chat')}
+      </button>
+
+      {/* Right — 3 icons only */}
+      <div className="tb-right">
+
+        {/* Dark mode toggle */}
+        <button className="tb-icon" onClick={toggleDarkMode}>
+          🌙
+        </button>
+
+        {/* Single notification bell */}
+        <button className="tb-icon" onClick={openNotifications}>
+          🔔
+          {unreadCount > 0 && (
+            <span className="tb-notif-badge">{unreadCount}</span>
+          )}
+        </button>
+
+        {/* Profile */}
+        <button className="tb-avatar" onClick={openProfileMenu}>
+          {userInitial}
+          {updateAvailable && (
+            <span className="tb-update-dot" />
+          )}
+        </button>
+
+      </div>
+    </div>
+  );
+}
+```
+
+---
+
+## Translation Keys For More Tray
+
+Add to all language files:
+
+```json
+{
+  "more.label": "More",
+  "more.title": "ARYA FEATURES",
+  "more.prana_sub": "Health & Body",
+  "more.review_sub": "Sunday Letter",
+  "more.customize_sub": "Personalize ARYA",
+  "more.memory_sub": "What ARYA remembers",
+  "more.community_sub": "Challenges & reflections"
+}
+```
+
+Hindi versions:
+```json
+{
+  "more.label": "और",
+  "more.title": "ARYA की सुविधाएं",
+  "more.prana_sub": "सेहत और शरीर",
+  "more.review_sub": "रविवार का पत्र",
+  "more.customize_sub": "ARYA को personalize करो",
+  "more.memory_sub": "ARYA को क्या याद है",
+  "more.community_sub": "Challenges और reflection"
+}
+```
+
+Tamil versions:
+```json
+{
+  "more.label": "மேலும்",
+  "more.title": "ARYA அம்சங்கள்",
+  "more.prana_sub": "ஆரோக்கியம் & உடல்",
+  "more.review_sub": "ஞாயிறு கடிதம்",
+  "more.customize_sub": "ARYA-ஐ personalize செய்",
+  "more.memory_sub": "ARYA என்ன நினைவில் வைத்தது",
+  "more.community_sub": "Challenges & reflection"
+}
+```
+
+---
+
+## The "Take a Tour" Button Fix
+
+```tsx
+// Only show for users with 0 conversations
+
+const showTour = conversationCount === 0;
+
+{showTour && (
+  <button className="take-tour-btn" onClick={startTour}>
+    ⓘ {t('take_tour')}
+  </button>
+)}
+```
+
+---
+
+## Final Summary
+
+```
+BEFORE — 9 items in top, 7 in bottom, duplicates, 2 bells
+AFTER  — 5 items in top, 5 in bottom, no duplicates, 1 bell
+
+Top bar:
+  History (count) | + New Chat | 🌙 | 🔔(count) | 👤
+
+Bottom nav:
+  Home | Goals | KAAL | Niti | More ⋯
+
+More tray (slides up):
+  🫁 Prana — Health & Body
+  📖 Review — Sunday Letter
+  🎨 Customize — Personalize ARYA
+  🧠 Memory — What ARYA remembers
+  👥 Community — Challenges & reflections
+  ──────────────
+  🔒 Privacy & Control
+  📣 Report an Issue
+
+Tour button:
+  Only visible on first visit (0 conversations)
+  Hidden for returning users
+```
+
+Clean, standard, comfortable on mobile. Every feature still accessible — just one tap deeper for the less-used ones.

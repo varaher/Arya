@@ -427,6 +427,14 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     review_cosmic_planet:  "Ruling Planet",
     health_tap_to_log:     "Tap to log",
     health_wearable:       "Connect your wearable",
+    // More tray
+    more_label:            "More",
+    more_title:            "ARYA FEATURES",
+    more_prana_sub:        "Health & Body",
+    more_review_sub:       "Sunday Letter",
+    more_customize_sub:    "Personalize ARYA",
+    more_memory_sub:       "What ARYA remembers",
+    more_community_sub:    "Challenges & reflections",
   },
 
   // ── Hindi ─────────────────────────────────────────────────────────────────────
@@ -804,6 +812,14 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     review_cosmic_planet:  "इस हफ़्ते का ग्रह",
     health_tap_to_log:     "tap करके log करो",
     health_wearable:       "अपना wearable connect करो",
+    // More tray
+    more_label:            "और",
+    more_title:            "ARYA की सुविधाएं",
+    more_prana_sub:        "सेहत और शरीर",
+    more_review_sub:       "रविवार का पत्र",
+    more_customize_sub:    "ARYA को personalize करो",
+    more_memory_sub:       "ARYA को क्या याद है",
+    more_community_sub:    "Challenges और reflection",
   },
 
   // ── Marathi ───────────────────────────────────────────────────────────────────
@@ -1079,6 +1095,14 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     review_business_week:   "या आठवड्यात Business Mind",
     review_no_niti:         "या आठवड्यात Niti session नाही. पुढच्या वेळी.",
     review_pattern_forming: "Pattern तयार होतोय — पुढच्या आठवड्यात दिसेल",
+    // More tray
+    more_label:            "आणखी",
+    more_title:            "ARYA ची वैशिष्ट्ये",
+    more_prana_sub:        "आरोग्य & शरीर",
+    more_review_sub:       "रविवारचं पत्र",
+    more_customize_sub:    "ARYA ला personalize कर",
+    more_memory_sub:       "ARYA ला काय आठवतं",
+    more_community_sub:    "Challenges & reflection",
   },
 
   // ── Bengali ───────────────────────────────────────────────────────────────────
@@ -1354,6 +1378,14 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     review_business_week:   "এই সপ্তাহে Business Mind",
     review_no_niti:         "এই সপ্তাহে Niti session নেই। পরের বার।",
     review_pattern_forming: "Pattern তৈরি হচ্ছে — আগামী সপ্তাহে দেখা যাবে",
+    // More tray
+    more_label:            "আরো",
+    more_title:            "ARYA ফিচারস",
+    more_prana_sub:        "স্বাস্থ্য & শরীর",
+    more_review_sub:       "রবিবারের চিঠি",
+    more_customize_sub:    "ARYA-কে personalize করো",
+    more_memory_sub:       "ARYA কী মনে রেখেছে",
+    more_community_sub:    "Challenges & reflections",
   },
 
   // ── Tamil ─────────────────────────────────────────────────────────────────────
@@ -1629,6 +1661,14 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     review_business_week:   "இந்த வாரம் Business Mind",
     review_no_niti:         "இந்த வாரம் Niti session இல்லை. அடுத்த முறை.",
     review_pattern_forming: "Pattern உருவாகிறது — அடுத்த வாரங்களில் பார்க்கலாம்",
+    // More tray
+    more_label:            "மேலும்",
+    more_title:            "ARYA அம்சங்கள்",
+    more_prana_sub:        "ஆரோக்கியம் & உடல்",
+    more_review_sub:       "ஞாயிறு கடிதம்",
+    more_customize_sub:    "ARYA-ஐ personalize செய்",
+    more_memory_sub:       "ARYA என்ன நினைவில் வைத்தது",
+    more_community_sub:    "Challenges & reflections",
   },
 
   // ── Telugu ────────────────────────────────────────────────────────────────────
@@ -1904,6 +1944,14 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     review_business_week:   "ఈ వారం Business Mind",
     review_no_niti:         "ఈ వారం Niti session లేదు. వచ్చే సారి.",
     review_pattern_forming: "Pattern ఏర్పడుతోంది — వచ్చే వారాల్లో చూద్దాం",
+    // More tray
+    more_label:            "మరింత",
+    more_title:            "ARYA ఫీచర్లు",
+    more_prana_sub:        "ఆరోగ్యం & శరీరం",
+    more_review_sub:       "ఆదివారం లేఖ",
+    more_customize_sub:    "ARYA ని personalize చేయి",
+    more_memory_sub:       "ARYA ఏమి గుర్తుంచుకుంది",
+    more_community_sub:    "Challenges & reflections",
   },
 
   // ── Kannada ───────────────────────────────────────────────────────────────────
@@ -1952,6 +2000,14 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "ಸಮುದಾಯ",
     calendar:          "ಕ್ಯಾಲೆಂಡರ್",
     reminders:         "ಜ್ಞಾಪಕಗಳು",
+    // More tray
+    more_label:        "ಹೆಚ್ಚು",
+    more_title:        "ARYA ವೈಶಿಷ್ಟ್ಯಗಳು",
+    more_prana_sub:    "ಆರೋಗ್ಯ & ದೇಹ",
+    more_review_sub:   "ಭಾನುವಾರದ ಪತ್ರ",
+    more_customize_sub:"ARYA ಅನ್ನು personalize ಮಾಡು",
+    more_memory_sub:   "ARYA ಏನು ನೆನಪಿಟ್ಟುಕೊಂಡಿದೆ",
+    more_community_sub:"Challenges & reflections",
   },
 
   // ── Malayalam ─────────────────────────────────────────────────────────────────
@@ -2227,6 +2283,14 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     review_business_week:   "ഈ ആഴ്ച Business Mind",
     review_no_niti:         "ഈ ആഴ്ച Niti session ഇല്ല. അടുത്ത തവണ.",
     review_pattern_forming: "Pattern രൂപപ്പെടുന്നു — അടുത്ത ആഴ്ചകളിൽ കാണാം",
+    // More tray
+    more_label:            "കൂടുതൽ",
+    more_title:            "ARYA സവിശേഷതകൾ",
+    more_prana_sub:        "ആരോഗ്യം & ശരീരം",
+    more_review_sub:       "ഞായർ കത്ത്",
+    more_customize_sub:    "ARYA-ഐ personalize ചെയ്യൂ",
+    more_memory_sub:       "ARYA എന്ത് ഓർക്കുന്നു",
+    more_community_sub:    "Challenges & reflections",
   },
 
   // ── Gujarati ──────────────────────────────────────────────────────────────────
@@ -2502,6 +2566,14 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     review_business_week:   "આ અઠવાડિયે Business Mind",
     review_no_niti:         "આ અઠવાડિયે Niti session નહીં. આગળ વખત.",
     review_pattern_forming: "Pattern બની રહ્યો છે — આગળ અઠવાડિયામાં દેખાશે",
+    // More tray
+    more_label:            "વધુ",
+    more_title:            "ARYA ની સુવિધાઓ",
+    more_prana_sub:        "સ્વાસ્થ્ય & શરીર",
+    more_review_sub:       "રવિવારનો પત્ર",
+    more_customize_sub:    "ARYA ને personalize કર",
+    more_memory_sub:       "ARYA ને શું યાદ છે",
+    more_community_sub:    "Challenges & reflections",
   },
 
   // ── Punjabi ───────────────────────────────────────────────────────────────────
@@ -2882,6 +2954,14 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     review_pattern_conf:   "Pattern ਕਈ ਹਫ਼ਤਿਆਂ ਵਿੱਚ ਸਾਬਿਤ ਹੋਇਆ",
     review_cosmic_week:    "ਤੇਰਾ ਬ੍ਰਹਿਮੰਡੀ ਹਫ਼ਤਾ",
     review_cosmic_planet:  "ਰਾਜ ਗ੍ਰਹਿ",
+    // More tray
+    more_label:            "ਹੋਰ",
+    more_title:            "ARYA ਦੀਆਂ ਸੁਵਿਧਾਵਾਂ",
+    more_prana_sub:        "ਸਿਹਤ & ਸਰੀਰ",
+    more_review_sub:       "ਐਤਵਾਰ ਦੀ ਚਿੱਠੀ",
+    more_customize_sub:    "ARYA ਨੂੰ personalize ਕਰ",
+    more_memory_sub:       "ARYA ਨੂੰ ਕੀ ਯਾਦ ਹੈ",
+    more_community_sub:    "Challenges & reflections",
   },
 
   // ── Odia ──────────────────────────────────────────────────────────────────────
@@ -3262,6 +3342,14 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     review_pattern_conf:   "Pattern ଏକାଧିକ ସପ୍ତାହ ଜୁଡ଼ି ଦୃଢ଼",
     review_cosmic_week:    "ତୁମ ବ୍ରହ୍ମାଣ୍ଡୀୟ ସପ୍ତାହ",
     review_cosmic_planet:  "ରାଜ ଗ୍ରହ",
+    // More tray
+    more_label:            "ଅଧିକ",
+    more_title:            "ARYA ବୈଶିଷ୍ଟ୍ୟ",
+    more_prana_sub:        "ସ୍ୱାସ୍ଥ୍ୟ & ଶରୀର",
+    more_review_sub:       "ରବିବାର ଚିଠି",
+    more_customize_sub:    "ARYA କୁ personalize କର",
+    more_memory_sub:       "ARYA କ'ଣ ମନେ ରଖିଛି",
+    more_community_sub:    "Challenges & reflections",
   },
 
   // ── Sanskrit ──────────────────────────────────────────────────────────────────
