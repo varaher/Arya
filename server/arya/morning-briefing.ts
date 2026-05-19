@@ -120,6 +120,8 @@ export async function sendMorningBriefings(sendPush: (userId: string, title: str
           : lang === "bn" ? `শুভ সকাল, ${firstName}! ☀️`
           : lang === "mr" ? `शुभ प्रभात, ${firstName}! ☀️`
           : lang === "gu" ? `શુભ સવાર, ${firstName}! ☀️`
+          : lang === "pa" ? `ਸ਼ੁਭ ਸਵੇਰ, ${firstName}! ☀️`
+          : lang === "od" ? `ଶୁଭ ସକାଳ, ${firstName}! ☀️`
           : `Good morning, ${firstName}! ☀️`;
         await db.insert(aryaNotifications).values({
           userId: user.id,
