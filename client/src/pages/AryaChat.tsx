@@ -1398,7 +1398,7 @@ function CalendarPanel({ onClose, token }: { onClose: () => void; token: string 
             {connecting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Link2 className="w-3.5 h-3.5" />}
             {connecting ? "Opening Google..." : "Connect Google Calendar"}
           </button>
-          <p className="text-[10px] text-gray-300 dark:text-gray-600 mt-3">Read-only access. Your data stays private.</p>
+          <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-3">Read-only access. Your data stays private.</p>
         </div>
       ) : (
         <>
@@ -1443,7 +1443,7 @@ function CalendarPanel({ onClose, token }: { onClose: () => void; token: string 
               <div className="text-center py-10 px-4">
                 <CalendarDays className="w-8 h-8 text-gray-200 mx-auto mb-2" />
                 <p className="text-sm text-gray-400">No events {days === 1 ? "today" : "this week"}</p>
-                <p className="text-xs text-gray-300 dark:text-gray-600 mt-1">Enjoy the free time!</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Enjoy the free time!</p>
               </div>
             ) : (
               <div className="p-2 space-y-3">
@@ -1620,7 +1620,7 @@ function GoalsPanel({ onClose }: { onClose: () => void }) {
                 <div className="w-full h-1 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
                   <div className="h-full bg-gradient-to-r from-amber-500 to-emerald-500 rounded-full transition-all" style={{ width: `${goal.progress}%` }} />
                 </div>
-                <span className="text-[10px] text-gray-300 dark:text-gray-600 mt-0.5 block">{goal.progress}%</span>
+                <span className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5 block">{goal.progress}%</span>
               </div>
             )}
 
@@ -1649,7 +1649,7 @@ function GoalsPanel({ onClose }: { onClose: () => void }) {
           <div className="text-center py-8">
             <Target className="w-8 h-8 text-gray-300 dark:text-white/10 mx-auto mb-2" />
             <p className="text-sm text-gray-400">No goals yet</p>
-            <p className="text-xs text-gray-400 dark:text-gray-600 mt-1">Add a goal above, or just tell ARYA about it in chat</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Add a goal above, or just tell ARYA about it in chat</p>
           </div>
         )}
       </div>
@@ -1806,7 +1806,7 @@ function VoiceNotesPanel({ onClose, token, uiLang = "en", voiceLang = "en-IN" }:
           <div className="text-center py-10 px-3">
             <NotebookPen className="w-8 h-8 text-gray-200 mx-auto mb-2" />
             <p className="text-sm text-gray-400">{search ? "No notes match your search" : tl("no_notes")}</p>
-            <p className="text-xs text-gray-300 mt-1">{search ? "" : tl("start_recording")}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{search ? "" : tl("start_recording")}</p>
           </div>
         ) : notes.map((note) => (
           <div key={note.id} data-testid={`card-voice-note-${note.id}`} className="group flex items-start gap-2 px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-slate-800 border border-gray-100 dark:border-slate-700 hover:border-violet-200 dark:hover:border-violet-800 transition-all">
@@ -1816,7 +1816,7 @@ function VoiceNotesPanel({ onClose, token, uiLang = "en", voiceLang = "en-IN" }:
             <div className="flex-1 min-w-0">
               <div className="text-xs font-medium text-gray-700 dark:text-gray-200 truncate">{note.title || note.transcript?.slice(0, 40)}</div>
               <div className="text-[10px] text-gray-400 mt-0.5 line-clamp-2">{note.transcript}</div>
-              <div className="text-[10px] text-gray-300 dark:text-gray-600 mt-1 flex items-center gap-2">
+              <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 flex items-center gap-2">
                 <span>{formatDate(note.createdAt)}</span>
                 {note.durationSeconds > 0 && <span>· {formatDur(note.durationSeconds)}</span>}
               </div>
@@ -2312,9 +2312,36 @@ function InsightsCard({ insights, onDismiss }: { insights: InsightItem[]; onDism
   );
 }
 
+const WHATS_NEW = [
+  {
+    version: "v2.3",
+    title: "✨ Pin, Rename & Delete chats",
+    message: "Hover any chat in the sidebar to pin it to the top, rename it, or delete it with the ••• menu.",
+    date: "May 19, 2026",
+  },
+  {
+    version: "v2.2",
+    title: "📋 Copy messages & Download report",
+    message: "Copy any chat message with one tap. Download your weekly review as a text file from the Review page.",
+    date: "May 18, 2026",
+  },
+  {
+    version: "v2.1",
+    title: "🌐 Universal bottom navigation",
+    message: "The bottom nav now works across Goals, Niti, KAAL, Prana, and Review pages — no more getting stuck.",
+    date: "May 17, 2026",
+  },
+];
+const LATEST_ANNOUNCEMENT_VERSION = WHATS_NEW[0].version;
+const ANNOUNCEMENT_STORAGE_KEY = "arya_last_seen_announcement";
+
 function NotificationBell({ token }: { token: string }) {
   const queryClient = useQueryClient();
   const [showDropdown, setShowDropdown] = useState(false);
+  const [seenVersion, setSeenVersion] = useState<string | null>(() =>
+    localStorage.getItem(ANNOUNCEMENT_STORAGE_KEY)
+  );
+
   const { data } = useQuery({
     queryKey: ["/api/user/notifications"],
     queryFn: async () => {
@@ -2324,55 +2351,101 @@ function NotificationBell({ token }: { token: string }) {
     },
     refetchInterval: 30000,
   });
+
   const notifications = data?.notifications || [];
-  const unreadCount = data?.unreadCount || 0;
+  const dbUnreadCount = data?.unreadCount || 0;
+  const hasNewAnnouncement = seenVersion !== LATEST_ANNOUNCEMENT_VERSION;
+  const totalUnread = dbUnreadCount + (hasNewAnnouncement ? 1 : 0);
 
   const markRead = async (id: number) => {
     await fetch(`/api/user/notifications/${id}/read`, { method: "POST", headers: { "x-user-token": token } });
     queryClient.invalidateQueries({ queryKey: ["/api/user/notifications"] });
   };
 
+  const markAnnouncementSeen = () => {
+    localStorage.setItem(ANNOUNCEMENT_STORAGE_KEY, LATEST_ANNOUNCEMENT_VERSION);
+    setSeenVersion(LATEST_ANNOUNCEMENT_VERSION);
+  };
+
+  const handleOpen = () => {
+    setShowDropdown(!showDropdown);
+    if (hasNewAnnouncement) markAnnouncementSeen();
+  };
+
   return (
     <div className="relative">
       <button
         data-testid="button-notifications"
-        onClick={() => setShowDropdown(!showDropdown)}
-        className="p-1.5 rounded-lg text-gray-400 hover:text-gray-500 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 transition-all relative"
+        onClick={handleOpen}
+        className="p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-all relative"
       >
         <Bell className="w-4 h-4" />
-        {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-amber-50 dark:bg-amber-900/200 rounded-full text-[8px] font-bold flex items-center justify-center text-black">
-            {unreadCount > 9 ? "9+" : unreadCount}
+        {totalUnread > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-3.5 px-0.5 bg-red-500 rounded-full text-[8px] font-bold flex items-center justify-center text-white leading-none">
+            {totalUnread > 9 ? "9+" : totalUnread}
           </span>
         )}
       </button>
+
       {showDropdown && (
         <>
-        <div className="fixed inset-0 z-40" onClick={() => setShowDropdown(false)} />
-        <div className="absolute right-0 top-full mt-1 z-50 bg-card border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl py-1 w-72 max-h-80 overflow-y-auto">
-          <div className="px-3 py-2 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between">
-            <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">Notifications</span>
-            {unreadCount > 0 && <span className="text-[10px] text-amber-600 dark:text-amber-400">{unreadCount} new</span>}
-          </div>
-          {notifications.length === 0 ? (
-            <div className="px-3 py-4 text-xs text-gray-300 dark:text-gray-600 text-center">No notifications yet</div>
-          ) : (
-            notifications.slice(0, 20).map((n: any) => (
+          <div className="fixed inset-0 z-40" onClick={() => setShowDropdown(false)} />
+          <div className="absolute right-0 top-full mt-1 z-50 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl py-1 w-72 max-h-96 overflow-y-auto">
+            <div className="px-3 py-2 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between">
+              <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">Notifications</span>
+              {totalUnread > 0 && (
+                <span className="text-[10px] px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full font-medium">
+                  {totalUnread} new
+                </span>
+              )}
+            </div>
+
+            {WHATS_NEW.map((ann, idx) => (
+              <div
+                key={ann.version}
+                data-testid={`announcement-item-${ann.version}`}
+                className={`px-3 py-2.5 text-xs border-b border-gray-100 dark:border-slate-700 ${
+                  idx === 0 ? "bg-violet-50 dark:bg-violet-900/20" : "bg-gray-50 dark:bg-slate-900/40"
+                }`}
+              >
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  {idx === 0 && (
+                    <span className="text-[9px] px-1.5 py-0.5 bg-violet-500 text-white rounded-full font-semibold uppercase tracking-wide">New</span>
+                  )}
+                  <span className="font-semibold text-gray-800 dark:text-gray-100">{ann.title}</span>
+                </div>
+                <p className="text-gray-500 dark:text-gray-400 leading-relaxed">{ann.message}</p>
+                <p className="text-gray-400 dark:text-gray-500 mt-1 text-[10px]">{ann.date}</p>
+              </div>
+            ))}
+
+            {notifications.length > 0 && (
+              <div className="px-3 py-1.5 border-b border-gray-100 dark:border-slate-700">
+                <span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Activity</span>
+              </div>
+            )}
+
+            {notifications.length === 0 && (
+              <div className="px-3 py-4 text-xs text-gray-400 dark:text-gray-500 text-center">No activity yet</div>
+            )}
+
+            {notifications.slice(0, 20).map((n: any) => (
               <div
                 key={n.id}
                 data-testid={`notification-item-${n.id}`}
-                className={`px-3 py-2 text-xs border-b border-gray-100 dark:border-slate-700 last:border-0 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-700 ${!n.isRead ? 'bg-emerald-50 dark:bg-emerald-900/20' : ''}`}
+                className={`px-3 py-2 text-xs border-b border-gray-100 dark:border-slate-700 last:border-0 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors ${
+                  !n.isRead ? "bg-emerald-50 dark:bg-emerald-900/20" : ""
+                }`}
                 onClick={() => { if (!n.isRead) markRead(n.id); }}
               >
                 <div className="font-medium text-gray-700 dark:text-gray-200">{n.title}</div>
-                <div className="text-gray-400 mt-0.5">{n.message}</div>
-                <div className="text-gray-400 mt-1 text-[10px]">
+                <div className="text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">{n.message}</div>
+                <div className="text-gray-400 dark:text-gray-500 mt-1 text-[10px]">
                   {new Date(n.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" })}
                 </div>
               </div>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
         </>
       )}
     </div>
@@ -3614,7 +3687,7 @@ export default function AryaChat() {
                     ) : (
                       <span className="truncate text-sm block leading-tight">{conv.title}</span>
                     )}
-                    <span className="text-[10px] text-gray-300 dark:text-gray-600 mt-0.5 block">{timeStr}</span>
+                    <span className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5 block">{timeStr}</span>
                   </div>
                   {isRenaming ? (
                     <div className="flex items-center gap-1 mt-1" onClick={e => e.stopPropagation()}>
