@@ -1590,6 +1590,21 @@ export async function registerRoutes(
     }
   });
 
+  app.patch("/api/arya/conversations/:id/pin", optionalUser, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const userId = (req as any).userId || null;
+      const { isPinned } = req.body;
+      const conv = await chatStorage.getConversation(id);
+      if (!conv) return res.status(404).json({ error: "Not found" });
+      if (userId && conv.userId && conv.userId !== userId) return res.status(403).json({ error: "Access denied" });
+      await chatStorage.updateConversationPin(id, Boolean(isPinned));
+      res.json({ ok: true });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to update pin" });
+    }
+  });
+
   app.delete("/api/arya/conversations/:id", optionalUser, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);

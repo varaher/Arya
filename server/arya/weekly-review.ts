@@ -160,6 +160,7 @@ export async function sendWeeklyReviews(sendPush: (userId: string, title: string
           : lang === "gu" ? `${firstName}, તારી સાપ્તાહિક સમીક્ષા તૈયાર 📖`
           : lang === "pa" ? `${firstName}, ਤੇਰੀ ਹਫ਼ਤਾਵਾਰੀ ਸਮੀਖਿਆ ਤਿਆਰ 📖`
           : lang === "od" ? `${firstName}, ତୁମ ସାପ୍ତାହିକ ସମୀକ୍ଷା ପ୍ରସ୍ତୁତ 📖`
+          : lang === "sa" ? `${firstName}, सप्ताहस्य समीक्षा सज्जा 📖`
           : `📊 Your Weekly Review`;
         await db.insert(aryaNotifications).values({
           userId: user.id,

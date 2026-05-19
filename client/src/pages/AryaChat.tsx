@@ -2765,7 +2765,8 @@ export default function AryaChat() {
     },
   });
 
-  const togglePin = (id: number) => {
+  const togglePin = async (id: number) => {
+    const newIsPinned = !pinnedIds.has(id);
     setPinnedIds(prev => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id); else next.add(id);
@@ -2773,6 +2774,16 @@ export default function AryaChat() {
       return next;
     });
     setOpenMenuId(null);
+    if (token) {
+      try {
+        const headers: Record<string, string> = { "Content-Type": "application/json", "x-user-token": token };
+        await fetch(`/api/arya/conversations/${id}/pin`, {
+          method: "PATCH", headers,
+          body: JSON.stringify({ isPinned: newIsPinned }),
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/arya/conversations"] });
+      } catch { /* silent — localStorage state remains valid */ }
+    }
   };
 
   const sortedConversations = useMemo(() => {
@@ -3749,7 +3760,7 @@ export default function AryaChat() {
                       className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 transition-colors"
                     >
                       {isPinned ? <PinOff className="w-3.5 h-3.5 text-amber-500" /> : <Pin className="w-3.5 h-3.5 text-amber-500" />}
-                      {isPinned ? "Unpin" : "Pin"}
+                      {isPinned ? t("chat_unpin") : t("chat_pin")}
                     </button>
                     <button
                       data-testid={`button-rename-conversation-${conv.id}`}
@@ -3761,7 +3772,7 @@ export default function AryaChat() {
                       className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 transition-colors"
                     >
                       <Pencil className="w-3.5 h-3.5 text-blue-500" />
-                      Rename
+                      {t("chat_rename")}
                     </button>
                     <div className="border-t border-gray-100 dark:border-slate-700 my-0.5" />
                     <button
@@ -3773,7 +3784,7 @@ export default function AryaChat() {
                       className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 dark:text-red-400 transition-colors"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
-                      Delete
+                      {t("chat_delete")}
                     </button>
                   </div>
                 )}

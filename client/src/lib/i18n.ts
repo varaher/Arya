@@ -435,6 +435,10 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     more_customize_sub:    "Personalize ARYA",
     more_memory_sub:       "What ARYA remembers",
     more_community_sub:    "Challenges & reflections",
+    chat_pin:              "Pin",
+    chat_unpin:            "Unpin",
+    chat_rename:           "Rename",
+    chat_delete:           "Delete",
   },
 
   // ── Hindi ─────────────────────────────────────────────────────────────────────
@@ -820,6 +824,10 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     more_customize_sub:    "ARYA को personalize करो",
     more_memory_sub:       "ARYA को क्या याद है",
     more_community_sub:    "Challenges और reflection",
+    chat_pin:              "Pin करो",
+    chat_unpin:            "Unpin करो",
+    chat_rename:           "नाम बदलो",
+    chat_delete:           "मिटाओ",
   },
 
   // ── Marathi ───────────────────────────────────────────────────────────────────
@@ -1103,6 +1111,10 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     more_customize_sub:    "ARYA ला personalize कर",
     more_memory_sub:       "ARYA ला काय आठवतं",
     more_community_sub:    "Challenges & reflection",
+    chat_pin:              "Pin कर",
+    chat_unpin:            "Unpin कर",
+    chat_rename:           "नाव बदल",
+    chat_delete:           "हटव",
   },
 
   // ── Bengali ───────────────────────────────────────────────────────────────────
@@ -1386,6 +1398,10 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     more_customize_sub:    "ARYA-কে personalize করো",
     more_memory_sub:       "ARYA কী মনে রেখেছে",
     more_community_sub:    "Challenges & reflections",
+    chat_pin:              "Pin করো",
+    chat_unpin:            "Unpin করো",
+    chat_rename:           "নাম বদলাও",
+    chat_delete:           "মুছে দাও",
   },
 
   // ── Tamil ─────────────────────────────────────────────────────────────────────
@@ -1669,6 +1685,10 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     more_customize_sub:    "ARYA-ஐ personalize செய்",
     more_memory_sub:       "ARYA என்ன நினைவில் வைத்தது",
     more_community_sub:    "Challenges & reflections",
+    chat_pin:              "Pin செய்",
+    chat_unpin:            "Unpin செய்",
+    chat_rename:           "பெயர் மாற்று",
+    chat_delete:           "அழி",
   },
 
   // ── Telugu ────────────────────────────────────────────────────────────────────
@@ -1952,6 +1972,10 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     more_customize_sub:    "ARYA ని personalize చేయి",
     more_memory_sub:       "ARYA ఏమి గుర్తుంచుకుంది",
     more_community_sub:    "Challenges & reflections",
+    chat_pin:              "Pin చేయి",
+    chat_unpin:            "Unpin చేయి",
+    chat_rename:           "పేరు మార్చు",
+    chat_delete:           "తొలగించు",
   },
 
   // ── Kannada ───────────────────────────────────────────────────────────────────
@@ -2008,6 +2032,10 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     more_customize_sub:"ARYA ಅನ್ನು personalize ಮಾಡು",
     more_memory_sub:   "ARYA ಏನು ನೆನಪಿಟ್ಟುಕೊಂಡಿದೆ",
     more_community_sub:"Challenges & reflections",
+    chat_pin:          "Pin ಮಾಡು",
+    chat_unpin:        "Unpin ಮಾಡು",
+    chat_rename:       "ಹೆಸರು ಬದಲಿಸು",
+    chat_delete:       "ಅಳಿಸು",
   },
 
   // ── Malayalam ─────────────────────────────────────────────────────────────────
@@ -2291,6 +2319,10 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     more_customize_sub:    "ARYA-ഐ personalize ചെയ്യൂ",
     more_memory_sub:       "ARYA എന്ത് ഓർക്കുന്നു",
     more_community_sub:    "Challenges & reflections",
+    chat_pin:              "Pin ചെയ്യൂ",
+    chat_unpin:            "Unpin ചെയ്യൂ",
+    chat_rename:           "പേര് മാറ്റൂ",
+    chat_delete:           "മായ്ക്കൂ",
   },
 
   // ── Gujarati ──────────────────────────────────────────────────────────────────
@@ -2574,6 +2606,10 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     more_customize_sub:    "ARYA ને personalize કર",
     more_memory_sub:       "ARYA ને શું યાદ છે",
     more_community_sub:    "Challenges & reflections",
+    chat_pin:              "Pin કર",
+    chat_unpin:            "Unpin કર",
+    chat_rename:           "નામ બદલ",
+    chat_delete:           "ભૂંસ",
   },
 
   // ── Punjabi ───────────────────────────────────────────────────────────────────
@@ -2962,6 +2998,10 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     more_customize_sub:    "ARYA ਨੂੰ personalize ਕਰ",
     more_memory_sub:       "ARYA ਨੂੰ ਕੀ ਯਾਦ ਹੈ",
     more_community_sub:    "Challenges & reflections",
+    chat_pin:              "Pin ਕਰ",
+    chat_unpin:            "Unpin ਕਰ",
+    chat_rename:           "ਨਾਮ ਬਦਲ",
+    chat_delete:           "ਮਿਟਾ",
   },
 
   // ── Odia ──────────────────────────────────────────────────────────────────────
@@ -3350,6 +3390,10 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     more_customize_sub:    "ARYA କୁ personalize କର",
     more_memory_sub:       "ARYA କ'ଣ ମନେ ରଖିଛି",
     more_community_sub:    "Challenges & reflections",
+    chat_pin:              "Pin କର",
+    chat_unpin:            "Unpin କର",
+    chat_rename:           "ନାଁ ବଦଳ",
+    chat_delete:           "ଲିଭ",
   },
 
   // ── Sanskrit ──────────────────────────────────────────────────────────────────
@@ -3398,6 +3442,29 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "समुदायः",
     calendar:          "पञ्चाङ्गम्",
     reminders:         "स्मरणिकाः",
+    // More tray
+    more_label:            "अधिकम्",
+    more_title:            "ARYA सेवाः",
+    more_prana_sub:        "स्वास्थ्यं च शरीरम्",
+    more_review_sub:       "रविवासरस्य पत्रम्",
+    more_customize_sub:    "ARYA अनुकूलय",
+    more_memory_sub:       "ARYA किं स्मरति",
+    more_community_sub:    "Challenges च reflection",
+    // Extended UI
+    mood_rough:            "अतीव कष्टम्",
+    mood_low:              "सम्यक् नास्ति",
+    mood_okay:             "ठीक अस्ति",
+    mood_good:             "सम्यक् अस्ति",
+    mood_great:            "अद्भुतम्",
+    menu_signout:          "निर्गच्छतु",
+    goals_title:           "मम लक्ष्याणि",
+    review_title:          "रविवासरस्य समीक्षा",
+    health_subtitle:       "तव स्वास्थ्यम्, तव जीवनेन सम्बद्धम्",
+    // Chat actions
+    chat_pin:              "Pin कुरु",
+    chat_unpin:            "Unpin कुरु",
+    chat_rename:           "नामं परिवर्तय",
+    chat_delete:           "विलोपय",
   },
 
   // ── Arabic (RTL) ──────────────────────────────────────────────────────────────

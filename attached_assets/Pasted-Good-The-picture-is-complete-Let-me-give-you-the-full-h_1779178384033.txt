@@ -1,0 +1,707 @@
+Good. The picture is complete. Let me give you the full honest status plus what's still needed.
+
+---
+
+## Complete Language Status — All 25 Languages
+
+### Indian Languages (11) — Current State
+
+```
+Code  Language    UI Keys  Tone Rules  Notif Titles  Status
+────  ────────    ───────  ──────────  ────────────  ──────
+hi    Hindi       200+     8 sections  ✅            ✅ COMPLETE
+ta    Tamil       200+     8 sections  ✅            ✅ COMPLETE
+te    Telugu      200+     8 sections  ✅            ✅ COMPLETE
+kn    Kannada     200+     8 sections  ✅            ✅ COMPLETE
+ml    Malayalam   200+     8 sections  ✅            ✅ COMPLETE
+bn    Bengali     200+     8 sections  ✅            ✅ COMPLETE
+mr    Marathi     200+     8 sections  ✅            ✅ COMPLETE
+gu    Gujarati    200+     8 sections  ✅            ✅ COMPLETE
+pa    Punjabi     200+     8 sections  ✅            ✅ COMPLETE
+od    Odia        200+     8 sections  ✅            ✅ COMPLETE
+sa    Sanskrit    ~35      none        none          ⚠ PARTIAL
+```
+
+---
+
+### Global Languages (13) — Current State
+
+```
+Code  Language    UI Keys  Tone Rules  Notif Titles  Status
+────  ────────    ───────  ──────────  ────────────  ──────
+ar    Arabic      ~45      none        none          ❌ STUB
+he    Hebrew      ~45      none        none          ❌ STUB
+fr    French      ~45      none        none          ❌ STUB
+es    Spanish     ~45      none        none          ❌ STUB
+de    German      ~45      none        none          ❌ STUB
+ja    Japanese    ~45      none        none          ❌ STUB
+zh    Chinese     ~45      none        none          ❌ STUB
+ko    Korean      ~45      none        none          ❌ STUB
+pt    Portuguese  ~45      none        none          ❌ STUB
+ru    Russian     ~45      none        none          ❌ STUB
+tr    Turkish     ~45      none        none          ❌ STUB
+id    Indonesian  ~45      none        none          ❌ STUB
+sw    Swahili     ~45      none        none          ❌ STUB
+```
+
+Global languages have basic stub keys — enough to not crash but not enough to feel native.
+
+---
+
+## What Sanskrit Needs
+
+Sanskrit is special — it won't have conversational tone like other languages. But it needs enough to not feel broken.
+
+```typescript
+// section-tone-map.ts — Sanskrit
+
+sa: {
+  base: `
+    भाषा: संस्कृतम्।
+    सरलं संस्कृतम् उपयुज्यताम् — क्लिष्टं शास्त्रीयं नास्ति।
+    यत्र संस्कृतं कठिनं स्यात् तत्र
+    संस्कृत-English मिश्रणं स्वीकार्यम्।
+    ARYA इत्यस्य नाम English-रूपेण एव।
+  `,
+  chat: `
+    गुरु-शिष्य-सम्बन्धस्य भावः — किन्तु मित्रवत्।
+    "किम् अभिलषसि?" "बद, किम् संजातम्?"
+    प्रथमः उत्तरः 2-3 वाक्यानि एव।
+  `,
+  kaal: `
+    वेद-ज्योतिष-शास्त्रस्य भावः।
+    काव्यात्मकं किन्तु बोधगम्यम्।
+  `,
+  niti: `
+    चाणक्य-नीतेः भावः — स्पष्टम्, सत्यम्।
+    "पश्य, अस्मिन् विषये..."
+  `,
+  mood: `
+    करुणामयं, सौम्यम्।
+    Judge न करणीयम्।
+  `,
+  health: `
+    आयुर्वेदस्य भावः — मित्रवत्, चिकित्सकवत् न।
+  `,
+  briefing: `
+    उत्साहपूर्णम् — "शुभं प्रभातम्, {name}।"
+  `,
+  goals: `
+    प्रोत्साहनम् — "सम्यक्, अद्य इदं कुर्मः।"
+  `,
+  weekly_review: `
+    सप्ताहस्य सिंहावलोकनम् — मित्रवत्।
+  `
+}
+```
+
+### Sanskrit Notification Titles
+```typescript
+sa: {
+  morning: (name) => `शुभं प्रभातम्, ${name}! ☀️`,
+  review: (name) => `${name}, तव साप्ताहिकी समीक्षा सिद्धा 📖`
+}
+```
+
+### Sanskrit Missing UI Keys (add to i18n.ts)
+```json
+{
+  "chat_history": "वार्तालाप-इतिहासः",
+  "new_chat": "नूतनः वार्तालापः",
+  "ask_anything": "ARYA-म् किमपि पृच्छतु...",
+  "app_tagline": "स्पष्टं चिन्तयतु। लक्ष्यं स्थापयतु। प्रतिदिनं वर्धतु।",
+  "mood_rough": "अतीव कष्टम्",
+  "mood_low": "सम्यक् नास्ति",
+  "mood_okay": "ठीक अस्ति",
+  "mood_good": "सम्यक् अस्ति",
+  "mood_great": "अद्भुतम्",
+  "menu_signout": "निर्गच्छतु",
+  "goals_title": "मम लक्ष्याणि",
+  "review_title": "रविवासरस्य समीक्षा",
+  "health_subtitle": "तव स्वास्थ्यम्, तव जीवनेन सम्बद्धम्"
+}
+```
+
+---
+
+## The Chat History — 3 Dots Feature
+
+You mentioned this too. Here's the complete implementation.
+
+### What Each Chat Row Needs
+
+```
+Current:
+  ┌─────────────────────────┐
+  │ 💬 I have a conference  │  ← long press to get options
+  │    17 May               │
+  └─────────────────────────┘
+
+New:
+  ┌─────────────────────────┐
+  │ 💬 I have a conference  │  [⋯]  ← tap dots
+  │    17 May               │
+  └─────────────────────────┘
+                ↓
+        ┌─────────────┐
+        │ 📌 Pin      │
+        │ ✏️ Rename   │
+        │ 🗑️ Delete   │
+        └─────────────┘
+```
+
+---
+
+### Complete Code
+
+```tsx
+// client/src/components/ChatHistoryItem.tsx
+
+import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+
+interface ChatHistoryItemProps {
+  conversation: {
+    id: string;
+    title: string;
+    date: string;
+    isPinned?: boolean;
+  };
+  onPin: (id: string) => void;
+  onRename: (id: string, newTitle: string) => void;
+  onDelete: (id: string) => void;
+  onClick: (id: string) => void;
+}
+
+export function ChatHistoryItem({
+  conversation,
+  onPin,
+  onRename,
+  onDelete,
+  onClick
+}: ChatHistoryItemProps) {
+  const { t } = useTranslation();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [newTitle, setNewTitle] = useState(conversation.title);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current &&
+          !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    if (menuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [menuOpen]);
+
+  function handleRenameSubmit() {
+    if (newTitle.trim() && newTitle !== conversation.title) {
+      onRename(conversation.id, newTitle.trim());
+    }
+    setRenaming(false);
+    setMenuOpen(false);
+  }
+
+  return (
+    <div className={`chat-history-item ${
+      conversation.isPinned ? 'pinned' : ''
+    }`}>
+
+      {/* Main row — tappable */}
+      <div
+        className="chi-main"
+        onClick={() => !menuOpen && onClick(conversation.id)}
+      >
+        <div className="chi-icon">
+          {conversation.isPinned ? '📌' : '💬'}
+        </div>
+        <div className="chi-text">
+          {renaming ? (
+            <input
+              className="chi-rename-input"
+              value={newTitle}
+              onChange={e => setNewTitle(e.target.value)}
+              onBlur={handleRenameSubmit}
+              onKeyDown={e => {
+                if (e.key === 'Enter') handleRenameSubmit();
+                if (e.key === 'Escape') {
+                  setNewTitle(conversation.title);
+                  setRenaming(false);
+                }
+              }}
+              autoFocus
+              onClick={e => e.stopPropagation()}
+            />
+          ) : (
+            <span className="chi-title">
+              {conversation.title}
+            </span>
+          )}
+          <span className="chi-date">{conversation.date}</span>
+        </div>
+      </div>
+
+      {/* Three dots button */}
+      <div className="chi-menu-wrap" ref={menuRef}>
+        <button
+          className="chi-dots"
+          onClick={e => {
+            e.stopPropagation();
+            setMenuOpen(!menuOpen);
+          }}
+          aria-label="Options"
+        >
+          ⋯
+        </button>
+
+        {/* Dropdown menu */}
+        {menuOpen && (
+          <div className="chi-dropdown">
+            <button
+              className="chi-dd-item"
+              onClick={e => {
+                e.stopPropagation();
+                onPin(conversation.id);
+                setMenuOpen(false);
+              }}
+            >
+              <span className="chi-dd-icon">📌</span>
+              <span>
+                {conversation.isPinned
+                  ? t('chat.unpin')
+                  : t('chat.pin')}
+              </span>
+            </button>
+
+            <button
+              className="chi-dd-item"
+              onClick={e => {
+                e.stopPropagation();
+                setRenaming(true);
+                setMenuOpen(false);
+              }}
+            >
+              <span className="chi-dd-icon">✏️</span>
+              <span>{t('chat.rename')}</span>
+            </button>
+
+            <div className="chi-dd-divider" />
+
+            <button
+              className="chi-dd-item chi-dd-delete"
+              onClick={e => {
+                e.stopPropagation();
+                onDelete(conversation.id);
+                setMenuOpen(false);
+              }}
+            >
+              <span className="chi-dd-icon">🗑️</span>
+              <span>{t('chat.delete')}</span>
+            </button>
+          </div>
+        )}
+      </div>
+
+    </div>
+  );
+}
+```
+
+---
+
+### CSS For Chat History Item
+
+```css
+.chat-history-item {
+  display: flex;
+  align-items: center;
+  border-radius: 12px;
+  padding: 2px 4px 2px 0;
+  transition: background 0.15s;
+  position: relative;
+}
+
+.chat-history-item:hover {
+  background: var(--surface2, #f5f5f5);
+}
+
+.chat-history-item.pinned {
+  background: var(--primary-dim, rgba(46,125,94,0.06));
+  border: 1px solid var(--primary-border, rgba(46,125,94,0.15));
+}
+
+/* Main clickable area */
+.chi-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  padding: 10px 8px 10px 12px;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.chi-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.chi-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.chi-title {
+  font-size: 13px;
+  color: var(--text, #1a1a1a);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+
+.chi-date {
+  font-size: 11px;
+  color: var(--text-muted, #999);
+}
+
+/* Rename input */
+.chi-rename-input {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text, #1a1a1a);
+  background: var(--surface, #fff);
+  border: 1px solid var(--primary, #2e7d5e);
+  border-radius: 6px;
+  padding: 2px 8px;
+  outline: none;
+  width: 100%;
+}
+
+/* Three dots button */
+.chi-dots {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  font-size: 18px;
+  color: var(--text-muted, #bbb);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s;
+}
+
+/* Show dots on hover or always on mobile */
+.chat-history-item:hover .chi-dots,
+.chat-history-item .chi-dots:focus {
+  opacity: 1;
+}
+
+@media (max-width: 768px) {
+  /* Always show on mobile — no hover state */
+  .chi-dots {
+    opacity: 0.5;
+  }
+  .chat-history-item:hover .chi-dots {
+    opacity: 1;
+  }
+}
+
+.chi-dots:hover {
+  background: var(--surface3, #eee);
+  color: var(--text, #333);
+}
+
+/* Dropdown */
+.chi-menu-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.chi-dropdown {
+  position: absolute;
+  right: 0;
+  top: 36px;
+  background: var(--surface, #fff);
+  border: 1px solid var(--border, #e0e0e0);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+  overflow: hidden;
+  z-index: 50;
+  min-width: 160px;
+  animation: dropIn 0.15s ease;
+}
+
+@keyframes dropIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.chi-dd-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  color: var(--text, #1a1a1a);
+  cursor: pointer;
+  text-align: start;
+  transition: background 0.12s;
+}
+
+.chi-dd-item:hover {
+  background: var(--surface2, #f5f5f5);
+}
+
+.chi-dd-icon {
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
+}
+
+.chi-dd-divider {
+  height: 1px;
+  background: var(--border, #f0f0f0);
+  margin: 2px 0;
+}
+
+.chi-dd-delete {
+  color: #e53935;
+}
+
+.chi-dd-delete:hover {
+  background: #ffebee;
+}
+```
+
+---
+
+### Translation Keys For Chat Actions
+
+Add to all language files:
+
+```json
+{
+  "chat.pin": "Pin",
+  "chat.unpin": "Unpin",
+  "chat.rename": "Rename",
+  "chat.delete": "Delete"
+}
+```
+
+Hindi:
+```json
+{
+  "chat.pin": "Pin करो",
+  "chat.unpin": "Unpin करो",
+  "chat.rename": "नाम बदलो",
+  "chat.delete": "मिटाओ"
+}
+```
+
+Tamil:
+```json
+{
+  "chat.pin": "Pin செய்",
+  "chat.unpin": "Unpin செய்",
+  "chat.rename": "பெயர் மாற்று",
+  "chat.delete": "அழி"
+}
+```
+
+Telugu:
+```json
+{
+  "chat.pin": "Pin చేయి",
+  "chat.unpin": "Unpin చేయి",
+  "chat.rename": "పేరు మార్చు",
+  "chat.delete": "తొలగించు"
+}
+```
+
+Malayalam:
+```json
+{
+  "chat.pin": "Pin ചെയ്യൂ",
+  "chat.unpin": "Unpin ചെയ്യൂ",
+  "chat.rename": "പേര് മാറ്റൂ",
+  "chat.delete": "മായ്ക്കൂ"
+}
+```
+
+Bengali:
+```json
+{
+  "chat.pin": "Pin করো",
+  "chat.unpin": "Unpin করো",
+  "chat.rename": "নাম বদলাও",
+  "chat.delete": "মুছে দাও"
+}
+```
+
+Marathi:
+```json
+{
+  "chat.pin": "Pin कर",
+  "chat.unpin": "Unpin कर",
+  "chat.rename": "नाव बदल",
+  "chat.delete": "हटव"
+}
+```
+
+Gujarati:
+```json
+{
+  "chat.pin": "Pin કર",
+  "chat.unpin": "Unpin કર",
+  "chat.rename": "નામ બદલ",
+  "chat.delete": "ભૂંસ"
+}
+```
+
+Punjabi:
+```json
+{
+  "chat.pin": "Pin ਕਰ",
+  "chat.unpin": "Unpin ਕਰ",
+  "chat.rename": "ਨਾਮ ਬਦਲ",
+  "chat.delete": "ਮਿਟਾ"
+}
+```
+
+Odia:
+```json
+{
+  "chat.pin": "Pin କର",
+  "chat.unpin": "Unpin କର",
+  "chat.rename": "ନାଁ ବଦଳ",
+  "chat.delete": "ଲିଭ"
+}
+```
+
+---
+
+## Backend — Pin and Rename API
+
+```typescript
+// server/routes.ts — add these endpoints
+
+// PIN a conversation
+app.patch('/api/conversations/:id/pin',
+  requireAuth, async (req, res) => {
+    const { id } = req.params;
+    const { pinned } = req.body;
+
+    await db.query(
+      `UPDATE conversations
+       SET is_pinned = $1, pinned_at = $2
+       WHERE id = $3 AND user_id = $4`,
+      [pinned, pinned ? new Date() : null,
+       id, req.user.id]
+    );
+
+    res.json({ success: true });
+  }
+);
+
+// RENAME a conversation
+app.patch('/api/conversations/:id/title',
+  requireAuth, async (req, res) => {
+    const { id } = req.params;
+    const { title } = req.body;
+
+    if (!title?.trim()) {
+      return res.status(400).json({
+        error: 'Title cannot be empty'
+      });
+    }
+
+    await db.query(
+      `UPDATE conversations
+       SET title = $1, title_edited = true
+       WHERE id = $2 AND user_id = $3`,
+      [title.trim(), id, req.user.id]
+    );
+
+    res.json({ success: true, title: title.trim() });
+  }
+);
+```
+
+### DB Column To Add
+
+```sql
+ALTER TABLE conversations
+  ADD COLUMN IF NOT EXISTS is_pinned BOOLEAN DEFAULT false,
+  ADD COLUMN IF NOT EXISTS pinned_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS title_edited BOOLEAN DEFAULT false;
+```
+
+### Pinned Conversations — Show At Top
+
+```typescript
+// When fetching conversations — pinned first
+
+const conversations = await db.query(`
+  SELECT * FROM conversations
+  WHERE user_id = $1
+  ORDER BY
+    is_pinned DESC,
+    pinned_at DESC NULLS LAST,
+    created_at DESC
+  LIMIT 50
+`, [userId]);
+```
+
+---
+
+## Complete Summary
+
+```
+Done in this session:
+
+1. Language completion status — all 25 languages mapped
+   10 Indian languages: COMPLETE ✅
+   Sanskrit: needs tone rules + 15 more keys
+   13 global: stubs only, need full implementation
+
+2. More tray — complete component built
+   5 main features + 2 utility links
+   Slides up from bottom with animation
+   Translatable in all languages
+
+3. Simplified navigation
+   Top: 5 items (was 9)
+   Bottom: 5 items (was 7)
+   No duplicates, one bell
+
+4. Chat history 3 dots — complete
+   Pin / Rename / Delete dropdown
+   No long press needed
+   Pinned chats appear at top
+   DB columns added
+   All 10 Indian languages translated
+
+Next to implement:
+   Sanskrit tone rules + missing keys
+   Global language full implementation
+   (Arabic first — highest revenue)
+```

@@ -7,6 +7,7 @@ export interface IChatStorage {
   getAllConversations(userId?: string | null): Promise<(typeof conversations.$inferSelect)[]>;
   createConversation(title: string, userId?: string | null): Promise<typeof conversations.$inferSelect>;
   updateConversationTitle(id: number, title: string): Promise<void>;
+  updateConversationPin(id: number, isPinned: boolean): Promise<void>;
   deleteConversation(id: number, userId?: string | null): Promise<void>;
   getMessagesByConversation(conversationId: number): Promise<(typeof messages.$inferSelect)[]>;
   createMessage(conversationId: number, role: string, content: string): Promise<typeof messages.$inferSelect>;
@@ -22,7 +23,7 @@ export const chatStorage: IChatStorage = {
     if (userId) {
       return db.select().from(conversations)
         .where(eq(conversations.userId, userId))
-        .orderBy(desc(conversations.createdAt));
+        .orderBy(desc(conversations.isPinned), desc(conversations.createdAt));
     }
     // Anonymous: return nothing (no cross-user leakage)
     return [];
@@ -36,7 +37,13 @@ export const chatStorage: IChatStorage = {
   },
 
   async updateConversationTitle(id: number, title: string) {
-    await db.update(conversations).set({ title }).where(eq(conversations.id, id));
+    await db.update(conversations).set({ title, titleEdited: true }).where(eq(conversations.id, id));
+  },
+
+  async updateConversationPin(id: number, isPinned: boolean) {
+    await db.update(conversations)
+      .set({ isPinned, pinnedAt: isPinned ? new Date() : null })
+      .where(eq(conversations.id, id));
   },
 
   async deleteConversation(id: number, userId?: string | null) {
