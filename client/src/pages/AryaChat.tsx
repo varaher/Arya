@@ -3715,8 +3715,8 @@ export default function AryaChat() {
                       }}
                       className={`mt-1 p-0.5 rounded transition-all ${
                         isMenuOpen
-                          ? "opacity-100 text-emerald-500"
-                          : "opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                          ? "text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20"
+                          : "text-gray-300 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
                       }`}
                     >
                       <MoreHorizontal className="w-3.5 h-3.5" />
