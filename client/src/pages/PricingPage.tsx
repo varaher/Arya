@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { Check, X, Zap, Star, Crown, Gem, ChevronDown, ChevronUp, ArrowLeft } from "lucide-react";
 import { useUserAuth } from "@/lib/user-auth";
-import BottomNav from "@/components/BottomNav";
+
 
 declare global { interface Window { Razorpay: any; } }
 
@@ -538,7 +538,6 @@ export default function PricingPage() {
         </p>
       </div>
 
-      <BottomNav />
     </div>
   );
 }

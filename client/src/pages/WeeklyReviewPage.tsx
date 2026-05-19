@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Check, Loader2, Share2 } from "lucide-react";
 import { useUserAuth } from "@/lib/user-auth";
 import { useLanguage } from "@/lib/language-context";
-import BottomNav from "@/components/BottomNav";
+
 
 const P = {
   bg: "#fdf6ec",
@@ -593,7 +593,6 @@ export default function WeeklyReviewPage() {
 
         </motion.div>
       )}
-      <BottomNav />
     </div>
   );
 }

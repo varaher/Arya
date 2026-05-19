@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import BottomNav from "@/components/BottomNav";
+
 import {
   Users, Flame, CheckCircle2, Trophy, Heart, Zap, ChevronRight,
   X, ChevronDown, Send, Calendar, Star, ArrowRight, Sparkles,
@@ -864,7 +864,6 @@ export default function Community() {
           <JoinFormModal onClose={() => setShowJoinForm(false)} userSession={userSession} />
         )}
       </AnimatePresence>
-      <BottomNav />
     </div>
   );
 }

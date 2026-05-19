@@ -59,6 +59,7 @@ import OnboardingFlow from "@/pages/OnboardingFlow";
 import AdminARYA from "@/pages/AdminARYA";
 import PranaPage from "@/pages/PranaPage";
 import PricingPage from "@/pages/PricingPage";
+import BottomNav from "@/components/BottomNav";
 import LanguageSettingsPage from "@/pages/LanguageSettingsPage";
 import LocalizationDemoPage from "@/pages/LocalizationDemoPage";
 import LanguageRoadmapPage from "@/pages/LanguageRoadmapPage";
@@ -107,6 +108,19 @@ function AnimatedPage({ children }: { children: React.ReactNode }) {
   );
 }
 
+const ADMIN_PATHS = [
+  "/dashboard", "/orchestrator", "/knowledge", "/ermate", "/erprana",
+  "/learning", "/neural-link", "/api", "/developers", "/users", "/my-arya", "/admin",
+];
+
+function UniversalBottomNav() {
+  const [location] = useLocation();
+  const isAdmin = ADMIN_PATHS.some(p => location === p || location.startsWith(p + "/"));
+  const noNav = isAdmin || location.startsWith("/reflection/");
+  if (noNav) return null;
+  return <BottomNav />;
+}
+
 function Router() {
   const { isAdmin, isLoading } = useAdminAuth();
   const [location] = useLocation();
@@ -127,6 +141,7 @@ function Router() {
   }
 
   return (
+    <>
     <AnimatePresence mode="wait">
       <Switch key={location}>
         <Route path="/admin/login">
@@ -266,6 +281,8 @@ function Router() {
         </Route>
       </Switch>
     </AnimatePresence>
+    <UniversalBottomNav />
+    </>
   );
 }
 

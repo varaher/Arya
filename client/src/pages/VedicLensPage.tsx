@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useUserAuth } from "@/lib/user-auth";
 import { useLanguage } from "@/lib/language-context";
 import { Home } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
+
 
 // ── Palette ──────────────────────────────────────────────────────────────────
 const C = {
@@ -881,7 +881,6 @@ export default function VedicLensPage() {
         )}
 
       </div>
-      <BottomNav />
     </div>
   );
 }

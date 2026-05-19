@@ -2488,6 +2488,13 @@ export default function AryaChat() {
   const [showMemory, setShowMemory] = useState(false);
   const [showGoals, setShowGoals] = useState(false);
   const [showCustomize, setShowCustomize] = useState(false);
+
+  useEffect(() => {
+    const handler = () => { setShowCustomize(true); setShowMemory(false); setShowGoals(false); };
+    window.addEventListener("arya-open-customize", handler);
+    return () => window.removeEventListener("arya-open-customize", handler);
+  }, []);
+
   const [showReminders, setShowReminders] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
