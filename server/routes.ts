@@ -2051,6 +2051,21 @@ export async function registerRoutes(
       }
 
       const rawBuffer = Buffer.from(audio, "base64");
+
+      console.log('[voice] Received audio — base64 length:', audio.length,
+        'decoded bytes:', rawBuffer.length,
+        'language:', language || 'en-IN');
+
+      if (rawBuffer.length < 1000) {
+        console.warn('[voice] Audio too small:', rawBuffer.length, 'bytes — likely empty recording');
+        res.setHeader("Content-Type", "text/event-stream");
+        res.setHeader("Cache-Control", "no-cache");
+        res.setHeader("Connection", "keep-alive");
+        res.write(`data: ${JSON.stringify({ type: "error", content: "No speech detected. Please try again." })}\n\n`);
+        res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
+        return res.end();
+      }
+
       const { buffer: audioBuffer, format: inputFormat } = await ensureCompatibleFormat(rawBuffer);
 
       let userTranscript = "";
@@ -2061,7 +2076,12 @@ export async function registerRoutes(
 
       if (useSarvam) {
         console.log(`[Voice] Using Sarvam AI for language: ${language}`);
-        const sttResult = await sarvamSpeechToText(audioBuffer, language as SarvamLanguageCode);
+        const sttResult = await Promise.race([
+          sarvamSpeechToText(audioBuffer, language as SarvamLanguageCode),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(Object.assign(new Error('Sarvam STT timeout'), { name: 'TimeoutError' })), 20000)
+          ),
+        ]);
         userTranscript = sttResult.transcript;
         // Always use the user's requested language for output — never let Sarvam override to Urdu
         // Hindi and Urdu sound identical; Sarvam sometimes detects hi-IN speech as ur-IN

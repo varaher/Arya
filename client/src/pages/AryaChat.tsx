@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { convertToWav } from "@/utils/audioConverter";
 import { createPortal } from "react-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
@@ -1714,7 +1715,8 @@ function VoiceNotesPanel({ onClose, token, uiLang = "en", voiceLang = "en-IN" }:
     setIsRecording(false);
 
     mr.onstop = async () => {
-      const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+      const rawBlob = new Blob(chunksRef.current, { type: "audio/webm" });
+      const blob = await convertToWav(rawBlob);
       const reader = new FileReader();
       reader.onload = async () => {
         const base64 = (reader.result as string).split(",")[1];
@@ -3425,6 +3427,8 @@ export default function AryaChat() {
 
     if (blob.size === 0) return;
 
+    const wavBlob = await convertToWav(blob);
+
     let convId = activeConversation;
     if (!convId) {
       const conv = await createConversation.mutateAsync("Voice Chat");
@@ -3443,7 +3447,7 @@ export default function AryaChat() {
           const result = reader.result as string;
           resolve(result.split(",")[1]);
         };
-        reader.readAsDataURL(blob);
+        reader.readAsDataURL(wavBlob);
       });
 
       const voiceHeaders: Record<string, string> = { "Content-Type": "application/json" };
@@ -5707,6 +5711,8 @@ function VoiceConversationMode({
       return;
     }
 
+    const wavBlob = await convertToWav(blob);
+
     const abortController = new AbortController();
     abortRef.current = abortController;
 
@@ -5714,7 +5720,7 @@ function VoiceConversationMode({
       const base64Audio = await new Promise<string>((resolve) => {
         const reader = new FileReader();
         reader.onload = () => resolve((reader.result as string).split(",")[1]);
-        reader.readAsDataURL(blob);
+        reader.readAsDataURL(wavBlob);
       });
 
       if (abortController.signal.aborted) { processingRef.current = false; return; }

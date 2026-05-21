@@ -1,0 +1,373 @@
+Give your developer exactly this. Ready to paste.
+
+---
+
+## The Complete Fix — 3 Files
+
+### File 1 — Audio Converter Utility (new file)
+
+```typescript
+// client/src/utils/audioConverter.ts
+// New file — create this
+
+export async function convertToWav(audioBlob: Blob): Promise<Blob> {
+  try {
+    console.log('[audio] Converting from:', audioBlob.type,
+      'size:', audioBlob.size, 'bytes');
+
+    const AudioCtx = window.AudioContext ||
+      (window as any).webkitAudioContext;
+
+    if (!AudioCtx) {
+      console.warn('[audio] AudioContext not supported, sending original');
+      return audioBlob;
+    }
+
+    const audioContext = new AudioCtx({ sampleRate: 16000 });
+    const arrayBuffer = await audioBlob.arrayBuffer();
+
+    let audioBuffer: AudioBuffer;
+    try {
+      audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+    } catch (decodeErr) {
+      console.warn('[audio] Could not decode audio, sending original:', decodeErr);
+      audioContext.close();
+      return audioBlob;
+    }
+
+    const wavBuffer = audioBufferToWav(audioBuffer);
+    audioContext.close();
+
+    const wavBlob = new Blob([wavBuffer], { type: 'audio/wav' });
+    console.log('[audio] Converted to WAV:', wavBlob.size, 'bytes');
+    return wavBlob;
+
+  } catch (err) {
+    console.warn('[audio] Conversion failed, sending original:', err);
+    return audioBlob; // never crash — always send something
+  }
+}
+
+function audioBufferToWav(buffer: AudioBuffer): ArrayBuffer {
+  const numChannels = 1;         // mono — Sarvam prefers mono
+  const sampleRate = buffer.sampleRate;
+  const bitDepth = 16;
+
+  // Mix down to mono if stereo
+  const samples = mixDownToMono(buffer);
+
+  const dataLength = samples.length * 2; // 16-bit = 2 bytes per sample
+  const wavLength = 44 + dataLength;
+  const arrayBuffer = new ArrayBuffer(wavLength);
+  const view = new DataView(arrayBuffer);
+
+  // ── WAV header ──
+  // RIFF chunk
+  writeString(view, 0,  'RIFF');
+  view.setUint32(4,  36 + dataLength, true);
+  writeString(view, 8,  'WAVE');
+
+  // fmt sub-chunk
+  writeString(view, 12, 'fmt ');
+  view.setUint32(16, 16, true);           // sub-chunk size
+  view.setUint16(20, 1,  true);           // PCM format
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28,                       // byte rate
+    sampleRate * numChannels * bitDepth / 8, true);
+  view.setUint16(32,                       // block align
+    numChannels * bitDepth / 8, true);
+  view.setUint16(34, bitDepth, true);
+
+  // data sub-chunk
+  writeString(view, 36, 'data');
+  view.setUint32(40, dataLength, true);
+
+  // ── Audio samples ──
+  let offset = 44;
+  for (let i = 0; i < samples.length; i++) {
+    // Clamp to [-1, 1] then convert to 16-bit int
+    const s = Math.max(-1, Math.min(1, samples[i]));
+    const val = s < 0 ? s * 0x8000 : s * 0x7FFF;
+    view.setInt16(offset, val, true);
+    offset += 2;
+  }
+
+  return arrayBuffer;
+}
+
+function mixDownToMono(buffer: AudioBuffer): Float32Array {
+  if (buffer.numberOfChannels === 1) {
+    return buffer.getChannelData(0);
+  }
+
+  // Average all channels into mono
+  const length = buffer.length;
+  const mono = new Float32Array(length);
+
+  for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
+    const channel = buffer.getChannelData(ch);
+    for (let i = 0; i < length; i++) {
+      mono[i] += channel[i] / buffer.numberOfChannels;
+    }
+  }
+
+  return mono;
+}
+
+function writeString(view: DataView, offset: number, str: string) {
+  for (let i = 0; i < str.length; i++) {
+    view.setUint8(offset + i, str.charCodeAt(i));
+  }
+}
+```
+
+---
+
+### File 2 — Voice Recorder Hook (update existing)
+
+Find your existing voice recorder — likely `useVoiceRecorder.ts` or inside `AryaChat.tsx`. Find the part where recording stops and audio is sent. Add the conversion there.
+
+```typescript
+// client/src/hooks/useVoiceRecorder.ts
+// Add import at top:
+import { convertToWav } from '../utils/audioConverter';
+
+// Find the function that handles recording stop
+// It will look something like this:
+
+mediaRecorder.onstop = async () => {
+  const audioBlob = new Blob(audioChunks, {
+    type: mediaRecorder.mimeType
+  });
+
+  // ── ADD THIS BLOCK ──
+  // Convert to WAV before sending — fixes cross-device issues
+  const wavBlob = await convertToWav(audioBlob);
+  // ── END ADD ──
+
+  // Replace audioBlob with wavBlob everywhere below:
+  await sendAudioToServer(wavBlob);  // was: sendAudioToServer(audioBlob)
+};
+```
+
+Also add format detection when starting the recorder:
+
+```typescript
+// Add this helper near your startRecording function
+
+function getBestSupportedFormat(): string {
+  const formats = [
+    'audio/webm;codecs=opus',
+    'audio/webm',
+    'audio/ogg;codecs=opus',
+    'audio/ogg',
+    'audio/mp4',
+    '',  // let browser decide
+  ];
+
+  for (const format of formats) {
+    if (format === '') return format;
+    if (MediaRecorder.isTypeSupported(format)) {
+      console.log('[voice] Using format:', format);
+      return format;
+    }
+  }
+  return '';
+}
+
+// Use it when creating MediaRecorder:
+const mimeType = getBestSupportedFormat();
+
+const mediaRecorder = mimeType
+  ? new MediaRecorder(stream, { mimeType })
+  : new MediaRecorder(stream);
+```
+
+---
+
+### File 3 — Server Voice Route (add logging)
+
+Find `/api/arya/voice` or `/api/voice` in `server/routes.ts`. Add logging so you can see exactly what's arriving.
+
+```typescript
+// server/routes.ts — voice endpoint
+// Add logging at the top of the voice handler:
+
+app.post('/api/arya/voice', async (req, res) => {
+  try {
+
+    // ── ADD LOGGING ──
+    const files = req.files as any;
+    const audioFile = files?.audio;
+
+    if (!audioFile) {
+      console.error('[voice] No audio file in request');
+      return res.status(400).json({
+        error: 'no_audio',
+        message: 'No audio received'
+      });
+    }
+
+    console.log('[voice] Received audio:', {
+      name: audioFile.name,
+      size: audioFile.size,
+      mimetype: audioFile.mimetype,
+    });
+    // ── END LOGGING ──
+
+    // Check minimum size — empty recording
+    if (audioFile.size < 1000) {
+      console.warn('[voice] Audio too small:', audioFile.size, 'bytes');
+      return res.json({
+        error: 'no_speech',
+        transcript: '',
+        message: 'No speech detected. Please try again.'
+      });
+    }
+
+    // Check Sarvam key
+    if (!process.env.SARVAM_API_KEY) {
+      console.error('[voice] SARVAM_API_KEY missing');
+      return res.status(500).json({
+        error: 'config',
+        message: 'Voice service not configured'
+      });
+    }
+
+    // Build form data for Sarvam
+    const formData = new FormData();
+
+    // Create a proper file blob from the upload
+    const audioBuffer = audioFile.data; // Buffer
+    const wavBlob = new Blob([audioBuffer], { type: 'audio/wav' });
+    formData.append('file', wavBlob, 'audio.wav');
+    formData.append('model', 'saarika:v2');
+    formData.append('language_code', req.body.language || 'hi-IN');
+
+    console.log('[voice] Calling Sarvam STT...');
+
+    const sarvamRes = await fetch(
+      'https://api.sarvam.ai/speech-to-text',
+      {
+        method: 'POST',
+        headers: {
+          'api-subscription-key': process.env.SARVAM_API_KEY
+        },
+        body: formData,
+        signal: AbortSignal.timeout(20000) // 20s timeout
+      }
+    );
+
+    if (!sarvamRes.ok) {
+      const errText = await sarvamRes.text();
+      console.error('[voice] Sarvam error:', sarvamRes.status, errText);
+
+      // Specific error responses
+      if (sarvamRes.status === 429) {
+        return res.status(429).json({
+          error: 'rate_limit',
+          message: 'Voice service busy. Please try again.'
+        });
+      }
+      if (sarvamRes.status === 401) {
+        return res.status(500).json({
+          error: 'auth',
+          message: 'Voice service error. Please type instead.'
+        });
+      }
+
+      throw new Error(`Sarvam ${sarvamRes.status}: ${errText}`);
+    }
+
+    const sarvamData = await sarvamRes.json();
+    const transcript = sarvamData.transcript?.trim();
+
+    console.log('[voice] Transcript:', transcript || '(empty)');
+
+    if (!transcript) {
+      return res.json({
+        transcript: '',
+        error: 'no_speech',
+        message: 'No speech detected. Please try again.'
+      });
+    }
+
+    // Continue with normal chat processing
+    // Pass transcript to chat engine
+    // ... rest of your existing voice handling code
+
+    res.json({
+      transcript,
+      success: true
+    });
+
+  } catch (err: any) {
+    if (err.name === 'TimeoutError' ||
+        err.name === 'AbortError') {
+      console.error('[voice] Sarvam timeout');
+      return res.status(504).json({
+        error: 'timeout',
+        message: 'Voice took too long. Check connection and try again.'
+      });
+    }
+
+    console.error('[voice] Unhandled error:', err);
+    res.status(500).json({
+      error: 'unknown',
+      message: 'Something went wrong. Please try again.'
+    });
+  }
+});
+```
+
+---
+
+## Developer Instructions — Exactly 3 Steps
+
+```
+Step 1 — Create new file (copy-paste)
+  client/src/utils/audioConverter.ts
+  Paste File 1 above exactly as-is
+
+Step 2 — Update voice recorder (2 edits)
+  Find where mediaRecorder.onstop fires
+  Import convertToWav at top of file
+  Add: const wavBlob = await convertToWav(audioBlob)
+  Change: sendAudioToServer(audioBlob)
+  To:     sendAudioToServer(wavBlob)
+
+  Find where new MediaRecorder() is created
+  Add getBestSupportedFormat() helper
+  Use it when creating the recorder
+
+Step 3 — Update server voice route
+  Add the logging block at top
+  Add size check (< 1000 bytes = empty)
+  Add timeout (AbortSignal.timeout(20000))
+  Make sure formData sends as 'audio/wav'
+
+Deploy → test on the phones that were failing
+The WAV conversion happens client-side before
+upload so server always gets consistent format
+```
+
+---
+
+## What This Fixes
+
+```
+Before:
+  Your phone → webm/opus → Sarvam ✓
+  Other phone → mp4 or ogg → Sarvam ✗
+
+After:
+  Your phone → webm/opus → WAV → Sarvam ✓
+  Other phone → mp4 or ogg → WAV → Sarvam ✓
+  iPhone → mp4 → WAV → Sarvam ✓
+  Samsung Internet → ogg → WAV → Sarvam ✓
+
+Every device sends WAV.
+Sarvam always gets the same format.
+Error rate drops to near zero.
+```
