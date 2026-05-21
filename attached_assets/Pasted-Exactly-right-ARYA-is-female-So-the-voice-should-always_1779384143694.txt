@@ -1,0 +1,118 @@
+Exactly right. ARYA is female. So the voice should always be female across all languages. No per-user choice needed — it's a product decision.
+
+---
+
+## The Fix — Force Female Voice Everywhere
+
+```typescript
+// server/arya/sarvam-client.ts
+// Find where TTS is called
+// speaker_gender must always be "Female"
+
+const SARVAM_VOICE_MAP: Record<string, {
+  speaker: string;
+  gender: 'Female';
+}> = {
+  hi: { speaker: 'meera',    gender: 'Female' }, // Hindi
+  ta: { speaker: 'pavithra', gender: 'Female' }, // Tamil
+  te: { speaker: 'ananya',   gender: 'Female' }, // Telugu
+  kn: { speaker: 'ananya',   gender: 'Female' }, // Kannada
+  ml: { speaker: 'ananya',   gender: 'Female' }, // Malayalam
+  bn: { speaker: 'ananya',   gender: 'Female' }, // Bengali
+  mr: { speaker: 'meera',    gender: 'Female' }, // Marathi
+  gu: { speaker: 'ananya',   gender: 'Female' }, // Gujarati
+  pa: { speaker: 'meera',    gender: 'Female' }, // Punjabi
+  or: { speaker: 'ananya',   gender: 'Female' }, // Odia
+  en: { speaker: 'ananya',   gender: 'Female' }, // English
+};
+
+export async function sarvamTTS(
+  text: string,
+  languageCode: string
+): Promise<Buffer> {
+
+  const voice = SARVAM_VOICE_MAP[languageCode]
+             || SARVAM_VOICE_MAP['en'];
+
+  const response = await fetch('https://api.sarvam.ai/text-to-speech', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'api-subscription-key': process.env.SARVAM_API_KEY!
+    },
+    body: JSON.stringify({
+      inputs: [text],
+      target_language_code: toLongCode(languageCode),
+      speaker: voice.speaker,
+      speaker_gender: 'Female',   // ← always Female, always
+      model: 'bulbul:v1',
+      pitch: 0,
+      pace: 1.0,
+      loudness: 1.0,
+      enable_preprocessing: true,
+      speech_sample_rate: 22050
+    })
+  });
+
+  const data = await response.json();
+  return Buffer.from(data.audios[0], 'base64');
+}
+```
+
+---
+
+## Why This Matters For ARYA's Identity
+
+```
+ARYA = Augmented Reasoning & Yielding Awareness
+ARYA = female name in Sanskrit meaning "noble"
+
+The voice IS the personality.
+A warm female voice matches:
+  - The friend tone
+  - The caring nature
+  - The name itself
+  - The brand
+
+Never male. Never robotic neutral.
+Always warm, clear, female.
+```
+
+---
+
+## Also Fix The Sarvam Mode
+
+While in this file — confirm these two settings are correct:
+
+```typescript
+// These should already be set from earlier work
+// but confirm both are correct:
+
+mode: 'code-mixed',     // ← NOT 'formal'
+                        // code-mixed = natural conversational
+                        // formal = stiff textbook language
+
+speaker_gender: 'Female'  // ← always, no variable
+```
+
+---
+
+## Developer Task
+
+```
+File: server/arya/sarvam-client.ts
+
+1. Add SARVAM_VOICE_MAP object (above)
+
+2. In every TTS call — replace any variable
+   gender setting with hardcoded 'Female'
+
+3. Confirm mode is 'code-mixed' not 'formal'
+
+4. Remove any UI toggle for male/female voice
+   (if it exists anywhere — it shouldn't)
+
+5 minutes. One file. Done.
+```
+
+ARYA speaks as a woman. Always. That's the product.

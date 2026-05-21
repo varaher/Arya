@@ -122,9 +122,9 @@ export async function sarvamTranslate(
 
 export async function sarvamTextToSpeech(
   text: string,
-  languageCode: SarvamLanguageCode = "hi-IN",
-  speaker: string = "arya"
+  languageCode: SarvamLanguageCode = "hi-IN"
 ): Promise<TTSResult> {
+  const speaker = getSpeakerForLanguage(languageCode);
   const response = await fetch(`${SARVAM_BASE_URL}/text-to-speech`, {
     method: "POST",
     headers: {
@@ -135,7 +135,9 @@ export async function sarvamTextToSpeech(
       inputs: [text],
       target_language_code: languageCode,
       speaker: speaker,
+      speaker_gender: "Female",
       model: "bulbul:v2",
+      mode: "code-mixed",
       pitch: 0,
       pace: 1.0,
       loudness: 1.0,
@@ -205,20 +207,21 @@ export function getLanguageName(code: string): string {
   return lang ? lang.name : code;
 }
 
+// Female voices for bulbul:v2 — ARYA is always female, no exceptions
 const TTS_SPEAKERS: Record<string, string> = {
-  "hi-IN": "arya",
-  "bn-IN": "arya",
-  "ta-IN": "arya",
-  "te-IN": "arya",
-  "mr-IN": "arya",
-  "kn-IN": "arya",
-  "ml-IN": "arya",
-  "gu-IN": "arya",
-  "pa-IN": "arya",
-  "od-IN": "arya",
-  "en-IN": "arya",
+  "hi-IN": "meera",
+  "mr-IN": "meera",
+  "pa-IN": "meera",
+  "ta-IN": "pavithra",
+  "te-IN": "ananya",
+  "kn-IN": "ananya",
+  "ml-IN": "ananya",
+  "bn-IN": "ananya",
+  "gu-IN": "ananya",
+  "od-IN": "ananya",
+  "en-IN": "ananya",
 };
 
 export function getSpeakerForLanguage(langCode: string): string {
-  return TTS_SPEAKERS[langCode] || "arya";
+  return TTS_SPEAKERS[langCode] || "ananya";
 }

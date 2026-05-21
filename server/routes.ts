@@ -2169,8 +2169,7 @@ export async function registerRoutes(
           const translatedResponse = await sarvamTranslate(fullResponse, "en-IN", detectedLanguage);
           const ttsResult = await sarvamTextToSpeech(
             translatedResponse.translatedText,
-            detectedLanguage as SarvamLanguageCode,
-            getSpeakerForLanguage(detectedLanguage)
+            detectedLanguage as SarvamLanguageCode
           );
           res.write(`data: ${JSON.stringify({
             type: "translated_response",
@@ -2584,8 +2583,7 @@ export async function registerRoutes(
       } else {
         const ttsResult = await sarvamTextToSpeech(
           text,
-          langCode,
-          speaker || getSpeakerForLanguage(langCode)
+          langCode
         );
         res.json(ttsResult);
       }
