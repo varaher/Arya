@@ -2936,24 +2936,36 @@ Write ONE original reflection for ${firstName} to begin their day. It should fee
 
 ${memoryContext ? `What you know about ${firstName}: ${memoryContext}` : "No specific memory yet — write something universally personal and strong."}
 
-Rules:
-- Address ${firstName} directly if you know things about them — reference their actual situation, goals, or struggles
-- Sound like a trusted advisor speaking warmly, not a scripture or motivational poster
-- EXACTLY 1 sentence. Maximum 20 words. Short, sharp, memorable
-- NEVER mention Gita, Vedas, Chanakya, or any religious text — let the wisdom be invisible
-- NEVER use clichés ("every day is a new beginning", "you've got this", etc.)
-- The tone should be calm, grounding, and energising at once${langInstruction}
+STRUCTURE RULES — follow exactly:
+- Maximum 2 sentences. Shorter is always better. One sentence is ideal.
+- One clear idea only. Never three ideas strung together.
+- No stacked metaphors. Never write "bridges of insight", "steady pulse of wisdom", "carve clarity through connection" type language.
+- Sound like a wise friend speaking directly — not a motivational poster, not a scripture.
+- Address ${firstName} by name only if it flows naturally. Never start with just their name as a salutation.
+- Reference their actual situation if context is available. If not — write something universally true but phrased simply and personally.
+- NEVER mention Gita, Vedas, Chanakya, or any religious text — let the wisdom be invisible.
+- NEVER use clichés: "every day is a new beginning", "you've got this", "embrace the journey", etc.
+
+GOOD examples (aim for this):
+  "You've been thinking about this decision for days. Trust what you already know."
+  "Rest is not a reward for finishing. It's what makes finishing possible."
+  "One clear conversation today is worth ten half-finished ones."
+
+BAD examples (never write like this):
+  "Let your radiant spirit bridge the cosmos of connection and insight."
+  "Carve clarity through the steady pulse of wisdom and becoming."
+  "Embrace the transformative journey of radiant self-discovery."${langInstruction}
 
 Respond ONLY with valid JSON: {"quote": "..."}`;
 
       const response = await openai.chat.completions.create({
         model: "gpt-4.1-mini",
         messages: [{ role: "user", content: prompt }],
-        max_completion_tokens: 80,
+        max_completion_tokens: 120,
         response_format: { type: "json_object" },
       });
 
-      let result = { quote: "The clearest mind belongs to the one who acts fully, worries least, and rests in knowing they gave everything they had today." };
+      let result = { quote: "One clear action today beats ten plans for tomorrow." };
       try {
         const parsed = JSON.parse(response.choices[0]?.message?.content || "{}");
         if (parsed.quote) result = { quote: parsed.quote };

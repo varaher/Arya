@@ -2121,7 +2121,7 @@ function DailyQuoteCard({ token }: { token: string | null }) {
             style={{ fontFamily: "'Space Grotesk', sans-serif" }}
             data-testid="text-daily-quote"
           >
-            "{STATIC_HOME_QUOTES[staticQuoteIdx]}"
+            {STATIC_HOME_QUOTES[staticQuoteIdx]}
           </p>
           <p className="text-[10px] uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-semibold">
             — ARYA · daily wisdom
@@ -2160,7 +2160,7 @@ function DailyQuoteCard({ token }: { token: string | null }) {
               style={{ fontFamily: "'Space Grotesk', sans-serif" }}
               data-testid="text-daily-quote"
             >
-              "{quoteText}"
+              {quoteText}
             </p>
             <p className="text-[10px] uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-semibold" data-testid="text-quote-source">
               — {quoteSource}

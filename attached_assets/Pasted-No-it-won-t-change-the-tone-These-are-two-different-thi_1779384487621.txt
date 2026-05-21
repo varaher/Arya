@@ -1,0 +1,154 @@
+No — it won't change the tone. These are two different things.
+
+---
+
+## What's Already Set vs What We're Adding
+
+```
+Already set (tone rules):
+  HOW ARYA speaks — register, warmth,
+  friend tone, "तुम" not "आप",
+  section-specific personality
+  This stays completely untouched.
+
+What we're adding (quote style):
+  HOW the quote is STRUCTURED —
+  short, one idea, no stacked metaphors,
+  sounds like a real person said it
+  Generate in user's language
+```
+
+---
+
+## They Work Together — Not Against Each Other
+
+```
+Current quote in Hindi (without fix):
+  "वाराह, आज आपकी स्पष्टता ज्ञान और
+   हृदयों को जोड़ने वाले सेतु की तरह
+   अंतर्दृष्टि की स्थिर नाड़ी को आकार देगी।"
+
+  Problems:
+  ✗ Uses "आपकी" — formal, wrong register
+  ✗ Stacked metaphors — unnatural
+  ✗ Nobody talks like this in Hindi
+
+Quote in Hindi WITH both fixes applied:
+  "यार, बहुत सोच लिया। अब बस एक काम करो।
+   वही जो सबसे ज़रूरी है।"
+
+  ✓ Uses "यार" — friend tone (from existing rules)
+  ✓ Short — one idea (from new quote rules)
+  ✓ Natural Hindi — not textbook
+  ✓ Sounds like a real friend said it
+```
+
+---
+
+## The Addition To The Quote Prompt
+
+Small addition — goes only in the quote generation prompt, nowhere else.
+
+```typescript
+// server/arya/morning-briefing.ts
+// Find the quote generation prompt
+// Add this block:
+
+const quotePrompt = `
+Generate today's personal reflection for ${userName}.
+
+STRUCTURE RULES:
+- Maximum 2 sentences. One idea only.
+- No stacked metaphors.
+- Sound like a wise friend — not a poster.
+- Short is always better than long.
+
+GOOD:
+  "You've been overthinking this.
+   Trust what you already know."
+
+BAD (never write like this):
+  "Let your radiant wisdom bridge the
+   cosmos of insight and connection."
+
+${langInstruction}
+// ↑ This already exists in your code
+// It tells Claude which language + tone to use
+// The tone rules (तुम, friend register etc)
+// come through here automatically
+
+Return ONLY the quote. No quotes marks. No attribution.
+`;
+```
+
+---
+
+## What Each Layer Controls
+
+```
+Layer 1 — section-tone-map.ts (existing):
+  "Use तुम not आप"
+  "Friend tone, not textbook"
+  "Natural Hinglish ok"
+  → Controls ARYA's conversational voice
+
+Layer 2 — getLanguageInstruction() (existing):
+  "Respond in Hindi"
+  "User is writing in Malayalam"
+  → Controls which language
+
+Layer 3 — Quote structure rules (new addition):
+  "Max 2 sentences"
+  "One idea"
+  "No stacked metaphors"
+  → Controls quote quality and length
+
+All three work together.
+None override each other.
+```
+
+---
+
+## Result Across Languages
+
+```
+Hindi:
+  "यार, आज एक काम ठीक से करो।
+   बाकी सब बाद में।"
+
+Tamil:
+  "இன்று ஒரு விஷயம் மட்டும்.
+   அதை நன்றாக செய்."
+
+Malayalam:
+  "ഇന്ന് ഒരു കാര്യം മാത്രം.
+   അത് നന്നായി ചെയ്യൂ."
+
+Telugu:
+  "ఈరోజు ఒక పని మాత్రమే.
+   దాన్ని బాగా చేయి."
+
+Bengali:
+  "আজ শুধু একটা কাজ।
+   সেটা ভালো করে করো।"
+
+All: short, warm, friend tone,
+     correct register per language,
+     one clear idea.
+```
+
+---
+
+## Developer Task — 5 Minutes
+
+```
+File: server/arya/morning-briefing.ts
+
+Find the quote generation prompt.
+Add the STRUCTURE RULES block above
+before the existing ${langInstruction} line.
+
+That's it. Nothing else changes.
+Tone rules stay. Language rules stay.
+Only quote LENGTH and STRUCTURE improves.
+```
