@@ -1954,6 +1954,7 @@ export async function registerRoutes(
       res.setHeader("Content-Type", "text/event-stream");
       res.setHeader("Cache-Control", "no-cache");
       res.setHeader("Connection", "keep-alive");
+      res.setHeader("X-Accel-Buffering", "no");
 
       // Intercept rehearsal conversations — ARYA responds as the persona
       const convMeta = await chatStorage.getConversation(conversationId);
@@ -2061,6 +2062,7 @@ export async function registerRoutes(
         res.setHeader("Content-Type", "text/event-stream");
         res.setHeader("Cache-Control", "no-cache");
         res.setHeader("Connection", "keep-alive");
+        res.setHeader("X-Accel-Buffering", "no");
         res.write(`data: ${JSON.stringify({ type: "error", content: "No speech detected. Please try again." })}\n\n`);
         res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
         return res.end();
@@ -2114,6 +2116,7 @@ export async function registerRoutes(
         res.setHeader("Content-Type", "text/event-stream");
         res.setHeader("Cache-Control", "no-cache");
         res.setHeader("Connection", "keep-alive");
+        res.setHeader("X-Accel-Buffering", "no");
         res.write(`data: ${JSON.stringify({ type: "error", content: "I couldn't catch that clearly. Please speak again." })}\n\n`);
         res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
         return res.end();
@@ -2130,6 +2133,7 @@ export async function registerRoutes(
       res.setHeader("Content-Type", "text/event-stream");
       res.setHeader("Cache-Control", "no-cache");
       res.setHeader("Connection", "keep-alive");
+      res.setHeader("X-Accel-Buffering", "no");
 
       res.write(`data: ${JSON.stringify({ type: "user_transcript", content: userTranscript, language: detectedLanguage })}\n\n`);
 
@@ -2771,6 +2775,7 @@ export async function registerRoutes(
       res.setHeader("Content-Type", "text/event-stream");
       res.setHeader("Cache-Control", "no-cache");
       res.setHeader("Connection", "keep-alive");
+      res.setHeader("X-Accel-Buffering", "no");
 
       const { stream, meta } = await generateAryaResponse(message, chatHistory, tenantId);
       let fullResponse = "";
