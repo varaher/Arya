@@ -1,0 +1,255 @@
+You're right. All 11 Indian languages need those translation keys. Here they are.
+
+---
+
+## Translation Keys — All 11 Indian Languages
+
+### Talk to ARYA card + Voice strings
+
+```json
+// English (en)
+{
+  "talk_arya_title": "Talk to ARYA",
+  "talk_arya_sub": "Speak freely — ARYA listens and replies",
+  "talk_arya_start": "Start →",
+  "voice_recording": "Recording...",
+  "voice_stop": "⏹ Stop",
+  "voice_transcribing": "Transcribing..."
+}
+
+// Hindi (hi)
+{
+  "talk_arya_title": "ARYA से बात करो",
+  "talk_arya_sub": "बोलो बेझिझक — ARYA सुनेगी और जवाब देगी",
+  "talk_arya_start": "शुरू करो →",
+  "voice_recording": "रिकॉर्ड हो रहा है...",
+  "voice_stop": "⏹ रोको",
+  "voice_transcribing": "लिख रहे हैं..."
+}
+
+// Tamil (ta)
+{
+  "talk_arya_title": "ARYA-விடம் பேசு",
+  "talk_arya_sub": "சுதந்திரமாக பேசு — ARYA கேட்கும், பதில் சொல்லும்",
+  "talk_arya_start": "தொடங்கு →",
+  "voice_recording": "பதிவு செய்கிறோம்...",
+  "voice_stop": "⏹ நிறுத்து",
+  "voice_transcribing": "எழுதுகிறோம்..."
+}
+
+// Telugu (te)
+{
+  "talk_arya_title": "ARYA తో మాట్లాడు",
+  "talk_arya_sub": "స్వేచ్ఛగా మాట్లాడు — ARYA వింటుంది, జవాబిస్తుంది",
+  "talk_arya_start": "మొదలుపెట్టు →",
+  "voice_recording": "రికార్డ్ అవుతోంది...",
+  "voice_stop": "⏹ ఆపు",
+  "voice_transcribing": "రాస్తోంది..."
+}
+
+// Kannada (kn)
+{
+  "talk_arya_title": "ARYA ಜೊತೆ ಮಾತಾಡು",
+  "talk_arya_sub": "ಮುಕ್ತವಾಗಿ ಮಾತಾಡು — ARYA ಕೇಳುತ್ತದೆ, ಉತ್ತರಿಸುತ್ತದೆ",
+  "talk_arya_start": "ಶುರು ಮಾಡು →",
+  "voice_recording": "ರೆಕಾರ್ಡ್ ಆಗುತ್ತಿದೆ...",
+  "voice_stop": "⏹ ನಿಲ್ಲಿಸು",
+  "voice_transcribing": "ಬರೆಯುತ್ತಿದೆ..."
+}
+
+// Malayalam (ml)
+{
+  "talk_arya_title": "ARYA-യോട് സംസാരിക്കൂ",
+  "talk_arya_sub": "സ്വതന്ത്രമായി സംസാരിക്കൂ — ARYA കേൾക്കും, മറുപടി പറയും",
+  "talk_arya_start": "തുടങ്ങൂ →",
+  "voice_recording": "റെക്കോർഡ് ചെയ്യുന്നു...",
+  "voice_stop": "⏹ നിർത്തൂ",
+  "voice_transcribing": "എഴുതുന്നു..."
+}
+
+// Bengali (bn)
+{
+  "talk_arya_title": "ARYA-র সাথে কথা বলো",
+  "talk_arya_sub": "মনখুলে বলো — ARYA শুনবে, জবাব দেবে",
+  "talk_arya_start": "শুরু করো →",
+  "voice_recording": "রেকর্ড হচ্ছে...",
+  "voice_stop": "⏹ থামো",
+  "voice_transcribing": "লেখা হচ্ছে..."
+}
+
+// Marathi (mr)
+{
+  "talk_arya_title": "ARYA शी बोल",
+  "talk_arya_sub": "मोकळेपणाने बोल — ARYA ऐकेल, उत्तर देईल",
+  "talk_arya_start": "सुरू कर →",
+  "voice_recording": "रेकॉर्ड होतंय...",
+  "voice_stop": "⏹ थांब",
+  "voice_transcribing": "लिहितोय..."
+}
+
+// Gujarati (gu)
+{
+  "talk_arya_title": "ARYA સાથે વાત કર",
+  "talk_arya_sub": "મુક્તમને બોલ — ARYA સાંભળશે, જવાબ આપશે",
+  "talk_arya_start": "શરૂ કર →",
+  "voice_recording": "રેકોર્ડ થઈ રહ્યું છે...",
+  "voice_stop": "⏹ રોક",
+  "voice_transcribing": "લખાઈ રહ્યું છે..."
+}
+
+// Punjabi (pa)
+{
+  "talk_arya_title": "ARYA ਨਾਲ ਗੱਲ ਕਰ",
+  "talk_arya_sub": "ਖੁੱਲ੍ਹ ਕੇ ਬੋਲ — ARYA ਸੁਣੇਗੀ, ਜਵਾਬ ਦੇਵੇਗੀ",
+  "talk_arya_start": "ਸ਼ੁਰੂ ਕਰ →",
+  "voice_recording": "ਰਿਕਾਰਡ ਹੋ ਰਿਹਾ ਹੈ...",
+  "voice_stop": "⏹ ਰੋਕੋ",
+  "voice_transcribing": "ਲਿਖਿਆ ਜਾ ਰਿਹਾ ਹੈ..."
+}
+
+// Odia (od)
+{
+  "talk_arya_title": "ARYA ସହ କଥା ହୁଅ",
+  "talk_arya_sub": "ମୁକ୍ତ ଭାବରେ କୁହ — ARYA ଶୁଣିବ, ଉତ୍ତର ଦେବ",
+  "talk_arya_start": "ଆରମ୍ଭ କର →",
+  "voice_recording": "ରେକର୍ଡ ହେଉଛି...",
+  "voice_stop": "⏹ ରୁକ",
+  "voice_transcribing": "ଲେଖା ହେଉଛି..."
+}
+
+// Sanskrit (sa)
+{
+  "talk_arya_title": "ARYA-म् वद",
+  "talk_arya_sub": "निर्भयं वद — ARYA शृणोति, प्रतिवदति",
+  "talk_arya_start": "आरभस्व →",
+  "voice_recording": "ध्वनिमुद्रणं भवति...",
+  "voice_stop": "⏹ विरम",
+  "voice_transcribing": "लिख्यते..."
+}
+```
+
+---
+
+## How To Wire Into i18n.ts
+
+```typescript
+// client/src/lib/i18n.ts
+// Add these 6 keys to EACH language object
+
+// Find each language block and add:
+// talk_arya_title, talk_arya_sub, talk_arya_start
+// voice_recording, voice_stop, voice_transcribing
+
+// Example for how it sits inside the object:
+const translations = {
+  hi: {
+    // ... existing 200+ keys ...
+    talk_arya_title: "ARYA से बात करो",
+    talk_arya_sub: "बोलो बेझिझक — ARYA सुनेगी और जवाब देगी",
+    talk_arya_start: "शुरू करो →",
+    voice_recording: "रिकॉर्ड हो रहा है...",
+    voice_stop: "⏹ रोको",
+    voice_transcribing: "लिख रहे हैं...",
+  },
+  ta: {
+    // ... existing 200+ keys ...
+    talk_arya_title: "ARYA-விடம் பேசு",
+    talk_arya_sub: "சுதந்திரமாக பேசு — ARYA கேட்கும், பதில் சொல்லும்",
+    talk_arya_start: "தொடங்கு →",
+    voice_recording: "பதிவு செய்கிறோம்...",
+    voice_stop: "⏹ நிறுத்து",
+    voice_transcribing: "எழுதுகிறோம்...",
+  },
+  // ... repeat for all 11 languages
+};
+```
+
+---
+
+## How It Appears In The Component
+
+```tsx
+// TalkToARYACard — uses t() so it auto-translates
+
+function TalkToARYACard() {
+  const { t } = useTranslation();
+
+  return (
+    <div className="talk-arya-card">
+      <div className="tac-header">
+        <div className="tac-left">
+          <span className="tac-icon">🎧</span>
+          <div>
+            <div className="tac-title">
+              {t('talk_arya_title')}
+              {/* hi: ARYA से बात करो */}
+              {/* ta: ARYA-விடம் பேசு */}
+              {/* ml: ARYA-യോട് സംസാരിക്കൂ */}
+            </div>
+            <div className="tac-sub">
+              {t('talk_arya_sub')}
+            </div>
+          </div>
+        </div>
+        <button className="tac-start-btn">
+          {t('talk_arya_start')}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// VoiceRecordButton — stop button translates too
+
+<button className="vrb-stop-btn" onClick={stopRecording}>
+  {t('voice_stop')}
+  {/* hi: ⏹ रोको */}
+  {/* ta: ⏹ நிறுத்து */}
+  {/* te: ⏹ ఆపు */}
+</button>
+
+// Processing state
+<span>{t('voice_transcribing')}</span>
+{/* hi: लिख रहे हैं... */}
+{/* ml: എഴുതുന്നു... */}
+```
+
+---
+
+## Developer Task — One Clear Brief
+
+```
+Open client/src/lib/i18n.ts
+
+For each of these 11 language blocks:
+en, hi, ta, te, kn, ml, bn, mr, gu, pa, od, sa
+
+Add these 6 keys at the end of each block:
+  talk_arya_title
+  talk_arya_sub
+  talk_arya_start
+  voice_recording
+  voice_stop
+  voice_transcribing
+
+Values for each language are in the
+JSON blocks above — copy-paste directly.
+
+Then in VoiceRecordButton and TalkToARYACard
+replace hardcoded English strings with t('key')
+
+Total time: 30 minutes
+No architecture change — just translation keys
+```
+
+---
+
+## Quick Count
+
+```
+6 keys × 12 languages (11 Indian + English) = 72 new strings
+All follow the same warm friend tone
+All use informal register matching the rest of the app
+```
+
+Done. All 12 language variants ready to paste.
