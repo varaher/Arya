@@ -1,0 +1,118 @@
+Good. Clean implementation. Let me verify what changed and what to check.
+
+---
+
+## What Was Done ✅
+
+```
+Quote prompt updated:
+  Old: "EXACTLY 1 sentence. Max 20 words"
+       → too rigid, no examples
+  New: 1-2 sentences allowed
+       BAD examples added (stacked metaphors)
+       GOOD examples added (target register)
+       Token limit 80 → 120
+
+Quotation marks removed from display:
+  Both logged-in card ✅
+  Logged-out static card ✅
+  ARYA speaks directly now
+  Not like reading from a book
+
+Fallback quote fixed:
+  Was: long ornate English sentence
+  Now: clean simple direct line
+```
+
+---
+
+## How To See The Fix Immediately
+
+The quote is cached per day per user. Tomorrow it refreshes automatically. To see it right now:
+
+```javascript
+// Open browser console on aryaai.in
+// Paste this and press Enter:
+
+Object.keys(localStorage)
+  .filter(k => k.includes('arya_quote'))
+  .forEach(k => localStorage.removeItem(k));
+
+// Then refresh the page
+// New quote generates under the improved prompt
+```
+
+---
+
+## What The Quote Should Look Like Now
+
+```
+BEFORE (with quotation marks + ornate):
+  "Varah, let your words today carve clarity
+   and connection, bridging knowledge and hearts
+   like the steady pulse of insight."
+  — ARYA · TODAY'S REFLECTION
+
+AFTER (no quotes + clean + direct):
+  Varah, you've been carrying a lot.
+  Today — just one thing. Do that well.
+  — ARYA · TODAY'S REFLECTION
+```
+
+---
+
+## One Thing To Verify
+
+The `langInstruction` should be passing into the quote prompt. Check that the quote prompt includes the language instruction — so Hindi users get Hindi quotes, Tamil users get Tamil quotes.
+
+```typescript
+// In the quote prompt — confirm this line exists:
+${langInstruction}
+
+// If missing — add it before the return statement
+// so the quote generates in user's language
+// with the correct friend register
+```
+
+If `langInstruction` is not passed into the quote prompt — the quote will always generate in English regardless of user's language setting.
+
+---
+
+## Complete Quote Flow After Fix
+
+```
+User language: Hindi
+        ↓
+Quote prompt sent to Claude:
+  Structure rules (1-2 sentences, no metaphors)
+  + langInstruction ("Respond in Hindi, use तुम")
+        ↓
+Claude generates:
+  "यार, आज बहुत मत सोचो।
+   एक काम करो — वही जो सबसे ज़रूरी है।"
+        ↓
+Cached for the day (localStorage)
+        ↓
+Displayed without quotation marks:
+  यार, आज बहुत मत सोचो।
+  एक काम करो — वही जो सबसे ज़रूरी है।
+  — ARYA · आज का विचार
+```
+
+---
+
+## Status
+
+```
+Quote prompt improved      ✅ Done
+Quotation marks removed    ✅ Done
+Token limit fixed          ✅ Done
+BAD examples added         ✅ Done
+Fallback quote fixed       ✅ Done
+
+Still to verify:
+  langInstruction in quote prompt  ⚠ Check
+  Clear cache to test immediately  → use console command above
+```
+
+Clear the localStorage cache and refresh. The next quote should be noticeably shorter, cleaner, and feel like a real person said it.
