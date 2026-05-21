@@ -1,0 +1,685 @@
+Looking at the screenshot carefully. Good progress — bottom nav is now simplified with More option. Let me address all three issues.
+
+---
+
+## What I Can See ✅
+
+```
+Bottom nav: Home | లక్ష్యంగల్ | KAAL | Niti | More ✅
+Top bar: History(12) | New Chat | + | 🌙 | 🔔(4) | 👤 ✅
+Daily Check-in visible ✅
+Quote card visible ✅
+⋯ dropdown in toolbar ✅
+```
+
+---
+
+## Issue 1 — No Stop Button When Recording
+
+This is the most critical UX bug. User taps mic → recording starts → no way to stop it.
+
+```typescript
+// client/src/components/VoiceRecordButton.tsx
+// Complete replacement of mic button UI
+
+import { useState, useEffect, useRef } from 'react';
+
+interface VoiceRecordButtonProps {
+  onRecordingComplete: (blob: Blob) => void;
+  isProcessing: boolean;
+}
+
+export function VoiceRecordButton({
+  onRecordingComplete,
+  isProcessing
+}: VoiceRecordButtonProps) {
+  const [state, setState] = useState<
+    'idle' | 'recording' | 'processing'
+  >('idle');
+  const [duration, setDuration] = useState(0);
+  const [amplitude, setAmplitude] = useState(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animFrameRef = useRef<number | null>(null);
+
+  // Timer while recording
+  useEffect(() => {
+    if (state === 'recording') {
+      timerRef.current = setInterval(() => {
+        setDuration(d => d + 1);
+      }, 1000);
+    } else {
+      if (timerRef.current) clearInterval(timerRef.current);
+      setDuration(0);
+    }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [state]);
+
+  // Amplitude animation while recording
+  function startAmplitudeTracking(stream: MediaStream) {
+    const audioCtx = new AudioContext();
+    const analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+    const source = audioCtx.createMediaStreamSource(stream);
+    source.connect(analyser);
+    analyserRef.current = analyser;
+
+    const data = new Uint8Array(analyser.frequencyBinCount);
+
+    function tick() {
+      analyser.getByteFrequencyData(data);
+      const avg = data.reduce((a, b) => a + b, 0) / data.length;
+      setAmplitude(avg);
+      animFrameRef.current = requestAnimationFrame(tick);
+    }
+    tick();
+  }
+
+  function stopAmplitudeTracking() {
+    if (animFrameRef.current) {
+      cancelAnimationFrame(animFrameRef.current);
+    }
+    setAmplitude(0);
+  }
+
+  async function startRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          sampleRate: 16000,
+        }
+      });
+
+      startAmplitudeTracking(stream);
+      chunksRef.current = [];
+
+      const mimeType = getBestFormat();
+      const recorder = mimeType
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream);
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+
+      recorder.onstop = async () => {
+        stopAmplitudeTracking();
+        stream.getTracks().forEach(t => t.stop());
+        setState('processing');
+
+        const rawBlob = new Blob(chunksRef.current, {
+          type: recorder.mimeType
+        });
+
+        // Convert to WAV
+        const { convertToWav } = await import('../utils/audioConverter');
+        const wavBlob = await convertToWav(rawBlob);
+        onRecordingComplete(wavBlob);
+      };
+
+      recorder.start(100); // collect chunks every 100ms
+      mediaRecorderRef.current = recorder;
+      setState('recording');
+
+    } catch (err: any) {
+      if (err.name === 'NotAllowedError') {
+        alert('Microphone access denied. Please allow mic in browser settings.');
+      } else {
+        alert('Could not start recording. Please try again.');
+      }
+      console.error('[voice] Start error:', err);
+    }
+  }
+
+  function stopRecording() {
+    if (mediaRecorderRef.current?.state === 'recording') {
+      mediaRecorderRef.current.stop();
+    }
+  }
+
+  function formatDuration(secs: number): string {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  }
+
+  function getBestFormat(): string {
+    const formats = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/ogg;codecs=opus',
+      'audio/mp4',
+    ];
+    return formats.find(f => MediaRecorder.isTypeSupported(f)) || '';
+  }
+
+  // ── IDLE STATE — just mic button ──
+  if (state === 'idle') {
+    return (
+      <button
+        className="voice-mic-btn"
+        onClick={startRecording}
+        title="Tap to record"
+      >
+        🎙️
+      </button>
+    );
+  }
+
+  // ── RECORDING STATE — waveform + stop button ──
+  if (state === 'recording') {
+    const scale = 1 + (amplitude / 128) * 0.4;
+
+    return (
+      <div className="voice-recording-bar">
+
+        {/* Pulsing mic */}
+        <div
+          className="vrb-mic-pulse"
+          style={{ transform: `scale(${scale})` }}
+        >
+          🎙️
+        </div>
+
+        {/* Timer */}
+        <span className="vrb-timer">
+          {formatDuration(duration)}
+        </span>
+
+        {/* Waveform animation */}
+        <div className="vrb-wave">
+          {[...Array(5)].map((_, i) => (
+            <div
+              key={i}
+              className="vrb-bar"
+              style={{
+                height: `${8 + (amplitude / 255) * 20 *
+                  Math.sin(Date.now() / 200 + i)}px`,
+                animationDelay: `${i * 0.1}s`
+              }}
+            />
+          ))}
+        </div>
+
+        {/* STOP BUTTON — prominent, can't miss it */}
+        <button
+          className="vrb-stop-btn"
+          onClick={stopRecording}
+          title="Stop recording"
+        >
+          ⏹ Stop
+        </button>
+
+      </div>
+    );
+  }
+
+  // ── PROCESSING STATE ──
+  if (state === 'processing') {
+    return (
+      <div className="voice-processing">
+        <div className="vp-spinner" />
+        <span>Transcribing...</span>
+      </div>
+    );
+  }
+
+  return null;
+}
+```
+
+```css
+/* Voice recording UI */
+
+/* Idle mic button */
+.voice-mic-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: none;
+  background: var(--primary-dim, #e8f5ee);
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+.voice-mic-btn:active {
+  transform: scale(0.93);
+  background: var(--primary, #2e7d5e);
+}
+
+/* Recording bar — replaces input bar */
+.voice-recording-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  padding: 8px 12px;
+  background: #fff5f5;
+  border: 1.5px solid #ffcccc;
+  border-radius: 16px;
+  animation: borderPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes borderPulse {
+  0%, 100% { border-color: #ffcccc; }
+  50%       { border-color: #ff6666; }
+}
+
+.vrb-mic-pulse {
+  font-size: 20px;
+  transition: transform 0.05s;
+  flex-shrink: 0;
+}
+
+.vrb-timer {
+  font-size: 14px;
+  font-weight: 700;
+  color: #e53935;
+  font-variant-numeric: tabular-nums;
+  min-width: 36px;
+}
+
+/* Waveform bars */
+.vrb-wave {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 24px;
+}
+
+.vrb-bar {
+  width: 3px;
+  min-height: 4px;
+  max-height: 24px;
+  background: #e53935;
+  border-radius: 2px;
+  animation: waveAnim 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes waveAnim {
+  from { height: 4px; opacity: 0.5; }
+  to   { height: 20px; opacity: 1; }
+}
+
+/* STOP BUTTON — large, obvious, red */
+.vrb-stop-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 14px;
+  background: #e53935;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.vrb-stop-btn:active {
+  background: #b71c1c;
+  transform: scale(0.96);
+}
+
+/* Processing state */
+.voice-processing {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  color: #888;
+  font-size: 13px;
+}
+
+.vp-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #eee;
+  border-top-color: var(--primary, #2e7d5e);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+```
+
+---
+
+## Issue 2 — "Talk to ARYA" Tab On Home Screen
+
+You want the headphones/live voice option as a visible tab on the home screen, below Daily Check-in, with an explanation.
+
+```tsx
+// Add this component to the home/welcome screen
+// Place it below Daily Check-in card
+
+function TalkToARYACard() {
+  const { t } = useTranslation();
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  function startLiveVoice() {
+    // Trigger the existing live voice / headphones mode
+    window.dispatchEvent(new CustomEvent('start-live-voice'));
+  }
+
+  return (
+    <div className="talk-arya-card">
+
+      {/* Header row */}
+      <div className="tac-header">
+        <div className="tac-left">
+          <span className="tac-icon">🎧</span>
+          <div>
+            <div className="tac-title">
+              {t('talk_arya_title')}
+            </div>
+            <div className="tac-sub">
+              {t('talk_arya_sub')}
+            </div>
+          </div>
+        </div>
+
+        {/* Start button */}
+        <button
+          className="tac-start-btn"
+          onClick={startLiveVoice}
+        >
+          {t('talk_arya_start')}
+        </button>
+      </div>
+
+      {/* Expandable explanation */}
+      <button
+        className="tac-explain-toggle"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        {isExpanded
+          ? '▲ Hide'
+          : '▾ How it works'}
+      </button>
+
+      {isExpanded && (
+        <div className="tac-explanation">
+          <div className="tac-step">
+            <span className="tac-step-num">1</span>
+            <span>Tap Start — ARYA listens</span>
+          </div>
+          <div className="tac-step">
+            <span className="tac-step-num">2</span>
+            <span>Speak naturally in your language</span>
+          </div>
+          <div className="tac-step">
+            <span className="tac-step-num">3</span>
+            <span>ARYA thinks and speaks back</span>
+          </div>
+          <div className="tac-note">
+            🎙️ No typing needed. Hands-free.
+            Works in Hindi, Tamil, Malayalam and 8 more languages.
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
+```
+
+```css
+/* Talk to ARYA card */
+.talk-arya-card {
+  background: linear-gradient(
+    135deg,
+    rgba(46,125,94,0.06),
+    rgba(46,125,94,0.02)
+  );
+  border: 1px solid rgba(46,125,94,0.2);
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin: 10px 16px;
+}
+
+.tac-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tac-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.tac-icon {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.tac-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text, #1a1a1a);
+  margin-bottom: 2px;
+}
+
+.tac-sub {
+  font-size: 11px;
+  color: var(--text-muted, #888);
+}
+
+.tac-start-btn {
+  padding: 9px 16px;
+  background: var(--primary, #2e7d5e);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.tac-start-btn:active {
+  background: #1b5e42;
+  transform: scale(0.97);
+}
+
+.tac-explain-toggle {
+  display: block;
+  width: 100%;
+  text-align: center;
+  background: none;
+  border: none;
+  font-size: 11px;
+  color: var(--text-muted, #999);
+  margin-top: 10px;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.tac-explanation {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(46,125,94,0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tac-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text, #333);
+}
+
+.tac-step-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--primary, #2e7d5e);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.tac-note {
+  font-size: 12px;
+  color: var(--text-muted, #888);
+  background: rgba(46,125,94,0.06);
+  padding: 8px 10px;
+  border-radius: 8px;
+  margin-top: 4px;
+}
+```
+
+---
+
+## Issue 3 — Transcription Speed
+
+The delay happens in two places:
+
+```
+User stops recording
+        ↓
+WAV conversion    → 200-500ms  (client side)
+        ↓
+Upload to server  → 500ms-2s   (depends on file size + network)
+        ↓
+Sarvam STT API    → 1-3s       (the main delay)
+        ↓
+Response back     → 200ms
+        ↓
+Total: 2-6 seconds
+```
+
+**Three things to speed this up:**
+
+```typescript
+// Fix 1 — Start processing BEFORE user fully stops
+// Begin sending audio while still recording (streaming)
+
+recorder.ondataavailable = async (e) => {
+  if (e.data.size > 0) {
+    chunksRef.current.push(e.data);
+  }
+};
+
+// Change chunk interval from 100ms to 250ms
+// Larger chunks = fewer network round trips
+recorder.start(250);
+
+
+// Fix 2 — Reduce WAV sample rate for faster upload
+// 16000 Hz is sufficient for speech recognition
+// (already set, confirm it's being used)
+
+const audioContext = new AudioCtx({ sampleRate: 16000 });
+
+
+// Fix 3 — Show "Transcribing..." immediately
+// Don't wait for server to respond before showing feedback
+
+recorder.onstop = async () => {
+  setState('processing'); // ← show spinner IMMEDIATELY
+  stopAmplitudeTracking();
+  stream.getTracks().forEach(t => t.stop());
+
+  const rawBlob = new Blob(chunksRef.current, {
+    type: recorder.mimeType || 'audio/webm'
+  });
+
+  // Convert and send
+  const wavBlob = await convertToWav(rawBlob);
+  onRecordingComplete(wavBlob);
+};
+```
+
+---
+
+## Translation Keys For New Elements
+
+```json
+{
+  "talk_arya_title": "Talk to ARYA",
+  "talk_arya_sub": "Speak freely — ARYA listens and replies",
+  "talk_arya_start": "Start →",
+  "voice_recording": "Recording...",
+  "voice_stop": "⏹ Stop",
+  "voice_transcribing": "Transcribing..."
+}
+```
+
+Hindi:
+```json
+{
+  "talk_arya_title": "ARYA से बात करो",
+  "talk_arya_sub": "बोलो बेझिझक — ARYA सुनेगी और जवाब देगी",
+  "talk_arya_start": "शुरू करो →",
+  "voice_recording": "रिकॉर्ड हो रहा है...",
+  "voice_stop": "⏹ रोको",
+  "voice_transcribing": "लिख रहे हैं..."
+}
+```
+
+Malayalam:
+```json
+{
+  "talk_arya_title": "ARYA-യോട് സംസാരിക്കൂ",
+  "talk_arya_sub": "സ്വതന്ത്രമായി സംസാരിക്കൂ — ARYA കേൾക്കും, മറുപടി പറയും",
+  "talk_arya_start": "തുടങ്ങൂ →",
+  "voice_recording": "റെക്കോർഡ് ചെയ്യുന്നു...",
+  "voice_stop": "⏹ നിർത്തൂ",
+  "voice_transcribing": "എഴുതുന്നു..."
+}
+```
+
+---
+
+## Developer Task Summary
+
+```
+Task 1 — Stop button (Priority: CRITICAL)
+  Replace mic button with VoiceRecordButton component
+  Shows: idle → recording bar with Stop → processing
+  Stop button must be large and obvious
+  Timer shows recording duration
+  Waveform animation shows mic is active
+  Estimated: 3 hours
+
+Task 2 — Talk to ARYA card (Priority: HIGH)
+  Add TalkToARYACard component to home screen
+  Place: below Daily Check-in, above quick tabs
+  Expandable explanation section
+  Triggers existing live voice mode
+  Estimated: 1 hour
+
+Task 3 — Transcription speed (Priority: MEDIUM)
+  setState('processing') immediately on stop
+  Show "Transcribing..." before server responds
+  Chunk interval 250ms not 100ms
+  Confirm sampleRate: 16000 in AudioContext
+  Estimated: 30 mins
+```

@@ -2172,6 +2172,77 @@ function DailyQuoteCard({ token }: { token: string | null }) {
   );
 }
 
+function TalkToARYACard({ onStart, uiLang = "en" }: { onStart: () => void; uiLang?: UiLanguage }) {
+  const tl = (key: string) => getTranslation(uiLang, key);
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay: 0.25 }}
+      className="w-full max-w-md mb-2 rounded-2xl border border-emerald-200 dark:border-emerald-800/60 bg-gradient-to-r from-emerald-50/80 to-green-50/50 dark:from-emerald-950/40 dark:to-green-950/20 overflow-hidden"
+    >
+      <div className="flex items-center justify-between gap-3 px-4 py-3">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <span className="text-2xl flex-shrink-0">🎧</span>
+          <div className="min-w-0">
+            <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+              {tl("talk_arya_title")}
+            </div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+              {tl("talk_arya_sub")}
+            </div>
+          </div>
+        </div>
+        <button
+          data-testid="button-talk-arya-start"
+          onClick={onStart}
+          className="flex-shrink-0 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-semibold rounded-full transition-colors whitespace-nowrap"
+        >
+          {tl("talk_arya_start")}
+        </button>
+      </div>
+      <button
+        onClick={() => setExpanded(v => !v)}
+        className="w-full text-center text-[11px] text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 pb-2 transition-colors"
+        data-testid="button-talk-arya-expand"
+      >
+        {expanded ? "▲ Hide" : "▾ How it works"}
+      </button>
+      <AnimatePresence initial={false}>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.22 }}
+            style={{ overflow: "hidden" }}
+            className="px-4 pb-3 border-t border-emerald-100 dark:border-emerald-800/40"
+          >
+            <div className="pt-2 space-y-1.5">
+              {[
+                "Tap Start — ARYA listens",
+                "Speak naturally in your language",
+                "ARYA thinks and speaks back",
+              ].map((step, i) => (
+                <div key={i} className="flex items-center gap-2.5 text-xs text-gray-600 dark:text-gray-300">
+                  <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold flex-shrink-0">
+                    {i + 1}
+                  </span>
+                  <span>{step}</span>
+                </div>
+              ))}
+              <div className="mt-1.5 text-[11px] text-gray-400 dark:text-gray-500 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg px-2.5 py-1.5">
+                🎙️ No typing needed. Hands-free. Works in Hindi, Tamil, Malayalam and 8 more languages.
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
 function MoodCheckInCard({ token, onComplete, uiLang = "en" }: { token: string; onComplete: () => void; uiLang?: UiLanguage }) {
   const tl = (key: string) => getTranslation(uiLang, key);
   const [mood, setMood] = useState<number | null>(null);
@@ -3371,7 +3442,7 @@ export default function AryaChat() {
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
 
-      recorder.start(100);
+      recorder.start(250);
       setIsRecording(true);
       setRecordingTime(0);
       recordingTimerRef.current = setInterval(() => {
@@ -3427,6 +3498,11 @@ export default function AryaChat() {
 
     if (blob.size === 0) return;
 
+    setIsStreaming(true);
+    setStreamingContent("");
+    setTranslatedContent(null);
+    setShowOriginalStreaming(false);
+
     const wavBlob = await convertToWav(blob);
 
     let convId = activeConversation;
@@ -3434,11 +3510,6 @@ export default function AryaChat() {
       const conv = await createConversation.mutateAsync("Voice Chat");
       convId = conv.id;
     }
-
-    setIsStreaming(true);
-    setStreamingContent("");
-    setTranslatedContent(null);
-    setShowOriginalStreaming(false);
 
     try {
       const base64Audio = await new Promise<string>((resolve) => {
@@ -4342,6 +4413,11 @@ export default function AryaChat() {
               />
             )}
 
+            <TalkToARYACard
+              onStart={() => setShowVoiceMode(true)}
+              uiLang={uiLanguage}
+            />
+
             {/* ── Quick Access (horizontal scrollable pills) ── */}
             {isLoggedIn && (
               <motion.div
@@ -4937,8 +5013,8 @@ export default function AryaChat() {
               </div>
 
               {isRecording ? (
-                <div className="flex-1 flex items-center justify-center gap-2 md:gap-3 py-2">
-                  <div className="flex gap-1">
+                <div className="flex-1 flex items-center gap-2 md:gap-3 py-1.5">
+                  <div className="flex gap-0.5 flex-shrink-0">
                     {[...Array(5)].map((_, i) => (
                       <div
                         key={i}
@@ -4950,14 +5026,22 @@ export default function AryaChat() {
                       />
                     ))}
                   </div>
-                  <span className="text-sm text-red-500 dark:text-red-400 font-mono">
+                  <span className="text-sm text-red-500 dark:text-red-400 font-mono flex-shrink-0">
                     {formatTime(recordingTime)}
                   </span>
-                  <span className="text-xs text-muted-foreground hidden sm:inline">
+                  <span className="text-xs text-muted-foreground hidden sm:inline flex-1 truncate">
                     {isGlobalVoiceLang(selectedLanguage)
                       ? `Listening in ${currentLang?.name}… speak, then pause to send`
-                      : `Recording${selectedLanguage !== "en-IN" ? ` in ${currentLang?.name}` : ""}… tap stop when done`}
+                      : `Recording${selectedLanguage !== "en-IN" ? ` in ${currentLang?.name}` : ""}…`}
                   </span>
+                  <button
+                    data-testid="button-stop-recording"
+                    onClick={stopRecording}
+                    className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white text-xs font-bold rounded-full transition-colors"
+                  >
+                    <span>⏹</span>
+                    <span>{t("voice_stop")}</span>
+                  </button>
                 </div>
               ) : (
                 <div className="flex-1 flex flex-col min-w-0">
@@ -5618,7 +5702,7 @@ function VoiceConversationMode({
       chunksRef.current = [];
 
       recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
-      recorder.start(100);
+      recorder.start(250);
 
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
       let hasSpoken = false;
