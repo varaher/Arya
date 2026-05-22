@@ -2569,6 +2569,63 @@ export async function registerRoutes(
     res.json({ languages: SUPPORTED_LANGUAGES });
   });
 
+  app.post("/api/arya/stt", requireUser, async (req: Request, res: Response) => {
+    try {
+      const { audio, language } = req.body;
+
+      if (!audio) {
+        return res.status(400).json({ error: "no_audio", message: "No audio data received" });
+      }
+
+      const rawBuffer = Buffer.from(audio, "base64");
+
+      console.log("[stt] Received audio:", rawBuffer.length, "bytes, language:", language || "en-IN");
+
+      if (rawBuffer.length < 1000) {
+        console.warn("[stt] Audio too small:", rawBuffer.length, "bytes");
+        return res.json({ transcript: "", error: "no_speech", message: "No speech detected. Please try again." });
+      }
+
+      const { buffer: audioBuffer, format: inputFormat } = await ensureCompatibleFormat(rawBuffer);
+
+      const lang = (language || "en-IN") as SarvamLanguageCode;
+      let transcript = "";
+
+      if (lang !== "en-IN" && isIndianLanguage(lang) && process.env.SARVAM_API_KEY) {
+        console.log("[stt] Using Sarvam STT for:", lang);
+        const result = await Promise.race([
+          sarvamSpeechToText(audioBuffer, lang),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(Object.assign(new Error("Sarvam STT timeout"), { name: "TimeoutError" })), 20000)
+          ),
+        ]);
+        let detected = result.languageCode || lang;
+        if (detected === "ur-IN" || detected === "ur") detected = "hi-IN" as SarvamLanguageCode;
+        transcript = result.transcript?.trim() || "";
+      } else {
+        const isoLang = (lang).split("-")[0] || "en";
+        console.log("[stt] Using OpenAI STT for:", isoLang);
+        transcript = (await speechToText(audioBuffer, inputFormat, isoLang))?.trim() || "";
+      }
+
+      console.log("[stt] Transcript:", transcript || "(empty)");
+
+      if (!transcript) {
+        return res.json({ transcript: "", error: "no_speech", message: "I couldn't catch that clearly. Please speak again." });
+      }
+
+      res.json({ transcript, success: true, language: lang });
+
+    } catch (err: any) {
+      if (err.name === "TimeoutError" || err.name === "AbortError") {
+        console.error("[stt] Timeout");
+        return res.status(504).json({ error: "timeout", message: "Voice took too long. Check your connection and try again." });
+      }
+      console.error("[stt] Error:", err.message || err);
+      res.status(500).json({ error: "unknown", message: "Something went wrong. Please try again." });
+    }
+  });
+
   app.post("/api/arya/tts", async (req: Request, res: Response) => {
     try {
       const { text, language, speaker } = req.body;

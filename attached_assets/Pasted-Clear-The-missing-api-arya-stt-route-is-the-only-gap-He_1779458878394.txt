@@ -1,0 +1,311 @@
+Clear. The missing `/api/arya/stt` route is the only gap. Here is the complete fix.
+
+---
+
+## The Missing Route — Add To server/routes.ts
+
+```typescript
+// server/routes.ts
+// Add this route alongside the existing /api/arya/tts route
+// Find the TTS route and add this right after it
+
+app.post('/api/arya/stt', requireAuth, async (req, res) => {
+  try {
+    const { audio, language, mimeType } = req.body;
+
+    // Validate input
+    if (!audio) {
+      return res.status(400).json({
+        error: 'no_audio',
+        message: 'No audio data received'
+      });
+    }
+
+    // Decode base64 audio
+    const audioBuffer = Buffer.from(audio, 'base64');
+
+    console.log('[stt] Received audio:', {
+      size: audioBuffer.length,
+      language: language || 'en',
+      mimeType: mimeType || 'audio/wav'
+    });
+
+    // Size guard — empty recording
+    if (audioBuffer.length < 1000) {
+      console.warn('[stt] Audio too small:', audioBuffer.length, 'bytes');
+      return res.json({
+        transcript: '',
+        error: 'no_speech',
+        message: 'No speech detected. Please try again.'
+      });
+    }
+
+    const targetLanguage = language || 'en';
+
+    // Route to correct STT engine
+    // Indian languages → Sarvam
+    // English and others → OpenAI
+
+    const SARVAM_LANGUAGES = [
+      'hi', 'ta', 'te', 'kn', 'ml',
+      'bn', 'mr', 'gu', 'pa', 'od', 'sa'
+    ];
+
+    let transcript: string = '';
+
+    if (SARVAM_LANGUAGES.includes(targetLanguage)) {
+      // Sarvam STT for Indian languages
+      if (!process.env.SARVAM_API_KEY) {
+        console.error('[stt] SARVAM_API_KEY missing');
+        return res.status(500).json({
+          error: 'config',
+          message: 'Voice service not configured'
+        });
+      }
+
+      const sarvamLangMap: Record<string, string> = {
+        hi: 'hi-IN',
+        ta: 'ta-IN',
+        te: 'te-IN',
+        kn: 'kn-IN',
+        ml: 'ml-IN',
+        bn: 'bn-IN',
+        mr: 'mr-IN',
+        gu: 'gu-IN',
+        pa: 'pa-IN',
+        od: 'od-IN',
+        sa: 'sa-IN',
+      };
+
+      const formData = new FormData();
+      const wavBlob = new Blob([audioBuffer], { type: 'audio/wav' });
+      formData.append('file', wavBlob, 'recording.wav');
+      formData.append('model', 'saarika:v2');
+      formData.append('language_code',
+        sarvamLangMap[targetLanguage] || 'hi-IN'
+      );
+
+      console.log('[stt] Calling Sarvam STT, lang:',
+        sarvamLangMap[targetLanguage]);
+
+      const sarvamRes = await fetch(
+        'https://api.sarvam.ai/speech-to-text',
+        {
+          method: 'POST',
+          headers: {
+            'api-subscription-key': process.env.SARVAM_API_KEY
+          },
+          body: formData,
+          signal: AbortSignal.timeout(20000)
+        }
+      );
+
+      if (!sarvamRes.ok) {
+        const errText = await sarvamRes.text();
+        console.error('[stt] Sarvam error:',
+          sarvamRes.status, errText);
+
+        if (sarvamRes.status === 429) {
+          return res.status(429).json({
+            error: 'rate_limit',
+            message: 'Voice service busy. Please try again.'
+          });
+        }
+
+        throw new Error(`Sarvam STT ${sarvamRes.status}: ${errText}`);
+      }
+
+      const sarvamData = await sarvamRes.json();
+      transcript = sarvamData.transcript?.trim() || '';
+
+    } else {
+      // OpenAI STT for English and other languages
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(500).json({
+          error: 'config',
+          message: 'Voice service not configured'
+        });
+      }
+
+      const formData = new FormData();
+      const wavBlob = new Blob([audioBuffer], { type: 'audio/wav' });
+      formData.append('file', wavBlob, 'recording.wav');
+      formData.append('model', 'whisper-1');
+      formData.append('language', targetLanguage);
+
+      console.log('[stt] Calling OpenAI Whisper, lang:', targetLanguage);
+
+      const openaiRes = await fetch(
+        'https://api.openai.com/v1/audio/transcriptions',
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+          },
+          body: formData,
+          signal: AbortSignal.timeout(20000)
+        }
+      );
+
+      if (!openaiRes.ok) {
+        const errText = await openaiRes.text();
+        console.error('[stt] OpenAI error:',
+          openaiRes.status, errText);
+        throw new Error(`OpenAI STT ${openaiRes.status}: ${errText}`);
+      }
+
+      const openaiData = await openaiRes.json();
+      transcript = openaiData.text?.trim() || '';
+    }
+
+    console.log('[stt] Transcript:', transcript || '(empty)');
+
+    if (!transcript) {
+      return res.json({
+        transcript: '',
+        error: 'no_speech',
+        message: 'No speech detected. Please try again.'
+      });
+    }
+
+    res.json({
+      transcript,
+      success: true,
+      language: targetLanguage
+    });
+
+  } catch (err: any) {
+    if (err.name === 'TimeoutError' || err.name === 'AbortError') {
+      console.error('[stt] Timeout');
+      return res.status(504).json({
+        error: 'timeout',
+        message: 'Voice took too long. Check connection and try again.'
+      });
+    }
+
+    console.error('[stt] Unhandled error:', err);
+    res.status(500).json({
+      error: 'unknown',
+      message: 'Something went wrong. Please try again.'
+    });
+  }
+});
+```
+
+---
+
+## How Voice Notes Panel Calls This Route
+
+```typescript
+// client/src/pages/AryaChat.tsx
+// VoiceNotesPanel — find the save recording handler
+// It should look like this — if not, fix it:
+
+async function saveVoiceNote(audioBlob: Blob) {
+  // Convert to WAV first
+  const wavBlob = await convertToWav(audioBlob);
+
+  // Convert to base64
+  const base64 = await new Promise<string>((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result as string;
+      resolve(result.split(',')[1]); // strip data: prefix
+    };
+    reader.readAsDataURL(wavBlob);
+  });
+
+  // Call the now-existing /api/arya/stt route
+  const response = await fetch('/api/arya/stt', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      audio: base64,
+      language: selectedLanguage,  // from globe selector
+      mimeType: 'audio/wav'
+    })
+  });
+
+  const data = await response.json();
+
+  if (data.transcript) {
+    // Save the voice note with transcript
+    await fetch('/api/user/voice-notes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        transcript: data.transcript,
+        audioBase64: base64,
+        language: selectedLanguage
+      })
+    });
+  }
+}
+```
+
+---
+
+## Complete Architecture — After Fix
+
+```
+Voice Notes Panel (Notes tab):
+  User records → convertToWav() →
+  base64 encode → POST /api/arya/stt ✅ NOW EXISTS
+  → Sarvam STT (Indian) / Whisper (English)
+  → transcript returned
+  → POST /api/user/voice-notes to save
+  → appears in Notes panel ✅
+
+Main Chat Mic Button:
+  User records → convertToWav() →
+  base64 encode → POST /api/arya/conversations/:id/voice
+  → Sarvam STT (Indian) / Whisper (English)
+  → transcript → ARYA generates response
+  → streams back to UI ✅
+
+TTS (ARYA speaks):
+  ARYA text → POST /api/arya/tts
+  → Sarvam TTS (Indian, female voice)
+  → audio plays in browser ✅
+```
+
+---
+
+## Developer Task — One Clear Brief
+
+```
+File: server/routes.ts
+
+Find where /api/arya/tts is defined.
+Add the /api/arya/stt route right after it.
+Copy-paste the complete route code above.
+
+That's it. No other changes needed.
+Voice Notes panel will work immediately
+after this one route is added.
+
+Estimated time: 5 minutes.
+```
+
+---
+
+## What This Fixes
+
+```
+Before:
+  User taps mic in Notes tab
+  Records something
+  Taps save
+  POST /api/arya/stt → 404 Not Found
+  Note saves with no transcript
+  Voice note feature effectively broken
+
+After:
+  User taps mic in Notes tab
+  Records something
+  Taps save
+  POST /api/arya/stt → 200 OK
+  Transcript returned in Malayalam/Hindi/etc
+  Note saves with full transcript
+  Voice notes work completely ✅
+```
