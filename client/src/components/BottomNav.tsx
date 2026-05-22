@@ -35,8 +35,8 @@ export default function BottomNav({ onOpenCustomize }: BottomNavProps = {}) {
         {[
           { path: "/",           label: t("nav_home", "Home"),  Icon: House },
           { path: "/my-goals",   label: t("goals", "Goals"),    Icon: Target },
-          { path: "/vedic-lens", label: "KAAL",                 Icon: Star },
-          { path: "/niti",       label: "Niti",                 Icon: Scale },
+          { path: "/vedic-lens", label: t("nav_kaal", "KAAL"),   Icon: Star },
+          { path: "/niti",       label: t("nav_niti", "Niti"),   Icon: Scale },
         ].map(({ path, label, Icon }) => {
           const active = path === "/" ? location === "/" : location.startsWith(path);
           return (
@@ -84,7 +84,7 @@ export default function BottomNav({ onOpenCustomize }: BottomNavProps = {}) {
             letterSpacing: "0.03em", fontWeight: 400,
             whiteSpace: "nowrap",
           }}>
-            More
+            {t("nav_more", "More")}
           </span>
         </button>
       </div>

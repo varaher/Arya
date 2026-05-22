@@ -414,7 +414,8 @@ export default function NitiPage() {
     if (screen === "session") { setScreen("home"); loadSessions(); }
     else setLocation("/");
   };
-  const sessionLabel = SESSION_TYPES.find(s => s.key === currentSession?.sessionType)?.label;
+  const _sessionType = SESSION_TYPES.find(s => s.key === currentSession?.sessionType);
+  const sessionLabel = _sessionType ? t(`niti_${_sessionType.key}`) : undefined;
 
   // ── SCREEN 1 — Intro ─────────────────────────────────────
   const IntroScreen = (
@@ -706,15 +707,15 @@ export default function NitiPage() {
         </button>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        {SESSION_TYPES.map(({ key, Icon, label, desc, philKey }) => {
+        {SESSION_TYPES.map(({ key, Icon, philKey }) => {
           const phil = PHILOSOPHER_META[philKey];
           return (
             <button key={key} onClick={() => !isLoading && startSession(key)} disabled={isLoading}
               data-testid={`session-type-${key}`}
               style={{ background: N.surface2, border: `1px solid ${N.border}`, borderTop: `3px solid ${phil.color}`, borderRadius: 14, padding: 16, textAlign: "left" as const, cursor: isLoading ? "not-allowed" : "pointer", transition: "all 0.2s", display: "flex", flexDirection: "column", gap: 8, opacity: isLoading ? 0.6 : 1 }}>
               <Icon size={20} color={phil.color} />
-              <div style={{ fontSize: 13, color: N.cream, fontWeight: 600, lineHeight: 1.3 }}>{label}</div>
-              <div style={{ fontSize: 11, color: N.steel, lineHeight: 1.4 }}>{desc}</div>
+              <div style={{ fontSize: 13, color: N.cream, fontWeight: 600, lineHeight: 1.3 }}>{t(`niti_${key}`)}</div>
+              <div style={{ fontSize: 11, color: N.steel, lineHeight: 1.4 }}>{t(`niti_${key}_sub`)}</div>
             </button>
           );
         })}
@@ -750,7 +751,7 @@ export default function NitiPage() {
                   onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = N.border; (e.currentTarget as HTMLButtonElement).style.background = N.surface2; }}
                 >
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, color: N.cream, fontWeight: 500 }}>{s.title || sType?.label || s.sessionType}</div>
+                    <div style={{ fontSize: 13, color: N.cream, fontWeight: 500 }}>{s.title || (sType ? t(`niti_${sType.key}`) : s.sessionType)}</div>
                     <div style={{ fontSize: 11, color: N.steel, marginTop: 3, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" as const }}>
                       <span>{dateStr} · {timeStr}</span>
                       {phil && <span style={{ color: phil.color }}>{phil.emoji} {phil.name}</span>}

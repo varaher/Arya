@@ -1,0 +1,391 @@
+## Fix 4 — Home Screen Remaining Strings
+
+```typescript
+// client/src/lib/i18n.ts
+// These strings are hardcoded in components
+// Need to be replaced with t() calls
+
+// Keys to add to ALL 12 language blocks:
+
+// English:
+{
+  "your_pa_sub": "YOUR PERSONAL THINKING & GROWTH ASSISTANT",
+  "nav_home": "Home",
+  "nav_goals": "Goals",
+  "nav_kaal": "KAAL",
+  "nav_niti": "Niti",
+  "nav_more": "More",
+  "checkin_label": "Daily Check-in",
+  "energy_okay_label": "Okay",
+  "get_inspired": "▾ Get inspired ▾",
+  "hide_inspired": "▴ Hide ▴",
+}
+
+// Malayalam (ml):
+{
+  "your_pa_sub": "നിന്റെ സ്വകാര്യ ചിന്ത & വളർച്ചാ സഹായി",
+  "nav_home": "ഹോം",
+  "nav_goals": "ലക്ഷ്യങ്ങൾ",
+  "nav_kaal": "കാലം",
+  "nav_niti": "നീതി",
+  "nav_more": "കൂടുതൽ",
+  "checkin_label": "ദൈനംദിന ചെക്ക്-ഇൻ",
+  "energy_okay_label": "ഓക്കേ",
+  "get_inspired": "▾ പ്രചോദനം നേടൂ ▾",
+  "hide_inspired": "▴ മറക്കൂ ▴",
+}
+
+// Hindi (hi):
+{
+  "your_pa_sub": "तुम्हारा personal thinking & growth साथी",
+  "nav_home": "होम",
+  "nav_goals": "लक्ष्य",
+  "nav_kaal": "काल",
+  "nav_niti": "नीती",
+  "nav_more": "और",
+  "checkin_label": "दैनिक चेक-इन",
+  "energy_okay_label": "ठीक है",
+  "get_inspired": "▾ प्रेरणा लो ▾",
+  "hide_inspired": "▴ छुपाओ ▴",
+}
+
+// Tamil (ta):
+{
+  "your_pa_sub": "உன் personal thinking & வளர்ச்சி நண்பன்",
+  "nav_home": "முகப்பு",
+  "nav_goals": "இலக்கு",
+  "nav_kaal": "காலம்",
+  "nav_niti": "நீதி",
+  "nav_more": "மேலும்",
+  "checkin_label": "தினசரி சோதனை",
+  "energy_okay_label": "ஓகே",
+  "get_inspired": "▾ உத்வேகம் பெறு ▾",
+  "hide_inspired": "▴ மறை ▴",
+}
+
+// Telugu (te):
+{
+  "your_pa_sub": "నీ personal thinking & వృద్ధి తోడు",
+  "nav_home": "హోమ్",
+  "nav_goals": "లక్ష్యాలు",
+  "nav_kaal": "కాలం",
+  "nav_niti": "నీతి",
+  "nav_more": "ఇంకా",
+  "checkin_label": "రోజువారీ చెక్-ఇన్",
+  "energy_okay_label": "ఓకే",
+  "get_inspired": "▾ స్ఫూర్తి పొందు ▾",
+  "hide_inspired": "▴ దాచు ▴",
+}
+
+// Kannada (kn):
+{
+  "your_pa_sub": "ನಿನ್ನ personal thinking & ಬೆಳವಣಿಗೆ ತೋಡು",
+  "nav_home": "ಹೋಮ್",
+  "nav_goals": "ಗುರಿಗಳು",
+  "nav_kaal": "ಕಾಲ",
+  "nav_niti": "ನೀತಿ",
+  "nav_more": "ಇನ್ನಷ್ಟು",
+  "checkin_label": "ದೈನಂದಿನ ಚೆಕ್-ಇನ್",
+  "energy_okay_label": "ಓಕೆ",
+  "get_inspired": "▾ ಸ್ಫೂರ್ತಿ ಪಡೆ ▾",
+  "hide_inspired": "▴ ಮರೆಮಾಡು ▴",
+}
+
+// Bengali (bn):
+{
+  "your_pa_sub": "তোমার personal thinking & বৃদ্ধির সঙ্গী",
+  "nav_home": "হোম",
+  "nav_goals": "লক্ষ্য",
+  "nav_kaal": "কাল",
+  "nav_niti": "নীতি",
+  "nav_more": "আরো",
+  "checkin_label": "দৈনিক চেক-ইন",
+  "energy_okay_label": "ঠিকঠাক",
+  "get_inspired": "▾ অনুপ্রেরণা নাও ▾",
+  "hide_inspired": "▴ লুকাও ▴",
+}
+
+// Marathi (mr):
+{
+  "your_pa_sub": "तुझा personal thinking & वाढीचा साथीदार",
+  "nav_home": "होम",
+  "nav_goals": "उद्दिष्टे",
+  "nav_kaal": "काल",
+  "nav_niti": "नीती",
+  "nav_more": "आणखी",
+  "checkin_label": "दैनिक चेक-इन",
+  "energy_okay_label": "ठीक आहे",
+  "get_inspired": "▾ प्रेरणा घे ▾",
+  "hide_inspired": "▴ लपव ▴",
+}
+
+// Gujarati (gu):
+{
+  "your_pa_sub": "તારો personal thinking & વિકાસ સાથી",
+  "nav_home": "હોમ",
+  "nav_goals": "ધ્યેય",
+  "nav_kaal": "કાળ",
+  "nav_niti": "નીતિ",
+  "nav_more": "વધુ",
+  "checkin_label": "રોજનો ચેક-ઇન",
+  "energy_okay_label": "ઠીક",
+  "get_inspired": "▾ પ્રેરણા મેળવ ▾",
+  "hide_inspired": "▴ છુપાવ ▴",
+}
+
+// Punjabi (pa):
+{
+  "your_pa_sub": "ਤੇਰਾ personal thinking & ਵਿਕਾਸ ਸਾਥੀ",
+  "nav_home": "ਹੋਮ",
+  "nav_goals": "ਟੀਚੇ",
+  "nav_kaal": "ਕਾਲ",
+  "nav_niti": "ਨੀਤੀ",
+  "nav_more": "ਹੋਰ",
+  "checkin_label": "ਰੋਜ਼ਾਨਾ ਚੈੱਕ-ਇਨ",
+  "energy_okay_label": "ਠੀਕ ਹੈ",
+  "get_inspired": "▾ ਪ੍ਰੇਰਨਾ ਲੈ ▾",
+  "hide_inspired": "▴ ਲੁਕਾ ▴",
+}
+
+// Odia (od):
+{
+  "your_pa_sub": "ତୁମ personal thinking & ବିକାଶ ସାଥୀ",
+  "nav_home": "ହୋମ",
+  "nav_goals": "ଲକ୍ଷ୍ୟ",
+  "nav_kaal": "କାଳ",
+  "nav_niti": "ନୀତି",
+  "nav_more": "ଅଧିକ",
+  "checkin_label": "ଦୈନିକ ଚେକ-ଇନ",
+  "energy_okay_label": "ଓକେ",
+  "get_inspired": "▾ ପ୍ରେରଣା ନ୍ଅ ▾",
+  "hide_inspired": "▴ ଲୁଚାଅ ▴",
+}
+
+// Sanskrit (sa):
+{
+  "your_pa_sub": "तव personal thinking & विकास सहायकः",
+  "nav_home": "गृहम्",
+  "nav_goals": "लक्ष्याणि",
+  "nav_kaal": "कालः",
+  "nav_niti": "नीतिः",
+  "nav_more": "अधिकम्",
+  "checkin_label": "दैनिकं परीक्षणम्",
+  "energy_okay_label": "ठीक अस्ति",
+  "get_inspired": "▾ प्रेरणा लभस्व ▾",
+  "hide_inspired": "▴ गोपय ▴",
+}
+```
+
+---
+
+## Wire t() Into The Components
+
+```tsx
+// client/src/components/BottomNav.tsx
+// Replace hardcoded labels with t()
+
+const items = [
+  { icon: '🏠', label: t('nav_home'),  path: '/' },
+  { icon: '🎯', label: t('goals'),     path: '/my-goals' },
+  { icon: '✦',  label: t('nav_kaal'), path: '/kaal' },
+  { icon: '⚖️', label: t('nav_niti'), path: '/niti' },
+  { icon: '⋯',  label: t('nav_more'), path: null },
+];
+
+
+// client/src/components/WelcomeScreen.tsx
+// Replace hardcoded subtitle
+
+<p className="arya-subtitle">
+  {t('your_pa_sub')}
+  {/* was: YOUR PERSONAL THINKING & GROWTH ASSISTANT */}
+</p>
+
+
+// client/src/components/MoodCheckInCard.tsx
+// Replace hardcoded label
+
+<h3>{t('daily_checkin')}</h3>
+{/* was: "Daily Check-in" hardcoded */}
+
+
+// client/src/components/SuggestionCards.tsx
+// Replace get inspired toggle
+
+<button onClick={toggleSuggestions}>
+  {suggestionsOpen ? t('hide_inspired') : t('get_inspired')}
+</button>
+```
+
+---
+
+## Fix For Niti Page Components
+
+```tsx
+// client/src/pages/NitiPage.tsx
+// Replace ALL hardcoded strings with t()
+
+// Tabs:
+<Tab>{t('niti_decisions_tab')}</Tab>
+<Tab>{t('niti_market_tab')}</Tab>
+
+// Main heading:
+<h2>{t('niti_what_dealing')}</h2>
+
+// Session type cards:
+const sessionTypes = [
+  {
+    icon: '⚖️',
+    title: t('niti_help_decide'),
+    sub: t('niti_help_decide_sub'),
+    color: '#gold'
+  },
+  {
+    icon: '🔬',
+    title: t('niti_stress_test'),
+    sub: t('niti_stress_test_sub'),
+    color: '#blue'
+  },
+  {
+    icon: '👥',
+    title: t('niti_people'),
+    sub: t('niti_people_sub'),
+    color: '#purple'
+  },
+  {
+    icon: '🧠',
+    title: t('niti_think_loud'),
+    sub: t('niti_think_loud_sub'),
+    color: '#red'
+  },
+];
+
+// Recent sessions header:
+<h3>{t('niti_recent_sessions')}</h3>
+
+// Active badge:
+<span className="active-badge">
+  {t('niti_active')}
+</span>
+```
+
+---
+
+## Fix For KAAL Page Components
+
+```tsx
+// client/src/pages/KAALPage.tsx
+
+// Path selection screen — main heading:
+<h1>{t('kaal_connect_title')}</h1>
+<p>{t('kaal_connect_sub')}</p>
+
+// Path cards — descriptions:
+const paths = [
+  {
+    icon: '⭐',
+    title: t('kaal_path_w_title'),
+    desc: t('kaal_path_w_desc'),   // ← was hardcoded
+  },
+  {
+    icon: '🪔',
+    title: t('kaal_path_v_title'),
+    desc: t('kaal_path_v_desc'),   // ← was hardcoded
+  },
+  {
+    icon: '🌐',
+    title: t('kaal_path_n_title'),
+    desc: t('kaal_path_n_desc'),   // ← was hardcoded
+  },
+];
+
+// Settings note at bottom:
+<p className="settings-note">
+  {t('kaal_settings_note')}
+</p>
+
+// Star sign screen — heading:
+<h1>{t('kaal_star_sign_q')}</h1>
+<p>{t('kaal_star_sign_sub')}</p>
+
+// Step indicator:
+<span className="step-label">
+  {t('kaal_step_prefix')} {currentStep} {t('kaal_step_of')} 3
+</span>
+{/* was: "STEP 1 OF 3" hardcoded */}
+
+// Rashi toggle:
+<label>{t('kaal_also_rashi')}</label>
+<span>{t('kaal_rashi_optional')}</span>
+
+// STAR SIGNS badge:
+<span className="badge">
+  {t('kaal_star_signs_badge')}
+</span>
+```
+
+---
+
+## Developer Task — Complete Brief
+
+```
+4 files to update:
+
+FILE 1 — client/src/lib/i18n.ts
+  Add the keys from Fix 2, Fix 3, Fix 4
+  to all 12 language blocks
+  That's approximately 30 new keys
+  × 12 languages = 360 new strings
+
+FILE 2 — client/src/pages/NitiPage.tsx
+  Replace hardcoded strings with t()
+  12 strings total
+
+FILE 3 — client/src/pages/KAALPage.tsx
+  Replace hardcoded strings with t()
+  10 strings across 2 screens
+
+FILE 4 — client/src/components/BottomNav.tsx
+  + WelcomeScreen.tsx
+  + MoodCheckInCard.tsx
+  + SuggestionCards.tsx
+  Replace hardcoded nav labels and
+  subtitle with t()
+
+FILE 5 — server/routes.ts (voice chat route)
+  Add language extraction (Fix 1 above)
+  Pass language to generateAryaResponse()
+
+Estimated time: 1 developer, 4-5 hours
+Result: All 5 screens fully translated
+        Voice chat responds in selected language
+```
+
+---
+
+## After These Fixes — Complete Malayalam Test
+
+```
+Set language to Malayalam in app
+Open each page:
+
+Home screen:
+  "നിന്റെ സ്വകാര്യ ചിന്ത & വളർച്ചാ സഹായി" ✓
+  "ദൈനംദിന ചെക്ക്-ഇൻ" ✓
+  Bottom nav in Malayalam ✓
+
+KAAL:
+  "നീ സമയവുമായി എങ്ങനെ ബന്ധപ്പെടുന്നു?" ✓
+  Path descriptions in Malayalam ✓
+  "ഘട്ടം 1 ൽ 3" ✓
+
+Niti:
+  "നീ എന്ത് കൈകാര്യം ചെയ്യുന്നു?" ✓
+  All 4 session cards in Malayalam ✓
+  "സമീപകാല SESSIONS" ✓
+
+Voice chat:
+  User speaks Malayalam
+  ARYA responds in Malayalam ✓
+  Not English ✓
+```
