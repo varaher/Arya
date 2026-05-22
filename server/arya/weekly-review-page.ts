@@ -22,7 +22,6 @@ const INTENTION_CHIPS_EN = [
   "Move my body every day",
   "Call someone I care about",
 ];
-
 const INTENTION_CHIPS_HI = [
   "और उपस्थित रहूँ",
   "जो शुरू किया वो पूरा करूँ",
@@ -31,9 +30,102 @@ const INTENTION_CHIPS_HI = [
   "रोज़ शरीर को हिलाऊँ",
   "किसी अपने को call करूँ",
 ];
+const INTENTION_CHIPS_MR = [
+  "अधिक उपस्थित रहा",
+  "सुरू केलेलं पूर्ण कर",
+  "guilt न घेता विश्रांती घे",
+  "एक कठीण संभाषण कर",
+  "रोज शरीर हलव",
+  "एखाद्या प्रिय व्यक्तीला call कर",
+];
+const INTENTION_CHIPS_BN = [
+  "আরও উপস্থিত থাকো",
+  "যা শুরু করেছি তা শেষ করো",
+  "দোষ ছাড়া বিশ্রাম নাও",
+  "একটা কঠিন কথা বলো",
+  "প্রতিদিন শরীর নাড়াও",
+  "কাউকে call করো যাকে ভালোবাসি",
+];
+const INTENTION_CHIPS_TA = [
+  "இன்னும் கவனமாக இருக்கிறேன்",
+  "தொடங்கியதை முடிக்கிறேன்",
+  "குற்ற உணர்வின்றி ஓய்வெடுக்கிறேன்",
+  "ஒரு கடினமான உரையாடல் வைக்கிறேன்",
+  "தினமும் உடலை அசைக்கிறேன்",
+  "அன்பானவரை call செய்கிறேன்",
+];
+const INTENTION_CHIPS_TE = [
+  "ఇంకా present గా ఉంటాను",
+  "మొదలుపెట్టింది పూర్తి చేస్తాను",
+  "guilt లేకుండా rest తీసుకుంటాను",
+  "ఒక కష్టమైన conversation చేస్తాను",
+  "రోజూ body ని move చేస్తాను",
+  "నాకు care ఉన్న వారికి call చేస్తాను",
+];
+const INTENTION_CHIPS_KN = [
+  "ಹೆಚ್ಚು ಉಪಸ್ಥಿತನಾಗಿರುತ್ತೇನೆ",
+  "ಪ್ರಾರಂಭಿಸಿದ್ದನ್ನು ಮುಗಿಸುತ್ತೇನೆ",
+  "guilt ಇಲ್ಲದೆ ವಿಶ್ರಾಂತಿ ತೆಗೆದುಕೊಳ್ಳುತ್ತೇನೆ",
+  "ಒಂದು ಕಷ್ಟದ ಸಂಭಾಷಣೆ ಮಾಡುತ್ತೇನೆ",
+  "ಪ್ರತಿದಿನ ದೇಹ ಚಲಿಸುತ್ತೇನೆ",
+  "ಪ್ರಿಯರಿಗೆ call ಮಾಡುತ್ತೇನೆ",
+];
+const INTENTION_CHIPS_ML = [
+  "ഇനിയും ഉപസ്ഥിതനാകും",
+  "തുടങ്ങിയത് പൂർത്തിയാക്കും",
+  "guilt ഇല്ലാതെ വിശ്രമിക്കും",
+  "ഒരു ബുദ്ധിമുട്ടുള്ള സംഭാഷണം നടത്തും",
+  "ദിവസവും ശരീരം ചലിപ്പിക്കും",
+  "ഒരു പ്രിയപ്പെട്ടവരെ call ചെയ്യും",
+];
+const INTENTION_CHIPS_GU = [
+  "વધુ ઉપસ્થિત રહીશ",
+  "શરૂ કર્યેલું પૂર્ણ કરીશ",
+  "guilt વગર આરામ કરીશ",
+  "એક મુશ્કેલ વાત કરીશ",
+  "રોજ શરીર ચલાવીશ",
+  "કોઈ પ્રિય વ્યક્તિને call કરીશ",
+];
+const INTENTION_CHIPS_PA = [
+  "ਹੋਰ ਉਪਸਥਿਤ ਰਹਾਂਗਾ",
+  "ਸ਼ੁਰੂ ਕੀਤਾ ਪੂਰਾ ਕਰਾਂਗਾ",
+  "guilt ਬਿਨਾਂ ਆਰਾਮ ਕਰਾਂਗਾ",
+  "ਇੱਕ ਔਖੀ ਗੱਲਬਾਤ ਕਰਾਂਗਾ",
+  "ਹਰ ਰੋਜ਼ ਸਰੀਰ ਹਿਲਾਵਾਂਗਾ",
+  "ਕਿਸੇ ਪਿਆਰੇ ਨੂੰ call ਕਰਾਂਗਾ",
+];
+const INTENTION_CHIPS_OD = [
+  "ଅଧିକ ଉପସ୍ଥିତ ରହିବ",
+  "ଆରମ୍ଭ ଯାହା ସମ୍ପୂର୍ଣ କରିବ",
+  "guilt ବିନା ବିଶ୍ରାମ ନେବ",
+  "ଗୋଟିଏ କଠିନ ଆଲୋଚନା କରିବ",
+  "ପ୍ରତିଦିନ ଶରୀର ଚଳାଇବ",
+  "ଜଣେ ପ୍ରିୟଙ୍କୁ call କରିବ",
+];
+const INTENTION_CHIPS_SA = [
+  "अधिकं उपस्थितः भविष्यामि",
+  "आरब्धं समापयिष्यामि",
+  "guilt-रहितः विश्रामं करिष्यामि",
+  "एकं कठिनं संवादं करिष्यामि",
+  "प्रतिदिनं शरीरं चालयिष्यामि",
+  "प्रियजनं call करिष्यामि",
+];
 
 function getIntentionChips(lang: string): string[] {
-  return lang === "hi" ? INTENTION_CHIPS_HI : INTENTION_CHIPS_EN;
+  const map: Record<string, string[]> = {
+    hi: INTENTION_CHIPS_HI,
+    mr: INTENTION_CHIPS_MR,
+    bn: INTENTION_CHIPS_BN,
+    ta: INTENTION_CHIPS_TA,
+    te: INTENTION_CHIPS_TE,
+    kn: INTENTION_CHIPS_KN,
+    ml: INTENTION_CHIPS_ML,
+    gu: INTENTION_CHIPS_GU,
+    pa: INTENTION_CHIPS_PA,
+    od: INTENTION_CHIPS_OD,
+    sa: INTENTION_CHIPS_SA,
+  };
+  return map[lang] || INTENTION_CHIPS_EN;
 }
 
 const COSMIC_THEMES_EN = [
@@ -151,7 +243,7 @@ function formatWeekLabel(monday: Date, sunday: Date): string {
 
 function getCosmicWeek() {
   const weekNum = Math.floor(Date.now() / (7 * 24 * 3600 * 1000));
-  return COSMIC_THEMES[weekNum % COSMIC_THEMES.length];
+  return COSMIC_THEMES_EN[weekNum % COSMIC_THEMES_EN.length];
 }
 
 export interface WeeklyLetterData {
@@ -236,7 +328,7 @@ export async function getWeeklyLetter(userId: string): Promise<WeeklyLetterData>
 
   const checkIns = dayMoods.filter(d => d.hasData);
   const avgMood = checkIns.length > 0 ? checkIns.reduce((s, d) => s + d.mood, 0) / checkIns.length : 0;
-  const moodRead = lang === "hi"
+  let moodRead = lang === "hi"
     ? checkIns.length === 0
       ? "इस हफ्ते कोई मूड check-in नहीं — कुछ पढ़ने को नहीं है।"
       : avgMood >= 4 ? "numbers के हिसाब से वाकई अच्छा हफ्ता था। इसे क्या बना रहा था?"
@@ -270,8 +362,8 @@ export async function getWeeklyLetter(userId: string): Promise<WeeklyLetterData>
     ? "यह हफ्ता चुपचाप गुज़रा — पंक्तियों के बीच पढ़ने लायक है।"
     : "This week wrote itself quietly — worth reading between the lines.";
   const defaultAryaNoticed = lang === "hi"
-    ? "ARYA ने देखा: जो तुम कहते हो कि ज़रूरी है और जहाँ तुम्हारा समय असल में जाता है — उस gap को बंद करना अभी बाकी है।"
-    : "Something ARYA noticed: the gap between what you say matters and where your time actually goes is still waiting to be closed.";
+    ? "जो तुम कहते हो कि ज़रूरी है और जहाँ तुम्हारा समय असल में जाता है — उस gap को बंद करना अभी बाकी है।"
+    : "The gap between what you say matters and where your time actually goes is still waiting to be closed.";
   const defaultAryaQuestion = lang === "hi"
     ? "इस हफ्ते क्या था जिससे तुम बचे, और अगले हफ्ते उसका सामना करना होगा?"
     : "What did you avoid this week that you'll need to face next week?";
@@ -280,21 +372,22 @@ export async function getWeeklyLetter(userId: string): Promise<WeeklyLetterData>
   let aryaNoticed = defaultAryaNoticed;
   let aryaQuestion = defaultAryaQuestion;
 
-  const jsonInstruction = lang === "hi"
-    ? `Generate ALL three values in Hindi. Warm friend tone using "तुम". Keep "ARYA" in English.
-"headline": एक वाक्य — इस हफ्ते की भावना, सारांश नहीं। Max 18 शब्द। नाम से शुरू मत करो।
-"aryaNoticed": "ARYA ने देखा:" से शुरू करो। 2-3 वाक्य। Goals, mood और behaviour को जोड़ने वाला specific pattern। Uncomfortable, honest — generic wisdom नहीं।
-"aryaQuestion": इस हफ्ते की specific घटनाओं पर आधारित एक reflection question। सीधे पूछो, कोई preamble नहीं।`
-    : `"headline": One sentence capturing the CHARACTER of this week — a feeling, not a summary. Max 18 words. Never start with their name.
-"aryaNoticed": Start with 'Something ARYA noticed:'. 2-3 sentences. A specific pattern connecting their goals, mood, and behaviour. Uncomfortable, honest, specific — not generic wisdom.
-"aryaQuestion": One reflection question specific to this exact week's events. The single most useful question. Ask it directly, no preamble.`;
+  const weekIdx = Math.floor(Date.now() / (7 * 24 * 3600 * 1000)) % COSMIC_THEMES_EN.length;
+  const cosmicTheme = COSMIC_THEMES_EN[weekIdx];
+  const localCosmicTheme = getCosmicThemes(lang)[weekIdx % getCosmicThemes(lang).length];
+  let cosmicSummary = localCosmicTheme.summary;
+  let cosmicHint = localCosmicTheme.nextHint;
+
+  const moodPromptLine = checkIns.length > 0
+    ? `"moodRead": 1-2 warm personal sentences about ${firstName}'s mood this week (avg ${avgMood.toFixed(1)}/5 across ${checkIns.length} days). Warm friend tone, not clinical. No stats — just what it felt like.`
+    : `"moodRead": null`;
 
   try {
     const resp = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [{
         role: "user",
-        content: `You are ARYA — ${firstName}'s personal thinking partner. Generate three pieces of their Sunday weekly review.
+        content: `You are ARYA — ${firstName}'s personal thinking partner. Generate the Sunday weekly review pieces.
 
 ${langInstruction}
 
@@ -303,20 +396,29 @@ Week data for ${firstName}:
 - Mood: ${moodCtx}
 - Business sessions: ${nitiCtx}
 - Known about them: ${memCtx || "early days — not much yet"}
+- This week's cosmic theme: ${cosmicTheme.name}
 
-Return ONLY valid JSON with exactly these three keys:
+Return ONLY valid JSON (no markdown) with exactly these five keys:
 {
-  ${jsonInstruction}
+  "headline": one sentence capturing the CHARACTER of this week — a feeling not a summary. Max 18 words. Never start with their name.,
+  "aryaNoticed": 2-3 sentences. A specific pattern connecting their goals, mood, and behaviour. Start DIRECTLY with the observation — NO prefix or label before it.,
+  "aryaQuestion": one reflection question specific to this exact week. Ask directly, no preamble.,
+  ${moodPromptLine},
+  "cosmicInsight": 2-3 sentences about what ${cosmicTheme.name} energy meant for ${firstName} given their actual goals and week — personal not generic astrology. No "Saturn follows X" structure.,
+  "cosmicHint": one sentence about what to focus on next week — personal to ${firstName}, no planet names.
 }`,
       }],
       response_format: { type: "json_object" } as any,
-      max_tokens: 320,
+      max_tokens: 480,
       temperature: 0.8,
     } as any);
     const parsed = JSON.parse((resp as any).choices[0].message.content || "{}");
     if (parsed.headline) headline = parsed.headline;
     if (parsed.aryaNoticed) aryaNoticed = parsed.aryaNoticed;
     if (parsed.aryaQuestion) aryaQuestion = parsed.aryaQuestion;
+    if (parsed.moodRead && checkIns.length > 0) moodRead = parsed.moodRead;
+    if (parsed.cosmicInsight) cosmicSummary = parsed.cosmicInsight;
+    if (parsed.cosmicHint) cosmicHint = parsed.cosmicHint;
   } catch {}
 
   const intentionMemory = memories.find(m => m.key === "weekly_intention");
@@ -353,7 +455,7 @@ Return ONLY valid JSON with exactly these three keys:
       })),
       hasData: nitiSessions.length > 0,
     },
-    cosmicWeek: getCosmicThemes(lang)[Math.floor(Date.now() / (7 * 24 * 3600 * 1000)) % getCosmicThemes(lang).length],
+    cosmicWeek: { name: cosmicTheme.name, summary: cosmicSummary, nextHint: cosmicHint, stars: cosmicTheme.stars },
     aryaQuestion,
     intentionChips: getIntentionChips(lang),
     savedIntention: intentionMemory?.value,

@@ -1,0 +1,397 @@
+Good. Looking at both screenshots carefully.
+
+---
+
+## What's Working Well ✅
+
+```
+Image 1 — Sunday Review:
+  ✅ "ഞായറാഴ്ച അവലോകനം" — title in Malayalam
+  ✅ "ARYA ശ്രദ്ധിച്ചത്" — ARYA noticed label
+  ✅ "ഈ ആഴ്ച Niti session ഇല്ല. അടുത്ത തവണ." ✅
+  ✅ "നിന്റെ ദിവ്യ ആഴ്ച — JUPITER" — cosmic week label
+  ✅ Bottom nav working
+
+Image 2 — Sunday Review letter:
+  ✅ "ഞായറാഴ്ച അവലോകനം" title
+  ✅ "ARYA-യുടെ ഞായറാഴ്ച കത്ത്" — Sunday letter
+  ✅ "ഈ ആഴ്ചയിലെ ലക്ഷ്യങ്ങൾ" — goals section
+  ✅ "ഈ ആഴ്ച നിന്റെ മനോനില" — mood section
+  ✅ Download + Share buttons visible
+```
+
+---
+
+## Issues Still Remaining
+
+### Issue 1 — Generated content still in English (Image 1)
+
+```
+"A Jupiter week — expansion was available
+ to those who reached for it. Opportunities
+ likely appeared in unexpected places..."
+
+"Saturn follows Jupiter. Next week is for
+ consolidating what opened up."
+
+"Pattern confirmed across multiple weeks"
+
+"BUSINESS MIND THIS WEEK" — static label ❌
+```
+
+This is the server-generated KAAL cosmic insight. The `langInstruction` is not being passed into the weekly review's KAAL section generation prompt. Same fix we discussed — `getLanguageInstruction('ml')` needs to be injected into the KAAL cosmic week prompt in `weekly-review.ts`.
+
+---
+
+### Issue 2 — "Something ARYA noticed" mixed language (Image 1)
+
+```
+"Something ARYA noticed:" — English prefix ❌
+Then rest is Malayalam ✅
+
+The pattern insight starts with English
+then switches to Malayalam mid-sentence.
+
+Fix: The prefix "Something ARYA noticed:"
+is a hardcoded English string in the
+pattern engine that prepends the generated
+content. Remove the hardcoded prefix —
+let the generated content start naturally.
+```
+
+---
+
+### Issue 3 — "to varah" — wrong format (Image 2)
+
+```
+Current:
+  ARYA-യുടെ ഞായറാഴ്ച കത്ത്
+  "to varah"               ← lowercase, English, wrong
+
+Should be:
+  ARYA-യുടെ ഞായറാഴ്ച കത്ത്
+  varah-ന്                 ← Malayalam addressing
+  OR just remove "to varah" entirely
+  The letter subtitle is unnecessary
+```
+
+---
+
+### Issue 4 — Mood summary in English (Image 2)
+
+```
+"A genuinely good week by the numbers.
+ What made it that way?"
+
+This is generated content — needs
+langInstruction in weekly-review.ts
+mood summary generation prompt.
+
+"1 of 7 days · avg mood 4.0/5"
+→ "7 ദിവസത്തിൽ 1 · ശരാശരി മൂഡ് 4.0/5"
+This is a static formatted string —
+needs t() with interpolation.
+```
+
+---
+
+### Issue 5 — Goals stats labels in English (Image 2)
+
+```
+"ACTIVE" → "സക്രിയം"
+"CHECK-INS" → "ചെക്ക്-ഇനുകൾ"
+"MISSED" → "നഷ്ടമായത്"
+
+These are static strings — add to i18n.ts
+```
+
+---
+
+### Issue 6 — Saturn mentioned (Image 1)
+
+```
+"Saturn follows Jupiter. Next week is for
+ consolidating what opened up."
+
+You had said avoid Saturn/planet names
+being prominent. This is fine as a reference
+but the sentence feels like a generic
+astrology app — not personal to Varah.
+
+Better:
+"അടുത്ത ആഴ്ച ഉറപ്പിക്കാനുള്ള സമയമാണ്.
+ ഈ ആഴ്ച തുറന്നതെല്ലാം ദൃഢമാക്കൂ."
+
+No planet name. Same meaning. More personal.
+```
+
+---
+
+## The Three Fixes Needed
+
+### Fix 1 — Server: Pass language to weekly review generation
+
+```typescript
+// server/arya/weekly-review.ts
+// Find ALL Claude API calls in this file
+// Add langInstruction to each prompt
+
+const langInstruction = getLanguageInstruction(
+  userLanguage,
+  userName
+);
+
+// KAAL cosmic section prompt:
+const kaalPrompt = `
+${langInstruction}
+Write the cosmic week insight for ${userName}.
+Keep planet names in English if needed.
+2-3 sentences. Personal, not generic.
+No "Saturn follows X" generic astrology.
+Focus on what this means for THIS person.
+`;
+
+// Mood summary prompt:
+const moodPrompt = `
+${langInstruction}
+Write 1-2 sentences about ${userName}'s mood this week.
+Data: avg ${avgMood}/5, check-ins: ${checkInCount}/7
+Personal and warm. Not clinical.
+`;
+
+// Pattern insight:
+const patternPrompt = `
+${langInstruction}
+Write ARYA's observation about ${userName}'s week.
+Do NOT start with "Something ARYA noticed:"
+Start directly with the observation.
+1-2 sentences. Caring, direct.
+`;
+```
+
+---
+
+### Fix 2 — Remove hardcoded "Something ARYA noticed:" prefix
+
+```typescript
+// server/arya/patterns-engine.ts
+// OR wherever pattern insight is assembled
+
+// BEFORE — hardcoded English prefix:
+const patternCard = {
+  label: "Something ARYA noticed:",
+  content: generatedInsight
+};
+
+// AFTER — remove the prefix entirely:
+const patternCard = {
+  label: t('review_arya_noticed'), // ← use i18n key
+  content: generatedInsight        // ← starts naturally
+};
+
+// In the component:
+<div className="pattern-card">
+  <span className="pattern-label">
+    {t('review_arya_noticed')}
+    {/* Malayalam: "ARYA ശ്രദ്ധിച്ചത്" */}
+  </span>
+  <p>{patternInsight}</p>
+  {/* No more "Something ARYA noticed:" prefix */}
+</div>
+```
+
+---
+
+### Fix 3 — Static strings for goals stats + mood stats
+
+```typescript
+// Add to i18n.ts — all 12 languages:
+
+// English:
+{
+  "review_active": "ACTIVE",
+  "review_checkins": "CHECK-INS",
+  "review_missed": "MISSED",
+  "review_of_days": "of 7 days",
+  "review_avg_mood": "avg mood",
+  "review_letter_to": "to",
+}
+
+// Malayalam (ml):
+{
+  "review_active": "സക്രിയം",
+  "review_checkins": "ചെക്ക്-ഇനുകൾ",
+  "review_missed": "നഷ്ടമായത്",
+  "review_of_days": "7 ദിവസത്തിൽ",
+  "review_avg_mood": "ശരാശരി മൂഡ്",
+  "review_letter_to": "ന്",
+}
+
+// Hindi (hi):
+{
+  "review_active": "सक्रिय",
+  "review_checkins": "चेक-इन",
+  "review_missed": "छूटे",
+  "review_of_days": "7 में से",
+  "review_avg_mood": "औसत मूड",
+  "review_letter_to": "के लिए",
+}
+
+// Tamil (ta):
+{
+  "review_active": "செயலில்",
+  "review_checkins": "Check-ins",
+  "review_missed": "தவறியது",
+  "review_of_days": "7 நாளில்",
+  "review_avg_mood": "சராசரி மூட்",
+  "review_letter_to": "க்கு",
+}
+
+// Telugu (te):
+{
+  "review_active": "చురుకైన",
+  "review_checkins": "చెక్-ఇన్లు",
+  "review_missed": "మిస్సయినవి",
+  "review_of_days": "7 రోజుల్లో",
+  "review_avg_mood": "సగటు మూడ్",
+  "review_letter_to": "కి",
+}
+
+// Kannada (kn):
+{
+  "review_active": "ಸಕ್ರಿಯ",
+  "review_checkins": "ಚೆಕ್-ಇನ್‌ಗಳು",
+  "review_missed": "ತಪ್ಪಿದವು",
+  "review_of_days": "7 ದಿನಗಳಲ್ಲಿ",
+  "review_avg_mood": "ಸರಾಸರಿ ಮೂಡ್",
+  "review_letter_to": "ಗೆ",
+}
+
+// Bengali (bn):
+{
+  "review_active": "সক্রিয়",
+  "review_checkins": "চেক-ইন",
+  "review_missed": "মিস হয়েছে",
+  "review_of_days": "৭ দিনের মধ্যে",
+  "review_avg_mood": "গড় মেজাজ",
+  "review_letter_to": "কে",
+}
+
+// Marathi (mr):
+{
+  "review_active": "सक्रिय",
+  "review_checkins": "चेक-इन",
+  "review_missed": "चुकले",
+  "review_of_days": "7 पैकी",
+  "review_avg_mood": "सरासरी मूड",
+  "review_letter_to": "साठी",
+}
+
+// Gujarati (gu):
+{
+  "review_active": "સક્રિય",
+  "review_checkins": "ચેક-ઇન",
+  "review_missed": "ચૂકાયા",
+  "review_of_days": "7 માંથી",
+  "review_avg_mood": "સરેરાશ મૂડ",
+  "review_letter_to": "ને",
+}
+
+// Punjabi (pa):
+{
+  "review_active": "ਸਰਗਰਮ",
+  "review_checkins": "ਚੈੱਕ-ਇਨ",
+  "review_missed": "ਖੁੰਝੇ",
+  "review_of_days": "7 ਵਿੱਚੋਂ",
+  "review_avg_mood": "ਔਸਤ ਮੂਡ",
+  "review_letter_to": "ਨੂੰ",
+}
+
+// Odia (od):
+{
+  "review_active": "ସକ୍ରିୟ",
+  "review_checkins": "ଚେକ-ଇନ",
+  "review_missed": "ଛୁଟ ହୋଇଗଲା",
+  "review_of_days": "7 ଦିନ ମଧ୍ୟରୁ",
+  "review_avg_mood": "ହାରାହାରି mood",
+  "review_letter_to": "ଙ୍କ ପ୍ରତି",
+}
+
+// Sanskrit (sa):
+{
+  "review_active": "सक्रियाणि",
+  "review_checkins": "चेक-इन",
+  "review_missed": "विस्मृतानि",
+  "review_of_days": "सप्त दिनेषु",
+  "review_avg_mood": "सामान्य mood",
+  "review_letter_to": "प्रति",
+}
+```
+
+---
+
+### Fix 4 — Wire in Sunday Review component
+
+```tsx
+// client/src/pages/SundayReview.tsx
+
+// Letter subtitle — remove "to varah" English:
+<div className="letter-to">
+  {userName}{t('review_letter_to')}
+</div>
+{/* ml: "varahന്" */}
+{/* hi: "varah के लिए" */}
+{/* en: "to varah" */}
+
+// Goals stats:
+<div className="stat">
+  <span className="stat-num">{activeGoals}</span>
+  <span className="stat-label">{t('review_active')}</span>
+</div>
+<div className="stat">
+  <span className="stat-num">{checkIns}</span>
+  <span className="stat-label">{t('review_checkins')}</span>
+</div>
+<div className="stat">
+  <span className="stat-num">{missed}</span>
+  <span className="stat-label">{t('review_missed')}</span>
+</div>
+
+// Mood summary stats:
+<span>
+  {checkInCount} {t('review_of_days')} ·
+  {t('review_avg_mood')} {avgMood}/5
+</span>
+{/* ml: "7 ദിവസത്തിൽ 1 · ശരാശരി മൂഡ് 4.0/5" */}
+```
+
+---
+
+## Developer Brief — 3 Tasks
+
+```
+Task 1 — server/arya/weekly-review.ts (1 hour)
+  Add langInstruction to ALL generation prompts:
+  - KAAL cosmic week insight
+  - Mood summary sentence
+  - Pattern observation
+  - ARYA's weekly question
+  Remove "Something ARYA noticed:" hardcoded prefix
+  Let generated content start naturally
+
+Task 2 — client/src/lib/i18n.ts (30 mins)
+  Add 6 new keys to all 12 language blocks:
+  review_active, review_checkins, review_missed
+  review_of_days, review_avg_mood, review_letter_to
+  Values for all 12 languages listed above
+
+Task 3 — client/src/pages/SundayReview.tsx (30 mins)
+  Replace hardcoded "to {name}" with t() version
+  Replace ACTIVE/CHECK-INS/MISSED with t()
+  Replace "X of 7 days · avg mood" with t()
+
+Total: 2 hours
+Result: Sunday Review fully in Malayalam
+        Generated content in user's language
+        No more English mixed in
+```

@@ -167,7 +167,7 @@ const SESSION_LABELS: Record<string, string> = {
 export default function WeeklyReviewPage() {
   const [, setLocation] = useLocation();
   const { token } = useUserAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const [data, setData] = useState<WeeklyLetterData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -381,7 +381,7 @@ export default function WeeklyReviewPage() {
               {t("review_letter")}
             </div>
             <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 27, color: P.text, fontWeight: 700, marginBottom: 4 }}>
-              to {data.userName}
+              {language === "en" || !language ? `to ${data.userName}` : `${data.userName}${t("review_letter_to")}`}
             </div>
             <div style={{ fontSize: 11, color: P.steel, letterSpacing: "0.06em", marginBottom: 22 }}>
               {data.weekLabel}
@@ -408,7 +408,7 @@ export default function WeeklyReviewPage() {
                   {data.moodArc.aryaRead}
                 </div>
                 <div style={{ marginTop: 8, fontSize: 11, color: P.steel }}>
-                  {data.moodArc.checkInCount} of 7 days · avg mood {data.moodArc.avgMood.toFixed(1)}/5
+                  {data.moodArc.checkInCount} {t("review_of_days")} · {t("review_avg_mood")} {data.moodArc.avgMood.toFixed(1)}/5
                 </div>
               </>
             )}
