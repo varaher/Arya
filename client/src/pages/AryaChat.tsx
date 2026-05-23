@@ -5611,6 +5611,7 @@ function VoiceConversationMode({
   const processingRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
   const autoListenTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const processRecordingRef = useRef<() => void>(() => {});
   const voiceMonitorStreamRef = useRef<MediaStream | null>(null);
   const voiceMonitorCtxRef = useRef<AudioContext | null>(null);
   const voiceMonitorFrameRef = useRef<number | null>(null);
@@ -5661,6 +5662,13 @@ function VoiceConversationMode({
     };
   }, [stopAllMedia]);
 
+  // Keep processRecordingRef always pointing to the latest processRecording
+  // so the checkAudio loop inside startListening (which has [] deps) never
+  // calls a stale closure when language/token change mid-session.
+  useEffect(() => {
+    processRecordingRef.current = processRecording;
+  }, [processRecording]);
+
   const startListening = useCallback(async () => {
     if (!activeRef.current) return;
     if (abortRef.current) { try { abortRef.current.abort(); } catch {} abortRef.current = null; }
@@ -5680,11 +5688,23 @@ function VoiceConversationMode({
     setError(null);
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 16000,
+        },
+      });
       streamRef.current = stream;
 
       const audioCtx = new AudioContext();
       audioContextRef.current = audioCtx;
+      // Resume is required on iOS Safari — AudioContext created outside a
+      // gesture event handler starts suspended and the analyser gets no data.
+      if (audioCtx.state === "suspended") {
+        await audioCtx.resume();
+      }
       const source = audioCtx.createMediaStreamSource(stream);
       const analyser = audioCtx.createAnalyser();
       analyser.fftSize = 512;
@@ -5730,7 +5750,7 @@ function VoiceConversationMode({
         }
 
         if (hasSpoken && speechFrameCount >= MIN_SPEECH_FRAMES && (Date.now() - lastSpeechTime) > SILENCE_DURATION_MS) {
-          processRecording();
+          processRecordingRef.current();
           return;
         }
 
