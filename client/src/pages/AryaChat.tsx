@@ -5662,13 +5662,6 @@ function VoiceConversationMode({
     };
   }, [stopAllMedia]);
 
-  // Keep processRecordingRef always pointing to the latest processRecording
-  // so the checkAudio loop inside startListening (which has [] deps) never
-  // calls a stale closure when language/token change mid-session.
-  useEffect(() => {
-    processRecordingRef.current = processRecording;
-  }, [processRecording]);
-
   const startListening = useCallback(async () => {
     if (!activeRef.current) return;
     if (abortRef.current) { try { abortRef.current.abort(); } catch {} abortRef.current = null; }
@@ -5979,6 +5972,13 @@ function VoiceConversationMode({
       setPhase("idle");
     }
   }, [selectedLanguage, token, onConversationCreated, queryClient]);
+
+  // Keep processRecordingRef always pointing to the latest processRecording
+  // so the checkAudio loop inside startListening (which has [] deps) never
+  // calls a stale closure when language/token change mid-session.
+  useEffect(() => {
+    processRecordingRef.current = processRecording;
+  }, [processRecording]);
 
   const startVoiceMonitor = useCallback(async (onVoiceDetected: () => void) => {
     stopVoiceMonitor();
