@@ -5831,29 +5831,51 @@ function VoiceConversationMode({
     abortRef.current = abortController;
 
     try {
-      const base64Audio = await new Promise<string>((resolve) => {
+      console.log("[voice] step1: reading blob as base64, size=", wavBlob.size, "type=", wavBlob.type);
+      const base64Audio = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = () => resolve((reader.result as string).split(",")[1]);
+        reader.onload = () => {
+          try {
+            const result = reader.result as string;
+            const parts = result.split(",");
+            if (parts.length < 2 || !parts[1]) {
+              reject(new Error("FileReader produced empty base64 (mime issue?)"));
+            } else {
+              resolve(parts[1]);
+            }
+          } catch (e) {
+            reject(e);
+          }
+        };
+        reader.onerror = () => reject(new Error("FileReader failed: " + reader.error?.message));
         reader.readAsDataURL(wavBlob);
       });
+      console.log("[voice] step2: base64 ready, length=", base64Audio.length);
 
       if (abortController.signal.aborted) { processingRef.current = false; return; }
 
       let convId = convIdRef.current;
       if (!convId) {
+        console.log("[voice] step3: creating conversation");
+        const convHeaders: Record<string, string> = { "Content-Type": "application/json" };
+        if (token) convHeaders["x-user-token"] = token;
         const res = await fetch("/api/arya/conversations", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: convHeaders,
           body: JSON.stringify({ title: "Voice Chat" }),
           signal: abortController.signal,
         });
-        if (!res.ok) throw new Error("Could not create conversation");
+        if (!res.ok) {
+          const errBody = await res.text().catch(() => res.statusText);
+          throw new Error(`createConv ${res.status}: ${errBody}`);
+        }
         const conv = await res.json();
-        if (!conv?.id) throw new Error("Invalid conversation response");
+        if (!conv?.id) throw new Error(`Invalid conversation response: ${JSON.stringify(conv)}`);
         convId = conv.id as number;
         convIdRef.current = convId;
         onConversationCreated(convId);
       }
+      console.log("[voice] step4: sending audio to convId=", convId);
 
       const fetchHeaders: Record<string, string> = { "Content-Type": "application/json" };
       if (token) fetchHeaders["x-user-token"] = token;
@@ -5984,8 +6006,9 @@ function VoiceConversationMode({
     } catch (err: any) {
       processingRef.current = false;
       if (err?.name === "AbortError") return;
-      console.error("Voice conversation error:", err);
-      setError("Something went wrong. Tap the mic to try again.");
+      const msg = err?.message || String(err) || "Unknown error";
+      console.error("[voice] processRecording error:", msg, err);
+      setError(msg.length < 120 ? msg : "Something went wrong — check console.");
       setPhase("idle");
     }
   }, [selectedLanguage, token, onConversationCreated, queryClient]);
