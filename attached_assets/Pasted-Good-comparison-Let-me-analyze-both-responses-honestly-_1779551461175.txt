@@ -1,0 +1,184 @@
+Good comparison. Let me analyze both responses honestly.
+
+---
+
+## Side By Side — Same Question
+
+```
+Question: "Is it necessary to walk every day?"
+```
+
+### ChatGPT Response
+```
+Structure:
+  ✓ Clear headline answer first
+  ✓ Bullet points with bold numbers
+    4,000–5,000 steps/day
+    7,000–8,000 steps/day
+    Beyond 10,000
+  ✓ "The right target depends on:" list
+  ✓ Scannable, easy to read
+  ✓ Data-backed
+
+Feel: Like a knowledgeable friend
+      who did their research
+```
+
+### ARYA Response
+```
+Structure:
+  ✓ Good content — accurate
+  ✓ Warm, conversational tone
+  ✓ Ends with a personal question
+  ✗ No numbers or data
+  ✗ All paragraphs — hard to scan
+  ✗ Feels generic
+  ✗ Could be about anything
+
+Feel: Like a friendly person
+      but not particularly informed
+```
+
+---
+
+## What ARYA Is Missing
+
+```
+1. Specific numbers
+   ChatGPT: "4,000–5,000 steps/day"
+   ARYA: "5,000 to 7,000 steps" (vague range)
+
+2. Structured information
+   ChatGPT: bullets, bold, scannable
+   ARYA: paragraphs only, hard to skim
+
+3. Authority
+   ChatGPT: "Research shows..."
+   ARYA: "What truly matters is..."
+   (sounds like opinion not fact)
+
+4. Actionable specifics
+   ChatGPT: exact step ranges + benefits
+   ARYA: general encouragement
+```
+
+---
+
+## Why This Happens
+
+ARYA's system prompt currently prioritizes:
+```
+✓ Warm friend tone
+✓ Short responses
+✓ Conversational style
+✗ But sacrifices: data, structure, specifics
+```
+
+ChatGPT's default prioritizes:
+```
+✓ Structured information
+✓ Specific numbers
+✓ Research-backed claims
+✓ Scannable formatting
+```
+
+---
+
+## The Fix — ARYA Should Do Both
+
+ARYA can be warm AND informative. The system prompt needs one addition:
+
+```typescript
+// server/arya/chat-engine.ts
+// Add to system prompt:
+
+`When answering health, fitness, science,
+or factual questions:
+- Include specific numbers and data
+- Use bullet points for lists
+- Bold key facts
+- Cite "research shows" where relevant
+- Then add the personal warm touch
+
+Example for walking question:
+"Research shows 7,000–8,000 steps/day
+gives major heart and longevity benefits.
+You don't need 10,000 — that number was
+actually from a 1960s Japanese marketing
+campaign, not science.
+
+What matters more:
+• Consistency over perfection
+• Even 4,000 steps beats being sedentary
+• Your lifestyle and health goals matter more
+  than hitting an exact number
+
+What's your current activity like?
+I can help you set a realistic goal."
+
+This is warm AND data-rich.`
+```
+
+---
+
+## ARYA's Actual Advantage Over ChatGPT
+
+```
+ChatGPT:          ARYA should be:
+──────────────────────────────────
+Informative   →   Informative + Personal
+Generic       →   Knows YOUR goals
+No memory     →   Remembers your context
+No follow-up  →   Asks meaningful questions
+Clinical      →   Warm and encouraging
+```
+
+ARYA knows Varah's health goals, mood, activity level. ChatGPT doesn't. ARYA should use that.
+
+---
+
+## Better ARYA Response For This Question
+
+```
+"Walking every day? Yes — but 10,000 steps
+is not the magic number. Research shows
+7,000–8,000 steps gives the biggest health
+return. Beyond that, benefits still come
+but more slowly.
+
+What actually matters:
+• 4,000–5,000 steps → already better
+  than being sedentary
+• 7,000–8,000 → major heart, mood,
+  blood sugar benefits
+• Consistency beats perfection every time
+
+Given your goals — what's your current
+daily movement like? I can help you set
+a number that actually fits your life."
+```
+
+This is ARYA — warm, personal, data-rich, ends with a meaningful question.
+
+---
+
+## Developer Task — One Prompt Change
+
+```
+File: server/arya/chat-engine.ts
+
+In the system prompt add:
+
+"For factual/health/science questions:
+Lead with specific data and numbers.
+Use bullet points for lists of 3+.
+Bold key statistics.
+Then add personal context and question.
+Never sacrifice accuracy for warmth —
+be both accurate AND warm."
+
+Estimated: 15 minutes
+Result: ARYA responses match or beat
+        ChatGPT on factual questions
+        while remaining more personal
+```
