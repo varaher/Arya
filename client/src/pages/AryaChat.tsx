@@ -5597,6 +5597,7 @@ function VoiceConversationMode({
   const [audioLevel, setAudioLevel] = useState(0);
   const [lastVoiceLogId, setLastVoiceLogId] = useState<string | null>(null);
   const [lastRating, setLastRating] = useState<number | null>(null);
+  const [detectedLang, setDetectedLang] = useState<string | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -5845,7 +5846,7 @@ function VoiceConversationMode({
       const fetchRes = await fetch(`/api/arya/conversations/${convId}/voice`, {
         method: "POST",
         headers: fetchHeaders,
-        body: JSON.stringify({ audio: base64Audio, tenant_id: "varah", language: selectedLanguage }),
+        body: JSON.stringify({ audio: base64Audio, tenant_id: "varah" }),
         signal: abortController.signal,
       });
 
@@ -5881,6 +5882,7 @@ function VoiceConversationMode({
             if (event.type === "user_transcript") {
               setTranscript(event.content);
               setConversationLog(prev => [...prev, { role: "user", text: event.content }]);
+              if (event.language) setDetectedLang(event.language);
             }
             if (event.type === "assistant" && event.content) {
               fullContent += event.content;
@@ -6120,7 +6122,9 @@ function VoiceConversationMode({
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center relative">
-        <h1 className={`text-3xl md:text-4xl font-light tracking-wide mb-12 transition-all duration-500 ${
+        <h1 className={`text-3xl md:text-4xl font-light tracking-wide transition-all duration-500 ${
+          detectedLang ? "mb-3" : "mb-12"
+        } ${
           phase === "listening" ? "text-gray-900 dark:text-white" :
           phase === "processing" ? "text-gray-600 dark:text-gray-300" :
           phase === "speaking" ? "text-gray-900 dark:text-white" :
@@ -6128,6 +6132,19 @@ function VoiceConversationMode({
         }`}>
           {error || phaseText[phase]}
         </h1>
+        {detectedLang && !error && (
+          <div className="mb-8 flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200/60 dark:border-emerald-700/40">
+            <span className="text-xs">🌐</span>
+            <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
+              {({
+                "en-IN": "English", "hi-IN": "हिंदी", "ta-IN": "தமிழ்",
+                "te-IN": "తెలుగు", "ml-IN": "മലയാളം", "kn-IN": "ಕನ್ನಡ",
+                "mr-IN": "मराठी", "bn-IN": "বাংলা", "gu-IN": "ગુજરાતી",
+                "pa-IN": "ਪੰਜਾਬੀ", "od-IN": "ଓଡ଼ିଆ",
+              } as Record<string, string>)[detectedLang] || detectedLang}
+            </span>
+          </div>
+        )}
 
         <div className="relative w-40 h-40 flex items-center justify-center" onClick={(e) => { e.stopPropagation(); handleMicTap(); }}>
           {phase === "listening" && (

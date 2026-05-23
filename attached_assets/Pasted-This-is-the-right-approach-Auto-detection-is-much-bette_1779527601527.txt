@@ -1,0 +1,282 @@
+This is the right approach. Auto-detection is much better UX than manual selection.
+
+---
+
+## How It Works — Auto Language Detection
+
+```
+User speaks in Malayalam
+        ↓
+Sarvam STT with language_code: "unknown"
+        ↓
+Sarvam detects: "ml-IN"
+        ↓
+ARYA generates response in Malayalam
+        ↓
+Sarvam TTS speaks back in Malayalam
+        ↓
+User speaks in Hindi next message
+        ↓
+Sarvam detects: "hi-IN"
+        ↓
+ARYA responds in Hindi automatically
+```
+
+No globe selection needed for voice. It just works.
+
+---
+
+## The Fix — 3 File Changes
+
+### Change 1 — sarvam-service.ts (already supports this)
+
+```typescript
+// sarvamSpeechToText already accepts "unknown"
+// This means Sarvam auto-detects the language
+
+export async function sarvamSpeechToText(
+  audioBuffer: Buffer,
+  languageCode: SarvamLanguageCode | "unknown" = "unknown"
+  //                                  ↑
+  //                         default is already "unknown"
+  //                         Sarvam detects automatically
+)
+```
+
+This is already correct. No change needed here.
+
+---
+
+### Change 2 — routes.ts voice route
+
+```typescript
+// server/routes.ts
+// Find: /api/arya/conversations/:id/voice
+
+app.post("/api/arya/conversations/:id/voice",
+  optionalUser, async (req, res) => {
+
+  const { audio, tenant_id, language } = req.body;
+  // language from frontend — ignore it for voice
+  // let Sarvam detect automatically
+
+  const rawBuffer = Buffer.from(audio, "base64");
+  const { buffer: audioBuffer } = await ensureCompatibleFormat(rawBuffer);
+
+  // ── CHANGE THIS ──
+  // Before: passed language from frontend
+  // After:  always pass "unknown" → Sarvam detects
+
+  const sttResult = await sarvamSpeechToText(
+    audioBuffer,
+    "unknown"        // ← Sarvam auto-detects language
+  );
+
+  const detectedLanguage = sttResult.languageCode;
+  // "ml-IN" / "hi-IN" / "ta-IN" etc — auto detected
+
+  console.log('[voice] Detected language:', detectedLanguage);
+  console.log('[voice] Transcript:', sttResult.transcript);
+
+  // Now use detectedLanguage for everything below
+  // Translation, response generation, TTS
+  // all use what Sarvam detected
+
+  // Get language instruction for ARYA response
+  const langInstruction = getLanguageInstruction(
+    detectedLanguage,
+    userName
+  );
+
+  // ... rest of voice processing using detectedLanguage
+});
+```
+
+---
+
+### Change 3 — Frontend AryaChat.tsx
+
+```typescript
+// client/src/pages/AryaChat.tsx
+// In processRecording or sendAudioToServer function
+
+// BEFORE — sent selected language:
+const response = await fetch(
+  `/api/arya/conversations/${conversationId}/voice`,
+  {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      audio: base64Audio,
+      language: selectedLanguage,  // ← remove this
+    })
+  }
+);
+
+// AFTER — no language needed:
+const response = await fetch(
+  `/api/arya/conversations/${conversationId}/voice`,
+  {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      audio: base64Audio,
+      // language removed — Sarvam detects automatically
+    })
+  }
+);
+```
+
+---
+
+## What Sarvam Returns
+
+```typescript
+// After sarvamSpeechToText with "unknown":
+{
+  transcript: "നല്ല മഴയാണോ ആര്യ?",
+  languageCode: "ml-IN",    // ← Sarvam detected this
+  confidence: 0.95
+}
+
+// Use this languageCode for:
+// 1. Generating ARYA's response in Malayalam
+// 2. Translating response back if needed
+// 3. TTS voice in Malayalam (ananya speaker)
+```
+
+---
+
+## The Complete Auto-Detection Flow
+
+```typescript
+// server/routes.ts — complete voice handler
+
+// Step 1: Transcribe with auto-detection
+const sttResult = await sarvamSpeechToText(
+  audioBuffer,
+  "unknown"        // auto-detect
+);
+
+const detectedLang = sttResult.languageCode; // "ml-IN"
+const transcript = sttResult.transcript;      // Malayalam text
+
+console.log(`[voice] ${detectedLang}: "${transcript}"`);
+
+// Step 2: If Indian language → ARYA responds directly
+// No translation needed — generate in detected language
+const langInstruction = getLanguageInstruction(
+  detectedLang, userName
+);
+
+// Step 3: Generate ARYA response in detected language
+const { stream } = await generateAryaResponse(
+  transcript,
+  history,
+  tenantId,
+  conversationId,
+  userId,
+  langInstruction   // ← ARYA responds in Malayalam
+);
+
+// Step 4: TTS in detected language
+const ttsResult = await sarvamTextToSpeech(
+  aryaResponse,
+  detectedLang as SarvamLanguageCode  // "ml-IN"
+  // speaker resolved internally: ananya
+);
+```
+
+---
+
+## One Important Thing
+
+```
+Sarvam "unknown" detection works well for:
+  ✅ Hindi, Tamil, Telugu, Kannada
+  ✅ Malayalam, Bengali, Marathi
+  ✅ Gujarati, Punjabi, Odia
+  ✅ English
+
+It may struggle with:
+  ⚠ Very short audio (less than 2 seconds)
+  ⚠ Heavy background noise
+  ⚠ Mixed language in same sentence
+
+Fallback for failed detection:
+  If languageCode comes back "unknown"
+  or detection fails → use "en-IN" as default
+  OR use user's last known language preference
+```
+
+---
+
+## Fallback Logic
+
+```typescript
+// If Sarvam can't detect:
+const detectedLang = sttResult.languageCode;
+
+const finalLang = (
+  detectedLang &&
+  detectedLang !== "unknown" &&
+  detectedLang !== ""
+)
+  ? detectedLang
+  : (user?.uiLanguage || "en-IN");
+  // fall back to user's app language setting
+```
+
+---
+
+## Developer Task — Simple Brief
+
+```
+3 changes:
+
+1. server/routes.ts — voice route
+   Change: sarvamSpeechToText(audio, language)
+   To:     sarvamSpeechToText(audio, "unknown")
+   Use returned languageCode for all downstream calls
+
+2. server/routes.ts — same route
+   Pass detectedLanguage to:
+   - getLanguageInstruction()
+   - generateAryaResponse()
+   - sarvamTextToSpeech()
+
+3. client/src/pages/AryaChat.tsx
+   Remove language from voice API call body
+   No language needed from frontend
+
+Estimated: 1 hour
+Result: User speaks any Indian language
+        ARYA detects and responds in same language
+        No globe selection needed for voice
+        Works like Google Assistant
+```
+
+---
+
+## UI Change — Remove Language Selector From Voice Mode
+
+```tsx
+// In VoiceConversationMode component
+// Remove the language globe selector
+// Replace with:
+
+<div className="voice-lang-indicator">
+  {detectedLanguage && (
+    <span className="detected-lang">
+      🌐 {getLanguageName(detectedLanguage)}
+    </span>
+  )}
+</div>
+
+// Shows what language was detected
+// After first utterance: "🌐 Malayalam"
+// After Hindi: "🌐 Hindi"
+// User sees what ARYA detected
+```
+
+This is cleaner than manual selection. User speaks — ARYA shows what it detected — responds in that language. Exactly like Google Assistant.

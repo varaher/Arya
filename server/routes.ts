@@ -2071,41 +2071,58 @@ export async function registerRoutes(
       const { buffer: audioBuffer, format: inputFormat } = await ensureCompatibleFormat(rawBuffer);
 
       let userTranscript = "";
-      let detectedLanguage = language || "en-IN";
+      let detectedLanguage = "en-IN";
       let queryForArya = "";
 
-      const useSarvam = language && language !== "en-IN" && process.env.SARVAM_API_KEY;
-
-      if (useSarvam) {
-        console.log(`[Voice] Using Sarvam AI for language: ${language}`);
+      if (process.env.SARVAM_API_KEY) {
+        // Auto-detect language — pass "unknown" so Sarvam identifies the language
+        // from the audio itself. Works for all 11 Indian languages + English.
+        console.log('[Voice] Using Sarvam auto-detection (language: unknown)');
         const sttResult = await Promise.race([
-          sarvamSpeechToText(audioBuffer, language as SarvamLanguageCode),
+          sarvamSpeechToText(audioBuffer, "unknown"),
           new Promise<never>((_, reject) =>
             setTimeout(() => reject(Object.assign(new Error('Sarvam STT timeout'), { name: 'TimeoutError' })), 20000)
           ),
         ]);
         userTranscript = sttResult.transcript;
-        // Always use the user's requested language for output — never let Sarvam override to Urdu
-        // Hindi and Urdu sound identical; Sarvam sometimes detects hi-IN speech as ur-IN
-        let rawDetected = sttResult.languageCode || language;
+
+        // Resolve detected language with fallback chain
+        let rawDetected = sttResult.languageCode || "";
+        // Urdu sounds like Hindi — Sarvam sometimes misdetects hi-IN as ur-IN
         if (rawDetected === "ur-IN" || rawDetected === "ur") rawDetected = "hi-IN";
+
+        if (!rawDetected || rawDetected === "unknown") {
+          // Fallback: use the user's saved UI language preference, else en-IN
+          let userLang = "en-IN";
+          if (userId) {
+            const [userRow] = await db.select().from(aryaUsers).where(eq(aryaUsers.id, userId)).limit(1);
+            userLang = (userRow as any)?.uiLanguage || "en-IN";
+          }
+          rawDetected = (userLang && userLang !== "en") ? userLang : "en-IN";
+        }
         detectedLanguage = rawDetected;
 
-        if (isIndianLanguage(detectedLanguage)) {
-          const translation = await sarvamTranslate(userTranscript, language as SarvamLanguageCode, "en-IN");
-          queryForArya = translation.translatedText;
-          console.log(`[Voice] Translated "${userTranscript}" → "${queryForArya}"`);
+        console.log(`[Voice] Auto-detected: ${detectedLanguage} | transcript: "${userTranscript.slice(0, 80)}"`);
+
+        // Translate Indian language → English for ARYA's reasoning engine
+        if (isIndianLanguage(detectedLanguage) && userTranscript.trim()) {
+          try {
+            const translation = await sarvamTranslate(userTranscript, detectedLanguage as SarvamLanguageCode, "en-IN");
+            queryForArya = translation.translatedText;
+            console.log(`[Voice] Translated → "${queryForArya.slice(0, 80)}"`);
+          } catch {
+            queryForArya = userTranscript; // fallback: pass original
+          }
         } else {
           queryForArya = userTranscript;
         }
       } else {
-        const isoLang = (language || "en-IN").split("-")[0] || "en";
-        userTranscript = await speechToText(audioBuffer, inputFormat, isoLang);
-        // Safety check: if transcript contains CJK characters (Chinese/Japanese/Korean)
-        // but we expected English or Hindi, the model misdetected the language — discard it
+        // No Sarvam key — OpenAI STT for English
+        userTranscript = await speechToText(audioBuffer, inputFormat, "en");
+        // Discard if transcription returned CJK (model misdetected language)
         const hasCJK = /[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]/.test(userTranscript);
         if (hasCJK) {
-          console.warn(`[Voice] CJK characters detected in transcript for lang=${isoLang}, discarding: "${userTranscript.slice(0, 50)}"`);
+          console.warn(`[Voice] CJK in transcript, discarding: "${userTranscript.slice(0, 50)}"`);
           userTranscript = "";
         }
         queryForArya = userTranscript;
