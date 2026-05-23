@@ -2184,23 +2184,53 @@ export async function registerRoutes(
       if (isIndianLanguage(detectedLanguage) && process.env.SARVAM_API_KEY) {
         try {
           const translatedResponse = await sarvamTranslate(fullResponse, "en-IN", detectedLanguage);
+          // Truncate to 500 chars — Sarvam TTS has input limits
+          const ttsText = translatedResponse.translatedText.slice(0, 500);
           const ttsResult = await sarvamTextToSpeech(
-            translatedResponse.translatedText,
+            ttsText,
             detectedLanguage as SarvamLanguageCode
           );
-          res.write(`data: ${JSON.stringify({
-            type: "translated_response",
-            content: translatedResponse.translatedText,
-            language: detectedLanguage,
-          })}\n\n`);
-          res.write(`data: ${JSON.stringify({
-            type: "audio_response",
-            audio: ttsResult.audioBase64,
-            format: ttsResult.format,
-            language: detectedLanguage,
-          })}\n\n`);
+          console.log(`[Voice] Sarvam TTS audio size: ${ttsResult.audioBase64?.length || 0} chars`);
+          if (ttsResult.audioBase64) {
+            res.write(`data: ${JSON.stringify({
+              type: "translated_response",
+              content: translatedResponse.translatedText,
+              language: detectedLanguage,
+            })}\n\n`);
+            res.write(`data: ${JSON.stringify({
+              type: "audio_response",
+              audio: ttsResult.audioBase64,
+              format: ttsResult.format || "wav",
+              language: detectedLanguage,
+            })}\n\n`);
+          } else {
+            console.error("[Voice] Sarvam TTS returned empty audio");
+          }
         } catch (ttsError: any) {
-          console.error("[Voice] TTS/translation error:", ttsError.message);
+          console.error("[Voice] Sarvam TTS/translation error:", ttsError.message);
+        }
+      } else {
+        // English (en-IN) or no Sarvam key — use OpenAI TTS
+        try {
+          const cleanText = fullResponse
+            .replace(/[#*_`~>\[\]()!|]/g, "")
+            .replace(/\n{2,}/g, ". ")
+            .replace(/\n/g, " ")
+            .trim()
+            .slice(0, 500);
+          if (cleanText.length > 2) {
+            const audioBuffer = await openaiTextToSpeech(cleanText, "nova", "wav");
+            const audioBase64 = audioBuffer.toString("base64");
+            console.log(`[Voice] OpenAI TTS audio size: ${audioBase64.length} chars`);
+            res.write(`data: ${JSON.stringify({
+              type: "audio_response",
+              audio: audioBase64,
+              format: "wav",
+              language: detectedLanguage,
+            })}\n\n`);
+          }
+        } catch (ttsError: any) {
+          console.error("[Voice] OpenAI TTS error:", ttsError.message);
         }
       }
 

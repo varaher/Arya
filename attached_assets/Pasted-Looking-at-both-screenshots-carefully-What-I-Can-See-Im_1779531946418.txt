@@ -1,0 +1,237 @@
+Looking at both screenshots carefully.
+
+---
+
+## What I Can See
+
+```
+Image 1 — Text chat working:
+  User typed in Telugu script
+  Globe shows Malayalam ✅
+  ARYA responded in English ❌
+  (language detection not working for text chat)
+
+Image 2 — Voice mode crashed:
+  "Something went wrong. Tap the mic to try again"
+  This is the voice-specific error screen
+  App didn't crash fully this time (good)
+  But voice failed
+```
+
+---
+
+## Two Separate Problems
+
+### Problem 1 — No voice output from ARYA
+
+```
+ARYA responds as text only
+No audio plays back
+This means TTS is failing silently
+
+Most likely cause:
+  sarvamTextToSpeech() is being called
+  but the audio isn't playing in the browser
+
+OR Sarvam TTS is returning an error
+but it's being swallowed silently
+```
+
+### Problem 2 — Voice mode crashes after use
+
+```
+"Something went wrong. Tap the mic to try again"
+This is the VoiceConversationMode error state
+
+Most likely causes:
+  1. Sarvam STT returning error (API key / rate limit)
+  2. Audio too small — silence detected too fast
+  3. detectedLanguage coming back empty
+     causing downstream crash
+```
+
+---
+
+## Check Replit Logs Right Now
+
+When you tap the mic and it fails, Replit logs will show exactly what happened. Look for:
+
+```
+[voice] Received audio — X bytes
+  If X < 1000 → recording too short
+
+[sarvam] STT error: 401
+  → API key wrong or expired
+
+[sarvam] STT error: 429
+  → Too many requests, rate limited
+
+[voice] Detected language: undefined
+  → Detection failed, causing crash
+
+[voice] TTS error: ...
+  → Why audio not playing
+```
+
+---
+
+## The Most Likely Fix — Better Error Handling
+
+```typescript
+// server/routes.ts — voice route
+// The crash happens because when Sarvam
+// returns "unknown" language, downstream
+// code tries to use it and fails
+
+// Find the voice route and add this guard:
+
+const detectedLang = sttResult.languageCode;
+
+// Guard against unknown/empty detection
+const finalLang = (
+  detectedLang &&
+  detectedLang !== "unknown" &&
+  detectedLang !== ""
+)
+  ? detectedLang
+  : "en-IN";  // safe fallback
+
+console.log('[voice] Final language:', finalLang);
+console.log('[voice] Transcript:', sttResult.transcript);
+
+// If transcript is empty — return early
+if (!sttResult.transcript?.trim()) {
+  res.write(`data: ${JSON.stringify({
+    type: "error",
+    error: "No speech detected. Please try again."
+  })}\n\n`);
+  res.end();
+  return;
+}
+```
+
+---
+
+## The TTS Not Playing Fix
+
+```typescript
+// In the voice route — after ARYA generates response
+// Check if TTS result is actually being sent
+
+try {
+  const ttsResult = await sarvamTextToSpeech(
+    aryaResponse,
+    finalLang as SarvamLanguageCode
+  );
+
+  console.log('[voice] TTS audio size:',
+    ttsResult.audioBase64?.length || 0);
+
+  if (ttsResult.audioBase64) {
+    res.write(`data: ${JSON.stringify({
+      type: "audio_response",
+      audio: ttsResult.audioBase64,
+      format: ttsResult.format,
+      language: finalLang,
+    })}\n\n`);
+  } else {
+    console.error('[voice] TTS returned empty audio');
+  }
+
+} catch (ttsError: any) {
+  // Currently this error is swallowed
+  // That's why you see text but no audio
+  console.error('[voice] TTS failed:', ttsError.message);
+  // App continues — user gets text but no voice
+}
+```
+
+---
+
+## Frontend — Audio Not Playing
+
+```typescript
+// client/src/pages/AryaChat.tsx
+// In VoiceConversationMode — find where audio_response is handled
+// It probably looks like this:
+
+if (event.type === "audio_response") {
+  const audio = new Audio(
+    `data:audio/wav;base64,${event.audio}`
+  );
+  audio.play();  // ← This might be failing silently
+}
+
+// Fix — add error handling:
+if (event.type === "audio_response") {
+  try {
+    const audio = new Audio(
+      `data:audio/wav;base64,${event.audio}`
+    );
+
+    audio.oncanplaythrough = () => {
+      audio.play().catch(err => {
+        console.error('[audio] Play failed:', err);
+        // iOS requires user gesture to play audio
+        // This is why iPhone has no voice output
+      });
+    };
+
+    audio.onerror = (err) => {
+      console.error('[audio] Load error:', err);
+    };
+
+  } catch (err) {
+    console.error('[audio] Audio creation failed:', err);
+  }
+}
+```
+
+---
+
+## iOS Audio Autoplay Problem
+
+```
+On iPhone/iPad — browser blocks audio autoplay
+Audio can only play if triggered by user gesture
+(tap, click etc)
+
+ARYA's voice response tries to autoplay
+iOS blocks it silently
+User sees text, hears nothing
+
+Fix for iOS:
+  Show a "Tap to hear ARYA" button
+  When user taps → audio plays
+  OR
+  Use Web Audio API instead of Audio element
+  (Web Audio respects AudioContext
+   that was created during user gesture)
+```
+
+---
+
+## Tell Your Developer — 3 Fixes Needed
+
+```
+Fix 1 — Guard against empty language detection
+  In voice route: if detectedLang === "unknown"
+  fall back to "en-IN"
+  If transcript empty → return error early
+
+Fix 2 — Log TTS errors instead of swallowing
+  Wrap sarvamTextToSpeech in try/catch
+  Log the error so we can see what's failing
+  Currently fails silently
+
+Fix 3 — Audio autoplay on mobile
+  Add audio.play().catch() handler
+  For iOS: unlock audio on first user tap
+  Store AudioContext from startListening
+  Use it for response playback too
+
+Most important right now:
+  Check Replit logs when voice fails
+  The exact error will be in there
+  Send me those log lines
+```

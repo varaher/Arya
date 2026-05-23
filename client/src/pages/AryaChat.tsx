@@ -5613,6 +5613,7 @@ function VoiceConversationMode({
   const abortRef = useRef<AbortController | null>(null);
   const autoListenTimerRef = useRef<NodeJS.Timeout | null>(null);
   const processRecordingRef = useRef<() => void>(() => {});
+  const playbackCtxRef = useRef<AudioContext | null>(null);
   const voiceMonitorStreamRef = useRef<MediaStream | null>(null);
   const voiceMonitorCtxRef = useRef<AudioContext | null>(null);
   const voiceMonitorFrameRef = useRef<number | null>(null);
@@ -5691,6 +5692,20 @@ function VoiceConversationMode({
         },
       });
       streamRef.current = stream;
+
+      // Create (or resume) a dedicated playback AudioContext while we are
+      // inside the user-gesture chain.  iOS Safari will only allow audio
+      // playback on a context that was unlocked during a gesture; keeping
+      // this context alive for the whole voice session lets playAudioAndWait
+      // use Web Audio API instead of the autoplay-blocked <Audio> element.
+      if (!playbackCtxRef.current || playbackCtxRef.current.state === "closed") {
+        try {
+          playbackCtxRef.current = new AudioContext();
+        } catch {}
+      }
+      if (playbackCtxRef.current && playbackCtxRef.current.state === "suspended") {
+        try { await playbackCtxRef.current.resume(); } catch {}
+      }
 
       const audioCtx = new AudioContext();
       audioContextRef.current = audioCtx;
@@ -5938,7 +5953,7 @@ function VoiceConversationMode({
           const ttsRes = await fetch("/api/arya/tts", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text: cleanText.slice(0, 500), language: selectedLanguage }),
+            body: JSON.stringify({ text: cleanText.slice(0, 500), language: detectedLang || "en-IN" }),
             signal: abortController.signal,
           });
           if (ttsRes.ok && !voiceInterrupted) {
@@ -6032,6 +6047,36 @@ function VoiceConversationMode({
         const byteChars = atob(base64Audio);
         const byteArray = new Uint8Array(byteChars.length);
         for (let i = 0; i < byteChars.length; i++) byteArray[i] = byteChars.charCodeAt(i);
+
+        const ctx = playbackCtxRef.current;
+        if (ctx && ctx.state !== "closed") {
+          // Web Audio API path — bypasses iOS autoplay restrictions because
+          // this AudioContext was unlocked during the original user gesture.
+          ctx.decodeAudioData(byteArray.buffer.slice(0)).then((audioBuffer) => {
+            const source = ctx.createBufferSource();
+            source.buffer = audioBuffer;
+            source.connect(ctx.destination);
+            let resolved = false;
+            const done = () => { if (!resolved) { resolved = true; resolve(); } };
+            source.onended = done;
+            source.start(0);
+            // Keep audioRef meaningful so tap-to-interrupt still works via
+            // the existing "speaking" phase tap handler (it calls startListening
+            // directly, which aborts the abort controller and re-enters).
+          }).catch(() => {
+            // Decode failed — fall through to HTML Audio element
+            fallbackHtmlAudio(byteArray, resolve);
+          });
+          return;
+        }
+
+        // No Web Audio context — use HTML Audio element (desktop / non-iOS)
+        fallbackHtmlAudio(byteArray, resolve);
+      } catch { resolve(); }
+    });
+
+    function fallbackHtmlAudio(byteArray: Uint8Array, resolve: () => void) {
+      try {
         const blob = new Blob([byteArray], { type: "audio/wav" });
         const url = URL.createObjectURL(blob);
         const audio = new Audio(url);
@@ -6041,14 +6086,21 @@ function VoiceConversationMode({
         audio.onended = done;
         audio.onerror = done;
         audio.onpause = done;
-        audio.play().catch(done);
+        audio.play().catch((e) => {
+          console.warn("[voice] HTML audio play() blocked:", e?.message);
+          done();
+        });
       } catch { resolve(); }
-    });
+    }
   }, []);
 
   const handleClose = () => {
     activeRef.current = false;
     stopAllMedia();
+    if (playbackCtxRef.current) {
+      try { playbackCtxRef.current.close(); } catch {}
+      playbackCtxRef.current = null;
+    }
     onClose();
   };
 
