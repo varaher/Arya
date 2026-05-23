@@ -1,0 +1,105 @@
+This is now correct. Let me verify every fix.
+
+---
+
+## Verification — All 4 Fixes Confirmed ✅
+
+```typescript
+// Fix 1 — Translation mode
+mode: "code-mixed",          ✅ was "formal"
+speaker_gender: "Female",    ✅ added to translate too
+enable_preprocessing: true,  ✅ good addition
+
+// Fix 2 — TTS speaker resolved from map
+const speaker = getSpeakerForLanguage(languageCode);  ✅
+// No longer accepts external speaker override
+
+// Fix 3 — TTS body
+speaker_gender: "Female",    ✅ added
+mode: "code-mixed",          ✅ added
+speaker: speaker,            ✅ correct female voice
+
+// Fix 4 — Speaker map
+"hi-IN": "meera",            ✅ was "arya"
+"ta-IN": "pavithra",         ✅ was "arya"
+"ml-IN": "ananya",           ✅ was "arya"
+// All 11 languages correct
+
+// Fallback
+getSpeakerForLanguage: "ananya"  ✅ was "arya"
+```
+
+---
+
+## One Small Thing To Check
+
+The `sarvamTextToSpeech` function signature changed:
+
+```typescript
+// Old signature (3 params):
+sarvamTextToSpeech(text, languageCode, speaker)
+
+// New signature (2 params):
+sarvamTextToSpeech(text, languageCode)
+```
+
+Any place in `routes.ts` that calls this with 3 arguments needs updating:
+
+```typescript
+// Find in server/routes.ts — likely looks like:
+const ttsResult = await sarvamTextToSpeech(
+  translatedResponse.translatedText,
+  detectedLanguage as SarvamLanguageCode,
+  getSpeakerForLanguage(detectedLanguage)  // ← remove this 3rd arg
+);
+
+// Change to:
+const ttsResult = await sarvamTextToSpeech(
+  translatedResponse.translatedText,
+  detectedLanguage as SarvamLanguageCode
+  // speaker now resolved internally ✅
+);
+```
+
+Search `routes.ts` for `sarvamTextToSpeech` — if it passes a 3rd argument, remove it.
+
+---
+
+## What This Fixes For Users
+
+```
+Before:
+  ARYA spoke with "arya" voice → invalid
+  Sarvam used unknown fallback → inconsistent
+  Translation was formal/stiff
+  No gender specified
+
+After:
+  Hindi    → meera    (warm, natural Hindi female)
+  Tamil    → pavithra (natural Tamil female)
+  Telugu   → ananya   (clear Telugu female)
+  Kannada  → ananya
+  Malayalam → ananya
+  Bengali  → ananya
+  Marathi  → meera
+  Gujarati → ananya
+  Punjabi  → meera
+  Odia     → ananya
+  English  → ananya
+
+Translation: code-mixed → natural conversation
+Gender: always Female → ARYA's identity preserved
+```
+
+---
+
+## Status
+
+```
+sarvam-service.ts    ✅ Fixed and committed to GitHub
+routes.ts            ⚠ Check for 3rd argument in TTS calls
+
+After routes.ts check → voice quality immediately better
+ARYA will sound like a real warm female voice
+in every Indian language
+```
