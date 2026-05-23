@@ -1,0 +1,156 @@
+Looking at the screenshot. The issue is clear.
+
+---
+
+## The Problem
+
+```
+The chat input box is too small.
+When typing a long message it shows
+only 2-3 lines and the rest scrolls
+inside the tiny box.
+
+The text area is not expanding as
+the user types — like WhatsApp does.
+```
+
+---
+
+## What WhatsApp Does
+
+```
+Start typing → input is 1 line tall
+Type more   → input grows to 2 lines
+Type more   → input grows to 3 lines
+Type more   → input stops at ~5 lines
+             then scrolls inside
+```
+
+---
+
+## The Fix — Auto-expanding Textarea
+
+Find the chat input in `AryaChat.tsx` and make these changes:
+
+```tsx
+// Find the textarea/input in the chat bar
+// It likely looks like this currently:
+
+<textarea
+  className="chat-input"
+  value={inputValue}
+  onChange={handleChange}
+  placeholder={t('ask_anything')}
+  rows={1}
+/>
+
+// Replace with this:
+
+<textarea
+  ref={textareaRef}
+  className="chat-input"
+  value={inputValue}
+  onChange={(e) => {
+    setInputValue(e.target.value);
+    autoResize(e.target);  // ← ADD THIS
+  }}
+  onKeyDown={handleKeyDown}
+  placeholder={t('ask_anything')}
+  rows={1}
+/>
+```
+
+```typescript
+// Add this function in the component:
+
+const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+function autoResize(el: HTMLTextAreaElement) {
+  el.style.height = 'auto';        // reset first
+  el.style.height = Math.min(
+    el.scrollHeight,
+    120                             // max ~5 lines
+  ) + 'px';
+}
+
+// Also reset when message is sent:
+function handleSend() {
+  // ... existing send logic ...
+
+  // Reset height after sending
+  if (textareaRef.current) {
+    textareaRef.current.style.height = 'auto';
+  }
+}
+```
+
+---
+
+## CSS Fix
+
+```css
+/* Find .chat-input or the textarea class */
+
+.chat-input {
+  width: 100%;
+  min-height: 40px;      /* 1 line minimum */
+  max-height: 120px;     /* ~5 lines maximum */
+  height: auto;
+  resize: none;          /* no manual resize handle */
+  overflow-y: auto;      /* scroll when at max */
+  line-height: 1.5;
+  padding: 10px 12px;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 15px;
+  font-family: inherit;
+
+  /* smooth height transition */
+  transition: height 0.1s ease;
+}
+```
+
+---
+
+## Also — The Input Bar Height
+
+Looking at the screenshot the entire bottom input bar seems fixed height. That container also needs to allow growth:
+
+```css
+/* The container holding mic + input + send */
+.chat-input-bar {
+  display: flex;
+  align-items: flex-end;  /* ← important: align to bottom not center */
+  gap: 8px;
+  padding: 8px 12px;
+  min-height: 56px;
+  height: auto;           /* ← allow growth */
+  max-height: 160px;
+}
+```
+
+The key is `align-items: flex-end` — when the textarea grows upward, the mic and send buttons stay at the bottom.
+
+---
+
+## Developer Task
+
+```
+File: client/src/pages/AryaChat.tsx
+
+1. Find the textarea in the chat input bar
+2. Add ref={textareaRef}
+3. Add autoResize() function
+4. Call autoResize on every onChange
+5. Reset height to 'auto' after message sent
+
+File: client/src/index.css or AryaChat.css
+
+1. Find .chat-input styles
+2. Add min-height, max-height, resize: none
+3. Change container to align-items: flex-end
+
+Estimated: 30 minutes
+Result: Input grows like WhatsApp as user types
+```

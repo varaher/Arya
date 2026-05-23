@@ -3101,6 +3101,7 @@ export default function AryaChat() {
     }
 
     setInput("");
+    if (inputRef.current) inputRef.current.style.height = "auto";
     setIsStreaming(true);
     setStreamingContent("");
     setTranslatedContent(null);
@@ -3267,6 +3268,7 @@ export default function AryaChat() {
     const question = input.trim();
     const displayMsg = question ? `📷 ${question}` : "📷 Shared an image";
     setInput("");
+    if (inputRef.current) inputRef.current.style.height = "auto";
     setPendingImage(null);
     setIsScanningDoc(true);
 
@@ -5088,7 +5090,6 @@ export default function AryaChat() {
                     style={{
                       height: "auto",
                       minHeight: "2.25rem",
-                      overflow: input.split("\n").length > 4 ? "auto" : "hidden",
                     }}
                     onInput={(e) => {
                       const target = e.target as HTMLTextAreaElement;
