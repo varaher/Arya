@@ -1,0 +1,114 @@
+This is actually good news. The error message is now showing clearly.
+
+---
+
+## The Real Error
+
+```
+"You've used your daily voice limit (5 min).
+Upgrade for more."
+```
+
+This is **not a bug**. This is the billing/usage limit system working correctly. Voice is actually working — you just hit the daily free tier limit.
+
+---
+
+## What This Means
+
+```
+Voice IS working ✅
+The feature works correctly
+You tested it enough to hit the 5 minute limit
+That means recording → Sarvam → response
+was all functioning
+
+The limit triggered because:
+  Free tier = 5 minutes voice per day
+  You've been testing repeatedly
+  Total exceeded 5 minutes
+```
+
+---
+
+## The Fix — Two Options
+
+### Option A — Remove The Limit For Now (Recommended)
+
+Since you have 312+ beta users and billing isn't live yet, remove the voice limit entirely until Razorpay is set up:
+
+```typescript
+// Find in server/routes.ts or a middleware file
+// Search for: "voice limit" or "5 min" or "300"
+
+// Find something like:
+const VOICE_LIMIT_SECONDS = 300; // 5 minutes
+
+const totalVoiceToday = await db.query(`
+  SELECT SUM(duration_seconds)
+  FROM arya_voice_sessions
+  WHERE user_id = $1
+  AND DATE(created_at) = CURRENT_DATE
+`, [userId]);
+
+if (totalVoiceToday >= VOICE_LIMIT_SECONDS) {
+  return res.json({
+    error: "voice_limit",
+    message: "You've used your daily voice limit..."
+  });
+}
+
+// Change to: remove the check entirely
+// OR increase limit dramatically:
+const VOICE_LIMIT_SECONDS = 99999; // effectively unlimited
+```
+
+### Option B — Increase Limit For Beta Users
+
+```typescript
+// Give beta users much higher limit
+const VOICE_LIMIT_SECONDS = user.plan === 'pro'
+  ? 99999      // unlimited for pro
+  : 3600;      // 60 minutes for free (beta)
+               // was 300 (5 min)
+```
+
+---
+
+## Tell Your Developer
+
+```
+Search the codebase for:
+  "voice limit"
+  "5 min"
+  "300" near "voice"
+  "voice_limit"
+  "daily_voice"
+
+Find the limit check
+Change 300 → 99999 (unlimited for now)
+
+OR comment out the limit check entirely
+until billing is live
+
+This will immediately fix the voice issue
+you've been seeing during testing
+```
+
+---
+
+## Important Realisation
+
+```
+All the voice fixes done over the past
+sessions were likely working correctly.
+
+You were hitting the 5-minute limit
+and seeing this error — but it was
+displaying as "Something went wrong"
+until the diagnostic logging was added.
+
+Now the real message shows clearly.
+
+Voice is working. ✅
+Just remove the test limit.
+```

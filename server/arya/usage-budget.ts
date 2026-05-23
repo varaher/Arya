@@ -10,7 +10,7 @@ export const PLAN_LIMITS: Record<UserPlan, {
 }> = {
   free: {
     textChatsPerDay: 20,
-    voiceMinutesPerDay: 5,     // 5 min/day free tier sample
+    voiceMinutesPerDay: 60,    // beta: 60 min/day (was 5 — billing not live yet)
     deepReasoningPerDay: 2,
     llmCallsPerMinute: 5,
     maxGoals: 3,
@@ -18,7 +18,7 @@ export const PLAN_LIMITS: Record<UserPlan, {
   },
   core: {
     textChatsPerDay: 9999,     // unlimited
-    voiceMinutesPerDay: 5,     // 150 min/month ÷ 30 days
+    voiceMinutesPerDay: 60,    // beta: 60 min/day (was 5 — restore to 5 when billing is live)
     deepReasoningPerDay: 10,
     llmCallsPerMinute: 10,
     maxGoals: 10,
