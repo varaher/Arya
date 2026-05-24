@@ -653,8 +653,8 @@ export async function generateAryaResponse(
   // ── Language detection ────────────────────────────────────────────────────
   // For voice input: Sarvam STT already detected the language accurately —
   // use it directly. For typed text: run script detection on the message.
-  // (In the voice path, userMessage is the English translation, so
-  //  detectLanguage() would wrongly return "en" — hence the override.)
+  // The voice route now passes the ORIGINAL language transcript (no English
+  // round-trip translation), so sarvamDetectedLang is the authoritative signal.
   const msgLen = userMessage.trim().length;
   const detectedLang = sarvamDetectedLang
     ? sarvamLangToShort(sarvamDetectedLang)
@@ -674,8 +674,21 @@ export async function generateAryaResponse(
     : detectedLang;
   const sectionToneAddition = buildSectionTonePromptAddition(section, effectiveLangForTone);
 
+  // For voice mode, build a per-turn language lock.
+  // This is the strongest signal — placed last in the system prompt so it
+  // overrides any language bleed from conversation history.
+  const LANG_NAMES: Record<string, string> = {
+    hi: "Hindi", ml: "Malayalam", ta: "Tamil", te: "Telugu", kn: "Kannada",
+    bn: "Bengali", gu: "Gujarati", mr: "Marathi", pa: "Punjabi",
+    or: "Odia", ur: "Urdu", en: "English",
+  };
+  const voiceLangName = LANG_NAMES[detectedLang] || detectedLang.toUpperCase();
+  const voiceLangLock = (voiceMode && sarvamDetectedLang && detectedLang !== "en")
+    ? `\n\nLANGUAGE LOCK — CRITICAL: The user just spoke in ${voiceLangName}. You MUST respond ONLY in ${voiceLangName}. Do NOT respond in English or any other language. Your entire response — every word — must be in ${voiceLangName}.`
+    : "";
+
   const voiceInstruction = voiceMode
-    ? "\n\nVOICE MODE ACTIVE: The user is speaking to you via voice. Keep your response SHORT and conversational — 2-3 sentences max. No bullet points, no markdown, no numbered lists. Speak naturally as if talking to a friend. Get to the point immediately."
+    ? `\n\nVOICE MODE ACTIVE: The user is speaking to you via voice. Keep your response SHORT and conversational — 2-3 sentences max. No bullet points, no markdown, no numbered lists. Speak naturally as if talking to a friend. Get to the point immediately.${voiceLangLock}`
     : "";
 
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [

@@ -2104,17 +2104,16 @@ export async function registerRoutes(
 
         console.log(`[Voice] Auto-detected: ${detectedLanguage} | transcript: "${userTranscript.slice(0, 80)}"`);
 
-        // Translate Indian language → English for ARYA's reasoning engine
+        // Pass the original-language transcript directly to ARYA.
+        // The sarvamDetectedLang override in generateAryaResponse + the voice
+        // language instruction tells ARYA to respond in the same language.
+        // Old approach (translate → English → ARYA → translate back) caused:
+        //   • ARYA responding in English (model followed the English query text)
+        //   • Double-translation errors and latency
+        //   • TTS failing on re-translated text
+        queryForArya = userTranscript;
         if (isIndianLanguage(detectedLanguage) && userTranscript.trim()) {
-          try {
-            const translation = await sarvamTranslate(userTranscript, detectedLanguage as SarvamLanguageCode, "en-IN");
-            queryForArya = translation.translatedText;
-            console.log(`[Voice] Translated → "${queryForArya.slice(0, 80)}"`);
-          } catch {
-            queryForArya = userTranscript; // fallback: pass original
-          }
-        } else {
-          queryForArya = userTranscript;
+          console.log(`[Voice] Keeping original ${detectedLanguage} query (no round-trip translation): "${userTranscript.slice(0, 80)}"`);
         }
       } else {
         // No Sarvam key — OpenAI STT for English
@@ -2183,31 +2182,34 @@ export async function registerRoutes(
 
       if (isIndianLanguage(detectedLanguage) && process.env.SARVAM_API_KEY) {
         try {
-          const translatedResponse = await sarvamTranslate(fullResponse, "en-IN", detectedLanguage);
-          // Truncate to 500 chars — Sarvam TTS has input limits
-          const ttsText = translatedResponse.translatedText.slice(0, 500);
-          const ttsResult = await sarvamTextToSpeech(
-            ttsText,
-            detectedLanguage as SarvamLanguageCode
-          );
-          console.log(`[Voice] Sarvam TTS audio size: ${ttsResult.audioBase64?.length || 0} chars`);
-          if (ttsResult.audioBase64) {
-            res.write(`data: ${JSON.stringify({
-              type: "translated_response",
-              content: translatedResponse.translatedText,
-              language: detectedLanguage,
-            })}\n\n`);
-            res.write(`data: ${JSON.stringify({
-              type: "audio_response",
-              audio: ttsResult.audioBase64,
-              format: ttsResult.format || "wav",
-              language: detectedLanguage,
-            })}\n\n`);
-          } else {
-            console.error("[Voice] Sarvam TTS returned empty audio");
+          // ARYA now responds directly in the detected language (no back-translation).
+          // Strip markdown symbols that Sarvam TTS reads aloud as noise.
+          const ttsText = fullResponse
+            .replace(/[#*_`~>\[\]()!|]/g, "")
+            .replace(/\n{2,}/g, " ")
+            .replace(/\n/g, " ")
+            .trim()
+            .slice(0, 500);
+          if (ttsText.length > 2) {
+            const ttsResult = await sarvamTextToSpeech(
+              ttsText,
+              detectedLanguage as SarvamLanguageCode
+            );
+            console.log(`[Voice] Sarvam TTS audio size: ${ttsResult.audioBase64?.length || 0} chars (lang: ${detectedLanguage})`);
+            if (ttsResult.audioBase64) {
+              res.write(`data: ${JSON.stringify({
+                type: "audio_response",
+                audio: ttsResult.audioBase64,
+                format: ttsResult.format || "wav",
+                language: detectedLanguage,
+              })}\n\n`);
+            } else {
+              console.error("[Voice] Sarvam TTS returned empty audio");
+            }
           }
         } catch (ttsError: any) {
-          console.error("[Voice] Sarvam TTS/translation error:", ttsError.message);
+          console.error("[Voice] Sarvam TTS error:", ttsError.message);
+          // Don't propagate — user still gets the text response
         }
       } else {
         // English (en-IN) or no Sarvam key — use OpenAI TTS

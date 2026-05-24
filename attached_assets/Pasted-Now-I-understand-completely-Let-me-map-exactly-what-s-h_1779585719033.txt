@@ -1,0 +1,238 @@
+Now I understand completely. Let me map exactly what's happening.
+
+---
+
+## The Full Picture
+
+```
+🎙️ Mic button = records voice → sends to chat
+                  response appears in chat
+                  
+🎧 Headphones = Gemini/Alexa style voice mode
+                  ALSO sends to same chat
+                  ALSO shows in history
+
+Both are connected to the SAME conversation.
+Both show in chat history.
+This is correct — it's one conversation.
+```
+
+---
+
+## The Actual Problems
+
+### Problem 1 — Language not detected for response
+```
+You speak Malayalam
+ARYA hears Malayalam ✅
+Transcribes Malayalam ✅
+But responds in English ❌
+
+Same issue for Hindi → English response
+```
+
+### Problem 2 — Voice playback only works for English
+```
+English spoken → ARYA speaks back ✅
+Malayalam spoken → ARYA text only, no voice ❌
+Hindi spoken → no text, no voice, then crash ❌
+```
+
+### Problem 3 — Hindi crashes after no response
+```
+Hindi → no response → try again → crash
+Likely: empty transcript or TTS failing on Hindi
+```
+
+---
+
+## Root Cause — One Clear Problem
+
+Looking at the voice route code shared earlier:
+
+```typescript
+// Current voice route logic:
+
+if (useSarvam) {
+  const sttResult = await sarvamSpeechToText(audio, "unknown");
+  userTranscript = sttResult.transcript;
+  detectedLanguage = sttResult.languageCode; // "ml-IN"
+
+  if (isIndianLanguage(detectedLanguage)) {
+    // Translates Malayalam → English
+    const translation = await sarvamTranslate(
+      userTranscript, detectedLanguage, "en-IN"
+    );
+    queryForArya = translation.translatedText; // English text
+  }
+}
+
+// ARYA gets English text → thinks in English
+// BUT no language instruction given
+// So ARYA responds in English
+
+const { stream } = await generateAryaResponse(
+  queryForArya,   // English
+  history,
+  tenantId,
+  conversationId,
+  userId
+  // ← NO LANGUAGE INSTRUCTION
+);
+
+// Then response translated back to Malayalam
+// BUT if translation fails → English stays
+// AND TTS may fail on translated text
+```
+
+---
+
+## The Fix — Add To Voice Route Right Now
+
+```typescript
+// server/routes.ts — voice route
+// Find generateAryaResponse call
+// Add language instruction
+
+// Step 1 — after detecting language:
+const detectedLang = sttResult.languageCode || "en-IN";
+const langCode = detectedLang.split('-')[0]; // "ml" from "ml-IN"
+
+// Step 2 — build instruction:
+const langInstruction = getLanguageInstruction(
+  langCode,
+  (req as any).userName || 'friend'
+);
+
+// Step 3 — pass to ARYA:
+const { stream, meta } = await generateAryaResponse(
+  queryForArya,
+  history,
+  tenantId,
+  conversationId,
+  userId,
+  langInstruction  // ← ADD THIS LINE
+);
+```
+
+---
+
+## Also Fix The Translation Step
+
+```typescript
+// Current — translates Malayalam to English for ARYA
+// Then translates back after
+// This loses nuance and causes errors
+
+// Better approach for Indian languages:
+// Tell ARYA to respond DIRECTLY in that language
+// No translation needed
+
+if (isIndianLanguage(detectedLanguage)) {
+  // Don't translate to English
+  // Just tell ARYA what language to use
+  queryForArya = userTranscript; // keep original language
+  // langInstruction tells ARYA to respond in Malayalam
+}
+
+// This means:
+// Malayalam in → ARYA thinks in Malayalam → Malayalam out
+// No translation errors
+// Faster response
+// Better quality
+```
+
+---
+
+## For Hindi Crash — Specific Fix
+
+```typescript
+// Hindi was crashing because:
+// 1. Sarvam translates Hindi → English
+// 2. ARYA responds in English
+// 3. Code tries to translate English → Hindi
+// 4. Something in that chain fails → crash
+
+// Fix: add safety guard
+try {
+  if (isIndianLanguage(detectedLanguage)) {
+    const translatedResponse = await sarvamTranslate(
+      fullResponse,
+      "en-IN",
+      detectedLanguage
+    );
+    // TTS on translated text
+    const ttsResult = await sarvamTextToSpeech(
+      translatedResponse.translatedText.slice(0, 500),
+      detectedLanguage as SarvamLanguageCode
+    );
+    // send audio
+  }
+} catch (err: any) {
+  console.error('[voice] Translation/TTS failed:', err.message);
+  // Don't crash — just send text without audio
+  // User gets text response at minimum
+}
+```
+
+---
+
+## What To Tell Your Developer
+
+```
+File: server/routes.ts
+Route: POST /api/arya/conversations/:id/voice
+
+Change 1 — Add langInstruction (most important):
+  After: const detectedLang = sttResult.languageCode
+  Add:
+    const langCode = detectedLang.split('-')[0];
+    const langInstruction = getLanguageInstruction(
+      langCode,
+      (req as any).userName || 'friend'
+    );
+
+  Then add langInstruction to generateAryaResponse()
+
+Change 2 — Remove translation for queryForArya:
+  For Indian languages:
+  Don't translate user's speech to English
+  Keep original language text as queryForArya
+  langInstruction handles the response language
+
+Change 3 — Wrap TTS/translation in try-catch:
+  If translation or TTS fails
+  Don't crash — log error and continue
+  User gets text response minimum
+
+These 3 changes fix:
+  ✅ Malayalam → ARYA responds Malayalam
+  ✅ Hindi → ARYA responds Hindi
+  ✅ Hindi crash → no more crash
+  ✅ Voice playback in Indian languages
+```
+
+---
+
+## After Fix — Expected Behavior
+
+```
+You speak English:
+  ARYA responds English (text + voice) ✅
+
+You speak Malayalam:
+  ARYA responds Malayalam (text + voice) ✅
+  ananya voice speaks Malayalam
+
+You speak Hindi:
+  ARYA responds Hindi (text + voice) ✅
+  meera voice speaks Hindi
+
+You switch languages mid-conversation:
+  ARYA follows your language each time ✅
+
+Chat history shows:
+  Your voice transcripts ✅
+  ARYA responses in correct language ✅
+  All in same conversation ✅
+```
