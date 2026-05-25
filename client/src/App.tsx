@@ -118,7 +118,13 @@ function UniversalBottomNav() {
   const isAdmin = ADMIN_PATHS.some(p => location === p || location.startsWith(p + "/"));
   const noNav = isAdmin || location.startsWith("/reflection/");
   if (noNav) return null;
-  return <BottomNav />;
+  // Bottom nav is mobile-only — hidden on md (768px+) screens where the
+  // left sidebar already provides navigation.
+  return (
+    <div className="md:hidden">
+      <BottomNav />
+    </div>
+  );
 }
 
 function Router() {

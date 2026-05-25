@@ -3629,7 +3629,7 @@ export default function AryaChat() {
   const currentLang = DEFAULT_LANGUAGES.find(l => l.code === selectedLanguage);
 
   return (
-    <div className="flex h-[calc(100dvh-5rem)] md:h-[calc(100dvh-6rem)] gap-0 md:gap-4 relative" data-testid="page-arya-chat">
+    <div className="flex h-[calc(100dvh-5rem)] md:h-[100dvh] gap-0 md:gap-4 relative" data-testid="page-arya-chat">
       <AnimatePresence>
         {showSidebar && (
           <motion.div
