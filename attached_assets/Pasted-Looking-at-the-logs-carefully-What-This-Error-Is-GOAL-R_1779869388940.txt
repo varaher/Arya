@@ -1,0 +1,138 @@
+Looking at the logs carefully.
+
+---
+
+## What This Error Is
+
+```
+[GOAL REMINDER CHECK] Failed query: SELECT...
+WHERE reminder_at IS NOT NULL
+AND is_completed = false
+AND reminder_fired = false
+AND status = 'active'
+AND user_id IS NOT NULL
+AND reminder_at >= $1
+AND reminder_at <= $2
+```
+
+This is the **goal reminder scheduler** failing. It runs every 5 minutes trying to check which goals have reminders due.
+
+---
+
+## Why It's Failing
+
+```
+The query is looking for columns that
+either don't exist in the database
+OR the table structure is different
+from what the code expects.
+
+Most likely cause:
+  Column "reminder_fired" does not exist
+  in the goals table
+
+OR
+
+  Column "is_completed" does not exist
+  (might be named "status" instead)
+```
+
+---
+
+## How To Confirm — Run This In Replit Database
+
+```sql
+-- Check what columns actually exist
+SELECT column_name, data_type
+FROM information_schema.columns
+WHERE table_name = 'arya_goals'
+ORDER BY ordinal_position;
+```
+
+This will show you every column in the goals table.
+
+---
+
+## The Fix — Two Options
+
+### Option A — Add Missing Column
+
+```sql
+-- If reminder_fired column is missing:
+ALTER TABLE arya_goals
+ADD COLUMN IF NOT EXISTS reminder_fired
+BOOLEAN DEFAULT false;
+
+-- If is_completed column is missing:
+ALTER TABLE arya_goals
+ADD COLUMN IF NOT EXISTS is_completed
+BOOLEAN DEFAULT false;
+```
+
+### Option B — Fix The Query
+
+```typescript
+// Find in server — search for:
+// "GOAL REMINDER CHECK"
+// Fix the query to use correct column names
+
+// Change:
+AND is_completed = false
+AND reminder_fired = false
+
+// To whatever columns actually exist:
+AND status = 'active'        // if no is_completed
+AND reminder_sent = false    // if column named differently
+```
+
+---
+
+## Also — The Terminated Signal
+
+```
+05-27 13:10:12 system: received signal terminated
+```
+
+This means the server crashed or was restarted. The red errors caused the scheduler to fail repeatedly until the server went down.
+
+---
+
+## Tell Your Developer
+
+```
+Two things to fix:
+
+1. Run this SQL to check columns:
+   SELECT column_name FROM information_schema.columns
+   WHERE table_name = 'arya_goals';
+
+2. Search codebase for "GOAL REMINDER CHECK"
+   Find the failing query
+   Either add missing columns OR
+   fix query to match actual columns
+
+This won't affect app functionality much
+(just reminders not firing) but the
+repeated errors every 5 minutes will
+slow down the server.
+```
+
+---
+
+## Is This Affecting The App?
+
+```
+YES — indirectly:
+  Error fires every 5 minutes
+  Server logs fill up fast
+  Small performance impact
+
+NO — directly:
+  Chat still works
+  Voice still works
+  Main features unaffected
+
+Priority: Medium
+Fix when convenient — not urgent
+But should be fixed before more users join
+```

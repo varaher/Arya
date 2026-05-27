@@ -1,7 +1,7 @@
 import webpush from "web-push";
 import { db } from "../db";
 import { aryaReminders, aryaAppSettings, aryaPushSubscriptions, aryaUsers, aryaNotifications } from "@shared/schema";
-import { eq, and, lte, isNull, or } from "drizzle-orm";
+import { eq, and, lte, isNull, or, sql } from "drizzle-orm";
 import { fetchLatestNews, getNewsDigestText } from "./news-service";
 import { sendMorningBriefings } from "./morning-briefing";
 import { sendWeeklyReviews } from "./weekly-review";
@@ -271,15 +271,14 @@ async function checkGoalReminders(): Promise<void> {
     const windowEnd   = new Date(now.getTime() + 5 * 60 * 1000);  // 5 min ahead
 
     const upcoming = await db.execute(
-      `SELECT * FROM arya_goals
+      sql`SELECT * FROM arya_goals
        WHERE reminder_at IS NOT NULL
-         AND reminder_at >= $1
-         AND reminder_at <= $2
+         AND reminder_at >= ${windowStart.toISOString()}
+         AND reminder_at <= ${windowEnd.toISOString()}
          AND reminder_fired = false
          AND is_completed = false
          AND status = 'active'
-         AND user_id IS NOT NULL`,
-      [windowStart.toISOString(), windowEnd.toISOString()]
+         AND user_id IS NOT NULL`
     ) as any;
 
     const rows = upcoming.rows || [];
@@ -294,8 +293,7 @@ async function checkGoalReminders(): Promise<void> {
       });
 
       await db.execute(
-        `UPDATE arya_goals SET reminder_fired = true WHERE id = $1`,
-        [goal.id]
+        sql`UPDATE arya_goals SET reminder_fired = true WHERE id = ${goal.id}`
       );
 
       await db.insert(aryaNotifications).values({
