@@ -2078,42 +2078,53 @@ export async function registerRoutes(
         // Auto-detect language — pass "unknown" so Sarvam identifies the language
         // from the audio itself. Works for all 11 Indian languages + English.
         console.log('[Voice] Using Sarvam auto-detection (language: unknown)');
-        const sttResult = await Promise.race([
-          sarvamSpeechToText(audioBuffer, "unknown"),
-          new Promise<never>((_, reject) =>
-            setTimeout(() => reject(Object.assign(new Error('Sarvam STT timeout'), { name: 'TimeoutError' })), 20000)
-          ),
-        ]);
-        userTranscript = sttResult.transcript;
-
-        // Resolve detected language with fallback chain
-        let rawDetected = sttResult.languageCode || "";
-        // Urdu sounds like Hindi — Sarvam sometimes misdetects hi-IN as ur-IN
-        if (rawDetected === "ur-IN" || rawDetected === "ur") rawDetected = "hi-IN";
-
-        if (!rawDetected || rawDetected === "unknown") {
-          // Fallback: use the user's saved UI language preference, else en-IN
-          let userLang = "en-IN";
-          if (userId) {
-            const [userRow] = await db.select().from(aryaUsers).where(eq(aryaUsers.id, userId)).limit(1);
-            userLang = (userRow as any)?.uiLanguage || "en-IN";
+        let sttResult: { transcript: string; languageCode: any; confidence?: number } | null = null;
+        try {
+          sttResult = await Promise.race([
+            sarvamSpeechToText(audioBuffer, "unknown"),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(Object.assign(new Error('Sarvam STT timeout'), { name: 'TimeoutError' })), 30000)
+            ),
+          ]);
+        } catch (sttErr: any) {
+          // Sarvam STT failed or timed out — fall back to OpenAI Whisper
+          console.warn(`[Voice] Sarvam STT failed (${sttErr.message}) — falling back to OpenAI Whisper`);
+          try {
+            const openaiTranscript = await speechToText(audioBuffer, inputFormat, "en");
+            const hasCJK = /[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]/.test(openaiTranscript);
+            userTranscript = hasCJK ? "" : openaiTranscript;
+            detectedLanguage = "en-IN";
+            queryForArya = userTranscript;
+            console.log(`[Voice] OpenAI Whisper fallback transcript: "${userTranscript.slice(0, 80)}"`);
+          } catch (fallbackErr: any) {
+            console.error('[Voice] OpenAI STT fallback also failed:', fallbackErr.message);
           }
-          rawDetected = (userLang && userLang !== "en") ? userLang : "en-IN";
         }
-        detectedLanguage = rawDetected;
 
-        console.log(`[Voice] Auto-detected: ${detectedLanguage} | transcript: "${userTranscript.slice(0, 80)}"`);
+        if (sttResult) {
+          userTranscript = sttResult.transcript;
 
-        // Pass the original-language transcript directly to ARYA.
-        // The sarvamDetectedLang override in generateAryaResponse + the voice
-        // language instruction tells ARYA to respond in the same language.
-        // Old approach (translate → English → ARYA → translate back) caused:
-        //   • ARYA responding in English (model followed the English query text)
-        //   • Double-translation errors and latency
-        //   • TTS failing on re-translated text
-        queryForArya = userTranscript;
-        if (isIndianLanguage(detectedLanguage) && userTranscript.trim()) {
-          console.log(`[Voice] Keeping original ${detectedLanguage} query (no round-trip translation): "${userTranscript.slice(0, 80)}"`);
+          // Resolve detected language with fallback chain
+          let rawDetected = sttResult.languageCode || "";
+          // Urdu sounds like Hindi — Sarvam sometimes misdetects hi-IN as ur-IN
+          if (rawDetected === "ur-IN" || rawDetected === "ur") rawDetected = "hi-IN";
+
+          if (!rawDetected || rawDetected === "unknown") {
+            // Fallback: use the user's saved UI language preference, else en-IN
+            let userLang = "en-IN";
+            if (userId) {
+              const [userRow] = await db.select().from(aryaUsers).where(eq(aryaUsers.id, userId)).limit(1);
+              userLang = (userRow as any)?.uiLanguage || "en-IN";
+            }
+            rawDetected = (userLang && userLang !== "en") ? userLang : "en-IN";
+          }
+          detectedLanguage = rawDetected;
+          console.log(`[Voice] Auto-detected: ${detectedLanguage} | transcript: "${userTranscript.slice(0, 80)}"`);
+
+          queryForArya = userTranscript;
+          if (isIndianLanguage(detectedLanguage) && userTranscript.trim()) {
+            console.log(`[Voice] Keeping original ${detectedLanguage} query (no round-trip translation): "${userTranscript.slice(0, 80)}"`);
+          }
         }
       } else {
         // No Sarvam key — OpenAI STT for English

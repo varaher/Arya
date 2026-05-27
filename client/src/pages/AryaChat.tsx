@@ -6063,8 +6063,15 @@ function VoiceConversationMode({
       if (err?.name === "AbortError") return;
       const msg = err?.message || String(err) || "Unknown error";
       console.error("[voice] processRecording error:", msg, err);
-      setError(msg.length < 120 ? msg : "Something went wrong — check console.");
+      // Transient errors (network / STT timeout) — show brief hint, auto-retry in 3s
+      const isTransient = /timeout|network|fetch|connect/i.test(msg);
+      setError(isTransient ? "Reconnecting…" : (msg.length < 120 ? msg : "Something went wrong. Try again."));
       setPhase("idle");
+      if (isTransient && activeRef.current) {
+        setTimeout(() => {
+          if (activeRef.current) { setError(null); startListening(); }
+        }, 3000);
+      }
     }
   }, [selectedLanguage, token, onConversationCreated, queryClient]);
 

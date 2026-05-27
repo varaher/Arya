@@ -145,8 +145,7 @@ export async function sarvamTextToSpeech(
     model: "bulbul:v2",
     pitch: 0,
     pace: 1.0,
-    loudness: 1.0,
-    speech_sample_rate: 22050,
+    loudness: 1.5,
     enable_preprocessing: true,
   };
 
