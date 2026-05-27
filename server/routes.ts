@@ -2180,59 +2180,53 @@ export async function registerRoutes(
 
       await chatStorage.createMessage(conversationId, "assistant", fullResponse);
 
-      if (isIndianLanguage(detectedLanguage) && process.env.SARVAM_API_KEY) {
-        try {
-          // ARYA now responds directly in the detected language (no back-translation).
-          // Strip markdown symbols that Sarvam TTS reads aloud as noise.
-          const ttsText = fullResponse
-            .replace(/[#*_`~>\[\]()!|]/g, "")
-            .replace(/\n{2,}/g, " ")
-            .replace(/\n/g, " ")
-            .trim()
-            .slice(0, 500);
-          if (ttsText.length > 2) {
-            const ttsResult = await sarvamTextToSpeech(
-              ttsText,
-              detectedLanguage as SarvamLanguageCode
-            );
-            console.log(`[Voice] Sarvam TTS audio size: ${ttsResult.audioBase64?.length || 0} chars (lang: ${detectedLanguage})`);
+      // ── TTS: always try to speak — Sarvam for Indian langs, OpenAI as universal fallback ──
+      const ttsText = fullResponse
+        .replace(/[#*_`~>\[\]()!|]/g, "")
+        .replace(/\n{2,}/g, " ")
+        .replace(/\n/g, " ")
+        .trim()
+        .slice(0, 500);
+
+      if (ttsText.length > 2) {
+        let ttsAudioBase64 = "";
+        let ttsFormat = "wav";
+
+        // 1️⃣ Try Sarvam for non-English Indian languages
+        if (isIndianLanguage(detectedLanguage) && process.env.SARVAM_API_KEY) {
+          try {
+            const ttsResult = await sarvamTextToSpeech(ttsText, detectedLanguage as SarvamLanguageCode);
+            console.log(`[Voice] Sarvam TTS size: ${ttsResult.audioBase64?.length || 0} chars (lang: ${detectedLanguage})`);
             if (ttsResult.audioBase64) {
-              res.write(`data: ${JSON.stringify({
-                type: "audio_response",
-                audio: ttsResult.audioBase64,
-                format: ttsResult.format || "wav",
-                language: detectedLanguage,
-              })}\n\n`);
+              ttsAudioBase64 = ttsResult.audioBase64;
+              ttsFormat = ttsResult.format || "wav";
             } else {
-              console.error("[Voice] Sarvam TTS returned empty audio");
+              console.warn("[Voice] Sarvam TTS returned empty audio — will fall back to OpenAI");
             }
+          } catch (sarvamErr: any) {
+            console.error(`[Voice] Sarvam TTS failed for ${detectedLanguage}: ${sarvamErr.message} — falling back to OpenAI`);
           }
-        } catch (ttsError: any) {
-          console.error("[Voice] Sarvam TTS error:", ttsError.message);
-          // Don't propagate — user still gets the text response
         }
-      } else {
-        // English (en-IN) or no Sarvam key — use OpenAI TTS
-        try {
-          const cleanText = fullResponse
-            .replace(/[#*_`~>\[\]()!|]/g, "")
-            .replace(/\n{2,}/g, ". ")
-            .replace(/\n/g, " ")
-            .trim()
-            .slice(0, 500);
-          if (cleanText.length > 2) {
-            const audioBuffer = await openaiTextToSpeech(cleanText, "nova", "wav");
-            const audioBase64 = audioBuffer.toString("base64");
-            console.log(`[Voice] OpenAI TTS audio size: ${audioBase64.length} chars`);
-            res.write(`data: ${JSON.stringify({
-              type: "audio_response",
-              audio: audioBase64,
-              format: "wav",
-              language: detectedLanguage,
-            })}\n\n`);
+
+        // 2️⃣ OpenAI TTS: primary for English, fallback for any Indian lang Sarvam couldn't handle
+        if (!ttsAudioBase64) {
+          try {
+            const audioBuffer = await openaiTextToSpeech(ttsText, "nova", "wav");
+            ttsAudioBase64 = audioBuffer.toString("base64");
+            ttsFormat = "wav";
+            console.log(`[Voice] OpenAI TTS size: ${ttsAudioBase64.length} chars (lang: ${detectedLanguage})`);
+          } catch (openaiErr: any) {
+            console.error("[Voice] OpenAI TTS also failed:", openaiErr.message);
           }
-        } catch (ttsError: any) {
-          console.error("[Voice] OpenAI TTS error:", ttsError.message);
+        }
+
+        if (ttsAudioBase64) {
+          res.write(`data: ${JSON.stringify({
+            type: "audio_response",
+            audio: ttsAudioBase64,
+            format: ttsFormat,
+            language: detectedLanguage,
+          })}\n\n`);
         }
       }
 

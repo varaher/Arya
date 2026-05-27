@@ -3065,15 +3065,36 @@ export default function AryaChat() {
     });
   }, [stopAudio]);
 
+  // Detect the script of a text string so TTS uses the right language code
+  // even if the user's recording language picker is set to something else.
+  const detectTextScript = (text: string): string | null => {
+    const sample = text.slice(0, 120);
+    if (/[\u0900-\u097F]/.test(sample)) return "hi-IN";   // Devanagari → Hindi
+    if (/[\u0980-\u09FF]/.test(sample)) return "bn-IN";   // Bengali
+    if (/[\u0A80-\u0AFF]/.test(sample)) return "gu-IN";   // Gujarati
+    if (/[\u0A00-\u0A7F]/.test(sample)) return "pa-IN";   // Gurmukhi → Punjabi
+    if (/[\u0B00-\u0B7F]/.test(sample)) return "od-IN";   // Odia
+    if (/[\u0B80-\u0BFF]/.test(sample)) return "ta-IN";   // Tamil
+    if (/[\u0C00-\u0C7F]/.test(sample)) return "te-IN";   // Telugu
+    if (/[\u0C80-\u0CFF]/.test(sample)) return "kn-IN";   // Kannada
+    if (/[\u0D00-\u0D7F]/.test(sample)) return "ml-IN";   // Malayalam
+    return null;
+  };
+
   const speakText = useCallback(async (text: string) => {
     try {
       const cleanText = text.replace(/[#*_`~>\[\]()!|]/g, "").replace(/\n{2,}/g, ". ").replace(/\n/g, " ").trim();
       if (!cleanText || cleanText.length < 2) return;
       const speakChunk = cleanText.length > 500 ? cleanText.slice(0, 500) : cleanText;
+      // Use script detection so that if ARYA replies in Kannada/Hindi/etc.
+      // but the recording-language picker is still "en-IN", we still send
+      // the right language code to the TTS endpoint.
+      const scriptLang = detectTextScript(cleanText);
+      const langCode = scriptLang || selectedLanguage;
       const res = await fetch("/api/arya/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: speakChunk, language: selectedLanguage }),
+        body: JSON.stringify({ text: speakChunk, language: langCode }),
       });
       if (!res.ok) return;
       const data = await res.json();
