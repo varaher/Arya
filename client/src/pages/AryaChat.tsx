@@ -5603,6 +5603,7 @@ function VoiceConversationMode({
   const chunksRef = useRef<Blob[]>([]);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
+  const streamReaderRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const animFrameRef = useRef<number | null>(null);
@@ -5649,9 +5650,11 @@ function VoiceConversationMode({
       streamRef.current.getTracks().forEach(t => t.stop());
       streamRef.current = null;
     }
-    if (audioContextRef.current) {
-      try { audioContextRef.current.close(); } catch {}
-      audioContextRef.current = null;
+    // Suspend (not close) the recording AudioContext so it can be reused
+    // next session — closing permanently counts against the browser's ~6
+    // AudioContext limit, causing "No speech" failures after 2-3 sessions.
+    if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+      try { audioContextRef.current.suspend(); } catch {}
     }
     analyserRef.current = null;
     processingRef.current = false;
@@ -5661,6 +5664,21 @@ function VoiceConversationMode({
     return () => {
       activeRef.current = false;
       stopAllMedia();
+      // On unmount, truly close both AudioContexts (not just suspend)
+      // so the browser fully reclaims the resources.
+      if (audioContextRef.current) {
+        try { audioContextRef.current.close(); } catch {}
+        audioContextRef.current = null;
+      }
+      if (playbackCtxRef.current) {
+        try { playbackCtxRef.current.close(); } catch {}
+        playbackCtxRef.current = null;
+      }
+      // Cancel any in-flight SSE stream
+      if (streamReaderRef.current) {
+        try { streamReaderRef.current.cancel(); } catch {}
+        streamReaderRef.current = null;
+      }
     };
   }, [stopAllMedia]);
 
@@ -5675,7 +5693,7 @@ function VoiceConversationMode({
       try { mediaRecorderRef.current.stop(); } catch {}
     }
     if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null; }
-    if (audioContextRef.current) { try { audioContextRef.current.close(); } catch {} audioContextRef.current = null; }
+    // Don't close — just let stopAllMedia suspend it; we'll resume below
     processingRef.current = false;
     setPhase("listening");
     setTranscript("");
@@ -5707,10 +5725,15 @@ function VoiceConversationMode({
         try { await playbackCtxRef.current.resume(); } catch {}
       }
 
-      const audioCtx = new AudioContext();
-      audioContextRef.current = audioCtx;
-      // Resume is required on iOS Safari — AudioContext created outside a
-      // gesture event handler starts suspended and the analyser gets no data.
+      // Reuse existing AudioContext if still open — browsers cap at ~6 total,
+      // and closed contexts count against that limit permanently.
+      // We only create a new one if there's no existing context or it's closed.
+      let audioCtx = audioContextRef.current;
+      if (!audioCtx || audioCtx.state === "closed") {
+        audioCtx = new AudioContext({ sampleRate: 16000 });
+        audioContextRef.current = audioCtx;
+      }
+      // Always resume — context may be suspended from a previous session.
       if (audioCtx.state === "suspended") {
         await audioCtx.resume();
       }
@@ -5814,9 +5837,9 @@ function VoiceConversationMode({
       streamRef.current.getTracks().forEach(t => t.stop());
       streamRef.current = null;
     }
-    if (audioContextRef.current) {
-      try { audioContextRef.current.close(); } catch {}
-      audioContextRef.current = null;
+    // Suspend (not close) — keeps the context alive for the next round
+    if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+      try { audioContextRef.current.suspend(); } catch {}
     }
 
     if (blob.size < 3000) {
@@ -5896,8 +5919,15 @@ function VoiceConversationMode({
         throw new Error(errMsg);
       }
 
+      // Cancel any previous SSE stream still being read — prevents connection
+      // pool exhaustion when the user taps mic again before response finishes.
+      if (streamReaderRef.current) {
+        try { streamReaderRef.current.cancel(); } catch {}
+        streamReaderRef.current = null;
+      }
       const streamReader = fetchRes.body?.getReader();
       if (!streamReader) throw new Error("No stream");
+      streamReaderRef.current = streamReader;
 
       const decoder = new TextDecoder();
       let buffer = "";
@@ -5905,9 +5935,9 @@ function VoiceConversationMode({
       let responseAudioBase64 = "";
 
       while (true) {
-        if (abortController.signal.aborted) { try { streamReader.cancel(); } catch {} processingRef.current = false; return; }
+        if (abortController.signal.aborted) { try { streamReader.cancel(); } catch {} streamReaderRef.current = null; processingRef.current = false; return; }
         const { done, value } = await streamReader.read();
-        if (done) break;
+        if (done) { streamReaderRef.current = null; break; }
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split("\n");
         buffer = lines.pop() || "";

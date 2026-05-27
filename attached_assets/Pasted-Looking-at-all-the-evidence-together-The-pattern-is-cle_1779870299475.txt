@@ -1,0 +1,199 @@
+Looking at all the evidence together. The pattern is clear.
+
+---
+
+## The Pattern
+
+```
+Voice chat 1 → works ✅
+Voice chat 2 → works ✅
+Voice chat 3 → crashes ❌
+
+This is NOT a code logic error.
+This is a RESOURCE/MEMORY issue.
+```
+
+---
+
+## What's Happening
+
+```
+Each voice conversation:
+  Opens AudioContext
+  Creates AnalyserNode
+  Creates MediaRecorder
+  Opens WebSocket/SSE connection
+  Creates playback AudioContext
+
+After 2-3 voice chats:
+  Old AudioContexts NOT being closed
+  Memory builds up
+  Browser tab runs out of resources
+  OR server connection pool exhausted
+  → Crash
+```
+
+---
+
+## Two Separate Crashes
+
+### Crash 1 — Client Side (Browser)
+```
+AudioContext leak:
+  Each voice session creates new AudioContext
+  Old ones never closed properly
+  Browser limit: usually 6 AudioContexts max
+  After 3 sessions → browser blocks new ones
+  → "No speech detected" or crash
+
+Fix:
+  Close AudioContext when voice session ends
+  Reuse same AudioContext across sessions
+```
+
+### Crash 2 — Server Side (Goal Reminder)
+```
+Already identified:
+  Goal reminder crashes every 5 minutes
+  After a few crashes → server goes down
+  Voice chat loses connection → appears as crash
+```
+
+---
+
+## The Fix — AudioContext Management
+
+```typescript
+// client/src/pages/AryaChat.tsx
+// Find VoiceConversationMode component
+
+// Current — creates new context each time:
+function startListening() {
+  const audioCtx = new AudioContext(); // ← LEAK
+  // never closed properly
+}
+
+// Fix — single context, reused:
+
+// Outside component or in a ref:
+const audioCtxRef = useRef<AudioContext | null>(null);
+
+function getAudioContext(): AudioContext {
+  // Reuse existing if still open
+  if (audioCtxRef.current &&
+      audioCtxRef.current.state !== 'closed') {
+    return audioCtxRef.current;
+  }
+  // Create new only if needed
+  audioCtxRef.current = new AudioContext({
+    sampleRate: 16000
+  });
+  return audioCtxRef.current;
+}
+
+// When voice session ends — suspend, don't close:
+function stopVoiceSession() {
+  audioCtxRef.current?.suspend();
+  // suspend keeps it alive but frees resources
+  // resume() on next session start
+}
+
+// Only close when component unmounts:
+useEffect(() => {
+  return () => {
+    audioCtxRef.current?.close();
+    audioCtxRef.current = null;
+  };
+}, []);
+```
+
+---
+
+## Also — SSE Connection Leak
+
+```typescript
+// Each voice call opens an SSE stream
+// If previous stream not closed → leak
+
+// Find in AryaChat.tsx — the fetch for voice:
+const response = await fetch('/api/arya/conversations/:id/voice');
+const reader = response.body?.getReader();
+
+// Current issue: if user taps mic again
+// before previous response finished →
+// old reader still open, new one opens
+// After 2-3 times → connection pool exhausted
+
+// Fix — cancel previous reader:
+const readerRef = useRef<ReadableStreamDefaultReader | null>(null);
+
+async function processAudio(audioBlob: Blob) {
+  // Cancel any previous stream
+  if (readerRef.current) {
+    await readerRef.current.cancel();
+    readerRef.current = null;
+  }
+
+  const response = await fetch(...);
+  const reader = response.body!.getReader();
+  readerRef.current = reader;
+
+  // ... read stream ...
+
+  // Clear ref when done
+  readerRef.current = null;
+}
+```
+
+---
+
+## Tell Your Developer — Two Fixes
+
+```
+Fix 1 — AudioContext leak (30 mins)
+File: client/src/pages/AryaChat.tsx
+In VoiceConversationMode:
+
+  Use useRef to store AudioContext
+  Don't create new AudioContext each session
+  Reuse existing — just resume() it
+  Only close on component unmount
+
+  This prevents browser's 6-context limit
+  from being hit after 2-3 voice sessions
+
+Fix 2 — SSE reader leak (30 mins)
+File: client/src/pages/AryaChat.tsx
+In processRecording or sendAudio:
+
+  Store reader in useRef
+  Before each new voice request:
+    cancel previous reader if exists
+  Clear ref when stream completes
+
+Fix 3 — Goal reminder crash (urgent)
+File: wherever "GOAL REMINDER CHECK" is
+  Wrap in try-catch so it doesn't
+  crash server — just logs error and continues
+
+  Also run SQL to add missing columns
+```
+
+---
+
+## What To Watch After Fix
+
+```
+Test sequence:
+  Voice chat 1 → should work ✅
+  Voice chat 2 → should work ✅
+  Voice chat 3 → should work ✅ (was crashing here)
+  Voice chat 4 → should work ✅
+  Voice chat 5 → should work ✅
+
+If still crashes at same point:
+  Open browser → Developer Tools → Memory tab
+  Take heap snapshot before and after voice
+  If memory grows each session → still leaking
+  Send me the memory numbers
+```
