@@ -6002,12 +6002,16 @@ function VoiceConversationMode({
       } else if (!voiceInterrupted) {
         const cleanText = fullContent.replace(/[#*_`~>\[\]()!|]/g, "").replace(/\n{2,}/g, ". ").replace(/\n/g, " ").trim();
         if (cleanText.length > 2 && !abortController.signal.aborted && !voiceInterrupted) {
-          const ttsRes = await fetch("/api/arya/tts", {
+          // Use a separate short-lived AbortController for TTS so it is NOT
+        // cancelled if the user interrupted the main stream mid-response.
+        const ttsAbort = new AbortController();
+        const ttsTimeout = setTimeout(() => ttsAbort.abort(), 10_000);
+        const ttsRes = await fetch("/api/arya/tts", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ text: cleanText.slice(0, 500), language: detectedLang || "en-IN" }),
-            signal: abortController.signal,
-          });
+            signal: ttsAbort.signal,
+          }).finally(() => clearTimeout(ttsTimeout));
           if (ttsRes.ok && !voiceInterrupted) {
             const ttsData = await ttsRes.json();
             if (ttsData.audioBase64 && !abortController.signal.aborted && !voiceInterrupted) {

@@ -7,6 +7,14 @@ import { rateLimit, ipKeyGenerator } from "express-rate-limit";
 import crypto from "crypto";
 import { initVapidKeys, startReminderScheduler } from "./arya/reminder-scheduler";
 
+// Global crash guards — log and survive instead of dying
+process.on("uncaughtException", (err) => {
+  console.error("[CRASH GUARD] uncaughtException:", err.message, err.stack);
+});
+process.on("unhandledRejection", (reason) => {
+  console.error("[CRASH GUARD] unhandledRejection:", reason);
+});
+
 const app = express();
 const httpServer = createServer(app);
 

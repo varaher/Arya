@@ -286,11 +286,7 @@ async function checkGoalReminders(): Promise<void> {
     for (const goal of rows) {
       if (!goal.user_id) continue;
 
-      await sendPushToUser(goal.user_id, {
-        title: 'ARYA reminder',
-        body: goal.title,
-        data: { goalId: goal.id, type: 'goal_reminder' },
-      });
+      await sendPushToUser(goal.user_id, `🔔 ${goal.title}`, "ARYA reminder", "/icons/icon-192.png");
 
       await db.execute(
         sql`UPDATE arya_goals SET reminder_fired = true WHERE id = ${goal.id}`
