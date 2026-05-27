@@ -125,29 +125,45 @@ export async function sarvamTextToSpeech(
   languageCode: SarvamLanguageCode = "hi-IN"
 ): Promise<TTSResult> {
   const speaker = getSpeakerForLanguage(languageCode);
+
+  // Strip anything that could cause a 400: emoji, control chars, zero-width chars,
+  // markdown symbols, leading/trailing whitespace; hard-cap at 500 chars.
+  const cleanedText = text
+    .replace(/[\u{1F000}-\u{1FFFF}]/gu, "")   // emoji (supplementary planes)
+    .replace(/[\u2600-\u27BF]/g, "")           // misc symbols
+    .replace(/[\u0000-\u001F\u007F]/g, " ")    // control chars
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")     // zero-width chars
+    .replace(/[#*_`~>\[\]()!|]/g, "")          // markdown
+    .replace(/\s{2,}/g, " ")
+    .trim()
+    .slice(0, 500);
+
+  const payload = {
+    inputs: [cleanedText],
+    target_language_code: languageCode,
+    speaker: speaker,
+    model: "bulbul:v2",
+    pitch: 0,
+    pace: 1.0,
+    loudness: 1.0,
+    speech_sample_rate: 22050,
+    enable_preprocessing: true,
+  };
+
+  console.log(`[Sarvam TTS] lang=${languageCode} speaker=${speaker} chars=${cleanedText.length} preview="${cleanedText.slice(0, 60)}"`);
+
   const response = await fetch(`${SARVAM_BASE_URL}/text-to-speech`, {
     method: "POST",
     headers: {
       "API-Subscription-Key": getApiKey(),
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      inputs: [text],
-      target_language_code: languageCode,
-      speaker: speaker,
-      speaker_gender: "Female",
-      model: "bulbul:v2",
-      mode: "code-mixed",
-      pitch: 0,
-      pace: 1.0,
-      loudness: 1.0,
-      speech_sample_rate: 22050,
-      enable_preprocessing: true,
-    }),
+    body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
+    console.error(`[Sarvam TTS] 400 detail — lang:${languageCode} speaker:${speaker} chars:${cleanedText.length} preview:"${cleanedText.slice(0,80)}" error:${errorText}`);
     throw new Error(`Sarvam TTS failed (${response.status}): ${errorText}`);
   }
 

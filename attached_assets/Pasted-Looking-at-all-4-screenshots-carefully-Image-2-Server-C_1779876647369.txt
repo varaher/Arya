@@ -1,0 +1,134 @@
+Looking at all 4 screenshots carefully.
+
+---
+
+## Image 2 — Server Crash at 14:01:12
+```
+Server crashed → restarted at 14:15:02
+Was DOWN for 14 minutes
+After restart → running fine ✅
+Green dot at bottom right = LIVE now ✅
+```
+
+---
+
+## Image 4 — Second Restart at 14:15:35
+```
+Started again cleanly ✅
+[SCHEDULER] Reminder scheduler started ✅
+[VAPID] Keys loaded ✅
+Serving on port 5000 ✅
+App running fine after this ✅
+Green dot = LIVE ✅
+```
+
+---
+
+## Image 3 — TTS Errors (Most Important)
+```
+[TTS ERROR] Sarvam TTS failed (400): {"er...
+[Voice] Sarvam TTS error: Sarvam TTS faile...
+
+BUT ALSO:
+[voice] Received audio ✅
+[Voice] Auto-detected: ml-IN ✅
+[Voice] Keeping original ml-IN query ✅
+[ARYA] Model: gpt-4.1-mini ✅
+
+So:
+  Voice recording works ✅
+  Language detection works ✅
+  ARYA generates response ✅
+  Sarvam TTS fails (400) ❌
+  No voice playback ❌
+```
+
+---
+
+## Image 1 — Goal Reminder Still Failing
+```
+[GOAL REMINDER CHECK] Failed query: SELECT...
+Still happening every 5 minutes ❌
+reminder_fired column still missing
+This is causing server crashes
+```
+
+---
+
+## What The 400 Error Means
+
+```
+Sarvam TTS failed (400) = Bad Request
+
+400 means Sarvam is rejecting the request.
+Most common causes:
+
+1. Text too long (over 500 chars)
+   The .slice(0, 500) fix may not have deployed
+
+2. Wrong language code format
+   Sending "ml" instead of "ml-IN"
+
+3. Invalid speaker name
+   "ananya" not valid for this language
+
+4. Special characters in text
+   Malayalam Unicode causing issues
+```
+
+---
+
+## Tell Your Developer — Two Urgent Fixes
+
+### Fix A — See The Full Sarvam 400 Error
+```
+In server/routes.ts or sarvam-service.ts
+Find: [TTS ERROR] or Sarvam TTS failed
+
+Change the error log to show full response:
+console.error('[TTS ERROR] Full:', {
+  status: response.status,
+  body: errorText,
+  textSent: text.substring(0, 100),
+  language: languageCode,
+  speaker: speaker
+});
+
+This will show EXACTLY why Sarvam rejects it.
+```
+
+### Fix B — Goal Reminder SQL (Run Now)
+```
+Open Replit → Database tab → SQL Editor
+
+Run this:
+ALTER TABLE arya_goals
+  ADD COLUMN IF NOT EXISTS reminder_fired
+    BOOLEAN DEFAULT false,
+  ADD COLUMN IF NOT EXISTS is_completed
+    BOOLEAN DEFAULT false;
+
+This stops the every-5-minute error
+which is crashing the server.
+```
+
+---
+
+## Summary — What's Fixed vs Still Broken
+
+```
+FIXED ✅:
+  Server crash guard added
+  AudioContext leak fixed
+  SSE reader leak fixed
+  Language detection working
+  ARYA responds in correct language
+
+STILL BROKEN ❌:
+  Sarvam TTS 400 error → no voice playback
+  Goal reminder query → server crashes
+  
+Both need the SQL fix + TTS error detail.
+```
+
+Run the SQL first — takes 30 seconds and stops server crashes immediately.
