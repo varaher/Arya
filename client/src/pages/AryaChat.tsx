@@ -4407,6 +4407,11 @@ export default function AryaChat() {
                 </button>
               )}
             </div>
+            <TalkToARYACard
+              onStart={() => setShowVoiceMode(true)}
+              uiLang={uiLanguage}
+            />
+
             {isLoggedIn && token && !moodCheckedInToday && (
               <MoodCheckInCard
                 token={token}
@@ -4414,11 +4419,6 @@ export default function AryaChat() {
                 uiLang={uiLanguage}
               />
             )}
-
-            <TalkToARYACard
-              onStart={() => setShowVoiceMode(true)}
-              uiLang={uiLanguage}
-            />
 
             {/* ── Quick Access (horizontal scrollable pills) ── */}
             {isLoggedIn && (
