@@ -1,0 +1,1204 @@
+Complete Indian legal knowledge base — ready to paste directly into the database.
+
+---
+
+## Complete SQL — All Major Indian Law Areas
+
+```sql
+-- ============================================
+-- ARYA CORE LEGAL KNOWLEDGE BASE
+-- Indian Law — Updated for 2024
+-- Run this in Replit → Database → SQL Editor
+-- ============================================
+
+-- 1. BNS — Criminal Law Overview
+INSERT INTO arya_knowledge (
+  tenant_id, domain, topic, content, tags,
+  language, source_type, status, version
+) VALUES (
+'varah', 'legal',
+'Bharatiya Nyaya Sanhita (BNS) 2023 — Overview',
+'The Bharatiya Nyaya Sanhita (BNS) replaced the
+Indian Penal Code (IPC) from July 1, 2024.
+
+KEY SECTION CHANGES:
+Murder: BNS Section 101 (was IPC 302)
+  Punishment: Death or life imprisonment + fine
+
+Culpable Homicide: BNS Section 100 (was IPC 304)
+
+Rape: BNS Section 63 (was IPC 375)
+  Punishment: 10 years to life imprisonment
+  Marital rape exception remains contested
+
+Gang Rape: BNS Section 70 (was IPC 376D)
+  Punishment: 20 years to life imprisonment
+
+POCSO remains separate — protects children under 18
+
+Kidnapping: BNS Section 137 (was IPC 359)
+
+Robbery: BNS Section 309 (was IPC 390)
+
+Dacoity: BNS Section 310 (was IPC 391)
+
+Theft: BNS Section 303 (was IPC 378)
+  Punishment: Up to 3 years + fine
+
+Cheating: BNS Section 316 (was IPC 415)
+  Punishment: Up to 3 years + fine
+
+Cheating by impersonation: BNS Section 319
+
+Forgery: BNS Section 334 (was IPC 463)
+
+Criminal Breach of Trust: BNS Section 308 (was IPC 405)
+
+Defamation: BNS Section 356 (was IPC 499)
+  Criminal defamation still exists in India
+
+Assault: BNS Section 115 (was IPC 351)
+
+Outraging modesty of woman: BNS Section 74 (was IPC 354)
+
+Stalking: BNS Section 78 (was IPC 354D)
+  Punishment: Up to 3 years first offence,
+  up to 5 years repeat offence
+
+Voyeurism: BNS Section 77 (was IPC 354C)
+
+Domestic Violence covered under:
+  BNS Section 85 (cruelty by husband/family)
+  Also Protection of Women from DV Act 2005
+
+NEW in BNS (not in IPC):
+  Organized Crime: Section 111
+  Terrorist Act: Section 113
+  Petty organized crime: Section 112
+  Hit and run: Section 106(2) — up to 10 years
+  Sedition replaced by Section 152
+    (acts endangering sovereignty)
+
+IMPORTANT: Always consult a lawyer for specific
+legal situations. ARYA provides information,
+not legal advice.',
+ARRAY['BNS', 'IPC', 'criminal law', 'murder',
+'rape', 'theft', 'cheating', 'India', 'penal code'],
+'en', 'manual', 'published', 1
+);
+
+-- 2. BNSS — Criminal Procedure
+INSERT INTO arya_knowledge (
+  tenant_id, domain, topic, content, tags,
+  language, source_type, status, version
+) VALUES (
+'varah', 'legal',
+'Bharatiya Nagarik Suraksha Sanhita (BNSS) 2023 — Criminal Procedure',
+'BNSS replaced CrPC (Code of Criminal Procedure)
+from July 1, 2024.
+
+FIR (First Information Report):
+  Zero FIR: File at ANY police station regardless
+  of jurisdiction. Station must transfer to
+  correct station within 15 days.
+  E-FIR: Available in most states online.
+  Police CANNOT refuse to register FIR.
+  If refused: complain to SP/DCP or file
+  complaint before Magistrate under Section 175 BNSS.
+
+ARREST RIGHTS (Section 47-60 BNSS):
+  Right to know reason for arrest
+  Right to inform family/friend immediately
+  Right to lawyer of your choice
+  Right to medical examination
+  Cannot be held more than 24 hours without
+  Magistrate's order
+  Women: arrested only by female officer
+  Women: cannot be arrested after 6pm/before 6am
+  except in exceptional circumstances
+
+BAIL:
+  Bailable offence: Bail is a right — police
+  must grant it
+  Non-bailable: Apply to Magistrate/Sessions Court
+  Anticipatory Bail: Apply before arrest
+  Default Bail: If chargesheet not filed in
+  60 days (lesser offences) or 90 days (serious)
+  you get bail automatically — apply for it
+
+TRIAL TIMELINE (new in BNSS):
+  Chargesheet must be filed within:
+  60 days for offences up to 7 years
+  90 days for offences above 7 years
+  Trial must conclude within 3 years
+  Judgment within 45 days of arguments
+
+VICTIM RIGHTS (new):
+  Victim can appeal if accused acquitted
+  Free copy of FIR, chargesheet, judgment
+  Compensation from state under Section 396
+  Victim impact statement before sentencing
+
+FORENSIC:
+  Forensic mandatory for offences above 7 years
+  Crime scene visit by forensic team mandatory
+
+SUMMONS/WARRANTS:
+  Can now be served via WhatsApp/email/SMS
+  Electronic records admissible
+
+UNDERTRIAL PRISONERS:
+  If served half sentence → apply for bail
+  (Section 479 BNSS — was 436A CrPC)
+
+CONSULT A LAWYER for your specific situation.',
+ARRAY['BNSS', 'CrPC', 'FIR', 'arrest', 'bail',
+'criminal procedure', 'Zero FIR', 'rights', 'India'],
+'en', 'manual', 'published', 1
+);
+
+-- 3. Consumer Rights
+INSERT INTO arya_knowledge (
+  tenant_id, domain, topic, content, tags,
+  language, source_type, status, version
+) VALUES (
+'varah', 'legal',
+'Consumer Rights India — Consumer Protection Act 2019',
+'Consumer Protection Act 2019 gives strong rights
+to buyers of goods and services including online.
+
+WHO IS A CONSUMER:
+  Anyone who buys goods/services for personal use.
+  Not for resale or commercial purpose.
+
+YOUR RIGHTS AS CONSUMER:
+  Right to Safety
+  Right to Information
+  Right to Choose
+  Right to be Heard
+  Right to Redressal
+  Right to Consumer Education
+
+WHAT YOU CAN COMPLAIN ABOUT:
+  Defective product
+  Deficient service
+  Unfair trade practice
+  Misleading advertisement
+  Overcharging/excess price
+  Selling banned goods
+  Hazardous goods without warning
+
+WHERE TO FILE COMPLAINT:
+  District Commission: Claims up to Rs 50 lakh
+  State Commission: Rs 50 lakh to Rs 2 crore
+  National Commission (NCDRC): Above Rs 2 crore
+
+HOW TO FILE:
+  Online: consumerhelpline.gov.in
+  National Helpline: 1800-11-4000 (toll free)
+  1915 (short code)
+  edaakhil.nic.in (online complaint portal)
+  No lawyer required for District Commission
+
+TIME LIMIT:
+  File within 2 years of defect/deficiency
+  Commission should decide within 3 months
+  (5 months if testing required)
+
+E-COMMERCE SPECIFIC RIGHTS:
+  Seller must display: price, return policy,
+  grievance officer contact, country of origin
+  Must have grievance officer — respond in 48 hours
+  Fake reviews prohibited
+  Flash sales with only one seller prohibited
+  Return/refund as per stated policy is mandatory
+
+AMAZON/FLIPKART/MEESHO complaints:
+  First: Contact platform grievance officer
+  If no response in 30 days: file at edaakhil.nic.in
+  Platform is liable for marketplace sellers too
+  in many cases
+
+PRODUCT WARRANTY:
+  Manufacturer must honor warranty
+  Warranty card not required — bill is sufficient
+  Extended warranty is a service contract
+
+MEDICAL NEGLIGENCE:
+  Doctors and hospitals are covered
+  Can file consumer complaint for negligence
+  Also file with State Medical Council
+
+BUILDER/REAL ESTATE:
+  RERA (Real Estate Regulatory Authority) complaint
+  first for builder disputes
+  Also consumer forum complaint allowed
+
+INSURANCE:
+  Insurance Ombudsman (free, faster than court)
+  insuranceombudsman.gov.in
+  Toll free: 155255
+
+BANKING:
+  RBI Banking Ombudsman (free)
+  cms.rbi.org.in
+  Toll free: 14448
+
+TELECOM:
+  TRAI complaints: trai.gov.in
+  Also consumer forum
+
+COMPENSATION AVAILABLE:
+  Refund/replacement/repair
+  Compensation for mental agony
+  Punitive damages for willful negligence
+  Cost of litigation',
+ARRAY['consumer rights', 'Consumer Protection Act',
+'complaint', 'defective product', 'refund',
+'e-commerce', 'Amazon', 'Flipkart', 'India'],
+'en', 'manual', 'published', 1
+);
+
+-- 4. RTI Act
+INSERT INTO arya_knowledge (
+  tenant_id, domain, topic, content, tags,
+  language, source_type, status, version
+) VALUES (
+'varah', 'legal',
+'Right to Information (RTI) Act 2005',
+'RTI Act 2005 gives every Indian citizen the
+right to get information from government.
+
+WHO CAN FILE:
+  Any Indian citizen
+  For themselves or on behalf of others
+  No need to give reason
+
+WHAT YOU CAN ASK:
+  Any information held by government offices
+  Copies of documents, files, records
+  Status of application/complaint
+  Government schemes and your eligibility
+  Inspection of works (roads, buildings)
+  Why your application was rejected
+
+WHAT CANNOT BE ASKED:
+  Cabinet papers (till decision made)
+  Information affecting national security
+  Personal information with no public interest
+  Information given in fiduciary capacity
+  Court contempt related information
+
+HOW TO FILE RTI:
+  Online (Central Govt): rtionline.gov.in
+  State RTI portals exist for state govt
+  Offline: Write application to Public
+  Information Officer (PIO) of the department
+  Application fee: Rs 10 (central govt)
+  Some states: Rs 10-50
+  BPL card holders: No fee
+
+WHAT TO WRITE:
+  "Under RTI Act 2005 I request..."
+  State specific information needed
+  Ask for specific documents/records
+  Your name, address, contact
+
+RESPONSE TIME:
+  30 days normally
+  48 hours if life/liberty involved
+  35 days if sent to wrong department
+  If no response: deemed refusal → appeal
+
+APPEAL PROCESS:
+  First Appeal: to First Appellate Authority
+  in same department → within 30 days
+  of refusal/no response
+  Second Appeal: Central Information Commission
+  (CIC) or State IC → within 90 days
+  Penalty on PIO: Rs 250/day up to Rs 25,000
+  for no response
+
+PRACTICAL TIPS:
+  Be specific — vague questions get vague answers
+  Ask for certified copies of documents
+  Ask for inspection of records
+  Always keep receipt/acknowledgment
+  Track on RTI portal
+
+COMMON USES:
+  Property record/mutation status
+  Pending FIR/case status
+  Government scheme application status
+  Tender documents/contract details
+  Road/building work quality check
+  Exam/selection result details',
+ARRAY['RTI', 'Right to Information', 'government',
+'PIO', 'CIC', 'appeal', 'documents', 'India'],
+'en', 'manual', 'published', 1
+);
+
+-- 5. Labour Law
+INSERT INTO arya_knowledge (
+  tenant_id, domain, topic, content, tags,
+  language, source_type, status, version
+) VALUES (
+'varah', 'legal',
+'Labour Laws India — Employee Rights 2024',
+'India has consolidated 29 labour laws into
+4 Labour Codes (being implemented state by state).
+Existing laws still apply where codes not notified.
+
+SALARY/WAGES:
+  Minimum Wage: Varies by state and sector
+  Check: labour.gov.in for your state
+  Salary must be paid by 7th of next month
+  (10th for larger establishments)
+  Salary cannot be deducted without reason
+  Form 16 must be given annually
+  Payslip is your right — demand it
+
+IF SALARY NOT PAID:
+  Send written complaint to employer
+  File complaint: Labour Commissioner office
+  Online: shramsuvidha.gov.in
+  Can also file civil suit for recovery
+
+PF (PROVIDENT FUND):
+  Mandatory if 20+ employees, salary up to Rs 15,000
+  Employee: 12% of basic salary
+  Employer: 12% (3.67% PF + 8.33% EPS)
+  Withdraw: After 2 months of unemployment
+  Online: epfindia.gov.in / UMANG app
+  UAN number is your PF account number
+  Grievance: epfigms.gov.in
+
+ESIC (EMPLOYEE STATE INSURANCE):
+  For employees earning up to Rs 21,000/month
+  Covers: Medical treatment for you and family
+  Maternity benefit, disability benefit
+  Hospitals: esic.nic.in for list
+
+GRATUITY:
+  Right after 5 years of continuous service
+  Formula: 15/26 × last salary × years of service
+  Must be paid within 30 days of leaving
+  Complaint: Labour Commissioner
+
+MATERNITY BENEFIT:
+  26 weeks paid leave (8 weeks before delivery)
+  12 weeks for third child onwards
+  6 weeks for miscarriage/MTP
+  Nursing breaks: 2 breaks per day for 15 months
+  Work from home option for nature permitting jobs
+  No dismissal during maternity leave
+
+LEAVES:
+  Earned Leave: 1 day per 20 days worked
+  Sick Leave: Varies by state (usually 7-12 days)
+  Casual Leave: Varies (usually 7-12 days)
+  Leave encashment on resignation/retirement
+
+TERMINATION RIGHTS:
+  1 month notice (or pay in lieu) for both sides
+  Written termination letter is your right
+  No termination during maternity leave
+  No termination without inquiry (government/PSU)
+  Retrenchment: 3 months notice + 15 days
+  per year compensation
+  
+SEXUAL HARASSMENT AT WORKPLACE (POSH):
+  Every organization must have ICC
+  (Internal Complaints Committee)
+  File complaint within 3 months of incident
+  Inquiry within 60 days
+  If no ICC: file with District Officer
+  Employer liable if no ICC formed
+
+CONTRACT WORKERS:
+  Same rights as permanent workers for same work
+  Contractor AND principal employer both liable
+  Can demand absorption as permanent worker
+  if contractor leaves
+
+SHOPS AND ESTABLISHMENTS:
+  Maximum working hours: 9 hours/day, 48 hours/week
+  Overtime: Double rate
+  Weekly holiday mandatory
+  Rest interval of 30 minutes after 5 hours
+
+WHERE TO COMPLAIN:
+  Labour Commissioner office in your district
+  shramsuvidha.gov.in (online)
+  State Labour Department website
+  Labour Court for disputes',
+ARRAY['labour law', 'salary', 'PF', 'ESIC',
+'gratuity', 'maternity', 'termination',
+'employee rights', 'POSH', 'India'],
+'en', 'manual', 'published', 1
+);
+
+-- 6. Property and Tenant Rights
+INSERT INTO arya_knowledge (
+  tenant_id, domain, topic, content, tags,
+  language, source_type, status, version
+) VALUES (
+'varah', 'legal',
+'Property and Tenant Rights India',
+'TENANT RIGHTS:
+  Rent agreement protects both landlord and tenant
+  Registered agreement is stronger than notarized
+  Tenant cannot be evicted without legal process
+  Even without agreement, eviction needs court order
+
+DEPOSIT:
+  Usually 2-3 months rent (custom, not fixed by law)
+  Must be returned within reasonable time of vacating
+  Deductions only for actual damages, not normal wear
+  If not returned: send legal notice, then consumer
+  forum or civil court
+
+RENT INCREASE:
+  As per agreement terms
+  Without agreement: reasonable increase
+  Delhi/Mumbai/some states have Rent Control Acts
+  limiting increase for older tenants
+
+EVICTION:
+  Landlord cannot forcibly evict
+  Must file eviction suit in Rent Court
+  Grounds: non-payment, subletting without permission,
+  damaging property, landlord needs for personal use
+  You have right to contest in court
+
+ILLEGAL EVICTION:
+  Changing locks without court order is illegal
+  Cutting electricity/water to force eviction illegal
+  File police complaint + civil suit
+
+PROPERTY PURCHASE:
+  Always check: title deed, encumbrance certificate,
+  approved plan, RERA registration
+  RERA: rerait.maharashtra.gov.in (state-wise)
+  Builder delay: compensation under RERA
+  Flat buyer rights: rera.gov.in
+
+PROPERTY REGISTRATION:
+  Mandatory for immovable property above Rs 100
+  Stamp duty varies by state (4-8% approx)
+  Registration fee: 1% of property value
+  Unregistered sale deed not valid
+
+INHERITANCE:
+  Hindu Succession Act: Daughters have equal rights
+  to father's property (2005 amendment)
+  Married daughters also have equal share
+  Will overrides succession act
+  No will: property divided equally among heirs
+
+WOMEN PROPERTY RIGHTS:
+  Equal share in ancestral property
+  Stridhan (jewellery etc) is wife is property
+  Cannot be taken by husband/in-laws
+  Self-acquired property: full rights
+
+MUTATION:
+  After purchase: apply for mutation in municipal
+  records within 3-6 months
+  Encumbrance certificate: proves no loans on property
+
+LAND ACQUISITION:
+  Government can acquire land for public purpose
+  Must give 4x market value compensation (rural)
+  2x for urban land
+  Consent of 70% owners required for private projects
+  Social Impact Assessment mandatory
+
+WHERE TO COMPLAIN:
+  Property disputes: Civil Court
+  Builder: RERA authority of your state
+  Land records: Revenue Department',
+ARRAY['property', 'tenant rights', 'rent',
+'eviction', 'RERA', 'inheritance', 'land',
+'deposit', 'India'],
+'en', 'manual', 'published', 1
+);
+
+-- 7. Family Law
+INSERT INTO arya_knowledge (
+  tenant_id, domain, topic, content, tags,
+  language, source_type, status, version
+) VALUES (
+'varah', 'legal',
+'Family Law India — Marriage, Divorce, Custody',
+'MARRIAGE:
+  Hindu Marriage Act 1955 (Hindus, Sikhs,
+  Buddhists, Jains)
+  Special Marriage Act 1954 (interfaith/civil)
+  Muslim Personal Law (Shariat)
+  Christian Marriage Act 1872
+  Parsi Marriage Act 1936
+  
+  Minimum age: 21 (male), 18 (female)
+  Below age = voidable marriage, not automatically void
+
+DIVORCE — HINDU LAW:
+  Mutual Consent: Both agree, 6 month waiting period
+  (can be waived by court)
+  Contested Grounds: Adultery, cruelty, desertion
+  (2 years), conversion, mental disorder, leprosy,
+  venereal disease, renunciation, presumed dead (7 yrs)
+  
+DIVORCE — MUSLIM LAW:
+  Talaq: Husband pronounces divorce
+  Triple Talaq: NOW ILLEGAL (Muslim Women
+  Protection of Rights on Marriage Act 2019)
+  Punishment: 3 years imprisonment for triple talaq
+  Khula: Wife initiates divorce
+  Mubarat: Mutual divorce
+
+DIVORCE — CHRISTIAN/PARSI:
+  Indian Divorce Act / Parsi Marriage Act
+  Grounds similar to Hindu law
+
+ALIMONY/MAINTENANCE:
+  Section 125 CrPC (now BNSS Section 144):
+  Wife, children, parents can claim maintenance
+  Wife entitled if unable to maintain herself
+  Even during marriage (in some circumstances)
+  Interim maintenance during proceedings
+  Amount based on income and standard of living
+
+DOMESTIC VIOLENCE (DV ACT 2005):
+  Covers: Physical, emotional, sexual, economic
+  abuse and harassment
+  Not just wife — any woman in domestic relationship
+  Relief available: Protection order, residence
+  order, monetary relief, custody order
+  File: Police, Protection Officer, Magistrate
+  Helpline: 181 (women helpline)
+  Emergency: 112
+
+CHILD CUSTODY:
+  Best interest of child is paramount
+  Mother usually gets custody of young children
+  Father has visitation rights
+  Joint custody possible
+  Child above 9 years: court may ask child's wish
+  Grandparents can also seek visitation
+
+CHILD SUPPORT:
+  Both parents responsible for child's expenses
+  Non-custodial parent must pay
+  Amount based on income
+  Can be modified if circumstances change
+
+ADOPTION:
+  Hindu Adoptions and Maintenance Act (Hindus)
+  CARA: Central Adoption Resource Authority
+  (for all religions, formal adoption)
+  cara.wcd.gov.in
+  Prospective parents must register on CARA
+
+GUARDIANSHIP:
+  Natural guardian: Father (Hindu law)
+  Mother is guardian if father dies
+  Mother is guardian for child below 5
+
+DOWRY:
+  Dowry Prohibition Act 1961
+  Giving or taking dowry is illegal
+  Punishment: 5 years + fine
+  Dowry harassment: IPC 498A / BNS Section 85
+  Punishment: 3 years + fine
+  Non-bailable, cognizable offence
+
+WHERE TO GET HELP:
+  Family Court in your district
+  Legal Services Authority (free legal aid)
+  Women helpline: 181
+  NCW (National Commission for Women): 7827170170
+  Domestic Violence: file at police station
+  or contact Protection Officer (District Court)',
+ARRAY['family law', 'divorce', 'marriage',
+'custody', 'domestic violence', 'maintenance',
+'dowry', 'alimony', 'Hindu law', 'India'],
+'en', 'manual', 'published', 1
+);
+
+-- 8. Cyber Law and Digital Rights
+INSERT INTO arya_knowledge (
+  tenant_id, domain, topic, content, tags,
+  language, source_type, status, version
+) VALUES (
+'varah', 'legal',
+'Cyber Law and Digital Rights India — IT Act and DPDP 2023',
+'IT ACT 2000 (amended 2008) — KEY SECTIONS:
+  Section 43: Unauthorized access to computer
+  Section 66: Computer related offences
+  (hacking, data theft) — 3 years + fine
+  Section 66A: STRUCK DOWN by Supreme Court 2015
+  (was: offensive online messages)
+  Section 66B: Receiving stolen computer resource
+  Section 66C: Identity theft — 3 years + Rs 1 lakh
+  Section 66D: Cheating by impersonation online
+  Section 66E: Violation of privacy (capturing
+  private images without consent) — 3 years
+  Section 66F: Cyber terrorism — life imprisonment
+  Section 67: Publishing obscene material online
+  Section 67A: Publishing sexually explicit content
+  Section 67B: Child pornography — 5-7 years
+  Section 72: Breach of confidentiality by
+  service provider
+  Section 79: Intermediary liability — platforms
+  not liable if they follow due diligence
+
+DIGITAL PERSONAL DATA PROTECTION ACT 2023 (DPDP):
+  Consent required before collecting personal data
+  Right to know what data is collected
+  Right to correct inaccurate data
+  Right to erasure (be forgotten)
+  Right to grievance redressal
+  Children: special protection, parental consent
+  Data Fiduciary must appoint Data Protection Officer
+  Penalties up to Rs 250 crore for violations
+  Data Protection Board to handle complaints
+
+ONLINE FRAUD / CYBER CRIME:
+  Report immediately: cybercrime.gov.in
+  Cyber Crime Helpline: 1930
+  Available 24x7
+  Also file FIR at nearest police station
+  Cyber Cell exists in most cities
+
+TYPES OF CYBER CRIME AND ACTION:
+  Online Financial Fraud:
+    Call 1930 immediately
+    Bank can hold transaction if reported fast
+    File complaint: cybercrime.gov.in
+
+  SIM Swap Fraud:
+    Report to telecom operator immediately
+    Block SIM, get new SIM
+    File cyber crime complaint
+    
+  OTP Fraud / Phishing:
+    Never share OTP with anyone
+    Bank never asks OTP
+    If shared: call bank immediately to block
+    
+  Social Media Hacking:
+    Report to platform first
+    File cyber crime complaint
+    
+  Sextortion / Morphed Photos:
+    Do not pay blackmailer
+    Report to cybercrime.gov.in immediately
+    Platform report + police complaint
+    
+  Online Defamation:
+    Screenshot evidence immediately
+    Legal notice to person
+    Complaint to platform
+    Civil suit for damages
+    
+  Fake News / Impersonation:
+    Report to platform
+    Cyber crime complaint
+
+INTERMEDIARY RULES 2021:
+  Social media must appoint:
+    Grievance Officer (India based)
+    Respond to complaints in 24-72 hours
+  Significant platforms (5M+ users):
+    Also appoint Chief Compliance Officer
+    Monthly compliance report
+
+ONLINE SHOPPING FRAUD:
+  Report to cybercrime.gov.in
+  Also consumer forum complaint
+  Bank chargeback if paid by card
+
+WHERE TO COMPLAIN:
+  Cyber Crime Portal: cybercrime.gov.in
+  National Helpline: 1930
+  Local Cyber Cell: most cities have one
+  CERT-In: cert-in.org.in (for major incidents)',
+ARRAY['cyber law', 'IT Act', 'DPDP', 'cyber crime',
+'online fraud', 'hacking', 'privacy', 'data protection',
+'cybercrime.gov.in', '1930', 'India'],
+'en', 'manual', 'published', 1
+);
+
+-- 9. Traffic and Motor Vehicle Law
+INSERT INTO arya_knowledge (
+  tenant_id, domain, topic, content, tags,
+  language, source_type, status, version
+) VALUES (
+'varah', 'legal',
+'Traffic Laws and Motor Vehicle Rights India',
+'MOTOR VEHICLES ACT 1988 (amended 2019):
+
+DOCUMENTS REQUIRED TO DRIVE:
+  Valid Driving Licence (DL)
+  Vehicle Registration Certificate (RC)
+  Insurance (Third Party minimum mandatory)
+  Pollution Under Control (PUC) Certificate
+  All available on DigiLocker — valid digitally
+
+CHALLAN (FINE) AMOUNTS (2019 revised):
+  Driving without licence: Rs 5,000
+  Driving without insurance: Rs 2,000 first,
+  Rs 4,000 repeat
+  Signal jumping: Rs 1,000-5,000
+  Speeding: Rs 1,000-2,000
+  Drunk driving: Rs 10,000 + 6 months jail (first)
+  Rs 15,000 + 2 years jail (repeat)
+  Using mobile while driving: Rs 1,000-5,000
+  No helmet: Rs 1,000 + 3 month DL suspension
+  No seatbelt: Rs 1,000
+  Overloading: Rs 2,000 per extra passenger
+  Racing on road: Rs 5,000 + 1 month jail
+
+ACCIDENT RIGHTS:
+  Call 112 immediately
+  Injured person must be taken to hospital
+  (no liability for person helping — Good Samaritan Law)
+  Third party insurance covers injury/death claims
+  Motor Accident Claims Tribunal (MACT) for compensation
+  No time limit to file MACT claim
+  Compensation based on income and age
+
+HIT AND RUN:
+  BNS Section 106(2): Up to 10 years imprisonment
+  if driver flees without reporting
+  Must report accident to police immediately
+
+VEHICLE INSURANCE:
+  Third Party: Mandatory by law
+  Comprehensive: Optional but recommended
+  Insurance Ombudsman for claim disputes
+  insuranceombudsman.gov.in
+
+DRIVING LICENCE:
+  Apply: parivahan.gov.in
+  Learning Licence first → 30 days → test for DL
+  International DL: available through RTO
+  DL valid for 20 years (now) or till age 50
+  Renewal 1 year before expiry
+
+RC TRANSFER:
+  Must transfer RC within 30 days of purchase
+  Online: vahan.gov.in
+  Also possible at RTO
+
+VEHICLE FITNESS:
+  Commercial vehicles: annual fitness certificate
+  Private vehicles: 15 years → then every 5 years
+
+E-CHALLAN:
+  Check pending challans: echallan.parivahan.gov.in
+  Pay online or at RTO
+  Court case if unpaid
+
+RIGHTS DURING POLICE CHECK:
+  Officer must be in uniform
+  Can check documents
+  Cannot demand phone password
+  Cannot detain without valid reason
+  Politely ask for officer name and badge number
+  Challans issued on spot or via SMS
+  Can contest challan in court within time period',
+ARRAY['traffic law', 'Motor Vehicles Act', 'challan',
+'fine', 'accident', 'driving licence', 'insurance',
+'hit and run', 'India'],
+'en', 'manual', 'published', 1
+);
+
+-- 10. Free Legal Aid
+INSERT INTO arya_knowledge (
+  tenant_id, domain, topic, content, tags,
+  language, source_type, status, version
+) VALUES (
+'varah', 'legal',
+'Free Legal Aid India — Who Qualifies and How to Get',
+'FREE LEGAL AID IS A CONSTITUTIONAL RIGHT
+under Article 39A and Legal Services
+Authorities Act 1987.
+
+WHO IS ENTITLED TO FREE LEGAL AID:
+  Women and children (all cases)
+  SC/ST individuals
+  Victims of trafficking/disaster/violence
+  Disabled persons
+  Industrial workmen
+  Persons in custody
+  Persons with annual income below Rs 3 lakh
+  (some states have higher limit)
+  Victims of mass disaster/ethnic violence
+
+WHERE TO APPLY:
+  District Legal Services Authority (DLSA)
+    At every District Court
+  State Legal Services Authority (SLSA)
+  Supreme Court Legal Services Committee
+    For Supreme Court matters
+  Taluka/Sub-divisional Legal Services Committee
+    For local matters
+
+SERVICES PROVIDED:
+  Free lawyer in court
+  Legal advice and consultation
+  Drafting of legal documents
+  Lok Adalat (settlement) services
+  Mediation services
+  Legal literacy programmes
+
+NALSA (National Legal Services Authority):
+  nalsa.gov.in
+  Helpline: 15100
+  Available 24x7
+
+LOK ADALAT:
+  Alternative dispute resolution
+  Settlement between parties — no court fee
+  Settlement is final — cannot appeal
+  Good for: motor accident claims, cheque
+  bounce cases, matrimonial cases, labour disputes
+  No strict procedure — parties talk and settle
+
+ONLINE LEGAL SERVICES:
+  nalsa.gov.in for national matters
+  State SLSA websites for state matters
+  Supreme Court: supremecourtofindia.nic.in
+
+LEGAL AID CLINIC:
+  Available at most law colleges
+  Free advice from students supervised by lawyers
+
+SPECIFIC HELPLINES:
+  Women in distress: 181
+  Child helpline: 1098
+  Senior citizen helpline: 14567
+  Anti-trafficking: 1800-419-8588
+  NALSA: 15100
+  Disability: 1800-11-0031
+  Domestic Violence helpline: 181
+
+HOW TO APPLY FOR FREE LEGAL AID:
+  Visit DLSA at District Court
+  Fill application form
+  Attach income proof / relevant document
+  showing you qualify
+  Lawyer assigned within a few days
+  No fee at any stage',
+ARRAY['free legal aid', 'DLSA', 'NALSA',
+'Lok Adalat', 'legal services', 'lawyer',
+'SC ST women children', 'India', '15100'],
+'en', 'manual', 'published', 1
+);
+
+-- 11. Banking and Financial Rights
+INSERT INTO arya_knowledge (
+  tenant_id, domain, topic, content, tags,
+  language, source_type, status, version
+) VALUES (
+'varah', 'legal',
+'Banking and Financial Rights India',
+'RBI BANKING OMBUDSMAN:
+  Free complaint resolution for bank customers
+  File at: cms.rbi.org.in
+  Helpline: 14448
+  No fee, no lawyer needed
+  Decision within 30 days usually
+
+WHEN TO USE BANKING OMBUDSMAN:
+  Bank not crediting money received
+  Unauthorized debit from account
+  ATM not dispensing but money debited
+  Failure to honor cheque
+  Loan grievances
+  Credit card disputes
+  Internet banking fraud
+  Non-adherence to fair practices
+
+UPI FRAUD:
+  Call 1930 (cyber crime helpline) immediately
+  Report to bank within 3 days for refund
+  File complaint: cybercrime.gov.in
+  Also file complaint with NPCI: npci.org.in
+
+CHEQUE BOUNCE:
+  Negotiable Instruments Act Section 138
+  Criminal offence — 2 years jail + fine
+  Send legal notice within 30 days of dishonor
+  If no payment in 15 days: file complaint
+  in Magistrate court within 30 days
+  Complaint must be filed by payee
+
+LOAN RIGHTS:
+  Bank must give clear terms before loan
+  No hidden charges — must be disclosed upfront
+  Prepayment allowed (floating rate: no penalty)
+  Bank cannot harass for recovery
+  Recovery agents must follow RBI guidelines
+  Cannot call before 8am or after 7pm
+  Cannot use abusive language
+  Cannot visit without notice
+
+CREDIT SCORE:
+  Free credit report once a year from:
+  CIBIL: cibil.com
+  Experian, Equifax, CRIF also provide
+  Errors in credit report: raise dispute with bureau
+  Bank must update correct information
+
+INSURANCE CLAIM RIGHTS:
+  Claim cannot be rejected without valid reason
+  Reason must be given in writing
+  Grievance to insurance company first
+  Then Insurance Ombudsman:
+  insuranceombudsman.gov.in (free, fast)
+  Then IRDAI: irdai.gov.in / Bima Bharosa portal
+  Consumer forum also available
+
+INVESTMENT FRAUD:
+  Ponzi scheme, fake investments: report to
+  SEBI: scores.sebi.gov.in
+  Helpline: 1800-22-7575
+  Also cyber crime complaint
+
+NOMINEE:
+  Nominee gets assets immediately after death
+  without court process
+  Add nominee to all accounts, insurance, PF
+  Without nominee: legal heir process takes time
+
+NCLT (Insolvency):
+  If company owes you money and is insolvent
+  File claim with resolution professional
+  Under Insolvency and Bankruptcy Code 2016',
+ARRAY['banking', 'RBI', 'ombudsman', 'UPI fraud',
+'cheque bounce', 'loan', 'credit score', 'insurance',
+'financial rights', 'India'],
+'en', 'manual', 'published', 1
+);
+
+-- 12. Fundamental Rights and Constitutional Remedies
+INSERT INTO arya_knowledge (
+  tenant_id, domain, topic, content, tags,
+  language, source_type, status, version
+) VALUES (
+'varah', 'legal',
+'Fundamental Rights and Constitutional Remedies India',
+'FUNDAMENTAL RIGHTS (Part III, Constitution):
+
+Article 14: Equality before law
+  Everyone equal before law
+  No discrimination by state
+
+Article 15: No discrimination on religion,
+  race, caste, sex, place of birth
+  State can make special provisions for women,
+  children, SC/ST, OBC
+
+Article 16: Equal opportunity in government jobs
+  Reservation policy valid under this
+
+Article 17: Abolition of untouchability
+  Practicing untouchability: criminal offence
+  Protection of Civil Rights Act 1955
+
+Article 19: Six freedoms
+  Speech and expression
+  Assembly (peacefully, without arms)
+  Association and unions
+  Movement anywhere in India
+  Residence anywhere in India
+  Profession/occupation/trade/business
+
+Article 20: Protection against conviction
+  No ex post facto law (cannot punish for
+  act that was not crime when done)
+  No double jeopardy (tried twice same offence)
+  No self incrimination (cannot be forced
+  to be witness against yourself)
+
+Article 21: Right to life and personal liberty
+  Most expanded right — includes:
+  Right to privacy (Supreme Court 2017)
+  Right to livelihood
+  Right to health
+  Right to education (indirectly)
+  Right to a clean environment
+  Right to die with dignity
+
+Article 21A: Right to Education
+  Free and compulsory education 6-14 years
+  Right to Education Act 2009
+
+Article 22: Protection on arrest
+  Right to know reason for arrest
+  Right to lawyer
+  Produced before Magistrate within 24 hours
+  No detention beyond prescribed period without
+  Magistrate's authority
+
+Article 23: Prohibition of traffic in humans
+  Bonded labour illegal
+  Human trafficking illegal
+
+Article 24: Prohibition of child labour
+  Children under 14 cannot work in
+  factories/mines/hazardous work
+
+Article 25-28: Religious freedom
+  Freedom of conscience, religion
+  Manage religious affairs
+
+Article 29-30: Cultural and educational rights
+  Minorities can establish educational institutions
+
+CONSTITUTIONAL REMEDIES (Article 32 & 226):
+  If Fundamental Rights violated:
+  Supreme Court: Article 32 (constitutional remedy)
+  High Court: Article 226 (writ petition)
+
+WRITS:
+  Habeas Corpus: Produce person before court
+  (used when illegally detained)
+  Mandamus: Command authority to do its duty
+  Prohibition: Stop lower court exceeding power
+  Certiorari: Quash lower court/authority decision
+  Quo Warranto: Challenge someone holding public office
+
+HOW TO FILE:
+  Writ Petition in High Court (Article 226)
+  For any government violation
+  Can also approach Supreme Court directly
+  Legal aid available for genuine cases
+  PIL (Public Interest Litigation): for public issues
+  anyone can file
+
+DPSP (Directive Principles):
+  Not enforceable in court
+  But guide government policy
+  Include: equal pay for equal work,
+  living wage, free legal aid, village panchayats',
+ARRAY['fundamental rights', 'Constitution',
+'Article 21', 'habeas corpus', 'writ petition',
+'PIL', 'RTI', 'equality', 'India'],
+'en', 'manual', 'published', 1
+);
+```
+
+---
+
+## Also Add To System Prompt
+
+```typescript
+// server/arya/chat-engine.ts
+// Add to system prompt after existing rules:
+
+`LEGAL KNOWLEDGE — INDIA:
+ARYA has knowledge of Indian law including
+BNS (replaced IPC July 2024), BNSS (replaced CrPC),
+Consumer Protection Act, RTI Act, Labour Laws,
+Family Law, Cyber Law, Property Rights,
+Banking Rights, and Constitutional Rights.
+
+When answering legal questions:
+1. Give the specific law/section number
+2. Explain in simple language
+3. Tell the person their rights
+4. Give practical next step (where to complain,
+   what form to fill, which number to call)
+5. ALWAYS end with: "For your specific situation,
+   consult a lawyer. Free legal aid available
+   at District Legal Services Authority (DLSA)
+   if you qualify."
+
+NEVER:
+  Give legal advice (only legal information)
+  Predict case outcomes
+  Replace professional legal counsel
+
+Use BNS section numbers, mention old IPC
+section in brackets for reference.`
+```
+
+---
+
+## Hindi Legal Knowledge — Key Terms
+
+```sql
+-- Add Hindi version for Hindi-speaking users
+INSERT INTO arya_knowledge (
+  tenant_id, domain, topic, content, tags,
+  language, source_type, status, version
+) VALUES (
+'varah', 'legal',
+'भारतीय कानून — मुख्य जानकारी (BNS/BNSS 2024)',
+'भारतीय न्याय संहिता (BNS) ने 1 जुलाई 2024 से
+IPC की जगह ली।
+
+मुख्य धाराएं:
+हत्या: BNS धारा 101 (पहले IPC 302)
+बलात्कार: BNS धारा 63 (पहले IPC 375)
+चोरी: BNS धारा 303 (पहले IPC 378)
+धोखाधड़ी: BNS धारा 316 (पहले IPC 415)
+घरेलू हिंसा: BNS धारा 85
+
+आपके अधिकार गिरफ्तारी पर:
+गिरफ्तारी का कारण जानने का अधिकार
+वकील का अधिकार
+24 घंटे में मजिस्ट्रेट के सामने पेश होना जरूरी
+जमानत का अधिकार (जमानती अपराध में)
+
+FIR के अधिकार:
+Zero FIR — किसी भी थाने में दर्ज करा सकते हैं
+थाना FIR लिखने से मना नहीं कर सकता
+अगर मना करे: SP को शिकायत करें
+
+मुफ्त कानूनी सहायता:
+जिला विधिक सेवा प्राधिकरण (DLSA) — जिला न्यायालय में
+महिलाएं, बच्चे, SC/ST को मुफ्त वकील मिलता है
+NALSA हेल्पलाइन: 15100
+
+साइबर अपराध: 1930 पर कॉल करें
+महिला हेल्पलाइन: 181
+बाल हेल्पलाइन: 1098
+वरिष्ठ नागरिक: 14567
+
+किसी भी कानूनी स्थिति के लिए वकील से
+सलाह जरूर लें।',
+ARRAY['BNS', 'BNSS', 'भारतीय कानून', 'FIR',
+'गिरफ्तारी', 'जमानत', 'कानूनी सहायता', 'हिंदी'],
+'hi', 'manual', 'published', 1
+);
+```
+
+---
+
+## Developer Task
+
+```
+Step 1 — Run the SQL (15 mins)
+  Open Replit → Database → SQL Editor
+  Paste all INSERT statements above
+  Run each block
+  Verify: SELECT COUNT(*) FROM arya_knowledge
+  Should increase by 13 records
+
+Step 2 — Update system prompt (10 mins)
+  server/arya/chat-engine.ts
+  Add the legal knowledge instruction block
+  Deploy
+
+Step 3 — Test (5 mins)
+  Ask ARYA: "What is BNS?"
+  Ask ARYA: "My landlord won't return deposit"
+  Ask ARYA: "How to file RTI?"
+  Ask ARYA in Hindi: "FIR kaise darj kare?"
+  Should get specific, accurate legal information
+```
