@@ -2676,7 +2676,7 @@ export default function AryaChat() {
   const [showNotes, setShowNotes] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [showConfidence, setShowConfidence] = useState(true);
-  const [pendingImage, setPendingImage] = useState<{ base64: string; previewUrl: string; mimeType: string } | null>(null);
+  const [pendingFiles, setPendingFiles] = useState<Array<{ base64: string; previewUrl: string; mimeType: string; name: string }>>([]);
   const [isScanningDoc, setIsScanningDoc] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const { language: uiLanguage, t, setLanguage: setGlobalLanguage } = useLanguage();
@@ -3260,87 +3260,111 @@ export default function AryaChat() {
   }, [activeConversation, isStreaming, queryClient, createConversation, speakText, selectedLanguage]);
 
   const handleImageSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
-      const base64 = dataUrl.split(",")[1];
-      const isPdf = file.type === "application/pdf" || file.name.endsWith(".pdf");
-      setPendingImage({
-        base64,
-        previewUrl: isPdf ? `__pdf__:${file.name}` : dataUrl,
-        mimeType: isPdf ? "application/pdf" : (file.type || "image/jpeg"),
-      });
-    };
-    reader.readAsDataURL(file);
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    files.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result as string;
+        const base64 = dataUrl.split(",")[1];
+        const isPdf = file.type === "application/pdf" || file.name.endsWith(".pdf");
+        setPendingFiles((prev) => [
+          ...prev,
+          {
+            base64,
+            previewUrl: isPdf ? `__pdf__:${file.name}` : dataUrl,
+            mimeType: isPdf ? "application/pdf" : (file.type || "image/jpeg"),
+            name: file.name,
+          },
+        ]);
+      };
+      reader.readAsDataURL(file);
+    });
     if (imageInputRef.current) imageInputRef.current.value = "";
   }, []);
 
   const sendWithImage = useCallback(async () => {
-    if (!pendingImage || isScanningDoc) return;
+    if (pendingFiles.length === 0 || isScanningDoc) return;
 
-    const isPdfAttachment = pendingImage?.mimeType === "application/pdf";
+    const filesToSend = [...pendingFiles];
+    const firstFile = filesToSend[0];
+    const isPdfAttachment = firstFile.mimeType === "application/pdf";
+
     let convId = activeConversation;
     if (!convId) {
-      const conv = await createConversation.mutateAsync(input.trim() || (isPdfAttachment ? "📄 Document scan" : "📷 Image scan"));
+      const conv = await createConversation.mutateAsync(
+        input.trim() || (isPdfAttachment ? "📄 Document scan" : "📷 Image scan")
+      );
       convId = conv.id;
     }
 
     const question = input.trim();
-    const displayMsg = question ? `📷 ${question}` : "📷 Shared an image";
     setInput("");
     if (inputRef.current) inputRef.current.style.height = "auto";
-    setPendingImage(null);
+    setPendingFiles([]);
     setIsScanningDoc(true);
 
-    queryClient.setQueryData(
-      ["/api/arya/conversations", convId, token],
-      (old: any) => ({
-        ...old,
-        messages: [
-          ...(old?.messages || []),
-          { id: Date.now(), conversationId: convId, role: "user", content: displayMsg, createdAt: new Date().toISOString() },
-          { id: Date.now() + 1, conversationId: convId, role: "assistant", content: isPdfAttachment ? "⏳ Reading your document…" : "⏳ Reading your image…", createdAt: new Date().toISOString(), isLoading: true },
-        ],
-      })
-    );
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (token) headers["x-user-token"] = token;
 
-    try {
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
-      if (token) headers["x-user-token"] = token;
-      const res = await fetch(`/api/arya/conversations/${convId}/scan`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ image: pendingImage.base64, mimeType: pendingImage.mimeType, question, language: selectedLanguage }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Scan failed");
+    for (let i = 0; i < filesToSend.length; i++) {
+      const file = filesToSend[i];
+      const isPdf = file.mimeType === "application/pdf";
+      const displayMsg = question
+        ? (i === 0 ? `${isPdf ? "📄" : "📷"} ${question}` : `${isPdf ? "📄" : "📷"} ${file.name}`)
+        : `${isPdf ? "📄" : "📷"} ${file.name}`;
 
-      const displayResponse = data.translatedResponse || data.aryaResponse;
       queryClient.setQueryData(
         ["/api/arya/conversations", convId, token],
         (old: any) => ({
           ...old,
-          messages: (old?.messages || []).filter((m: any) => !m.isLoading).concat([
-            { id: Date.now() + 2, conversationId: convId, role: "assistant", content: displayResponse, createdAt: new Date().toISOString() },
-          ]),
+          messages: [
+            ...(old?.messages || []),
+            { id: Date.now() + i * 10, conversationId: convId, role: "user", content: displayMsg, createdAt: new Date().toISOString() },
+            { id: Date.now() + i * 10 + 1, conversationId: convId, role: "assistant", content: isPdf ? "⏳ Reading your document…" : "⏳ Reading your image…", createdAt: new Date().toISOString(), isLoading: true },
+          ],
         })
       );
-      if (speakerOnRef.current && displayResponse) speakText(displayResponse);
-    } catch (err: any) {
-      queryClient.setQueryData(
-        ["/api/arya/conversations", convId, token],
-        (old: any) => ({
-          ...old,
-          messages: (old?.messages || []).filter((m: any) => !m.isLoading),
-        })
-      );
-    } finally {
-      setIsScanningDoc(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/arya/conversations", convId, token] });
+
+      try {
+        const res = await fetch(`/api/arya/conversations/${convId}/scan`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            image: file.base64,
+            mimeType: file.mimeType,
+            question: i === 0 ? question : "",
+            language: selectedLanguage,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Scan failed");
+
+        const displayResponse = data.translatedResponse || data.aryaResponse;
+        queryClient.setQueryData(
+          ["/api/arya/conversations", convId, token],
+          (old: any) => ({
+            ...old,
+            messages: (old?.messages || []).filter((m: any) => !m.isLoading).concat([
+              { id: Date.now() + i * 10 + 2, conversationId: convId, role: "assistant", content: displayResponse, createdAt: new Date().toISOString() },
+            ]),
+          })
+        );
+        if (speakerOnRef.current && displayResponse && i === filesToSend.length - 1) speakText(displayResponse);
+      } catch {
+        queryClient.setQueryData(
+          ["/api/arya/conversations", convId, token],
+          (old: any) => ({
+            ...old,
+            messages: (old?.messages || []).filter((m: any) => !m.isLoading),
+          })
+        );
+      }
     }
-  }, [pendingImage, input, activeConversation, isScanningDoc, createConversation, queryClient, token, selectedLanguage, speakText]);
+
+    setIsScanningDoc(false);
+    queryClient.invalidateQueries({ queryKey: ["/api/arya/conversations", convId, token] });
+  }, [pendingFiles, input, activeConversation, isScanningDoc, createConversation, queryClient, token, selectedLanguage, speakText]);
 
   const handleRedeemInvite = useCallback(async () => {
     if (!inviteCode.trim() || !token) return;
@@ -3637,7 +3661,7 @@ export default function AryaChat() {
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
       if (isMobile) return;
       e.preventDefault();
-      if (pendingImage) sendWithImage();
+      if (pendingFiles.length > 0) sendWithImage();
       else sendMessage(input);
     }
   };
@@ -4877,6 +4901,7 @@ export default function AryaChat() {
                 ref={imageInputRef}
                 type="file"
                 accept="image/*,application/pdf,.pdf"
+                multiple
                 className="hidden"
                 onChange={handleImageSelect}
                 data-testid="input-image-upload"
@@ -5069,34 +5094,35 @@ export default function AryaChat() {
                 </div>
               ) : (
                 <div className="flex-1 flex flex-col min-w-0">
-                  {pendingImage && (
-                    <div className="flex items-center gap-2 px-1 pt-1.5 pb-1">
-                      <div className="relative flex-shrink-0">
-                        {pendingImage.previewUrl.startsWith("__pdf__:") ? (
-                          <div className="h-12 w-12 rounded-lg border border-purple-200 dark:border-purple-800 bg-red-50 dark:bg-red-950/30 flex flex-col items-center justify-center gap-0.5">
-                            <Paperclip className="w-4 h-4 text-red-500" />
-                            <span className="text-[8px] font-bold text-red-500 uppercase">PDF</span>
+                  {pendingFiles.length > 0 && (
+                    <div className="flex flex-wrap gap-2 px-1 pt-1.5 pb-1">
+                      {isScanningDoc ? (
+                        <span className="text-xs text-purple-600 dark:text-purple-400 font-medium py-1">
+                          Reading {pendingFiles.length > 1 ? `${pendingFiles.length} files` : "file"}…
+                        </span>
+                      ) : (
+                        pendingFiles.map((file, idx) => (
+                          <div key={idx} className="relative flex-shrink-0" data-testid={`attached-file-${idx}`}>
+                            {file.previewUrl.startsWith("__pdf__:") ? (
+                              <div className="h-12 px-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 flex items-center gap-1 max-w-[120px]">
+                                <Paperclip className="w-3 h-3 text-amber-600 flex-shrink-0" />
+                                <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 truncate">{file.name}</span>
+                              </div>
+                            ) : (
+                              <img
+                                src={file.previewUrl}
+                                alt={file.name}
+                                className="h-12 w-12 rounded-lg object-cover border border-purple-200 dark:border-purple-800"
+                              />
+                            )}
+                            <button
+                              onClick={() => setPendingFiles((prev) => prev.filter((_, i) => i !== idx))}
+                              className="absolute -top-1 -right-1 bg-gray-800 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] leading-none hover:bg-gray-700"
+                              data-testid={`button-remove-file-${idx}`}
+                            >✕</button>
                           </div>
-                        ) : (
-                          <img
-                            src={pendingImage.previewUrl}
-                            alt="Selected"
-                            className="h-12 w-12 rounded-lg object-cover border border-purple-200 dark:border-purple-800"
-                          />
-                        )}
-                        <button
-                          onClick={() => setPendingImage(null)}
-                          className="absolute -top-1 -right-1 bg-gray-800 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] leading-none hover:bg-gray-700"
-                          data-testid="button-remove-image"
-                        >✕</button>
-                      </div>
-                      <span className="text-xs text-purple-600 dark:text-purple-400 font-medium">
-                        {isScanningDoc
-                          ? (pendingImage.mimeType === "application/pdf" ? "Reading document…" : "Reading image…")
-                          : (pendingImage.mimeType === "application/pdf"
-                              ? `PDF: ${pendingImage.previewUrl.replace("__pdf__:", "")} — add a question or send`
-                              : "Image attached — add a question or send")}
-                      </span>
+                        ))
+                      )}
                     </div>
                   )}
                   <textarea
@@ -5105,7 +5131,7 @@ export default function AryaChat() {
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder={pendingImage ? t("ask_about_image") : t("ask_anything")}
+                    placeholder={pendingFiles.length > 0 ? t("ask_about_image") : t("ask_anything")}
                     disabled={isStreaming || isScanningDoc}
                     rows={1}
                     className="w-full resize-none bg-transparent border-0 text-gray-900 dark:text-white placeholder:text-muted-foreground text-sm focus:outline-none py-2 max-h-32"
@@ -5126,8 +5152,8 @@ export default function AryaChat() {
                 data-testid="button-send"
                 variant="ghost"
                 size="icon"
-                onClick={() => pendingImage ? sendWithImage() : sendMessage(input)}
-                disabled={(!input.trim() && !pendingImage) || isStreaming || isRecording || isScanningDoc}
+                onClick={() => pendingFiles.length > 0 ? sendWithImage() : sendMessage(input)}
+                disabled={(!input.trim() && pendingFiles.length === 0) || isStreaming || isRecording || isScanningDoc}
                 className="flex-shrink-0 rounded-full h-9 w-9 md:h-10 md:w-10 text-primary hover:bg-primary/10 disabled:opacity-30"
               >
                 {isStreaming || isScanningDoc ? (

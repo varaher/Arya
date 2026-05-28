@@ -1,0 +1,262 @@
+Simple fix. Two file changes.
+
+---
+
+## File 1 — Frontend: Allow Multiple Files
+
+```tsx
+// client/src/pages/AryaChat.tsx
+// Find the file input — search for: accept="image/*"
+// It looks something like this:
+
+<input
+  ref={imageInputRef}
+  type="file"
+  accept="image/*,.pdf"
+  className="hidden"
+  onChange={handleImageSelect}
+/>
+
+// Change to:
+
+<input
+  ref={imageInputRef}
+  type="file"
+  accept="image/*,.pdf"
+  multiple                    // ← ADD THIS ONE WORD
+  className="hidden"
+  onChange={handleImageSelect}
+/>
+```
+
+---
+
+## File 2 — Handle Multiple Files In Handler
+
+```tsx
+// Find the handleImageSelect function
+// Currently looks like:
+
+async function handleImageSelect(
+  e: React.ChangeEvent<HTMLInputElement>
+) {
+  const file = e.target.files?.[0];  // ← only gets first file
+  if (!file) return;
+  // process single file...
+}
+
+// Replace with:
+
+async function handleImageSelect(
+  e: React.ChangeEvent<HTMLInputElement>
+) {
+  const files = Array.from(e.target.files || []);
+  if (files.length === 0) return;
+
+  // Process each file
+  for (const file of files) {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+
+      if (file.type === 'application/pdf') {
+        setAttachedFiles(prev => [...prev, {
+          type: 'pdf',
+          name: file.name,
+          base64: base64.split(',')[1],
+          size: file.size
+        }]);
+      } else {
+        setAttachedFiles(prev => [...prev, {
+          type: 'image',
+          name: file.name,
+          base64: base64,
+          preview: base64,
+          size: file.size
+        }]);
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // Reset input so same files can be selected again
+  e.target.value = '';
+}
+```
+
+---
+
+## Show Multiple File Previews
+
+```tsx
+// Find where file preview is shown
+// Currently shows one image preview
+// Update to show all attached files
+
+{attachedFiles.length > 0 && (
+  <div className="attached-files-preview">
+    {attachedFiles.map((file, index) => (
+      <div key={index} className="attached-file-chip">
+
+        {file.type === 'image' ? (
+          <img
+            src={file.preview}
+            alt={file.name}
+            className="file-thumb"
+          />
+        ) : (
+          <div className="pdf-chip">
+            📄 {file.name}
+          </div>
+        )}
+
+        {/* Remove button */}
+        <button
+          className="remove-file-btn"
+          onClick={() => {
+            setAttachedFiles(prev =>
+              prev.filter((_, i) => i !== index)
+            );
+          }}
+        >
+          ✕
+        </button>
+
+      </div>
+    ))}
+  </div>
+)}
+```
+
+---
+
+## CSS For Multiple File Preview
+
+```css
+.attached-files-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--border, #eee);
+}
+
+.attached-file-chip {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.file-thumb {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border, #ddd);
+}
+
+.pdf-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #fff8e1;
+  border: 1px solid #ffe082;
+  border-radius: 8px;
+  font-size: 12px;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.remove-file-btn {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #e53935;
+  color: white;
+  border: none;
+  font-size: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+```
+
+---
+
+## Update Send Message To Include All Files
+
+```tsx
+// Find where message is sent with image
+// Update to send all attached files
+
+async function sendMessage() {
+  if (!inputValue.trim() && attachedFiles.length === 0) return;
+
+  const message = inputValue;
+  setInputValue('');
+
+  // Send each file with the message
+  if (attachedFiles.length > 0) {
+    for (const file of attachedFiles) {
+      await sendWithAttachment(message, file);
+    }
+    setAttachedFiles([]);
+  } else {
+    await sendTextMessage(message);
+  }
+}
+```
+
+---
+
+## Developer Task — Simple Brief
+
+```
+3 changes in AryaChat.tsx:
+
+1. File input — add "multiple" attribute
+   One word change
+
+2. handleImageSelect — change from
+   e.target.files?.[0]  (single)
+   to
+   Array.from(e.target.files || [])  (multiple)
+   Loop through each file and add to state
+
+3. Preview area — show all files in
+   attachedFiles array with remove button
+
+State change:
+  From: single image state
+  To: attachedFiles array state
+
+Estimated: 2-3 hours
+Result: User can select 5 lab reports
+        at once and ARYA analyzes all
+```
+
+---
+
+## What It Looks Like After
+
+```
+User taps paperclip
+Phone file picker opens
+User selects 3 lab report photos
+                ↓
+Preview shows 3 thumbnails with ✕ buttons
+                ↓
+User types "analyze these reports"
+                ↓
+Sends all 3 images with the message
+                ↓
+ARYA analyzes each one and responds
+```
