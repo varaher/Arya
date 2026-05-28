@@ -1,0 +1,305 @@
+Good thinking. Before going public, do a complete audit. Here is the exact checklist.
+
+---
+
+## How To Test Everything — Step By Step
+
+Do this on your phone AND on desktop/laptop both.
+
+---
+
+## 1. Navigation — Bottom Bar
+
+```
+Tap each button:
+
+Home        → goes to home screen ✅/❌
+Goals       → goes to goals page ✅/❌
+KAAL        → goes to KAAL page ✅/❌
+Niti        → goes to Niti page ✅/❌
+More ⋯      → opens tray ✅/❌
+```
+
+More tray — check each item:
+```
+Prana       → opens ✅/❌
+Review      → opens Sunday review ✅/❌
+Customize   → opens settings ✅/❌
+Memory      → opens memory page ✅/❌
+Community   → opens community ✅/❌
+Privacy     → opens privacy settings ✅/❌
+Report Issue → opens feedback ✅/❌
+```
+
+---
+
+## 2. Top Bar
+
+```
+History (count) → opens chat history ✅/❌
+New Chat (+)    → starts new conversation ✅/❌
+Dark mode 🌙    → toggles dark/light ✅/❌
+Notifications 🔔 → opens notifications ✅/❌
+Profile 👤      → opens profile/account ✅/❌
+```
+
+---
+
+## 3. Home Screen
+
+```
+Daily check-in card → tappable ✅/❌
+  Mood options clickable ✅/❌
+  Energy options clickable ✅/❌
+  Submit works ✅/❌
+
+Talk to ARYA card → opens voice mode ✅/❌
+
+Get inspired toggle → shows/hides ✅/❌
+
+Suggestion cards → tappable ✅/❌
+  Opens chat with that topic ✅/❌
+```
+
+---
+
+## 4. Chat Screen
+
+```
+Type message → sends ✅/❌
+Enter key → sends message ✅/❌
+
+Mic button 🎙️ → opens voice recording ✅/❌
+  Records audio ✅/❌
+  Auto-detects silence ✅/❌
+  Sends and gets response ✅/❌
+
+Speaker button 🔊 → reads ARYA response aloud ✅/❌
+
+Paperclip 📎 → opens file picker ✅/❌
+  Select image → preview shows ✅/❌
+  Select PDF → preview shows ✅/❌
+  Select multiple → all show ✅/❌
+  Remove file ✕ → removes ✅/❌
+  Send with file → ARYA analyzes ✅/❌
+
+Three dots ⋯ → opens options ✅/❌
+
+Copy button on response → copies text ✅/❌
+Speaker on response → reads aloud ✅/❌
+
+Globe 🌐 → opens language selector ✅/❌
+  Select Malayalam → changes ✅/❌
+  Chat responds in Malayalam ✅/❌
+```
+
+---
+
+## 5. Voice Mode (Headphones)
+
+```
+Opens voice screen ✅/❌
+Mic activates on tap ✅/❌
+Waveform animates while speaking ✅/❌
+Auto-stops after silence ✅/❌
+ARYA responds in text ✅/❌
+ARYA speaks back ✅/❌
+Mic reopens automatically ✅/❌
+Language badge shows ✅/❌
+X button closes ✅/❌
+Chat icon → goes to text chat ✅/❌
+```
+
+---
+
+## 6. Goals Page
+
+```
+Add goal button → opens form ✅/❌
+  Title field → typeable ✅/❌
+  Steps → addable ✅/❌
+  Save → saves goal ✅/❌
+
+Goal card → expandable ✅/❌
+  Steps visible ✅/❌
+  Check off step → works ✅/❌
+  Mark complete → works ✅/❌
+  Delete goal → works ✅/❌
+
+Progress visible ✅/❌
+Streak count shows ✅/❌
+```
+
+---
+
+## 7. KAAL Page
+
+```
+Path selection shows ✅/❌
+  Wisdom path → selectable ✅/❌
+  Vedic path → selectable ✅/❌
+  Nature path → selectable ✅/❌
+
+Continue button → works ✅/❌
+Star sign selection → works ✅/❌
+Next step → works ✅/❌
+KAAL reading generated ✅/❌
+```
+
+---
+
+## 8. Niti Page
+
+```
+Decisions tab → opens ✅/❌
+Market tab → opens ✅/❌
+
+Session type cards → tappable ✅/❌
+  Help me decide → starts session ✅/❌
+  Stress test → starts session ✅/❌
+  People → starts session ✅/❌
+  Think out loud → starts session ✅/❌
+
+Recent sessions → visible ✅/❌
+```
+
+---
+
+## 9. Review Page
+
+```
+Opens Sunday review ✅/❌
+Download button → downloads ✅/❌
+Share button → opens share ✅/❌
+Back button → goes back ✅/❌
+Content in correct language ✅/❌
+Mood chart visible ✅/❌
+Goals stats visible ✅/❌
+ARYA's letter visible ✅/❌
+```
+
+---
+
+## 10. Profile / Account
+
+```
+Name visible ✅/❌
+Phone visible ✅/❌
+Language preference → changeable ✅/❌
+Plan shown (Free/Core/Pro) ✅/❌
+Upgrade button → works ✅/❌
+Logout → works ✅/❌
+```
+
+---
+
+## 11. Customize / Settings
+
+```
+Morning briefing toggle → works ✅/❌
+Time picker → works ✅/❌
+Weekly review toggle → works ✅/❌
+Language selector → works ✅/❌
+Notification settings → works ✅/❌
+Save → saves settings ✅/❌
+```
+
+---
+
+## 12. Memory Page
+
+```
+Memories listed ✅/❌
+Delete individual memory → works ✅/❌
+Memory shows in next chat ✅/❌
+```
+
+---
+
+## 13. Notifications
+
+```
+Notifications listed ✅/❌
+Mark as read → works ✅/❌
+Mark all read → works ✅/❌
+Tap notification → goes to right page ✅/❌
+```
+
+---
+
+## 14. Sign Up / Login
+
+```
+New user signup:
+  Name field ✅/❌
+  Phone field ✅/❌
+  Password field ✅/❌
+  Sign up button → works ✅/❌
+  Goes to home ✅/❌
+
+Existing user login:
+  Phone + password → works ✅/❌
+  Wrong password → shows error ✅/❌
+  Goes to home ✅/❌
+
+Logout → clears session ✅/❌
+Login again → works ✅/❌
+```
+
+---
+
+## 15. Install As App
+
+```
+On phone Chrome:
+  "Add to home screen" prompt appears ✅/❌
+  OR menu → Add to home screen ✅/❌
+  App icon appears on phone home ✅/❌
+  Opens full screen (no browser bar) ✅/❌
+```
+
+---
+
+## How To Do This Efficiently
+
+```
+Method 1 — You do it yourself:
+  Go through each section above
+  Mark ✅ or ❌ for each item
+  Send me the ❌ items
+  I give exact fixes
+
+Method 2 — Give to developer:
+  Share this checklist
+  Developer tests each item
+  Reports back with failures
+  Fix all before launch
+
+Method 3 — Test with a fresh account:
+  Log out completely
+  Sign up as new user
+  Go through every feature fresh
+  This catches new user experience issues
+  most important before launch
+```
+
+---
+
+## Most Critical Items Before Launch
+
+```
+If nothing else — test these 10:
+
+1. Signup works for new user
+2. Chat sends and gets response
+3. Voice records and ARYA responds
+4. File upload and analysis works
+5. Goals can be created and tracked
+6. Language switching works
+7. Dark mode toggles
+8. Notifications show
+9. Logout and login again works
+10. Install as app works on phone
+```
+
+Go through this and send me which ones show ❌ — will fix each one immediately.
