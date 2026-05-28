@@ -114,6 +114,21 @@ function CodeBlock({ children, language }: { children: string; language?: string
   );
 }
 
+// ─── Streaming renderer ──────────────────────────────────────────────────────
+// Plain-text renderer used ONLY while ARYA is actively streaming.
+// ReactMarkdown re-parses the entire string on every chunk, so partial tokens
+// like **hello (unclosed bold) flip the DOM structure and cause visible jumps.
+// We avoid that by rendering plain text during streaming and only applying
+// full markdown formatting to completed messages.
+function StreamingText({ content }: { content: string }) {
+  return (
+    <div className="text-[14.5px] leading-[1.7] whitespace-pre-wrap text-gray-800 dark:text-gray-100 break-words">
+      {content}
+      <span className="inline-block w-[2px] h-[1.1em] bg-emerald-500/70 animate-pulse ml-0.5 align-text-bottom rounded-[1px]" />
+    </div>
+  );
+}
+
 function FormattedMessage({ content, isUser }: { content: string; isUser?: boolean }) {
   if (isUser) {
     return <div className="text-sm leading-relaxed whitespace-pre-wrap">{content}</div>;
@@ -344,7 +359,7 @@ function FeedbackButtons({ messageId, conversationId }: { messageId: number; con
   if (submitted === 'up') {
     return (
       <div className="flex items-center gap-1 mt-1">
-        <ThumbsUp className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+        <ThumbsUp className="w-3 h-3 text-emerald-500 dark:text-emerald-400" />
         <span className="text-[10px] text-emerald-600 dark:text-emerald-400">Thanks!</span>
       </div>
     );
@@ -353,18 +368,20 @@ function FeedbackButtons({ messageId, conversationId }: { messageId: number; con
   return (
     <div className="mt-1.5">
       {!submitted && (
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex items-center gap-1">
           <button
             data-testid={`button-thumbsup-${messageId}`}
             onClick={() => handleFeedback('up')}
-            className="p-1 rounded hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-300 dark:text-gray-600 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+            title="Helpful"
+            className="p-1 rounded hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-gray-300 dark:text-gray-600 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
           >
             <ThumbsUp className="w-3 h-3" />
           </button>
           <button
             data-testid={`button-thumbsdown-${messageId}`}
             onClick={() => handleFeedback('down')}
-            className="p-1 rounded hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+            title="Not helpful"
+            className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 transition-colors"
           >
             <ThumbsDown className="w-3 h-3" />
           </button>
@@ -3230,6 +3247,18 @@ export default function AryaChat() {
       let fullContent = "";
       let translatedText: string | null = null;
 
+      // rAF batching: accumulate chunks between animation frames so fast
+      // token bursts result in one DOM update per frame (~16ms), not one per chunk.
+      let pendingAppend = "";
+      let rafId: number | null = null;
+      const flushPending = () => {
+        if (pendingAppend) {
+          setStreamingContent(prev => prev + pendingAppend);
+          pendingAppend = "";
+        }
+        rafId = null;
+      };
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -3256,9 +3285,15 @@ export default function AryaChat() {
             }
             if (event.content) {
               fullContent += event.content;
-              setStreamingContent(fullContent);
+              pendingAppend += event.content;
+              if (rafId === null) {
+                rafId = requestAnimationFrame(flushPending);
+              }
             }
             if (event.done) {
+              // Flush any remaining buffered content immediately before finalising
+              if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
+              if (pendingAppend) { setStreamingContent(prev => prev + pendingAppend); pendingAppend = ""; }
               queryClient.setQueryData(
                 ["/api/arya/conversations", convId],
                 (old: any) => ({
@@ -4844,13 +4879,12 @@ export default function AryaChat() {
                   <>
                     {!translatedContent && (
                       <div className="opacity-40 text-sm">
-                        <FormattedMessage content={streamingContent} />
-                        <span className="inline-block w-1.5 h-4 bg-primary/60 animate-pulse ml-0.5 align-middle" />
+                        <StreamingText content={streamingContent} />
                       </div>
                     )}
                     {translatedContent && (
                       <div className="text-gray-800 dark:text-gray-100">
-                        <FormattedMessage content={translatedContent} />
+                        <StreamingText content={translatedContent} />
                       </div>
                     )}
                     {translatedContent && (
@@ -4863,15 +4897,12 @@ export default function AryaChat() {
                     )}
                     {showOriginalStreaming && translatedContent && (
                       <div className="mt-2 pt-2 border-t border-gray-100 dark:border-slate-700 text-xs text-gray-400 dark:text-gray-500">
-                        <FormattedMessage content={streamingContent} />
+                        <StreamingText content={streamingContent} />
                       </div>
                     )}
                   </>
                 ) : (
-                  <div className="relative">
-                    <FormattedMessage content={streamingContent} />
-                    <span className="inline-block w-1.5 h-4 bg-primary/60 animate-pulse ml-0.5 align-middle" />
-                  </div>
+                  <StreamingText content={streamingContent} />
                 )}
               </div>
             </motion.div>
