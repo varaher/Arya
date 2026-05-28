@@ -120,19 +120,26 @@ Example: [{"category":"identity","key":"name","value":"Rahul","confidence":0.95}
     let memories: AryaMemory[];
 
     if (query) {
-      memories = await db
+      const allMemories = await db
         .select()
         .from(aryaMemory)
-        .where(and(
-          eq(aryaMemory.tenantId, tenantId),
-        ))
+        .where(eq(aryaMemory.tenantId, tenantId))
         .orderBy(desc(aryaMemory.updatedAt))
-        .limit(50);
+        .limit(100);
 
       const queryLower = query.toLowerCase();
       const keywords = queryLower.split(/\s+/).filter(w => w.length > 2);
 
-      memories = memories
+      // Always include identity and preference memories — these define who the user is
+      // and must always be present so ARYA can personalise any response.
+      const alwaysInclude = allMemories.filter(
+        m => m.category === 'identity' || m.category === 'preference'
+      );
+      const alwaysIds = new Set(alwaysInclude.map(m => m.id));
+
+      // Score remaining memories by keyword relevance
+      const scored = allMemories
+        .filter(m => !alwaysIds.has(m.id))
         .map(m => {
           let score = 0;
           const keyLower = m.key.toLowerCase();
@@ -141,13 +148,14 @@ Example: [{"category":"identity","key":"name","value":"Rahul","confidence":0.95}
             if (keyLower.includes(kw)) score += 3;
             if (valueLower.includes(kw)) score += 2;
           }
-          if (m.category === 'identity') score += 1;
-          if (m.category === 'preference') score += 0.5;
           return { ...m, _score: score };
         })
         .filter((m: any) => m._score > 0)
-        .sort((a: any, b: any) => b._score - a._score)
-        .slice(0, limit);
+        .sort((a: any, b: any) => b._score - a._score);
+
+      // Combine: always-include first, then relevant scored memories, capped at limit
+      const combined = [...alwaysInclude, ...scored];
+      memories = combined.slice(0, limit) as AryaMemory[];
     } else {
       memories = await db
         .select()
@@ -228,10 +236,11 @@ Example: [{"category":"identity","key":"name","value":"Rahul","confidence":0.95}
       grouped[mem.category].push(`${mem.key}: ${mem.value}`);
     }
 
-    let context = "\n\nYou remember these things about this user (use naturally, don't announce them):";
+    let context = "\n\nUSER CONTEXT — MANDATORY TO USE (these are real facts about this person — weave them into your response, do not ignore them):";
     for (const [cat, items] of Object.entries(grouped)) {
       context += `\n[${cat}] ${items.join("; ")}`;
     }
+    context += "\n\nDo NOT give a generic response that ignores the above. Start from their world, not from a textbook.";
     return context;
   }
 }
