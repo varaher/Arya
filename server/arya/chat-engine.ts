@@ -611,8 +611,13 @@ export async function generateAryaResponse(
   // Personal/contextual queries must always go to LLM (they depend on current memory + prefs)
   const isPersonalQuery = /\b(my goal|my plan|remind me|what did i|you remember|last time|yesterday|my mood|i told you|we discussed)\b/i.test(userMessage);
 
-  // Bypass cache for time-sensitive, personal, or voice queries
-  const shouldBypassCache = isMarketQuery || isNewsQuery || isTechQuery || isPersonalQuery || voiceMode;
+  // Any reply within an ongoing conversation is context-dependent — the same words
+  // ("yes please", "ok", "tell me more") mean completely different things depending
+  // on what was said before. Always send to LLM when there is conversation history.
+  const isOngoingConversation = conversationHistory.length > 0;
+
+  // Bypass cache for time-sensitive, personal, voice, or ongoing conversation queries
+  const shouldBypassCache = isMarketQuery || isNewsQuery || isTechQuery || isPersonalQuery || voiceMode || isOngoingConversation;
 
   const cacheResult = await responseCacheEngine.shadowLookup(tenantId, userMessage, earlyLang);
 
@@ -832,8 +837,10 @@ export async function generateAryaResponse(
       }
 
       // ─── AUTO-CACHE every good LLM response to build ARYA's learned memory ──
-      // Skip time-sensitive, personal, and very short responses
-      if (fullResponse.length > 80 && !shouldBypassCache && !isPersonalQuery) {
+      // Skip time-sensitive, personal, conversational, and very short responses.
+      // Never cache responses from ongoing conversations — they are context-specific
+      // and must never be served to other users or future sessions.
+      if (fullResponse.length > 80 && !shouldBypassCache && !isPersonalQuery && !isOngoingConversation) {
         responseCacheEngine.cacheGoldenResponse(
           tenantId, userMessage, fullResponse,
           routing.primaryDomain as Domain,

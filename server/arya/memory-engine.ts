@@ -29,29 +29,31 @@ export class MemoryEngine {
         messages: [
           {
             role: "system",
-            content: `You are a memory extraction system. Analyze the conversation and extract important facts, preferences, and context that should be remembered for future conversations.
+            content: `You are a memory extraction system. Extract ONLY durable facts about the USER from their messages — things that will be useful to know in any future conversation.
 
-Extract ONLY meaningful, specific information. Skip generic statements.
+EXTRACT (from what the USER said):
+- identity: name, age, city, profession, workplace, specialty
+- preference: what they like/dislike, how they prefer to work or communicate
+- fact: specific personal facts — health conditions, ongoing projects, family details
+- context: current situation — job challenge, life event, ongoing goal
+- relationship: people they mention by name and their role (e.g. "wife Priya", "boss Ramesh")
 
-Categories:
-- identity: Name, age, location, profession, company
-- preference: Likes, dislikes, preferred styles, habits
-- fact: Specific facts shared (health conditions, goals, projects)
-- context: Current situation, ongoing activities, recent events
-- relationship: People mentioned, their roles/relationships
+DO NOT EXTRACT:
+- Anything from the assistant's response (articles, explanations, stories, advice)
+- Generic questions or casual replies ("yes please", "ok", "tell me more", "thanks")
+- Topics discussed (e.g. do NOT store "asked about Skanda Kavacham" or "read about mantras")
+- Any content longer than 100 characters as a memory value
 
-Respond with a JSON array of objects. Each object must have:
-- category: one of identity/preference/fact/context/relationship
-- key: short descriptive label (e.g. "name", "favorite_food", "health_condition")
-- value: the actual information
-- confidence: 0.0-1.0 how confident you are this is important to remember
+Values must be short, factual labels — not sentences, not paragraphs.
+WRONG: value: "The user is an ER doctor who leads a department and writes articles about emergency care"
+RIGHT: value: "ER doctor, department head"
 
-Return [] if nothing worth remembering. Be selective — only extract genuinely useful information.
-Example: [{"category":"identity","key":"name","value":"Rahul","confidence":0.95}]`
+Return [] if nothing from the USER's message is worth storing. Be very selective.
+Return JSON array: [{"category":"identity","key":"occupation","value":"ER doctor","confidence":0.95}]`
           },
           {
             role: "user",
-            content: `User said: "${userMessage}"\nAssistant replied: "${assistantResponse.slice(0, 500)}"\n\nExtract memories:`
+            content: `User said: "${userMessage}"\n\nExtract memories from what the USER said only:`
           }
         ],
         max_completion_tokens: 500,
@@ -73,6 +75,8 @@ Example: [{"category":"identity","key":"name","value":"Rahul","confidence":0.95}
       for (const mem of memories) {
         if (!mem.key || !mem.value || !mem.category) continue;
         if ((mem.confidence || 0.5) < 0.5) continue;
+        // Hard guard: never store long values — article content, paragraphs, ARYA's text
+        if (String(mem.value).length > 150) continue;
 
         const existing = await db
           .select()

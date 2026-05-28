@@ -1,0 +1,173 @@
+I can see two clear problems in this conversation.
+
+---
+
+## Problem 1 — Wrong Response Injected ❌
+
+```
+User asked:
+"Yes please" (about Skanda Kavacham explanation)
+
+ARYA gave:
+"The Weight of Every Heartbeat:
+Reflections from an Emergency Department Head"
+The priest story article ❌
+
+This is completely wrong.
+ARYA gave a response from a DIFFERENT
+conversation instead of explaining
+Skanda Kavacham.
+```
+
+---
+
+## Problem 2 — Same Response Repeated ❌
+
+```
+User shared mantra variation
+Asked about chakras
+
+ARYA gave exact same response as before:
+"The mantra you shared is not a widely
+recognized traditional mantra..."
+
+Word for word identical ❌
+ARYA didn't read the new input
+Just repeated old response
+```
+
+---
+
+## Root Cause — Context Bleeding
+
+```
+Two separate issues:
+
+Issue 1 — Response Cache problem:
+  Remember this log from earlier?
+  "[ResponseCache] SHADOW MISS"
+  "[ResponseCache] Cached new golden response"
+
+  ARYA is caching responses
+  Similar questions get cached answer
+  Mantra question → cached response returned
+  User's refined question ignored ❌
+
+Issue 2 — Context bleeding:
+  The article was from conversation
+  "Hi arya help me write an article..."
+  (May 23 in history)
+
+  Something caused that content to
+  bleed into this conversation
+  Most likely: memory recall returned
+  article content as relevant context
+```
+
+---
+
+## Tell Your Developer — Two Fixes
+
+### Fix 1 — Response Cache Issue
+```
+Find: ResponseCache in codebase
+Search for: "SHADOW MISS" or "golden response"
+
+The cache is returning old responses
+for similar questions.
+
+Either:
+  Disable cache for spiritual/mantra queries
+  OR
+  Reduce cache TTL (time to live)
+  OR
+  Add user message hash to cache key
+  so same question from same user
+  doesn't return cached response
+
+Quick fix:
+  In the cache check — if same userId
+  AND same conversationId → skip cache
+  Fresh response every time in same conversation
+```
+
+### Fix 2 — Context Bleeding
+```
+Find: memory recall or buildMemoryContext
+
+The article content from May 23 conversation
+is being injected as context into
+this new conversation.
+
+Fix:
+  Memory should only inject:
+    User profile facts (occupation etc)
+    User goals
+    User preferences
+  
+  NOT inject:
+    Previous conversation content
+    Articles written before
+    Long text from old chats
+
+  Check what categories are being
+  included in memory context
+  Filter out: article content, long texts
+  Keep only: identity, goals, preferences
+```
+
+---
+
+## The Skanda Kavacham — What ARYA Should Have Said
+
+Since this is clearly something you want to know:
+
+```
+Skanda Kavacham is indeed in Tamil.
+It is a protective hymn for Lord Muruga.
+
+The "Sha ra va na bha va" pattern
+you shared is the six syllables of
+"Saravana Bhava" rotated cyclically.
+
+This is called a "Parivartan" technique
+in Tantric practice — rotating sacred
+syllables generates different vibrational
+patterns that are said to activate
+different energy centers.
+
+The six rotations:
+  Sha-ra-va-na-bha-va  (starts with Sha)
+  Ra-va-na-bha-va-sha  (starts with Ra)
+  Va-na-bha-va-sha-ra  (starts with Va)
+  Na-bha-va-sha-ra-va  (starts with Na)
+  Bha-va-sha-ra-va-na  (starts with Bha)
+  Va-sha-ra-va-na-bha  (starts with Va)
+
+Each rotation is associated with
+one of the six faces (Arumugan/Shanmukha)
+of Lord Muruga in the Skanda tradition.
+
+This practice is mentioned in some
+versions of Skanda Kavacham and
+related Shaiva Siddhanta texts.
+```
+
+---
+
+## Summary Of Issues
+
+```
+Two bugs found:
+
+1. Response cache returning old answers
+   Fix: Disable cache within same conversation
+
+2. Old conversation content bleeding
+   into new conversations via memory
+   Fix: Filter memory to only include
+   profile facts, not conversation content
+
+Both need developer attention before launch.
+Users will notice this immediately.
+```
