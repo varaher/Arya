@@ -94,21 +94,21 @@ function CodeBlock({ children, language }: { children: string; language?: string
     }).catch(() => {});
   };
   return (
-    <div className="relative my-3 rounded-xl overflow-hidden border border-white/10 shadow-sm">
-      <div className="flex items-center justify-between px-4 py-2 bg-[#2a2a2a]">
-        <span className="text-[11px] font-medium text-gray-400 uppercase tracking-wider select-none">
-          {language || "code"}
+    <div className="relative my-3 rounded-xl overflow-hidden border border-gray-200 dark:border-slate-700">
+      <div className="flex items-center justify-between px-4 py-2 bg-gray-100 dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
+        <span className="text-[12px] font-medium text-gray-500 dark:text-gray-400 select-none">
+          {language || "Code"}
         </span>
         <button
           onClick={handleCopy}
-          className="flex items-center gap-1.5 text-[11px] text-gray-400 hover:text-white transition-colors px-2 py-0.5 rounded hover:bg-white/10"
+          className="flex items-center gap-1.5 text-[12px] text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors p-1 rounded hover:bg-gray-200 dark:hover:bg-slate-700"
+          title="Copy code"
         >
-          {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-          <span>{copied ? "Copied" : "Copy"}</span>
+          {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
         </button>
       </div>
-      <pre className="bg-[#1e1e1e] px-4 py-3.5 overflow-x-auto">
-        <code className="text-[13px] font-mono text-gray-200 leading-relaxed">{children}</code>
+      <pre className="bg-gray-50 dark:bg-slate-900 px-4 py-3.5 overflow-x-auto">
+        <code className="text-[13px] font-mono text-gray-800 dark:text-gray-200 leading-relaxed">{children}</code>
       </pre>
     </div>
   );
@@ -125,9 +125,9 @@ function FormattedMessage({ content, isUser }: { content: string; isUser?: boole
           p: ({ children }) => <p className="mb-3 last:mb-0 text-gray-800 dark:text-gray-100">{children}</p>,
           strong: ({ children }) => <strong className="font-semibold text-gray-900 dark:text-white">{children}</strong>,
           em: ({ children }) => <em className="text-amber-600/90 dark:text-amber-400/90 not-italic font-medium">{children}</em>,
-          h1: ({ children }) => <h1 className="text-lg font-bold text-gray-900 dark:text-white mb-3 mt-4 first:mt-0">{children}</h1>,
-          h2: ({ children }) => <h2 className="text-base font-bold text-gray-900 dark:text-white mb-2 mt-5 first:mt-0 pb-1.5 border-b border-gray-200 dark:border-slate-700">{children}</h2>,
-          h3: ({ children }) => <h3 className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 mb-2 mt-4 first:mt-0">{children}</h3>,
+          h1: ({ children }) => <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-3 mt-5 first:mt-0 leading-tight">{children}</h1>,
+          h2: ({ children }) => <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2.5 mt-6 first:mt-0 leading-tight">{children}</h2>,
+          h3: ({ children }) => <h3 className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-2 mt-4 first:mt-0">{children}</h3>,
           ul: ({ children }) => <ul className="space-y-2 my-3 pl-0">{children}</ul>,
           ol: ({ children }) => {
             let counter = 0;
