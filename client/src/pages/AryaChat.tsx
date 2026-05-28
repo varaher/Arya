@@ -7028,7 +7028,7 @@ const TUTORIAL_STEPS = [
   },
   {
     title: "Niti — Business Wisdom",
-    description: "Niti is your business thinking companion. Bring your decisions, plans, and people situations — it routes your question to the right philosopher (Chanakya, Vidura, Krishna and others) and stress-tests your thinking. Includes live market news and a portfolio journal.",
+    description: "Niti is your business thinking companion. Bring your decisions, plans, and people situations — ARYA stress-tests your thinking with deep strategic wisdom. Includes live market news and a portfolio journal.",
     icon: Briefcase,
     iconColor: "text-yellow-600 dark:text-yellow-500",
     iconBg: "bg-yellow-100 dark:bg-yellow-900/30 border-yellow-300 dark:border-yellow-700",

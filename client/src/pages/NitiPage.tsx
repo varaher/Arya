@@ -804,7 +804,7 @@ export default function NitiPage() {
         <div style={{ padding: "8px 16px", borderBottom: `1px solid ${N.border}`, display: "flex", alignItems: "center", gap: 8, background: N.surface }}>
           {(() => {
             const p = PHILOSOPHER_META[messages[0].philosopher!];
-            return p ? (<><span style={{ fontSize: 16 }}>{p.emoji}</span><div><span style={{ fontSize: 12, color: p.color, fontWeight: 600 }}>{p.name}</span><span style={{ fontSize: 11, color: N.steel, marginLeft: 6 }}>{p.text}</span></div></>) : null;
+            return p ? (<><span style={{ fontSize: 16 }}>{p.emoji}</span><span style={{ fontSize: 12, color: p.color, fontWeight: 600 }}>{p.domain}</span></>) : null;
           })()}
         </div>
       )}
@@ -818,12 +818,6 @@ export default function NitiPage() {
                 {msg.pushQuestion && (
                   <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${N.border}`, fontFamily: "Libre Baskerville, serif", fontSize: 14, color: N.gold, fontStyle: "italic", lineHeight: 1.6 }}>
                     {msg.pushQuestion}
-                  </div>
-                )}
-                {msg.source && (
-                  <div style={{ marginTop: 8, fontSize: 11, color: N.muted, display: "flex", alignItems: "center", gap: 4 }}>
-                    {msg.philosopher && PHILOSOPHER_META[msg.philosopher] && <span>{PHILOSOPHER_META[msg.philosopher].emoji}</span>}
-                    {msg.source}
                   </div>
                 )}
                 {idx === lastAryaIdx && !isLoading && msg.followUps && msg.followUps.length > 0 && (

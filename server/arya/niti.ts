@@ -178,15 +178,12 @@ RULES:
 3. Maximum 120 words for main content — tight, direct, no filler
 4. pushQuestion: the one question that gets underneath the surface of what they said
 5. Generate exactly 3 followUps (8–14 words each) that branch the conversation in meaningfully different directions
-6. The source field: brief, natural attribution only — e.g. "Drawn from Arthashastra, Book 9" or "From Thirukkural, Chapter on Perseverance"
 
 Return ONLY valid JSON (no markdown):
 {
   "content": "Direct response — specific, tight, no filler",
   "pushQuestion": "The one question that gets under the surface",
-  "followUps": ["Branch 1 (8-14 words)", "Branch 2 (8-14 words)", "Branch 3 (8-14 words)"],
-  "source": "Brief attribution",
-  "philosopher": "${philosopher}"
+  "followUps": ["Branch 1 (8-14 words)", "Branch 2 (8-14 words)", "Branch 3 (8-14 words)"]
 }`;
 
   try {
@@ -205,7 +202,6 @@ Return ONLY valid JSON (no markdown):
       content: parsed.content || "Let me think about this with you.",
       pushQuestion: parsed.pushQuestion || "What are you not saying yet?",
       followUps: Array.isArray(parsed.followUps) ? parsed.followUps.slice(0, 3) : [],
-      source: parsed.source || `Drawn from ${source}`,
       philosopher,
     };
   } catch (err) {

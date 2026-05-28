@@ -9,6 +9,7 @@ ARYA (Augmented Reasoning & Yielding Awareness) is a multi-tenant personal AI as
 Preferred communication style: Simple, everyday language.
 Branding: ARYA stands for "Augmented Reasoning & Yielding Awareness." ARYA is "Your Personal Thinking & Growth Assistant" — never refer to it as "AGI," "AGI-class," or just "chatbot." Avoid technical jargon in user-facing text. Tone should be warm, encouraging, personal — like a wise friend, not a corporate AI.
 Bharatiya/Vedic/Sanskrit knowledge is the invisible core — ARYA draws from this wisdom naturally in responses, but these terms should NOT appear in user-facing UI labels, prompts, or navigation. The wisdom shows through the quality of advice, not through labels.
+Philosopher names (Chanakya, Vidura, Thiruvalluvar, Krishna, Shukracharya) and source texts (Arthashastra, Thirukkural, Bhagavad Gita, Vidura Niti, etc.) are NEVER shown to users — not in tooltips, session headers, message footers, onboarding screens, or anywhere user-facing. They exist only in backend system prompts to guide ARYA's thinking. Users experience ARYA's wisdom directly — they never see which tradition it came from.
 
 ## System Architecture
 
