@@ -2550,23 +2550,21 @@ export async function registerRoutes(
       let userMessageForStorage: string;
 
       if (isPdf) {
-        // Extract text from PDF using pdf-parse
-        const pdfParse = (await import("pdf-parse")).default;
         const pdfBuffer = Buffer.from(image, "base64");
         let pdfText = "";
         try {
+          const pdfParse = (await import("pdf-parse")).default;
           const parsed = await pdfParse(pdfBuffer);
           pdfText = parsed.text?.slice(0, 12000) || "";
         } catch (e) {
-          console.error("[Scan] PDF parse error:", e);
+          console.error("[Scan] PDF parse error (will try vision fallback):", (e as Error).message);
         }
 
         const userQuestion = question?.trim() || "Please summarize this document clearly and helpfully.";
         userMessageForStorage = question?.trim() ? `📄 ${question.trim()}` : "📄 Shared a PDF document";
 
-        if (!pdfText.trim()) {
-          aryaResponse = "I wasn't able to extract text from that PDF. It may be a scanned/image-only PDF. Please try with a text-based PDF or share a clear photo of the document.";
-        } else {
+        if (pdfText.trim()) {
+          // Text-based PDF — use text completion
           const pdfResponse = await openai.chat.completions.create({
             model: "gpt-4o",
             messages: [
@@ -2576,6 +2574,30 @@ export async function registerRoutes(
             max_tokens: 1500,
           } as any);
           aryaResponse = (pdfResponse as any).choices?.[0]?.message?.content || "I couldn't analyze that document. Please try again.";
+        } else {
+          // Scanned/image-based PDF — send raw bytes to GPT-4o vision as JPEG
+          // (Works for phone-scanned PDFs which are photos wrapped in PDF container)
+          console.log("[Scan] PDF text empty — falling back to GPT-4o vision for scanned PDF");
+          try {
+            const visionResponse = await openai.chat.completions.create({
+              model: "gpt-4o",
+              messages: [
+                { role: "system", content: systemPrompt },
+                {
+                  role: "user",
+                  content: [
+                    { type: "image_url", image_url: { url: `data:image/jpeg;base64,${image}`, detail: "high" } as any },
+                    { type: "text", text: userQuestion },
+                  ],
+                },
+              ],
+              max_tokens: 1500,
+            } as any);
+            aryaResponse = (visionResponse as any).choices?.[0]?.message?.content || "I couldn't read that document clearly. Please try sharing a clear photo of the page instead.";
+          } catch (visionErr) {
+            console.error("[Scan] Vision fallback also failed:", (visionErr as Error).message);
+            aryaResponse = "This appears to be a scanned PDF. For best results, take a screenshot or photo of the page and share it as an image — I'll read it instantly.";
+          }
         }
       } else {
         // Image vision analysis

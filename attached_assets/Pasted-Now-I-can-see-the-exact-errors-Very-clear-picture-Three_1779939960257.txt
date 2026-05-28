@@ -1,0 +1,155 @@
+Now I can see the exact errors. Very clear picture.
+
+---
+
+## Three Errors Visible
+
+### Error 1 — Sarvam TTS 400 (Most Important)
+```
+[Sarvam TTS] lang=ml-IN speaker=ananya
+[TTS ERROR] Sarvam TTS failed (400)
+[Sarvam TTS] 400 detail — lang:ml-IN sp...
+
+400 = Bad Request
+Sarvam is rejecting the TTS call
+This is why ARYA has no voice output
+```
+
+### Error 2 — Scan Translation Error
+```
+[Scan] Translation error: Error: Sarvam...
+
+When you upload a file/image
+ARYA tries to translate the analysis
+Sarvam translation also failing
+```
+
+### Error 3 — PDF Parse Error
+```
+[Scan] PDF parse error: TypeError: N is...
+
+PDF scanning is crashing
+This is why PDFs show error message
+```
+
+---
+
+## Root Cause — All Three Same Problem
+
+```
+ALL errors point to Sarvam API.
+
+Sarvam is returning 400 Bad Request for:
+  TTS (text to speech) ❌
+  Translation ❌
+
+400 means the REQUEST FORMAT is wrong.
+Not an API key issue (that would be 401).
+Not rate limit (that would be 429).
+
+The request body being sent to Sarvam
+has something wrong in it.
+```
+
+---
+
+## The Exact Fix
+
+The log shows:
+```
+[Sarvam TTS] lang=ml-IN speaker=ananya
+```
+
+The issue is almost certainly the **text being sent is too long** OR contains **special characters** that Sarvam rejects.
+
+Tell your developer:
+
+```
+In server/arya/sarvam-service.ts
+Find sarvamTextToSpeech function
+
+Add this before the API call:
+
+// Log exactly what's being sent
+console.log('[Sarvam TTS] text length:', text.length);
+console.log('[Sarvam TTS] first 100 chars:', text.substring(0, 100));
+console.log('[Sarvam TTS] full error body:', errorText);
+
+// Clean the text before sending:
+const cleanText = text
+  .replace(/[^\u0000-\uFFFF]/g, '')  // remove emoji
+  .replace(/\*\*/g, '')               // remove markdown bold
+  .replace(/\*/g, '')                 // remove markdown italic
+  .replace(/#{1,6}\s/g, '')           // remove headers
+  .replace(/\n{3,}/g, '\n\n')         // limit newlines
+  .trim()
+  .slice(0, 500);                     // max 500 chars
+
+// Use cleanText instead of text in API call
+```
+
+---
+
+## Also Fix PDF Error
+
+```
+[Scan] PDF parse error: TypeError: N is...
+
+"N is" — this is likely:
+"N is not a function" or "N is not defined"
+
+Tell developer:
+In the PDF scan handler
+The PDF parsing library call is failing
+
+Quick fix — wrap in try/catch:
+try {
+  const pdfData = await parsePDF(buffer);
+  // use pdfData
+} catch (err) {
+  console.error('[PDF] Full error:', err);
+  // Fall back to vision API
+  return await analyzeWithVision(buffer);
+}
+```
+
+---
+
+## Tell Your Developer — Simple Brief
+
+```
+Two fixes needed:
+
+Fix 1 — Sarvam TTS 400 error (voice silent):
+  In sarvamTextToSpeech():
+  Before sending text to Sarvam:
+    Remove markdown (**bold**, *italic*, ##headers)
+    Remove emojis
+    Limit to 500 characters
+    Log full error body to see exact message
+
+Fix 2 — PDF parse error:
+  Wrap PDF parsing in try/catch
+  If fails → use GPT vision on PDF pages instead
+  
+Both fixes = 1-2 hours work
+After: Voice speaks ✅ PDFs readable ✅
+```
+
+---
+
+## Quick Summary
+
+```
+Voice silent:   Sarvam rejecting text with
+                markdown symbols or too long
+                Fix: clean text before sending
+
+PDF failing:    Parser crashing on scanned PDFs
+                Fix: try/catch + vision fallback
+
+Translation:    Same Sarvam issue
+                Fix: same text cleaning
+```
+
+The text cleaning fix is the fastest — probably 30 minutes — and fixes both TTS and translation errors at once.

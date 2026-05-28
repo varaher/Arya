@@ -90,6 +90,21 @@ export async function sarvamTranslate(
   sourceLanguage: string,
   targetLanguage: string
 ): Promise<TranslationResult> {
+  // Clean and truncate — same rules as TTS; Sarvam translate also rejects markdown/emoji
+  const cleanedInput = text
+    .replace(/[\u{1F000}-\u{1FFFF}]/gu, "")
+    .replace(/[\u2600-\u27BF]/g, "")
+    .replace(/[\u0000-\u001F\u007F]/g, " ")
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
+    .replace(/[#*_`~>\[\]()!|]/g, "")
+    .replace(/\s{2,}/g, " ")
+    .trim()
+    .slice(0, 1000);
+
+  if (!cleanedInput) {
+    return { translatedText: text, sourceLanguage, targetLanguage };
+  }
+
   const response = await fetch(`${SARVAM_BASE_URL}/translate`, {
     method: "POST",
     headers: {
@@ -97,12 +112,10 @@ export async function sarvamTranslate(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      input: text,
+      input: cleanedInput,
       source_language_code: sourceLanguage,
       target_language_code: targetLanguage,
-      speaker_gender: "Female",
       model: "mayura:v1",
-      mode: "code-mixed",
       enable_preprocessing: true,
     }),
   });
@@ -138,13 +151,19 @@ export async function sarvamTextToSpeech(
     .trim()
     .slice(0, 500);
 
+  // Guard: Sarvam returns 400 if inputs[0] is empty
+  if (!cleanedText) {
+    console.warn(`[Sarvam TTS] text was empty after cleaning — skipping Sarvam, fallback will handle`);
+    throw new Error("Sarvam TTS: cleaned text is empty");
+  }
+
   const payload = {
     inputs: [cleanedText],
     target_language_code: languageCode,
     speaker: speaker,
     model: "bulbul:v2",
     pitch: 0,
-    pace: 1.0,
+    pace: 1.05,
     loudness: 1.5,
     enable_preprocessing: true,
   };
