@@ -1,0 +1,55 @@
+ARYA — Your Personal Thinking & Growth Assistant
+ARYA stands for Augmented Reasoning & Yielding Awareness. It's a personal AI built to help you think clearly, grow steadily, and live with more intention — like a wise friend who's always available, never judges, and actually remembers you.
+
+💬 Chat with ARYA
+Ask anything — career worries, life decisions, health questions, legal doubts, business ideas, or just thinking out loud. ARYA adapts to who you are: a student, a professional, a homemaker, a retiree, or someone figuring things out. No jargon, no corporate tone — just a real conversation.
+
+🎯 Goals
+Tell ARYA your goals and it creates a structured plan with steps, reminders, and progress tracking. ARYA detects when you're setting a goal mid-conversation and offers to save it automatically. Goals can recur, include people involved, and link to your Google Calendar.
+
+🧠 Memory
+ARYA remembers what matters across conversations — your situation, your goals, your context. It connects the dots over time so you never have to repeat yourself.
+
+🎙️ Voice — Talk to ARYA
+Speak freely in any of 11 Indian languages. ARYA listens, understands, and replies in your language — complete with voice playback. Works end-to-end: Hindi, Tamil, Telugu, Kannada, Malayalam, and more.
+
+📝 Voice Notes
+Record a thought, capture an idea, or dictate a note on the go. ARYA transcribes it and saves it in your Notes panel, searchable anytime.
+
+😊 Daily Mood Check-in
+Once a day, ARYA gently asks how you're doing — mood, energy, and an optional note. Builds a quiet record of your emotional patterns over time.
+
+🌅 Morning Briefing
+Start your day informed. ARYA sends a personalized daily briefing: your active goals, a motivational line, and relevant news — at whatever time you choose.
+
+📖 Weekly Review
+Every Sunday, ARYA writes you a narrative review of your week — woven from your goals, what you told it, and even voice notes you shared months ago. A quiet space for reflection.
+
+📎 Document & Image Analysis
+Attach a photo, scan, or PDF — ARYA reads and analyses it. Medical reports, legal documents, receipts, handwritten notes — ask ARYA what it means.
+
+⚖️ Niti — Business Wisdom
+A separate space for decisions and market thinking. ARYA plays the role of ancient strategists (Chanakya, Vidura, Krishna) to help you think through business problems, stress-test plans, and navigate people situations. Includes market indices, news, and a portfolio journal.
+
+🗣️ Hard Conversation Rehearsal
+Before a difficult conversation — with your boss, a parent, an investor — practise with ARYA. It plays the other person so you can find the right words before the real moment.
+
+🏆 Community Challenges
+Shared weekly challenges with other ARYA users. Post your progress, react to others, stay accountable as a community.
+
+🔔 Notifications & Reminders
+Goal reminders, briefings, weekly reviews, pattern insights, streak nudges — all delivered as in-app notifications. Never miss what matters.
+
+📅 Google Calendar
+Connect your calendar and ARYA can link goals to events, helping your intentions and your schedule stay in sync.
+
+🌐 Hindi UI
+Switch the entire interface to हिंदी — menus, labels, buttons, and prompts — with one tap.
+
+🔒 Privacy Control (Right to Forget)
+Full control over your data under India's DPDP Act 2023. Delete specific categories, a date range, or everything — with a clear receipt of what was done.
+
+🌙 Light & Dark Mode
+Comfortable in any light — warm white for day, dark for night.
+
+ARYA works on any device — phone, tablet, or desktop. It installs as an app on your phone (no app store needed). Everything is private, personal, and built to feel like yours.
