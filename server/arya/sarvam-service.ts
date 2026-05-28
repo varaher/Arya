@@ -244,20 +244,21 @@ export function getLanguageName(code: string): string {
 }
 
 // Female voices for bulbul:v2 — ARYA is always female, no exceptions
+// Updated May 2026 — Sarvam retired meera/ananya/pavithra; new speaker list applies globally
 const TTS_SPEAKERS: Record<string, string> = {
-  "hi-IN": "meera",
-  "mr-IN": "meera",
-  "pa-IN": "meera",
-  "ta-IN": "pavithra",
-  "te-IN": "ananya",
-  "kn-IN": "ananya",
-  "ml-IN": "ananya",
-  "bn-IN": "ananya",
-  "gu-IN": "ananya",
-  "od-IN": "ananya",
-  "en-IN": "ananya",
+  "hi-IN": "priya",
+  "mr-IN": "priya",
+  "pa-IN": "simran",
+  "ta-IN": "kavitha",
+  "te-IN": "anushka",
+  "kn-IN": "anushka",
+  "ml-IN": "anushka",
+  "bn-IN": "priya",
+  "gu-IN": "priya",
+  "od-IN": "priya",
+  "en-IN": "priya",
 };
 
 export function getSpeakerForLanguage(langCode: string): string {
-  return TTS_SPEAKERS[langCode] || "ananya";
+  return TTS_SPEAKERS[langCode] || "priya";
 }
