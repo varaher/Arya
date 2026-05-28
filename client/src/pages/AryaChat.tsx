@@ -123,11 +123,11 @@ function FormattedMessage({ content, isUser }: { content: string; isUser?: boole
       <ReactMarkdown
         components={{
           p: ({ children }) => <p className="mb-3 last:mb-0 text-gray-800 dark:text-gray-100">{children}</p>,
-          strong: ({ children }) => <strong className="font-semibold text-gray-900 dark:text-white">{children}</strong>,
+          strong: ({ children }) => <strong className="font-semibold text-emerald-700 dark:text-emerald-400">{children}</strong>,
           em: ({ children }) => <em className="text-amber-600/90 dark:text-amber-400/90 not-italic font-medium">{children}</em>,
           h1: ({ children }) => <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-3 mt-5 first:mt-0 leading-tight">{children}</h1>,
           h2: ({ children }) => <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2.5 mt-6 first:mt-0 leading-tight">{children}</h2>,
-          h3: ({ children }) => <h3 className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-2 mt-4 first:mt-0">{children}</h3>,
+          h3: ({ children }) => <h3 className="text-base font-semibold text-emerald-600 dark:text-emerald-400 mb-2 mt-4 first:mt-0">{children}</h3>,
           ul: ({ children }) => <ul className="space-y-2 my-3 pl-0">{children}</ul>,
           ol: ({ children }) => {
             let counter = 0;
