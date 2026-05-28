@@ -85,21 +85,50 @@ import RemindersPanel from "@/components/RemindersPanel";
 import PricingModal from "@/components/PricingModal";
 import { requestNotificationPermission } from "@/lib/push-notifications";
 
+function CodeBlock({ children, language }: { children: string; language?: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(String(children)).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {});
+  };
+  return (
+    <div className="relative my-3 rounded-xl overflow-hidden border border-white/10 shadow-sm">
+      <div className="flex items-center justify-between px-4 py-2 bg-[#2a2a2a]">
+        <span className="text-[11px] font-medium text-gray-400 uppercase tracking-wider select-none">
+          {language || "code"}
+        </span>
+        <button
+          onClick={handleCopy}
+          className="flex items-center gap-1.5 text-[11px] text-gray-400 hover:text-white transition-colors px-2 py-0.5 rounded hover:bg-white/10"
+        >
+          {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+          <span>{copied ? "Copied" : "Copy"}</span>
+        </button>
+      </div>
+      <pre className="bg-[#1e1e1e] px-4 py-3.5 overflow-x-auto">
+        <code className="text-[13px] font-mono text-gray-200 leading-relaxed">{children}</code>
+      </pre>
+    </div>
+  );
+}
+
 function FormattedMessage({ content, isUser }: { content: string; isUser?: boolean }) {
   if (isUser) {
     return <div className="text-sm leading-relaxed whitespace-pre-wrap">{content}</div>;
   }
   return (
-    <div className="prose-arya text-sm leading-relaxed">
+    <div className="prose-arya text-[14.5px] leading-[1.7]">
       <ReactMarkdown
         components={{
-          p: ({ children }) => <p className="mb-2 last:mb-0 text-gray-800 dark:text-gray-100">{children}</p>,
-          strong: ({ children }) => <strong className="font-semibold text-emerald-600 dark:text-emerald-400">{children}</strong>,
+          p: ({ children }) => <p className="mb-3 last:mb-0 text-gray-800 dark:text-gray-100">{children}</p>,
+          strong: ({ children }) => <strong className="font-semibold text-gray-900 dark:text-white">{children}</strong>,
           em: ({ children }) => <em className="text-amber-600/90 dark:text-amber-400/90 not-italic font-medium">{children}</em>,
-          h1: ({ children }) => <h1 className="text-base font-bold text-gray-900 dark:text-white mb-2 mt-1">{children}</h1>,
-          h2: ({ children }) => <h2 className="text-sm font-bold text-gray-900 dark:text-white mb-2 mt-3 first:mt-0 pb-1 border-b border-gray-200 dark:border-slate-700">{children}</h2>,
-          h3: ({ children }) => <h3 className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 mb-1.5 mt-2 first:mt-0">{children}</h3>,
-          ul: ({ children }) => <ul className="space-y-1.5 my-2 pl-0">{children}</ul>,
+          h1: ({ children }) => <h1 className="text-lg font-bold text-gray-900 dark:text-white mb-3 mt-4 first:mt-0">{children}</h1>,
+          h2: ({ children }) => <h2 className="text-base font-bold text-gray-900 dark:text-white mb-2 mt-5 first:mt-0 pb-1.5 border-b border-gray-200 dark:border-slate-700">{children}</h2>,
+          h3: ({ children }) => <h3 className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 mb-2 mt-4 first:mt-0">{children}</h3>,
+          ul: ({ children }) => <ul className="space-y-2 my-3 pl-0">{children}</ul>,
           ol: ({ children }) => {
             let counter = 0;
             const numberedChildren = Array.isArray(children)
@@ -111,7 +140,7 @@ function FormattedMessage({ content, isUser }: { content: string; isUser?: boole
                   return child;
                 })
               : children;
-            return <ol className="space-y-2 my-2 pl-0">{numberedChildren}</ol>;
+            return <ol className="space-y-2.5 my-3 pl-0">{numberedChildren}</ol>;
           },
           li: ({ children, ...props }: any) => {
             const node = props.node;
@@ -119,36 +148,42 @@ function FormattedMessage({ content, isUser }: { content: string; isUser?: boole
             const siblings = node?.parentNode?.children?.filter((c: any) => c.tagName === 'li') || [];
             const num = siblings.indexOf(node) + 1;
             return isOrdered ? (
-              <li className="flex gap-2.5 items-start text-gray-800 dark:text-gray-100 list-none">
-                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-gradient-to-br from-emerald-500/30 to-emerald-600/20 border border-emerald-300 dark:border-emerald-700 flex items-center justify-center text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
+              <li className="flex gap-3 items-start text-gray-800 dark:text-gray-100 list-none">
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
                   {num}
                 </span>
                 <span className="flex-1">{children}</span>
               </li>
             ) : (
-              <li className="flex gap-2 items-start text-gray-800 dark:text-gray-100 list-none">
-                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5" />
+              <li className="flex gap-2.5 items-start text-gray-800 dark:text-gray-100 list-none">
+                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-emerald-400 dark:bg-emerald-500 mt-[10px]" />
                 <span className="flex-1">{children}</span>
               </li>
             );
           },
           code: ({ children, className }) => {
-            const isBlock = className?.includes("language-");
+            const lang = className?.replace("language-", "");
+            const isBlock = !!className?.includes("language-");
             return isBlock ? (
-              <pre className="bg-gray-100 dark:bg-slate-700 border border-gray-200 dark:border-slate-700 rounded-lg p-3 my-2 overflow-x-auto">
-                <code className="text-xs font-mono text-emerald-600 dark:text-emerald-400">{children}</code>
-              </pre>
+              <CodeBlock language={lang}>{String(children)}</CodeBlock>
             ) : (
-              <code className="bg-gray-100 dark:bg-slate-700 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded text-xs font-mono">{children}</code>
+              <code className="bg-gray-100 dark:bg-[#2a2a2a] text-amber-600 dark:text-amber-300 px-1.5 py-0.5 rounded text-[13px] font-mono">{children}</code>
             );
           },
           blockquote: ({ children }) => (
-            <blockquote className="border-l-2 border-emerald-300 dark:border-emerald-700 pl-3 my-2 text-gray-600 dark:text-gray-300 italic">{children}</blockquote>
+            <blockquote className="border-l-[3px] border-emerald-300 dark:border-emerald-700 pl-4 my-3 text-gray-600 dark:text-gray-300 italic">{children}</blockquote>
           ),
-          hr: () => <hr className="border-gray-200 dark:border-slate-700 my-3" />,
+          hr: () => <hr className="border-gray-200 dark:border-slate-700 my-4" />,
           a: ({ children, href }) => (
             <a href={href} target="_blank" rel="noopener noreferrer" className="text-emerald-600 dark:text-emerald-400 underline underline-offset-2 hover:text-emerald-700 dark:hover:text-emerald-300">{children}</a>
           ),
+          table: ({ children }) => (
+            <div className="overflow-x-auto my-3">
+              <table className="w-full text-sm border-collapse">{children}</table>
+            </div>
+          ),
+          th: ({ children }) => <th className="text-left px-3 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 font-semibold text-gray-800 dark:text-gray-200 text-xs uppercase tracking-wide">{children}</th>,
+          td: ({ children }) => <td className="px-3 py-2 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300">{children}</td>,
         }}
       >
         {content}
@@ -4725,15 +4760,15 @@ export default function AryaChat() {
               className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
               <div
-                className={`group max-w-[90%] sm:max-w-[80%] md:max-w-[75%] rounded-2xl px-3 md:px-4 py-2.5 md:py-3 ${
+                className={`group ${
                   msg.role === "user"
-                    ? "bg-primary/20 border border-primary/30 text-gray-900 dark:text-white"
-                    : "bg-white/90 dark:bg-slate-900/90 border border-gray-200 dark:border-slate-700 text-gray-800 dark:text-gray-100"
+                    ? "max-w-[82%] sm:max-w-[72%] md:max-w-[62%] rounded-2xl px-3.5 md:px-4 py-2.5 md:py-3 bg-primary/15 border border-primary/20 text-gray-900 dark:text-white"
+                    : "w-full max-w-[96%] py-1 text-gray-800 dark:text-gray-100"
                 }`}
               >
                 {msg.role === "assistant" && (
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <span className="text-xs font-semibold bg-gradient-to-r from-emerald-500 to-amber-400 bg-clip-text text-transparent">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 tracking-wide uppercase">
                       ARYA
                     </span>
                   </div>
@@ -4786,13 +4821,9 @@ export default function AryaChat() {
               className="flex justify-start"
               data-testid="message-streaming"
             >
-              <div className={`max-w-[90%] sm:max-w-[80%] md:max-w-[75%] rounded-2xl px-3 md:px-4 py-2.5 md:py-3 ${
-                responseMode === "instant"
-                  ? "bg-gradient-to-br from-amber-500/10 to-emerald-500/10 border border-amber-200 dark:border-amber-800"
-                  : "bg-white/90 dark:bg-slate-900/90 border border-gray-200 dark:border-slate-700"
-              } text-gray-800 dark:text-gray-100`}>
-                <div className="flex items-center gap-1.5 mb-1">
-                  <span className="text-xs font-semibold bg-gradient-to-r from-emerald-500 to-amber-400 bg-clip-text text-transparent">
+              <div className="w-full max-w-[96%] py-1 text-gray-800 dark:text-gray-100">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 tracking-wide uppercase">
                     ARYA
                   </span>
                   {responseMode === "instant" && responseFromCache && (
@@ -4854,9 +4885,9 @@ export default function AryaChat() {
               className="flex justify-start"
               data-testid="message-thinking"
             >
-              <div className="rounded-2xl px-3 md:px-4 py-2.5 md:py-3 bg-white/90 dark:bg-slate-900/90 border border-gray-200 dark:border-slate-700">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <span className="text-xs font-semibold bg-gradient-to-r from-emerald-500 to-amber-400 bg-clip-text text-transparent">
+              <div className="w-full max-w-[96%] py-1">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 tracking-wide uppercase">
                     ARYA
                   </span>
                 </div>
