@@ -68,6 +68,7 @@ import {
   Theater,
   Trophy,
   Headphones,
+  BookOpen,
   ShieldCheck,
   Activity,
   Download,
