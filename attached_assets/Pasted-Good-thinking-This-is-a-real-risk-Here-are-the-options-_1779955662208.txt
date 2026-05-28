@@ -1,0 +1,338 @@
+Good thinking. This is a real risk. Here are the options.
+
+---
+
+## The Problem
+
+```
+Sarvam updates their API silently
+Our code breaks
+Users hear silence
+We find out only when users complain
+Takes hours to diagnose and fix
+```
+
+---
+
+## Solution 1 — Auto Health Check (Best Option)
+
+```typescript
+// server/arya/sarvam-health-check.ts
+// Run this every day at midnight
+
+async function checkSarvamSpeakers() {
+  const testText = "hello";
+  const speakers = [
+    'priya', 'anushka', 'kavitha',
+    'simran', 'manisha', 'vidya'
+  ];
+
+  const working = [];
+  const broken = [];
+
+  for (const speaker of speakers) {
+    try {
+      const response = await fetch(
+        'https://api.sarvam.ai/text-to-speech',
+        {
+          method: 'POST',
+          headers: {
+            'API-Subscription-Key': process.env.SARVAM_API_KEY!,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            inputs: [testText],
+            target_language_code: 'hi-IN',
+            speaker: speaker,
+            model: 'bulbul:v2',
+          })
+        }
+      );
+
+      if (response.ok) {
+        working.push(speaker);
+      } else {
+        const err = await response.json();
+        broken.push({ speaker, error: err });
+      }
+    } catch (e) {
+      broken.push({ speaker, error: e });
+    }
+  }
+
+  console.log('[Sarvam Health] Working:', working);
+  console.log('[Sarvam Health] Broken:', broken);
+
+  // If any current speaker is broken → alert
+  const currentSpeakers = [
+    'priya', 'anushka', 'kavitha', 'simrin'
+  ];
+
+  const brokenCurrent = broken.filter(b =>
+    currentSpeakers.includes(b.speaker)
+  );
+
+  if (brokenCurrent.length > 0) {
+    console.error(
+      '[ALERT] Sarvam speakers broken:',
+      brokenCurrent
+    );
+    // Send notification to admin
+  }
+
+  return { working, broken };
+}
+
+// Run daily at midnight:
+// schedule.scheduleJob('0 0 * * *', checkSarvamSpeakers);
+
+// Also expose as admin endpoint:
+// GET /api/admin/sarvam-health
+```
+
+---
+
+## Solution 2 — Dynamic Speaker Detection
+
+```typescript
+// Instead of hardcoding speaker names
+// Detect which speakers work at runtime
+
+// server/arya/sarvam-service.ts
+
+let workingSpeakers: string[] = [];
+let lastChecked: Date | null = null;
+
+async function getWorkingSpeakers():
+  Promise<string[]> {
+
+  // Cache for 24 hours
+  const now = new Date();
+  if (
+    lastChecked &&
+    now.getTime() - lastChecked.getTime()
+    < 24 * 60 * 60 * 1000 &&
+    workingSpeakers.length > 0
+  ) {
+    return workingSpeakers;
+  }
+
+  // Test all known speakers
+  const allSpeakers = [
+    'priya', 'anushka', 'kavitha',
+    'simran', 'manisha', 'vidya',
+    'arjun', 'meera', 'ananya'
+  ];
+
+  const working = [];
+  for (const speaker of allSpeakers) {
+    const ok = await testSpeaker(speaker);
+    if (ok) working.push(speaker);
+  }
+
+  workingSpeakers = working;
+  lastChecked = now;
+
+  console.log('[Sarvam] Working speakers:', working);
+  return working;
+}
+
+// Use working speakers dynamically:
+export function getSpeakerForLanguage(
+  langCode: string
+): string {
+  // Language preference map
+  const preference: Record<string, string[]> = {
+    'ml-IN': ['anushka', 'vidya', 'priya'],
+    'hi-IN': ['priya', 'manisha', 'vidya'],
+    'ta-IN': ['kavitha', 'priya', 'vidya'],
+    'te-IN': ['anushka', 'priya', 'vidya'],
+    'kn-IN': ['anushka', 'priya', 'vidya'],
+    'pa-IN': ['simran', 'priya', 'vidya'],
+    'en-IN': ['priya', 'vidya', 'manisha'],
+  };
+
+  const preferred = preference[langCode] || ['priya'];
+
+  // Return first working speaker from preference list
+  for (const speaker of preferred) {
+    if (workingSpeakers.includes(speaker)) {
+      return speaker;
+    }
+  }
+
+  // Last resort — first working speaker
+  return workingSpeakers[0] || 'priya';
+}
+```
+
+---
+
+## Solution 3 — Admin Alert System
+
+```typescript
+// When TTS fails → send alert to you immediately
+
+async function sarvamTextToSpeech(
+  text: string,
+  languageCode: string
+) {
+  // ... existing code ...
+
+  if (!response.ok) {
+    const errorBody = await response.json();
+
+    // Check if it's a speaker error
+    if (errorBody?.error?.message?.includes(
+      'not recognized'
+    )) {
+      // Extract available speakers from error
+      const message = errorBody.error.message;
+      const available = message
+        .match(/Available speakers are: (.+)/)?.[1]
+        ?.split(', ') || [];
+
+      console.error(
+        '[CRITICAL] Speaker retired by Sarvam!'
+      );
+      console.error('Available now:', available);
+
+      // Auto-update to first available speaker
+      if (available.length > 0) {
+        console.log(
+          '[Auto-fix] Switching to:', available[0]
+        );
+        // Retry with new speaker
+        return await retryWithSpeaker(
+          text, languageCode, available[0]
+        );
+      }
+    }
+  }
+}
+```
+
+---
+
+## Solution 4 — Read Available Speakers From Error
+
+```typescript
+// The smartest fix — when Sarvam says
+// "Speaker X not found. Available: A, B, C"
+// Automatically use A and remember it
+
+async function handleTTSError(
+  errorBody: any,
+  text: string,
+  languageCode: string
+): Promise<TTSResult | null> {
+
+  const message = errorBody?.error?.message || '';
+
+  // Sarvam tells us what's available
+  if (message.includes('Available speakers are:')) {
+    const available = message
+      .split('Available speakers are: ')[1]
+      ?.split(/[,\n]/)[0]
+      ?.trim();
+
+    if (available) {
+      console.log(
+        `[Auto-fix] Sarvam retired speaker.
+         Switching to: ${available}`
+      );
+
+      // Update the speaker map
+      updateSpeakerMap(languageCode, available);
+
+      // Retry immediately with new speaker
+      return await sarvamTextToSpeech(
+        text,
+        languageCode,
+        available
+      );
+    }
+  }
+
+  return null;
+}
+```
+
+This is the most elegant solution — Sarvam's own error message tells us what speakers are available. We read the error and automatically switch. No manual fix needed ever again.
+
+---
+
+## Recommended Approach — Combine 1 + 4
+
+```
+Solution 4 (auto-read from error):
+  When Sarvam retires a speaker
+  Error message contains new speaker names
+  Parse the error → auto-switch → retry
+  User never hears silence
+  No manual fix needed ✅
+
+Solution 1 (daily health check):
+  Run every night at midnight
+  Test all speakers
+  Log which ones work
+  Alert if something changes
+  You know before users complain ✅
+
+Together:
+  If speaker retired mid-day →
+  Solution 4 catches it instantly
+  Auto-fixes in same request
+
+  Every night →
+  Solution 1 confirms everything healthy
+  Early warning for any changes
+```
+
+---
+
+## Tell Your Developer
+
+```
+Two things to implement:
+
+Fix 1 — Auto-fix from error message (Priority):
+In sarvamTextToSpeech() catch block:
+  Parse error message for "Available speakers"
+  Extract first available speaker name
+  Retry the TTS call with that speaker
+  Update the speaker map for next time
+
+Fix 2 — Daily health check (Monitoring):
+  New file: server/arya/sarvam-health.ts
+  Test all speakers with short text daily
+  Log results
+  Expose as GET /api/admin/sarvam-health
+  Schedule at midnight
+
+Estimated: 2-3 hours
+Result: Never manually fix speaker
+        names again. Ever.
+```
+
+---
+
+## After This — Fully Automated
+
+```
+Sarvam updates API again:
+  Old speaker retired
+  Error fires
+  Code reads error message
+  Finds new speaker name
+  Retries automatically
+  User hears voice without interruption ✅
+  You never know it happened ✅
+
+Daily check at midnight:
+  All speakers tested
+  Log shows: "All working ✅"
+  Or: "simran retired, switched to priya"
+  You see it in logs next morning
+  Before any user complains ✅
+```

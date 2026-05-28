@@ -308,6 +308,28 @@ async function checkGoalReminders(): Promise<void> {
 }
 
 let goalReminderInterval: ReturnType<typeof setInterval> | null = null;
+let sarvamHealthInterval: ReturnType<typeof setInterval> | null = null;
+
+function scheduleMidnightSarvamCheck(): void {
+  const now = new Date();
+  const nextMidnight = new Date(now);
+  nextMidnight.setHours(24, 0, 0, 0); // next midnight IST-ish
+  const msUntilMidnight = nextMidnight.getTime() - now.getTime();
+
+  setTimeout(() => {
+    import("./sarvam-health").then(({ runSarvamHealthCheck }) => runSarvamHealthCheck()).catch(err => {
+      console.error("[SARVAM HEALTH] Daily check failed:", err.message);
+    });
+    // After first midnight run, repeat every 24 hours
+    sarvamHealthInterval = setInterval(() => {
+      import("./sarvam-health").then(({ runSarvamHealthCheck }) => runSarvamHealthCheck()).catch(err => {
+        console.error("[SARVAM HEALTH] Daily check failed:", err.message);
+      });
+    }, 24 * 60 * 60 * 1000);
+  }, msUntilMidnight);
+
+  console.log(`[SCHEDULER] Sarvam health check scheduled — next run in ${Math.round(msUntilMidnight / 1000 / 60)} min (midnight)`);
+}
 
 export function startReminderScheduler(): void {
   if (schedulerInterval) return;
@@ -324,10 +346,13 @@ export function startReminderScheduler(): void {
   patternsInterval = setInterval(checkPatterns, 60 * 60 * 1000); // check every hour
   goalReminderInterval = setInterval(checkGoalReminders, 5 * 60 * 1000); // check every 5 min
 
+  // Sarvam speaker health check — daily at midnight
+  scheduleMidnightSarvamCheck();
+
   // Seed an initial challenge if none exists
   import("./community-challenge").then(({ seedInitialChallenge }) => seedInitialChallenge()).catch(() => {});
 
-  console.log("[SCHEDULER] Reminder scheduler started — briefing/review/challenge/silence/patterns/goal-reminders active");
+  console.log("[SCHEDULER] Reminder scheduler started — briefing/review/challenge/silence/patterns/goal-reminders/sarvam-health active");
 }
 
 export function stopReminderScheduler(): void {
@@ -339,4 +364,5 @@ export function stopReminderScheduler(): void {
   if (silenceDetectionInterval) { clearInterval(silenceDetectionInterval); silenceDetectionInterval = null; }
   if (patternsInterval) { clearInterval(patternsInterval); patternsInterval = null; }
   if (goalReminderInterval) { clearInterval(goalReminderInterval); goalReminderInterval = null; }
+  if (sarvamHealthInterval) { clearInterval(sarvamHealthInterval); sarvamHealthInterval = null; }
 }

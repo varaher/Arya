@@ -1540,6 +1540,17 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/admin/sarvam-health", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { runSarvamHealthCheck } = await import("./arya/sarvam-health");
+      const result = await runSarvamHealthCheck();
+      res.json(result);
+    } catch (error: any) {
+      console.error('[SARVAM HEALTH ERROR]', error.message);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // =============================================
   // NEURAL LINK API ROUTES
   // =============================================

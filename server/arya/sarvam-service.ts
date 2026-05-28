@@ -157,33 +157,52 @@ export async function sarvamTextToSpeech(
     throw new Error("Sarvam TTS: cleaned text is empty");
   }
 
-  // Minimal payload — only fields confirmed valid by Sarvam bulbul:v2 docs
-  const payload = {
-    inputs: [cleanedText],
-    target_language_code: languageCode,
-    speaker: speaker,
-    model: "bulbul:v2",
-    enable_preprocessing: false,
-  };
-
   console.log(`[Sarvam TTS] REQUEST lang=${languageCode} speaker=${speaker} chars=${cleanedText.length}`);
-  console.log(`[Sarvam TTS] text sample: "${cleanedText.slice(0, 80)}"`);
-  console.log(`[Sarvam TTS] full payload: ${JSON.stringify(payload)}`);
 
-  const response = await fetch(`${SARVAM_BASE_URL}/text-to-speech`, {
-    method: "POST",
-    headers: {
-      "API-Subscription-Key": getApiKey(),
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+  let response = await callSarvamTTS(cleanedText, languageCode, speaker);
 
-  if (!response.ok) {
+  // ── Auto-fix: if Sarvam retired the speaker, parse the error and retry ──
+  if (!response.ok && response.status === 400) {
     const errorText = await response.text();
-    console.error(`[Sarvam TTS] FAILED status=${response.status} lang=${languageCode} speaker=${speaker} chars=${cleanedText.length}`);
-    console.error(`[Sarvam TTS] error body: ${errorText}`);
-    console.error(`[Sarvam TTS] text that failed: "${cleanedText}"`);
+    let errorBody: any = {};
+    try { errorBody = JSON.parse(errorText); } catch {}
+
+    const errMsg: string = errorBody?.error?.message || errorText || "";
+
+    if (errMsg.toLowerCase().includes("not recognized") && errMsg.toLowerCase().includes("available speakers")) {
+      const available = parseAvailableSpeakers(errMsg);
+      const replacement = pickFemaleSpeaker(available);
+
+      if (replacement) {
+        console.warn(`[Sarvam TTS] Speaker '${speaker}' retired. Auto-switching to '${replacement}' for ${languageCode}`);
+        console.warn(`[Sarvam TTS] Available speakers from error: ${available.join(", ")}`);
+
+        // Update runtime map so all subsequent calls for this language use the new speaker
+        TTS_SPEAKERS[languageCode] = replacement;
+
+        // Retry once with the replacement speaker
+        response = await callSarvamTTS(cleanedText, languageCode, replacement);
+
+        if (response.ok) {
+          console.log(`[Sarvam TTS] Auto-fix succeeded — '${replacement}' works for ${languageCode}`);
+        } else {
+          const retryError = await response.text();
+          console.error(`[Sarvam TTS] Auto-fix failed on retry: ${retryError}`);
+          throw new Error(`Sarvam TTS failed after auto-fix (${response.status}): ${retryError}`);
+        }
+      } else {
+        console.error(`[Sarvam TTS] FAILED — could not parse replacement speaker from: ${errMsg}`);
+        throw new Error(`Sarvam TTS failed (${response.status}): ${errorText}`);
+      }
+    } else {
+      // Non-speaker error — log and throw for OpenAI fallback to handle
+      console.error(`[Sarvam TTS] FAILED status=${response.status} lang=${languageCode} speaker=${speaker}`);
+      console.error(`[Sarvam TTS] error body: ${errorText}`);
+      throw new Error(`Sarvam TTS failed (${response.status}): ${errorText}`);
+    }
+  } else if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`[Sarvam TTS] FAILED status=${response.status} lang=${languageCode} speaker=${speaker}`);
     throw new Error(`Sarvam TTS failed (${response.status}): ${errorText}`);
   }
 
@@ -245,6 +264,7 @@ export function getLanguageName(code: string): string {
 
 // Female voices for bulbul:v2 — ARYA is always female, no exceptions
 // Updated May 2026 — Sarvam retired meera/ananya/pavithra; new speaker list applies globally
+// This map is mutable at runtime — auto-fix can update it when Sarvam retires a speaker
 const TTS_SPEAKERS: Record<string, string> = {
   "hi-IN": "priya",
   "mr-IN": "priya",
@@ -259,6 +279,56 @@ const TTS_SPEAKERS: Record<string, string> = {
   "en-IN": "priya",
 };
 
+// Known female speaker names — prefer these when auto-selecting from error message
+const KNOWN_FEMALE_SPEAKERS = new Set([
+  "anushka", "manisha", "vidya", "arya", "ritu", "priya", "neha",
+  "pooja", "simran", "kavya", "ishita", "shreya", "roopa", "tanya",
+  "shruti", "suhani", "kavitha", "rupali",
+]);
+
 export function getSpeakerForLanguage(langCode: string): string {
   return TTS_SPEAKERS[langCode] || "priya";
+}
+
+/**
+ * Parse Sarvam's "not recognized" error and extract available speakers.
+ * Error format: "Speaker 'X' is not recognized. Available speakers are: a, b, c"
+ */
+function parseAvailableSpeakers(errorMessage: string): string[] {
+  const match = errorMessage.match(/Available speakers are:\s*(.+)/i);
+  if (!match) return [];
+  return match[1].split(",").map(s => s.trim()).filter(Boolean);
+}
+
+/**
+ * Pick the best female speaker from a list of available ones.
+ * Prefers known female names; falls back to first available.
+ */
+function pickFemaleSpeaker(available: string[]): string | null {
+  const female = available.find(s => KNOWN_FEMALE_SPEAKERS.has(s));
+  return female || available[0] || null;
+}
+
+/**
+ * Execute a single TTS API call. Returns the raw Response.
+ */
+async function callSarvamTTS(
+  cleanedText: string,
+  languageCode: string,
+  speaker: string
+): Promise<Response> {
+  return fetch(`${SARVAM_BASE_URL}/text-to-speech`, {
+    method: "POST",
+    headers: {
+      "API-Subscription-Key": getApiKey(),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      inputs: [cleanedText],
+      target_language_code: languageCode,
+      speaker,
+      model: "bulbul:v2",
+      enable_preprocessing: false,
+    }),
+  });
 }
