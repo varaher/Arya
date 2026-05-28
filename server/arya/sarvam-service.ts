@@ -157,18 +157,18 @@ export async function sarvamTextToSpeech(
     throw new Error("Sarvam TTS: cleaned text is empty");
   }
 
+  // Minimal payload — only fields confirmed valid by Sarvam bulbul:v2 docs
   const payload = {
     inputs: [cleanedText],
     target_language_code: languageCode,
     speaker: speaker,
     model: "bulbul:v2",
-    pitch: 0,
-    pace: 1.05,
-    loudness: 1.5,
-    enable_preprocessing: true,
+    enable_preprocessing: false,
   };
 
-  console.log(`[Sarvam TTS] lang=${languageCode} speaker=${speaker} chars=${cleanedText.length} preview="${cleanedText.slice(0, 60)}"`);
+  console.log(`[Sarvam TTS] REQUEST lang=${languageCode} speaker=${speaker} chars=${cleanedText.length}`);
+  console.log(`[Sarvam TTS] text sample: "${cleanedText.slice(0, 80)}"`);
+  console.log(`[Sarvam TTS] full payload: ${JSON.stringify(payload)}`);
 
   const response = await fetch(`${SARVAM_BASE_URL}/text-to-speech`, {
     method: "POST",
@@ -181,7 +181,9 @@ export async function sarvamTextToSpeech(
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error(`[Sarvam TTS] 400 detail — lang:${languageCode} speaker:${speaker} chars:${cleanedText.length} preview:"${cleanedText.slice(0,80)}" error:${errorText}`);
+    console.error(`[Sarvam TTS] FAILED status=${response.status} lang=${languageCode} speaker=${speaker} chars=${cleanedText.length}`);
+    console.error(`[Sarvam TTS] error body: ${errorText}`);
+    console.error(`[Sarvam TTS] text that failed: "${cleanedText}"`);
     throw new Error(`Sarvam TTS failed (${response.status}): ${errorText}`);
   }
 

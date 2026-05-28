@@ -5095,29 +5095,42 @@ export default function AryaChat() {
               ) : (
                 <div className="flex-1 flex flex-col min-w-0">
                   {pendingFiles.length > 0 && (
-                    <div className="flex flex-wrap gap-2 px-1 pt-1.5 pb-1">
+                    <div className="flex flex-wrap gap-2 px-2 pt-2 pb-1">
                       {isScanningDoc ? (
-                        <span className="text-xs text-purple-600 dark:text-purple-400 font-medium py-1">
+                        <span className="text-xs text-purple-600 dark:text-purple-400 font-medium py-2 flex items-center gap-1.5">
+                          <Loader2 className="w-3 h-3 animate-spin" />
                           Reading {pendingFiles.length > 1 ? `${pendingFiles.length} files` : "file"}…
                         </span>
                       ) : (
                         pendingFiles.map((file, idx) => (
-                          <div key={idx} className="relative flex-shrink-0" data-testid={`attached-file-${idx}`}>
+                          <div key={idx} className="relative flex-shrink-0 group" data-testid={`attached-file-${idx}`}>
                             {file.previewUrl.startsWith("__pdf__:") ? (
-                              <div className="h-12 px-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 flex items-center gap-1 max-w-[120px]">
-                                <Paperclip className="w-3 h-3 text-amber-600 flex-shrink-0" />
-                                <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 truncate">{file.name}</span>
+                              /* PDF card — Claude style */
+                              <div className="flex items-center gap-2.5 pr-3 pl-2.5 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm w-[180px]">
+                                <div className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-base leading-none">📄</span>
+                                </div>
+                                <div className="flex flex-col min-w-0">
+                                  <span className="text-[11px] font-semibold text-gray-800 dark:text-gray-200 truncate leading-tight">{file.name}</span>
+                                  <span className="text-[10px] text-gray-400 dark:text-gray-500 leading-tight">PDF document</span>
+                                </div>
                               </div>
                             ) : (
-                              <img
-                                src={file.previewUrl}
-                                alt={file.name}
-                                className="h-12 w-12 rounded-lg object-cover border border-purple-200 dark:border-purple-800"
-                              />
+                              /* Image card — Claude style */
+                              <div className="relative w-[90px] h-[68px] rounded-xl overflow-hidden border border-gray-200 dark:border-slate-700 shadow-sm">
+                                <img
+                                  src={file.previewUrl}
+                                  alt={file.name}
+                                  className="w-full h-full object-cover"
+                                />
+                                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-1.5 pb-1 pt-3">
+                                  <span className="text-[9px] text-white font-medium truncate block leading-tight">{file.name}</span>
+                                </div>
+                              </div>
                             )}
                             <button
                               onClick={() => setPendingFiles((prev) => prev.filter((_, i) => i !== idx))}
-                              className="absolute -top-1 -right-1 bg-gray-800 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] leading-none hover:bg-gray-700"
+                              className="absolute -top-1.5 -right-1.5 bg-gray-700 hover:bg-gray-900 text-white rounded-full w-4.5 h-4.5 w-[18px] h-[18px] flex items-center justify-center text-[9px] leading-none shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
                               data-testid={`button-remove-file-${idx}`}
                             >✕</button>
                           </div>

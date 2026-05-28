@@ -1,0 +1,278 @@
+Now I can see the exact errors clearly.
+
+---
+
+## What The Logs Show
+
+```
+[Scan] PDF text empty — falling back to vision ✅
+[Scan] PDF parse error (will try vision)
+[Scan] Vision fallback also failed: 400 ❌
+[TTS ERROR] Sarvam TTS failed (400) ❌
+```
+
+---
+
+## Two Problems Confirmed
+
+### Problem 1 — Vision fallback failing with 400
+```
+GPT-4o is rejecting the PDF
+"Vision fallback also failed: 400"
+
+400 = Bad Request
+The PDF is being sent in wrong format
+to GPT-4o vision API
+```
+
+### Problem 2 — Sarvam TTS still 400
+```
+[Sarvam TTS] lang=ml-IN speaker=ananya
+[TTS ERROR] Sarvam TTS failed (400)
+[Sarvam TTS] 400 detail — lang:ml-IN sp...
+
+Text cleaning fix did not work
+Still sending something Sarvam rejects
+```
+
+---
+
+## Fix 1 — PDF Vision 400
+
+Tell developer:
+```
+In server/routes.ts — scan endpoint
+Find: "[Scan] Vision fallback also failed"
+
+The vision call is sending PDF as wrong type.
+
+Change the vision API call to:
+
+const visionResponse = await openai.chat.completions.create({
+  model: "gpt-4o",
+  messages: [{
+    role: "user",
+    content: [
+      {
+        type: "text",
+        text: "Analyze this medical document and explain all findings in detail."
+      },
+      {
+        type: "image_url",
+        image_url: {
+          url: `data:application/pdf;base64,${pdfBase64}`,
+          detail: "high"
+        }
+      }
+    ]
+  }],
+  max_tokens: 1500
+});
+
+If still 400 with application/pdf:
+  Use pdf-parse to get first page as image
+  OR tell user to send as photo
+```
+
+---
+
+## Fix 2 — Sarvam TTS Still Failing
+
+The text cleaning isn't working. Need to see what's actually being sent.
+
+Tell developer:
+```
+In sarvam-service.ts
+Find sarvamTextToSpeech function
+Add this log BEFORE the API call:
+
+const requestBody = {
+  inputs: [cleanedText],
+  target_language_code: languageCode,
+  speaker: speaker,
+  speaker_gender: "Female",
+  model: "bulbul:v2",
+  mode: "code-mixed",
+};
+
+console.log('[Sarvam TTS] Request body:', 
+  JSON.stringify(requestBody));
+console.log('[Sarvam TTS] Text length:', 
+  cleanedText.length);
+console.log('[Sarvam TTS] Text sample:', 
+  cleanedText.substring(0, 50));
+
+This shows exactly what Sarvam receives.
+Send me that log output.
+```
+
+---
+
+## Also — File Preview Redesign (Your Second Point)
+
+You want files shown like GPT/Claude — better UI.
+
+```
+Current ARYA:           GPT/Claude style:
+─────────────────────────────────────────
+Small thumbnail         Large preview card
+No file info            Shows filename + size
+Basic ✕ button          Clean remove button
+```
+
+```tsx
+// Replace the preview chips with cards:
+
+{pendingFiles.map((file, index) => (
+  <div key={index} className="file-preview-card">
+
+    {file.type === 'image' ? (
+      // Image card — like Claude
+      <div className="fpc-image">
+        <img src={file.preview} alt={file.name} />
+        <div className="fpc-overlay">
+          <span className="fpc-name">{file.name}</span>
+        </div>
+      </div>
+    ) : (
+      // PDF card — like Claude
+      <div className="fpc-pdf">
+        <div className="fpc-pdf-icon">📄</div>
+        <div className="fpc-pdf-info">
+          <span className="fpc-pdf-name">{file.name}</span>
+          <span className="fpc-pdf-size">
+            {(file.size / 1024).toFixed(0)} KB
+          </span>
+        </div>
+      </div>
+    )}
+
+    <button
+      className="fpc-remove"
+      onClick={() => setAttachedFiles(
+        prev => prev.filter((_, i) => i !== index)
+      )}
+    >
+      ✕
+    </button>
+
+  </div>
+))}
+```
+
+```css
+.file-preview-card {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border, #e0e0e0);
+  background: var(--surface2, #f5f5f5);
+}
+
+/* Image preview */
+.fpc-image {
+  width: 120px;
+  height: 90px;
+  position: relative;
+}
+
+.fpc-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.fpc-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(transparent, rgba(0,0,0,0.6));
+  padding: 4px 6px;
+}
+
+.fpc-name {
+  font-size: 10px;
+  color: white;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+/* PDF preview */
+.fpc-pdf {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  width: 200px;
+}
+
+.fpc-pdf-icon {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.fpc-pdf-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.fpc-pdf-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text, #1a1a1a);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fpc-pdf-size {
+  font-size: 11px;
+  color: var(--text-muted, #888);
+}
+
+/* Remove button */
+.fpc-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.5);
+  color: white;
+  border: none;
+  font-size: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+```
+
+---
+
+## Developer Task — Three Things
+
+```
+Fix 1 — PDF vision (30 mins):
+  Change vision API call media type
+  to application/pdf
+  If still fails → use pdfjs to render
+  PDF page as JPEG image first
+
+Fix 2 — TTS debug (15 mins):
+  Add full request body logging
+  before Sarvam TTS call
+  Send me the log output
+
+Fix 3 — File preview UI (1 hour):
+  Replace small chips with cards
+  Image: 120×90 with filename overlay
+  PDF: icon + name + size
+  Style like Claude/GPT file preview
+```

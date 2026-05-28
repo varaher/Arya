@@ -2575,28 +2575,62 @@ export async function registerRoutes(
           } as any);
           aryaResponse = (pdfResponse as any).choices?.[0]?.message?.content || "I couldn't analyze that document. Please try again.";
         } else {
-          // Scanned/image-based PDF — send raw bytes to GPT-4o vision as JPEG
-          // (Works for phone-scanned PDFs which are photos wrapped in PDF container)
-          console.log("[Scan] PDF text empty — falling back to GPT-4o vision for scanned PDF");
+          // Scanned/image PDF — extract embedded JPEG bytes from PDF binary
+          // Phone-scanned PDFs are JPEG images wrapped in a PDF container.
+          // We find the JPEG SOI marker (FF D8 FF) in the raw bytes and extract it.
+          console.log("[Scan] PDF text empty — extracting embedded image from PDF bytes");
+          let jpegBase64: string | null = null;
           try {
-            const visionResponse = await openai.chat.completions.create({
-              model: "gpt-4o",
-              messages: [
-                { role: "system", content: systemPrompt },
-                {
-                  role: "user",
-                  content: [
-                    { type: "image_url", image_url: { url: `data:image/jpeg;base64,${image}`, detail: "high" } as any },
-                    { type: "text", text: userQuestion },
-                  ],
-                },
-              ],
-              max_tokens: 1500,
-            } as any);
-            aryaResponse = (visionResponse as any).choices?.[0]?.message?.content || "I couldn't read that document clearly. Please try sharing a clear photo of the page instead.";
-          } catch (visionErr) {
-            console.error("[Scan] Vision fallback also failed:", (visionErr as Error).message);
-            aryaResponse = "This appears to be a scanned PDF. For best results, take a screenshot or photo of the page and share it as an image — I'll read it instantly.";
+            // Find JPEG start (FF D8 FF) and end (FF D9) in the raw PDF buffer
+            let start = -1;
+            for (let i = 0; i < pdfBuffer.length - 2; i++) {
+              if (pdfBuffer[i] === 0xFF && pdfBuffer[i + 1] === 0xD8 && pdfBuffer[i + 2] === 0xFF) {
+                start = i;
+                break;
+              }
+            }
+            if (start !== -1) {
+              let end = pdfBuffer.length;
+              for (let j = pdfBuffer.length - 1; j > start + 2; j--) {
+                if (pdfBuffer[j] === 0xD9 && pdfBuffer[j - 1] === 0xFF) {
+                  end = j + 1;
+                  break;
+                }
+              }
+              const jpegBytes = pdfBuffer.slice(start, end);
+              if (jpegBytes.length > 1000) { // sanity check — must be a real image
+                jpegBase64 = jpegBytes.toString("base64");
+                console.log(`[Scan] Extracted JPEG from PDF — ${jpegBytes.length} bytes`);
+              }
+            }
+          } catch (extractErr) {
+            console.error("[Scan] JPEG extraction failed:", (extractErr as Error).message);
+          }
+
+          if (jpegBase64) {
+            // Send the extracted JPEG to GPT-4o vision
+            try {
+              const visionResponse = await openai.chat.completions.create({
+                model: "gpt-4o",
+                messages: [
+                  { role: "system", content: systemPrompt },
+                  {
+                    role: "user",
+                    content: [
+                      { type: "image_url", image_url: { url: `data:image/jpeg;base64,${jpegBase64}`, detail: "high" } as any },
+                      { type: "text", text: userQuestion },
+                    ],
+                  },
+                ],
+                max_tokens: 1500,
+              } as any);
+              aryaResponse = (visionResponse as any).choices?.[0]?.message?.content || "I couldn't read that document clearly. Please try sharing a clear photo of the page instead.";
+            } catch (visionErr) {
+              console.error("[Scan] Vision on extracted JPEG failed:", (visionErr as Error).message);
+              aryaResponse = "I could see this is a scanned document but couldn't read it clearly. Please share a clear photo of the page as an image — I'll read it instantly.";
+            }
+          } else {
+            aryaResponse = "This appears to be a scanned PDF without an extractable image. For best results, take a clear photo of the page and share it as an image — I'll read it instantly.";
           }
         }
       } else {
