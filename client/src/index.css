@@ -125,16 +125,24 @@
 
 /* ── Chat message bubble CSS vars ─────────────────────────────────── */
 :root {
-  --user-bubble: #eef2ee;
+  --user-bubble: #e8f0e8;
 }
 :root[data-theme="dark"] {
-  --user-bubble: rgb(51 65 85 / 0.75);
+  --user-bubble: #2d4a35;
 }
 
 /* ── Chat input pill focus ring ──────────────────────────────────── */
 .chat-input-pill:focus-within {
   border-color: rgb(5 150 105);
   box-shadow: 0 0 0 2px rgb(5 150 105 / 0.12);
+}
+
+/* ── Hide scrollbar on messages list ─────────────────────────────── */
+.hide-scrollbar {
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
 /* ── Hide Replit's injected feedback badge ────────────────────────── */

@@ -2660,7 +2660,10 @@ export default function AryaChat() {
   const [showOriginalStreaming, setShowOriginalStreaming] = useState(false);
   const [playingAudio, setPlayingAudio] = useState(false);
   const [speakerOn, setSpeakerOn] = useState(() => {
-    try { return localStorage.getItem("arya_speaker") === "true"; } catch { return false; }
+    try {
+      const stored = localStorage.getItem("arya_speaker");
+      return stored === null ? true : stored === "true";
+    } catch { return true; }
   });
   const [responseMode, setResponseMode] = useState<"instant" | "thinking" | null>(null);
   const [responseModeIcon, setResponseModeIcon] = useState<string | null>(null);
@@ -4764,7 +4767,7 @@ export default function AryaChat() {
             </button>
           </div>
         )}
-        <div className={`overflow-y-auto py-6 ${(!activeConversation && messages.length === 0 && !streamingContent) ? "hidden" : "flex-1"}`} data-testid="list-messages">
+        <div className={`hide-scrollbar overflow-y-auto py-6 ${(!activeConversation && messages.length === 0 && !streamingContent) ? "hidden" : "flex-1"}`} data-testid="list-messages">
           <div className="max-w-3xl mx-auto px-4 md:px-6 space-y-6">
           {messages.map((msg, msgIndex) => (
             <motion.div
@@ -4924,9 +4927,8 @@ export default function AryaChat() {
               </div>
             </div>
           )}
-          {/* ── Input bar — Claude style: rounded pill, emerald focus, minimal icons ── */}
-          <div className="max-w-3xl mx-auto">
-            <div className="flex items-end gap-2">
+          {/* ── Input bar — full width, WhatsApp-style pill ── */}
+          <div className="flex items-end gap-2">
               <input
                 ref={imageInputRef}
                 type="file"
@@ -5177,8 +5179,8 @@ export default function AryaChat() {
                     placeholder={pendingFiles.length > 0 ? t("ask_about_image") : t("ask_anything")}
                     disabled={isStreaming || isScanningDoc}
                     rows={1}
-                    className="w-full resize-none bg-transparent border-0 text-[15px] text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none py-2.5 max-h-40 leading-relaxed"
-                    style={{ height: "auto", minHeight: "2.5rem" }}
+                    className="w-full resize-none bg-transparent border-0 text-[15px] text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none py-3 max-h-40 leading-relaxed"
+                    style={{ height: "auto", minHeight: "44px" }}
                     onInput={(e) => {
                       const target = e.target as HTMLTextAreaElement;
                       target.style.height = "auto";
@@ -5202,10 +5204,8 @@ export default function AryaChat() {
                 )}
               </button>
             </div>
-            {/* Rounded pill container wrapping the left-side controls + textarea */}
-          </div>{/* end max-w-3xl */}
           {voiceError && (
-            <div className="max-w-3xl mx-auto flex items-center gap-2 mt-1 px-1">
+            <div className="flex items-center gap-2 mt-1 px-1">
               <p className="text-xs text-red-500 dark:text-red-400">{voiceError}</p>
               <button onClick={() => setVoiceError(null)} className="text-red-400 hover:text-red-500 text-xs">✕</button>
             </div>

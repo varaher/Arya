@@ -1,0 +1,198 @@
+Good progress. The chat looks much cleaner. Let me give honest feedback.
+
+---
+
+## What's Working Well ✅
+
+```
+ARYA label in green — perfect ✅
+Open white response — no bubble ✅
+Clean typography — readable ✅
+Action buttons subtle below ✅
+  Copy / Speaker / 👍 / 👎
+User message — right aligned ✅
+  "Yes" bubble — clean ✅
+Divider line between sections ✅
+```
+
+---
+
+## What Needs Fixing
+
+### Issue 1 — Input Bar Too Small
+```
+Current:
+  Small rounded pill
+  Typing area very narrow
+  Like a search bar, not a chat input
+
+Should be:
+  Full width of screen
+  Taller minimum height
+  Like WhatsApp or iMessage
+  Text starts from left, expands down
+```
+
+### Issue 2 — User Bubble Wrong Color
+```
+Current: Light grey/white
+         Looks like ARYA's response
+         Hard to distinguish who said what
+
+Should be: Sage green (like before)
+           Clear visual difference
+           User = green right
+           ARYA = white left
+```
+
+### Issue 3 — Speaker Icon Muted
+```
+Shows: 🔇 (muted/crossed)
+Should: 🔊 (active speaker)
+Looks like voice is broken
+```
+
+### Issue 4 — Scrollbar Visible
+```
+Right side scrollbar visible
+Should be hidden on mobile
+Looks unpolished
+```
+
+---
+
+## Input Bar Fix — Exact Code
+
+```css
+/* Make input bar use full width */
+.chat-input-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 8px 12px 12px 12px;
+  background: white;
+  border-top: 1px solid #e8e8e8;
+  width: 100%;
+}
+
+/* Textarea takes all available space */
+.chat-textarea {
+  flex: 1;           /* takes full remaining width */
+  min-height: 44px;  /* comfortable tap target */
+  max-height: 160px; /* grows to 5 lines max */
+  border: 1.5px solid #e0e0e0;
+  border-radius: 22px;
+  padding: 11px 16px;
+  font-size: 15px;
+  line-height: 1.5;
+  resize: none;
+  width: 100%;       /* full width */
+  background: #f8f8f8;
+}
+
+/* Emerald focus ring */
+.chat-textarea:focus {
+  border-color: #2d7a4f;
+  background: white;
+  outline: none;
+}
+```
+
+---
+
+## User Bubble Color Fix
+
+```css
+/* User message — sage green not grey */
+.user-message {
+  background: #e8f0e8;  /* sage green */
+  color: #1a1a1a;
+  border-radius: 18px 18px 4px 18px;
+  padding: 10px 14px;
+  max-width: 75%;
+  margin-left: auto;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* Dark mode */
+.dark .user-message {
+  background: #2d4a35;
+  color: #f0f0f0;
+}
+```
+
+---
+
+## Hide Scrollbar
+
+```css
+/* Hide scrollbar but keep scroll */
+.messages-container {
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+}
+
+.messages-container::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+```
+
+---
+
+## Tell Your Developer
+
+```
+Four small fixes in AryaChat.tsx
+and the CSS file:
+
+1. Input textarea:
+   Add flex: 1 and width: 100%
+   So it takes full available width
+   Remove fixed width if any
+
+2. User message bubble:
+   Change background from grey
+   to sage green (#e8f0e8)
+   Easy to tell apart from ARYA
+
+3. Speaker button:
+   Change VolumeX icon → Volume2
+   Show as active not muted
+
+4. Messages container:
+   Add scrollbar-width: none
+   Add ::-webkit-scrollbar { display: none }
+
+Estimated: 30 minutes
+Result: Chat input full width like WhatsApp
+        Clear user vs ARYA distinction
+        Clean professional look
+```
+
+---
+
+## After These Fixes — Chat Will Look Like
+
+```
+┌─────────────────────────────────────┐
+│ 🌐 Malayalam                        │
+├─────────────────────────────────────┤
+│ ARYA                                │
+│ Great! I can help you set a         │
+│ reminder...                         │
+│                                     │
+│ 📋 🔊 👍 👎                          │
+│                              ╭─────╮│
+│                              │ Yes ││
+│                              ╰─────╯│
+│ ARYA                                │
+│ [next response...]                  │
+│                                     │
+├─────────────────────────────────────┤
+│ 🎙️  Ask ARYA anything...        →  │
+│     [full width input]              │
+└─────────────────────────────────────┘
+```
+
+Send me the screenshot after these fixes. Almost perfect.
