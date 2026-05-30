@@ -2162,21 +2162,21 @@ function DailyQuoteCard({ token }: { token: string | null }) {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.3 }}
-        className="w-full max-w-md mx-auto mb-2 md:mb-3 rounded-2xl overflow-hidden"
+        className="w-full max-w-md mx-auto mb-1.5 rounded-xl overflow-hidden"
         style={{
           background: "linear-gradient(135deg, rgba(6,78,59,0.07) 0%, rgba(245,158,11,0.07) 100%)",
           border: "1px solid rgba(6,78,59,0.14)",
         }}
       >
-        <div className="px-4 py-3 md:px-5 md:py-4">
+        <div className="px-3 py-2">
           <p
-            className="text-sm leading-relaxed text-gray-700 dark:text-gray-200 font-medium mb-1.5"
+            className="text-xs leading-snug text-gray-700 dark:text-gray-200 font-medium mb-1"
             style={{ fontFamily: "'Space Grotesk', sans-serif" }}
             data-testid="text-daily-quote"
           >
             {STATIC_HOME_QUOTES[staticQuoteIdx]}
           </p>
-          <p className="text-[10px] uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-semibold">
+          <p className="text-[9px] uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-semibold">
             — ARYA · daily wisdom
           </p>
         </div>
@@ -2190,32 +2190,32 @@ function DailyQuoteCard({ token }: { token: string | null }) {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.25 }}
-      className="w-full max-w-md mx-auto mb-2 md:mb-3 rounded-2xl overflow-hidden"
+      className="w-full max-w-md mx-auto mb-1.5 rounded-xl overflow-hidden"
       style={{
         background: "linear-gradient(135deg, rgba(6,78,59,0.06) 0%, rgba(245,158,11,0.06) 100%)",
         border: "1px solid rgba(6,78,59,0.12)",
       }}
     >
-      <div className="px-4 py-3 md:px-5 md:py-4">
+      <div className="px-3 py-2">
         {isLoading ? (
-          <div className="flex items-center gap-2 py-1">
-            <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-600 dark:text-emerald-400" />
-            <span className="text-xs text-gray-400 dark:text-gray-500 italic">Preparing your reflection for today…</span>
+          <div className="flex items-center gap-2 py-0.5">
+            <Loader2 className="w-3 h-3 animate-spin text-emerald-600 dark:text-emerald-400" />
+            <span className="text-[11px] text-gray-400 dark:text-gray-500 italic">Preparing your reflection…</span>
           </div>
         ) : (
           <motion.div
-            initial={{ opacity: 0, y: 6 }}
+            initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25 }}
+            transition={{ duration: 0.2 }}
           >
             <p
-              className="text-sm leading-relaxed text-gray-700 dark:text-gray-200 font-medium mb-1.5 break-words"
+              className="text-xs leading-snug text-gray-700 dark:text-gray-200 font-medium mb-1 break-words"
               style={{ fontFamily: "'Space Grotesk', sans-serif" }}
               data-testid="text-daily-quote"
             >
               {quoteText}
             </p>
-            <p className="text-[10px] uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-semibold" data-testid="text-quote-source">
+            <p className="text-[9px] uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-semibold" data-testid="text-quote-source">
               — {quoteSource}
             </p>
           </motion.div>
@@ -2227,24 +2227,21 @@ function DailyQuoteCard({ token }: { token: string | null }) {
 
 function TalkToARYACard({ onStart, uiLang = "en" }: { onStart: () => void; uiLang?: UiLanguage }) {
   const tl = (key: string) => getTranslation(uiLang, key);
-  const [expanded, setExpanded] = useState(false);
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: 0.25 }}
-      className="w-full max-w-md mb-2 rounded-2xl border border-emerald-200 dark:border-emerald-800/60 bg-gradient-to-r from-emerald-50/80 to-green-50/50 dark:from-emerald-950/40 dark:to-green-950/20 overflow-hidden"
+      className="w-full max-w-md mb-1.5 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-gradient-to-r from-emerald-50/80 to-green-50/50 dark:from-emerald-950/40 dark:to-green-950/20"
     >
-      <div className="flex items-center justify-between gap-3 px-4 py-3">
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          <span className="text-2xl flex-shrink-0">🎧</span>
-          <div className="min-w-0">
-            <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-              {tl("talk_arya_title")}
-            </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-              {tl("talk_arya_sub")}
-            </div>
+      <div className="flex items-center gap-3 px-3 py-2.5">
+        <span className="text-xl flex-shrink-0">🎧</span>
+        <div className="min-w-0 flex-1">
+          <div className="text-xs font-semibold text-gray-900 dark:text-white truncate">
+            {tl("talk_arya_title")}
+          </div>
+          <div className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
+            {tl("talk_arya_sub")}
           </div>
         </div>
         <button
@@ -2255,43 +2252,6 @@ function TalkToARYACard({ onStart, uiLang = "en" }: { onStart: () => void; uiLan
           {tl("talk_arya_start")}
         </button>
       </div>
-      <button
-        onClick={() => setExpanded(v => !v)}
-        className="w-full text-center text-[11px] text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 pb-2 transition-colors"
-        data-testid="button-talk-arya-expand"
-      >
-        {expanded ? "▲ Hide" : "▾ How it works"}
-      </button>
-      <AnimatePresence initial={false}>
-        {expanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.22 }}
-            style={{ overflow: "hidden" }}
-            className="px-4 pb-3 border-t border-emerald-100 dark:border-emerald-800/40"
-          >
-            <div className="pt-2 space-y-1.5">
-              {[
-                "Tap Start — ARYA listens",
-                "Speak naturally in your language",
-                "ARYA thinks and speaks back",
-              ].map((step, i) => (
-                <div key={i} className="flex items-center gap-2.5 text-xs text-gray-600 dark:text-gray-300">
-                  <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold flex-shrink-0">
-                    {i + 1}
-                  </span>
-                  <span>{step}</span>
-                </div>
-              ))}
-              <div className="mt-1.5 text-[11px] text-gray-400 dark:text-gray-500 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg px-2.5 py-1.5">
-                🎙️ No typing needed. Hands-free. Works in Hindi, Tamil, Malayalam and 8 more languages.
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </motion.div>
   );
 }
@@ -2300,8 +2260,9 @@ function MoodCheckInCard({ token, onComplete, uiLang = "en" }: { token: string; 
   const tl = (key: string) => getTranslation(uiLang, key);
   const [mood, setMood] = useState<number | null>(null);
   const [energy, setEnergy] = useState(3);
-  const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
+  // Start collapsed — just a single row prompt. Expands when user picks a mood.
+  const [expanded, setExpanded] = useState(false);
 
   const moods = [
     { value: 1, emoji: "😞", label: tl("mood_rough") },
@@ -2311,6 +2272,11 @@ function MoodCheckInCard({ token, onComplete, uiLang = "en" }: { token: string; 
     { value: 5, emoji: "😊", label: tl("mood_great") },
   ];
 
+  const handleMoodSelect = (value: number) => {
+    setMood(value);
+    setExpanded(true);
+  };
+
   const handleSave = async () => {
     if (!mood) return;
     setSaving(true);
@@ -2318,7 +2284,7 @@ function MoodCheckInCard({ token, onComplete, uiLang = "en" }: { token: string; 
       await fetch("/api/user/mood", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-user-token": token },
-        body: JSON.stringify({ mood, energy, note: note || undefined }),
+        body: JSON.stringify({ mood, energy }),
       });
       localStorage.setItem("arya_mood_date", new Date().toDateString());
       onComplete();
@@ -2329,64 +2295,78 @@ function MoodCheckInCard({ token, onComplete, uiLang = "en" }: { token: string; 
   return (
     <motion.div
       data-testid="card-mood-checkin"
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className="w-full max-w-md mx-auto mb-2 px-3 py-2.5 rounded-xl bg-gradient-to-br from-amber-50/80 to-orange-50/60 dark:from-amber-950/30 dark:to-orange-950/20 border border-amber-200 dark:border-amber-800"
+      transition={{ duration: 0.25 }}
+      className="w-full max-w-md mx-auto mb-1.5 rounded-xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-800/60 overflow-hidden"
     >
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-1.5">
-          <Smile className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-          <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">{tl("daily_checkin")}</span>
-          <span className="text-[10px] text-gray-400 dark:text-gray-500 hidden sm:inline">— {tl("how_feeling")}</span>
+      {/* ── Compact trigger row — always visible ── */}
+      <div className="flex items-center gap-2 px-3 py-2">
+        <span className="text-[11px] text-gray-500 dark:text-gray-400 flex-shrink-0 font-medium">{tl("how_feeling")}</span>
+        <div className="flex items-center gap-1 flex-1">
+          {moods.map(m => (
+            <button
+              key={m.value}
+              data-testid={`button-mood-${m.value}`}
+              onClick={() => handleMoodSelect(m.value)}
+              title={m.label}
+              className={`flex-1 flex items-center justify-center py-0.5 rounded-lg text-base leading-none transition-all active:scale-90 ${
+                mood === m.value
+                  ? "bg-amber-100 dark:bg-amber-900/50 ring-1 ring-amber-400 dark:ring-amber-600"
+                  : "hover:bg-white/70 dark:hover:bg-slate-800/50"
+              }`}
+            >
+              {m.emoji}
+            </button>
+          ))}
         </div>
-        <button onClick={onComplete} className="text-gray-300 hover:text-gray-500 dark:hover:text-gray-300 p-0.5 rounded transition-colors" data-testid="button-skip-checkin">
+        <button
+          onClick={onComplete}
+          className="text-gray-300 hover:text-gray-500 dark:hover:text-gray-400 p-0.5 rounded transition-colors flex-shrink-0"
+          data-testid="button-skip-checkin"
+        >
           <X className="w-3 h-3" />
         </button>
       </div>
 
-      <div className="flex items-center justify-between gap-1 mb-2">
-        {moods.map(m => (
-          <button
-            key={m.value}
-            data-testid={`button-mood-${m.value}`}
-            onClick={() => setMood(m.value)}
-            className={`flex-1 flex flex-col items-center gap-0.5 py-1 rounded-lg transition-all ${
-              mood === m.value
-                ? "bg-amber-100 dark:bg-amber-900/40 ring-1 ring-amber-400 dark:ring-amber-600"
-                : "hover:bg-white/60 dark:hover:bg-slate-800/60"
-            }`}
+      {/* ── Expanded: energy slider + save — only after a mood is picked ── */}
+      <AnimatePresence initial={false}>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{ overflow: "hidden" }}
           >
-            <span className="text-base leading-none">{m.emoji}</span>
-            <span className="text-[8px] text-gray-400 dark:text-gray-500 leading-tight hidden sm:block">{m.label}</span>
-          </button>
-        ))}
-      </div>
-
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-[10px] text-gray-400 dark:text-gray-500 flex items-center gap-0.5 flex-shrink-0">
-          <Zap className="w-2.5 h-2.5 text-amber-500" /> {tl("energy_level")}
-        </span>
-        <input
-          type="range" min={1} max={5} value={energy}
-          onChange={e => setEnergy(Number(e.target.value))}
-          data-testid="slider-energy"
-          className="flex-1 accent-amber-500 h-1 rounded"
-        />
-        <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 flex-shrink-0 w-14 text-right">
-          {["", tl("energy_drained"), tl("energy_low"), tl("energy_okay"), tl("energy_good"), tl("energy_energized")][energy]}
-        </span>
-      </div>
-
-      <button
-        onClick={handleSave}
-        disabled={!mood || saving}
-        data-testid="button-save-checkin"
-        className="w-full py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-400 text-white text-xs font-semibold hover:from-amber-400 hover:to-orange-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-1.5"
-      >
-        {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
-        {saving ? "Saving…" : tl("save_checkin")}
-      </button>
+            <div className="px-3 pb-2.5 border-t border-amber-200/60 dark:border-amber-800/40 pt-2 space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-gray-400 dark:text-gray-500 flex items-center gap-0.5 flex-shrink-0">
+                  <Zap className="w-2.5 h-2.5 text-amber-500" /> {tl("energy_level")}
+                </span>
+                <input
+                  type="range" min={1} max={5} value={energy}
+                  onChange={e => setEnergy(Number(e.target.value))}
+                  data-testid="slider-energy"
+                  className="flex-1 accent-amber-500 h-1 rounded"
+                />
+                <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 flex-shrink-0 w-14 text-right">
+                  {["", tl("energy_drained"), tl("energy_low"), tl("energy_okay"), tl("energy_good"), tl("energy_energized")][energy]}
+                </span>
+              </div>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                data-testid="button-save-checkin"
+                className="w-full py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-400 text-white text-xs font-semibold hover:from-amber-400 hover:to-orange-300 disabled:opacity-50 transition-all flex items-center justify-center gap-1.5"
+              >
+                {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                {saving ? "Saving…" : tl("save_checkin")}
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
@@ -4501,7 +4481,7 @@ export default function AryaChat() {
               {t("welcome_desc")}
             </motion.p>
             <DailyQuoteCard token={token} />
-            <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center gap-2 mb-1.5">
               {!isLoggedIn && (
                 <button
                   data-testid="button-welcome-signin"
