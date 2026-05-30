@@ -4474,7 +4474,7 @@ export default function AryaChat() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.4 }}
-            className="flex-1 flex flex-col items-center justify-start text-center px-4 pt-2 md:pt-8 pb-4 md:pb-10 overflow-y-auto"
+            className="flex-1 flex flex-col items-center justify-center text-center px-4 pt-2 pb-2 overflow-y-auto"
             style={{ WebkitOverflowScrolling: "touch" }}
           >
             <motion.div
@@ -4943,7 +4943,7 @@ export default function AryaChat() {
           </div>{/* end max-w-3xl */}
         </div>{/* end messages scroll */}
 
-        <div className="border-t border-gray-100 dark:border-slate-800 bg-white dark:bg-[#0f1117] px-3 md:px-6 pb-3 md:pb-4 pt-2">
+        <div className="border-t border-gray-100 dark:border-slate-800 bg-white dark:bg-[#0f1117] px-3 md:px-6 pb-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:pb-4 pt-2">
           {playingAudio && (
             <div className="flex items-center justify-center gap-2 mb-2">
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 dark:bg-amber-900/20 border border-amber-300">
@@ -5194,12 +5194,6 @@ export default function AryaChat() {
                         </div>
                       )}
                     </div>
-                    {/* Language indicator */}
-                    {selectedLanguage !== "en-IN" && (
-                      <span className="ml-1 text-[10px] text-amber-600 dark:text-amber-400 flex items-center gap-0.5">
-                        <Globe className="w-2.5 h-2.5" />{currentLang?.native}
-                      </span>
-                    )}
                   </div>
                 </div>
               )}

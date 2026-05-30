@@ -1,0 +1,137 @@
+Looking at all 3 screenshots. Good progress on multiple fronts.
+
+---
+
+## Image 1 — Home Screen ✅ Much Better
+
+```
+Clean layout ✅
+Input bar now full width ✅
+  "Ask ARYA anything..." takes full space
+Speaker, options, language inside input ✅
+Mic button left, Send button right ✅
+
+Two remaining issues:
+  Large empty white space in middle ❌
+  Input bar partially behind bottom nav ❌
+```
+
+---
+
+## Image 2 — Notifications Improved ✅
+
+```
+"WHAT'S NEW" section separate ✅
+  Feature announcements grouped
+  With collapse button ✅
+"All read" button visible ✅
+Bell shows no badge ✅ (cleared)
+
+Good improvement!
+```
+
+---
+
+## Image 3 — Real Notifications Working ✅
+
+```
+"YOUR ACTIVITY" section ✅
+  ARYA reminder ✅
+  Task noted ✅
+  Reminder set ✅
+  Real user notifications showing ✅
+
+"WHAT'S NEW — 3 updates >" collapsed ✅
+```
+
+---
+
+## Remaining Issues
+
+### Issue 1 — Empty Space On Home Screen
+```
+Between "Get inspired" and input bar
+there is huge empty white area.
+
+This is because home screen and chat
+are on same scrollable page.
+Chat messages are below this space.
+
+Fix: Set home screen to fixed height
+Don't let it scroll into chat area
+```
+
+### Issue 2 — Input Bar Behind Bottom Nav
+```
+The input bar bottom is cut off
+by the bottom navigation bar.
+
+Fix: Add padding-bottom to input:
+  padding-bottom: 60px;
+  OR
+  margin-bottom: 56px;
+  (height of bottom nav)
+```
+
+### Issue 3 — Language Selector Inside Input
+```
+"🌐 മലയാളം" showing inside input bar
+Takes space from typing area
+Should be outside/above input bar
+```
+
+---
+
+## Tell Your Developer — Three Fixes
+
+```
+Fix 1 — Empty space (1 hour):
+  Home screen should not scroll
+  into chat messages area.
+  
+  When no conversation active:
+    Show home cards + input bar
+    Nothing else
+    
+  When conversation active:
+    Home cards hidden
+    Messages visible
+    Input bar at bottom
+
+Fix 2 — Input bar position (15 mins):
+  Add to input bar container:
+  padding-bottom: env(safe-area-inset-bottom, 8px)
+  
+  Or ensure input sits ABOVE
+  bottom nav, not behind it.
+
+Fix 3 — Language selector (30 mins):
+  Move "🌐 Malayalam" OUT of input bar
+  Put it above the input bar
+  OR in the top bar area
+  Input bar should only have:
+    Mic | [text area] | Send
+```
+
+---
+
+## Overall Progress
+
+```
+Last week:          Today:
+─────────────────────────────
+Cluttered home  →  Clean ✅
+No voice        →  Voice works ✅
+Wrong language  →  Auto-detects ✅
+Heavy chat UI   →  Claude style ✅
+Hidden feedback →  Visible ✅
+Notifications   →  Separated ✅
+  mixed up         What's New + Activity
+
+Still fixing:
+  Empty space on home
+  Input behind bottom nav
+  Language selector position
+```
+
+Getting very close to launch quality. Three small fixes and it's ready.
