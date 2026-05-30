@@ -4764,160 +4764,151 @@ export default function AryaChat() {
             </button>
           </div>
         )}
-        <div className={`overflow-y-auto px-2 sm:px-4 py-3 md:py-4 space-y-3 md:space-y-4 ${(!activeConversation && messages.length === 0 && !streamingContent) ? "hidden" : "flex-1"}`} data-testid="list-messages">
+        <div className={`overflow-y-auto py-6 ${(!activeConversation && messages.length === 0 && !streamingContent) ? "hidden" : "flex-1"}`} data-testid="list-messages">
+          <div className="max-w-3xl mx-auto px-4 md:px-6 space-y-6">
           {messages.map((msg, msgIndex) => (
             <motion.div
               key={msg.id}
               data-testid={`message-${msg.role}-${msg.id}`}
-              initial={{ opacity: 0, y: 12, scale: 0.97 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ duration: 0.25, delay: msgIndex > messages.length - 3 ? 0.05 : 0 }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2, delay: msgIndex > messages.length - 3 ? 0.04 : 0 }}
               className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
-              <div
-                className={`group ${
-                  msg.role === "user"
-                    ? "max-w-[82%] sm:max-w-[72%] md:max-w-[62%] rounded-2xl px-3.5 md:px-4 py-2.5 md:py-3 bg-primary/15 border border-primary/20 text-gray-900 dark:text-white"
-                    : "w-full max-w-[96%] py-1 text-gray-800 dark:text-gray-100"
-                }`}
-              >
-                {msg.role === "assistant" && (
-                  <div className="flex items-center gap-1.5 mb-2">
-                    <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 tracking-wide uppercase">
-                      ARYA
-                    </span>
+              {msg.role === "user" ? (
+                /* ── User bubble — sage, asymmetric corners ── */
+                <div className="group max-w-[75%]">
+                  <div
+                    className="px-4 py-3 text-[15px] leading-relaxed text-gray-900 dark:text-white"
+                    style={{
+                      background: "var(--user-bubble, #eef2ee)",
+                      borderRadius: "18px 18px 4px 18px",
+                    }}
+                  >
+                    <FormattedMessage content={msg.content} isUser />
                   </div>
-                )}
-                <FormattedMessage content={msg.content} isUser={msg.role === "user"} />
-                {msg.role === "user" && (
-                  <div className="flex justify-end mt-1">
+                  <div className="flex justify-end mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       data-testid={`button-copy-msg-${msg.id}`}
                       onClick={() => copyMessage(msg.id, msg.content)}
-                      className="p-1 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors opacity-0 group-hover:opacity-100"
-                      title="Copy message"
+                      className="p-1 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+                      title="Copy"
                     >
                       {copiedMsgId === msg.id ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
                     </button>
                   </div>
-                )}
-                {msg.role === "assistant" && (
-                  <div className="flex items-center gap-1 mt-1.5">
-                    <button
-                      data-testid={`button-speak-msg-${msg.id}`}
-                      onClick={() => speakText(msg.content)}
-                      className="p-1 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                      title="Listen to this response"
-                    >
-                      <Volume2 className="w-3.5 h-3.5" />
-                    </button>
+                </div>
+              ) : (
+                /* ── ARYA response — open, no bubble, full width ── */
+                <div className="group w-full">
+                  <div className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 tracking-[0.5px] uppercase mb-1.5">
+                    ARYA
+                  </div>
+                  <div className="text-[15px] md:text-[16px] leading-[1.65] text-gray-800 dark:text-gray-100">
+                    <FormattedMessage content={msg.content} />
+                  </div>
+                  {/* Action row — subtle, reveals on hover */}
+                  <div className="flex items-center gap-0.5 mt-2.5 opacity-40 group-hover:opacity-100 transition-opacity">
                     <button
                       data-testid={`button-copy-msg-${msg.id}`}
                       onClick={() => copyMessage(msg.id, msg.content)}
-                      className="p-1 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                      title="Copy response"
+                      className="flex items-center gap-1 px-2 py-1 rounded-md text-[12px] text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                      title="Copy"
                     >
                       {copiedMsgId === msg.id ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                    </button>
+                    <button
+                      data-testid={`button-speak-msg-${msg.id}`}
+                      onClick={() => speakText(msg.content)}
+                      className="flex items-center gap-1 px-2 py-1 rounded-md text-[12px] text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                      title="Listen"
+                    >
+                      <Volume2 className="w-3.5 h-3.5" />
                     </button>
                     {activeConversation && (
                       <FeedbackButtons messageId={msg.id} conversationId={activeConversation} />
                     )}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </motion.div>
           ))}
 
           {streamingContent && (
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2 }}
-              className="flex justify-start"
+              transition={{ duration: 0.18 }}
               data-testid="message-streaming"
             >
-              <div className="w-full max-w-[96%] py-1 text-gray-800 dark:text-gray-100">
-                <div className="flex items-center gap-1.5 mb-2">
-                  <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 tracking-wide uppercase">
+              <div className="w-full">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 tracking-[0.5px] uppercase">
                     ARYA
                   </span>
                   {responseMode === "instant" && responseFromCache && (
-                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400 font-medium border border-cyan-200 dark:border-cyan-800 flex items-center gap-0.5">
-                      ⚡ From memory
-                    </span>
-                  )}
-                  {responseMode === "instant" && !responseFromCache && (
-                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 font-medium border border-amber-200 dark:border-amber-800">
-                      Instant
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400 font-medium border border-cyan-200 dark:border-cyan-800">
+                      ⚡ cached
                     </span>
                   )}
                   {showConfidence && responseMode === "thinking" && (
                     <ConfidenceBadge confidence={responseConfidence} sourcesCount={responseSourcesCount} memoryUsed={responseMemoryUsed} />
                   )}
                 </div>
-                {selectedLanguage !== "en-IN" ? (
-                  <>
-                    {!translatedContent && (
-                      <div className="opacity-40 text-sm">
-                        <StreamingText content={streamingContent} />
-                      </div>
-                    )}
-                    {translatedContent && (
-                      <div className="text-gray-800 dark:text-gray-100">
-                        <StreamingText content={translatedContent} />
-                      </div>
-                    )}
-                    {translatedContent && (
-                      <button
-                        onClick={() => setShowOriginalStreaming(v => !v)}
-                        className="mt-2 text-[11px] text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1"
-                      >
-                        {showOriginalStreaming ? "Hide English" : "View in English"}
-                      </button>
-                    )}
-                    {showOriginalStreaming && translatedContent && (
-                      <div className="mt-2 pt-2 border-t border-gray-100 dark:border-slate-700 text-xs text-gray-400 dark:text-gray-500">
-                        <StreamingText content={streamingContent} />
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <StreamingText content={streamingContent} />
-                )}
+                <div className="text-[15px] md:text-[16px] leading-[1.65]">
+                  {selectedLanguage !== "en-IN" ? (
+                    <>
+                      {!translatedContent && <div className="opacity-50"><StreamingText content={streamingContent} /></div>}
+                      {translatedContent && <StreamingText content={translatedContent} />}
+                      {translatedContent && (
+                        <button onClick={() => setShowOriginalStreaming(v => !v)} className="mt-2 text-[11px] text-amber-600 dark:text-amber-400 hover:underline">
+                          {showOriginalStreaming ? "Hide English" : "View in English"}
+                        </button>
+                      )}
+                      {showOriginalStreaming && translatedContent && (
+                        <div className="mt-2 pt-2 border-t border-gray-100 dark:border-slate-700 text-xs text-gray-400 dark:text-gray-500">
+                          <StreamingText content={streamingContent} />
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <StreamingText content={streamingContent} />
+                  )}
+                </div>
               </div>
             </motion.div>
           )}
 
           {isStreaming && !streamingContent && (
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2 }}
-              className="flex justify-start"
+              transition={{ duration: 0.18 }}
               data-testid="message-thinking"
             >
-              <div className="w-full max-w-[96%] py-1">
-                <div className="flex items-center gap-1.5 mb-2">
-                  <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 tracking-wide uppercase">
-                    ARYA
+              <div className="w-full">
+                <div className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 tracking-[0.5px] uppercase mb-2">ARYA</div>
+                <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500 text-sm">
+                  <span className="flex gap-1">
+                    {[0, 0.2, 0.4].map(d => (
+                      <span key={d} className="w-1.5 h-1.5 rounded-full bg-emerald-400 dark:bg-emerald-600 animate-bounce" style={{ animationDelay: `${d}s` }} />
+                    ))}
                   </span>
-                </div>
-                <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  {selectedLanguage !== "en-IN" ? "Listening & translating..." : "Thinking..."}
+                  {selectedLanguage !== "en-IN" ? "Translating…" : "Thinking…"}
                 </div>
               </div>
             </motion.div>
           )}
 
           <div ref={messagesEndRef} />
-        </div>
+          </div>{/* end max-w-3xl */}
+        </div>{/* end messages scroll */}
 
-        <div className="px-2 sm:px-4 pb-3 md:pb-4 pt-1 md:pt-2">
+        <div className="border-t border-gray-100 dark:border-slate-800 bg-white dark:bg-[#0f1117] px-3 md:px-6 pb-3 md:pb-4 pt-2">
           {playingAudio && (
             <div className="flex items-center justify-center gap-2 mb-2">
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 dark:bg-amber-900/20 border border-amber-300">
-                <div className="flex gap-0.5">
+                <div className="flex gap-0.5 items-end h-4">
                   {[...Array(4)].map((_, i) => (
                     <div
                       key={i}
@@ -4926,19 +4917,16 @@ export default function AryaChat() {
                     />
                   ))}
                 </div>
-                <span className="text-xs text-amber-600 dark:text-amber-400">ARYA is speaking...</span>
-                <button
-                  data-testid="button-stop-audio"
-                  onClick={stopAudio}
-                  className="p-0.5 rounded-full hover:bg-amber-100 dark:hover:bg-amber-900/30"
-                >
+                <span className="text-xs text-amber-600 dark:text-amber-400">ARYA is speaking…</span>
+                <button data-testid="button-stop-audio" onClick={stopAudio} className="p-0.5 rounded-full hover:bg-amber-100 dark:hover:bg-amber-900/30">
                   <VolumeX className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                 </button>
               </div>
             </div>
           )}
-          <Card className="bg-white/90 dark:bg-slate-900/90 border-gray-200 dark:border-slate-700 backdrop-blur-sm">
-            <div className="flex items-end gap-1.5 md:gap-2 p-2 md:p-3">
+          {/* ── Input bar — Claude style: rounded pill, emerald focus, minimal icons ── */}
+          <div className="max-w-3xl mx-auto">
+            <div className="flex items-end gap-2">
               <input
                 ref={imageInputRef}
                 type="file"
@@ -5135,7 +5123,7 @@ export default function AryaChat() {
                   </button>
                 </div>
               ) : (
-                <div className="flex-1 flex flex-col min-w-0">
+                <div className="chat-input-pill flex-1 flex flex-col min-w-0 rounded-[22px] border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/60 transition-colors px-3">
                   {pendingFiles.length > 0 && (
                     <div className="flex flex-wrap gap-2 px-2 pt-2 pb-1">
                       {isScanningDoc ? (
@@ -5189,51 +5177,47 @@ export default function AryaChat() {
                     placeholder={pendingFiles.length > 0 ? t("ask_about_image") : t("ask_anything")}
                     disabled={isStreaming || isScanningDoc}
                     rows={1}
-                    className="w-full resize-none bg-transparent border-0 text-gray-900 dark:text-white placeholder:text-muted-foreground text-sm focus:outline-none py-2 max-h-32"
-                    style={{
-                      height: "auto",
-                      minHeight: "2.25rem",
-                    }}
+                    className="w-full resize-none bg-transparent border-0 text-[15px] text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none py-2.5 max-h-40 leading-relaxed"
+                    style={{ height: "auto", minHeight: "2.5rem" }}
                     onInput={(e) => {
                       const target = e.target as HTMLTextAreaElement;
                       target.style.height = "auto";
-                      target.style.height = Math.min(target.scrollHeight, 128) + "px";
+                      target.style.height = Math.min(target.scrollHeight, 160) + "px";
                     }}
                   />
                 </div>
               )}
 
-              <Button
+              {/* Send — solid emerald circle */}
+              <button
                 data-testid="button-send"
-                variant="ghost"
-                size="icon"
                 onClick={() => pendingFiles.length > 0 ? sendWithImage() : sendMessage(input)}
                 disabled={(!input.trim() && pendingFiles.length === 0) || isStreaming || isRecording || isScanningDoc}
-                className="flex-shrink-0 rounded-full h-9 w-9 md:h-10 md:w-10 text-primary hover:bg-primary/10 disabled:opacity-30"
+                className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-30 disabled:cursor-not-allowed text-white flex items-center justify-center transition-colors shadow-sm"
               >
                 {isStreaming || isScanningDoc ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  <Send className="w-5 h-5" />
+                  <Send className="w-4 h-4" />
                 )}
-              </Button>
+              </button>
             </div>
-          </Card>
+            {/* Rounded pill container wrapping the left-side controls + textarea */}
+          </div>{/* end max-w-3xl */}
           {voiceError && (
-            <div className="flex items-center justify-center gap-2 mt-1.5 px-3">
-              <p className="text-xs text-red-500 dark:text-red-400 text-center">{voiceError}</p>
-              <button onClick={() => setVoiceError(null)} className="text-red-500 dark:text-red-400/60 hover:text-red-500 dark:hover:text-red-400 text-xs">✕</button>
+            <div className="max-w-3xl mx-auto flex items-center gap-2 mt-1 px-1">
+              <p className="text-xs text-red-500 dark:text-red-400">{voiceError}</p>
+              <button onClick={() => setVoiceError(null)} className="text-red-400 hover:text-red-500 text-xs">✕</button>
             </div>
           )}
-          <div className="hidden md:flex items-center justify-center gap-2 mt-1.5 md:mt-2">
+          <div className="hidden md:flex items-center justify-center gap-2 mt-1.5">
             {selectedLanguage !== "en-IN" && (
-              <span className="text-[10px] md:text-xs text-amber-600 dark:text-amber-400/80 flex items-center gap-1">
-                <Volume2 className="w-3 h-3" />
-                Voice: {currentLang?.native}
+              <span className="text-[10px] text-amber-600 dark:text-amber-400/70 flex items-center gap-1">
+                <Volume2 className="w-3 h-3" /> Voice: {currentLang?.native}
               </span>
             )}
-            <p className="text-[10px] md:text-xs text-muted-foreground text-center flex items-center gap-1.5">
-              <Sparkles className="w-3 h-3 text-purple-600 dark:text-purple-400/50" />
+            <p className="text-[10px] text-gray-400 dark:text-gray-600 flex items-center gap-1">
+              <Sparkles className="w-3 h-3 text-purple-400/60" />
               {t("app_tagline")}
             </p>
           </div>
