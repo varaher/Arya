@@ -2441,9 +2441,17 @@ const WHATS_NEW = [
 const LATEST_ANNOUNCEMENT_VERSION = WHATS_NEW[0].version;
 const ANNOUNCEMENT_STORAGE_KEY = "arya_last_seen_announcement";
 
+/* Notification types that are personal/actionable (count toward badge, mark as read) */
+const PERSONAL_NOTIFICATION_TYPES = new Set([
+  "goal_created", "goal_reminder", "progress", "streak", "reminder",
+  "morning_briefing", "weekly_review", "community_challenge",
+  "pattern_insight", "silence_nudge", "welcome",
+]);
+
 function NotificationBell({ token }: { token: string }) {
   const queryClient = useQueryClient();
   const [showDropdown, setShowDropdown] = useState(false);
+  const [localUnread, setLocalUnread] = useState<number | null>(null); // null = use server value
   const [seenVersion, setSeenVersion] = useState<string | null>(() =>
     localStorage.getItem(ANNOUNCEMENT_STORAGE_KEY)
   );
@@ -2458,31 +2466,52 @@ function NotificationBell({ token }: { token: string }) {
     refetchInterval: 30000,
   });
 
-  const notifications = data?.notifications || [];
-  const dbUnreadCount = data?.unreadCount || 0;
+  const allNotifications: any[] = data?.notifications || [];
+
+  // Split: personal (actionable) vs system (announcements already in DB)
+  const notifications = allNotifications.filter(n =>
+    PERSONAL_NOTIFICATION_TYPES.has(n.type) || !n.type
+  );
+
+  const serverUnread = data?.unreadCount ?? 0;
+  // Use localUnread override immediately after marking-read, sync when null
+  const dbUnreadCount = localUnread !== null ? localUnread : serverUnread;
   const hasNewAnnouncement = seenVersion !== LATEST_ANNOUNCEMENT_VERSION;
+  // Badge = only personal unread + unseen announcement
   const totalUnread = dbUnreadCount + (hasNewAnnouncement ? 1 : 0);
 
-  const markRead = async (id: number) => {
-    await fetch(`/api/user/notifications/${id}/read`, { method: "POST", headers: { "x-user-token": token } });
-    queryClient.invalidateQueries({ queryKey: ["/api/user/notifications"] });
+  const markAllRead = async () => {
+    setLocalUnread(0); // immediate UI clear
+    try {
+      await fetch("/api/user/notifications/read-all", {
+        method: "POST",
+        headers: { "x-user-token": token, "Content-Type": "application/json" },
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/notifications"] });
+    } catch {}
   };
 
-  const markAnnouncementSeen = () => {
-    localStorage.setItem(ANNOUNCEMENT_STORAGE_KEY, LATEST_ANNOUNCEMENT_VERSION);
-    setSeenVersion(LATEST_ANNOUNCEMENT_VERSION);
-  };
+  // Auto mark-all-read whenever panel opens
+  useEffect(() => {
+    if (showDropdown && dbUnreadCount > 0) {
+      markAllRead();
+    }
+    if (showDropdown && hasNewAnnouncement) {
+      localStorage.setItem(ANNOUNCEMENT_STORAGE_KEY, LATEST_ANNOUNCEMENT_VERSION);
+      setSeenVersion(LATEST_ANNOUNCEMENT_VERSION);
+    }
+  }, [showDropdown]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleOpen = () => {
-    setShowDropdown(!showDropdown);
-    if (hasNewAnnouncement) markAnnouncementSeen();
-  };
+  // Sync localUnread back to null so server value takes over after refetch
+  useEffect(() => {
+    if (localUnread !== null && data) setLocalUnread(null);
+  }, [data]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="relative">
       <button
         data-testid="button-notifications"
-        onClick={handleOpen}
+        onClick={() => setShowDropdown(v => !v)}
         className="p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-all relative"
       >
         <Bell className="w-4 h-4" />
@@ -2497,60 +2526,67 @@ function NotificationBell({ token }: { token: string }) {
         <>
           <div className="fixed inset-0 z-40" onClick={() => setShowDropdown(false)} />
           <div className="absolute right-0 top-full mt-1 z-50 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl py-1 w-72 max-h-96 overflow-y-auto">
+            {/* Header */}
             <div className="px-3 py-2 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between">
               <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">Notifications</span>
-              {totalUnread > 0 && (
-                <span className="text-[10px] px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full font-medium">
-                  {totalUnread} new
-                </span>
-              )}
+              <span className="text-[10px] text-gray-400 dark:text-gray-500">All read</span>
             </div>
 
-            {WHATS_NEW.map((ann, idx) => (
-              <div
-                key={ann.version}
-                data-testid={`announcement-item-${ann.version}`}
-                className={`px-3 py-2.5 text-xs border-b border-gray-100 dark:border-slate-700 ${
-                  idx === 0 ? "bg-violet-50 dark:bg-violet-900/20" : "bg-gray-50 dark:bg-slate-900/40"
-                }`}
-              >
-                <div className="flex items-center gap-1.5 mb-0.5">
-                  {idx === 0 && (
-                    <span className="text-[9px] px-1.5 py-0.5 bg-violet-500 text-white rounded-full font-semibold uppercase tracking-wide">New</span>
-                  )}
-                  <span className="font-semibold text-gray-800 dark:text-gray-100">{ann.title}</span>
+            {/* What's New — feature announcements, collapsed section */}
+            <details className="group">
+              <summary className="px-3 py-2 flex items-center justify-between cursor-pointer list-none hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors border-b border-gray-100 dark:border-slate-700">
+                <span className="text-[10px] font-semibold text-violet-600 dark:text-violet-400 uppercase tracking-wide flex items-center gap-1.5">
+                  <span>✨</span> What's New
+                </span>
+                <span className="text-[10px] text-gray-400 group-open:hidden">{WHATS_NEW.length} updates ›</span>
+                <span className="text-[10px] text-gray-400 hidden group-open:inline">‹ collapse</span>
+              </summary>
+              {WHATS_NEW.map((ann, idx) => (
+                <div
+                  key={ann.version}
+                  data-testid={`announcement-item-${ann.version}`}
+                  className={`px-3 py-2.5 text-xs border-b border-gray-100 dark:border-slate-700 ${
+                    idx === 0 ? "bg-violet-50 dark:bg-violet-900/20" : "bg-gray-50 dark:bg-slate-900/40"
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    {idx === 0 && (
+                      <span className="text-[9px] px-1.5 py-0.5 bg-violet-500 text-white rounded-full font-semibold uppercase tracking-wide">New</span>
+                    )}
+                    <span className="font-semibold text-gray-800 dark:text-gray-100">{ann.title}</span>
+                  </div>
+                  <p className="text-gray-500 dark:text-gray-400 leading-relaxed">{ann.message}</p>
+                  <p className="text-gray-400 dark:text-gray-500 mt-1 text-[10px]">{ann.date}</p>
                 </div>
-                <p className="text-gray-500 dark:text-gray-400 leading-relaxed">{ann.message}</p>
-                <p className="text-gray-400 dark:text-gray-500 mt-1 text-[10px]">{ann.date}</p>
+              ))}
+            </details>
+
+            {/* Personal activity */}
+            {notifications.length === 0 ? (
+              <div className="px-3 py-6 text-xs text-gray-400 dark:text-gray-500 text-center">
+                <div className="text-2xl mb-2">🔔</div>
+                Goal reminders, streaks, and weekly reviews will appear here.
               </div>
-            ))}
-
-            {notifications.length > 0 && (
-              <div className="px-3 py-1.5 border-b border-gray-100 dark:border-slate-700">
-                <span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Activity</span>
-              </div>
-            )}
-
-            {notifications.length === 0 && (
-              <div className="px-3 py-4 text-xs text-gray-400 dark:text-gray-500 text-center">No activity yet</div>
-            )}
-
-            {notifications.slice(0, 20).map((n: any) => (
-              <div
-                key={n.id}
-                data-testid={`notification-item-${n.id}`}
-                className={`px-3 py-2 text-xs border-b border-gray-100 dark:border-slate-700 last:border-0 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors ${
-                  !n.isRead ? "bg-emerald-50 dark:bg-emerald-900/20" : ""
-                }`}
-                onClick={() => { if (!n.isRead) markRead(n.id); }}
-              >
-                <div className="font-medium text-gray-700 dark:text-gray-200">{n.title}</div>
-                <div className="text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">{n.message}</div>
-                <div className="text-gray-400 dark:text-gray-500 mt-1 text-[10px]">
-                  {new Date(n.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" })}
+            ) : (
+              <>
+                <div className="px-3 py-1.5 border-b border-gray-100 dark:border-slate-700">
+                  <span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Your Activity</span>
                 </div>
-              </div>
-            ))}
+                {notifications.slice(0, 20).map((n: any) => (
+                  <div
+                    key={n.id}
+                    data-testid={`notification-item-${n.id}`}
+                    className="px-3 py-2 text-xs border-b border-gray-100 dark:border-slate-700 last:border-0 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+                  >
+                    <div className="font-medium text-gray-700 dark:text-gray-200">{n.title}</div>
+                    <div className="text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">{n.message}</div>
+                    <div className="text-gray-400 dark:text-gray-500 mt-1 text-[10px]">
+                      {new Date(n.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" })}
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
           </div>
         </>
       )}
@@ -4939,7 +4975,7 @@ export default function AryaChat() {
                 data-testid="input-image-upload"
               />
 
-              {/* Mic — always visible */}
+              {/* Mic — only button outside the pill */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -4948,7 +4984,7 @@ export default function AryaChat() {
                     size="icon"
                     onClick={() => isRecording ? stopRecording() : startRecording()}
                     disabled={isStreaming || isScanningDoc}
-                    className={`flex-shrink-0 rounded-full h-9 w-9 md:h-10 md:w-10 border transition-all ${
+                    className={`flex-shrink-0 rounded-full h-10 w-10 border transition-all ${
                       isRecording
                         ? "bg-red-500/20 text-red-500 dark:text-red-400 border-red-400 dark:border-red-600 animate-pulse"
                         : "bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 text-emerald-600 dark:text-emerald-400 hover:from-emerald-500/30 hover:to-emerald-600/20 border-emerald-200 dark:border-emerald-800"
@@ -4962,146 +4998,15 @@ export default function AryaChat() {
                 </TooltipContent>
               </Tooltip>
 
-              {/* Speaker — always visible */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    data-testid="button-speaker-toggle"
-                    variant="ghost"
-                    size="icon"
-                    onClick={toggleSpeaker}
-                    className={`flex-shrink-0 rounded-full h-9 w-9 md:h-10 md:w-10 ${
-                      speakerOn
-                        ? "text-primary bg-primary/10 hover:bg-primary/20"
-                        : "text-muted-foreground hover:text-gray-900 dark:hover:text-white hover:bg-card"
-                    }`}
-                  >
-                    {speakerOn ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="text-xs">
-                  {speakerOn ? "ARYA speaks responses — tap to mute" : "Tap to hear ARYA speak"}
-                </TooltipContent>
-              </Tooltip>
-
-              {/* ⋯ More — Globe, Attach, Live voice */}
-              <div className="relative" ref={toolMoreRef}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      data-testid="button-toolbar-more"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setShowToolMore(v => !v)}
-                      className={`flex-shrink-0 rounded-full h-9 w-9 md:h-10 md:w-10 ${
-                        showToolMore || selectedLanguage !== "en-IN"
-                          ? "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/30"
-                          : "text-muted-foreground hover:text-gray-900 dark:hover:text-white hover:bg-card"
-                      }`}
-                    >
-                      <MoreHorizontal className="w-4 h-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="text-xs">{t("toolbar_more")}</TooltipContent>
-                </Tooltip>
-                {showToolMore && (
-                  <div className="absolute bottom-full left-0 mb-2 w-48 bg-card border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl z-50 py-1 overflow-visible">
-                    {/* Voice language row */}
-                    <div className="relative" ref={langMenuRef}>
-                      <button
-                        data-testid="button-language-select"
-                        onClick={() => setShowLanguageMenu(v => !v)}
-                        className={`w-full text-left px-3 py-2.5 text-sm flex items-center gap-2.5 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors rounded-t-xl ${
-                          selectedLanguage !== "en-IN" ? "text-amber-600 dark:text-amber-400" : "text-gray-700 dark:text-gray-200"
-                        }`}
-                      >
-                        <Globe className="w-3.5 h-3.5 flex-shrink-0" />
-                        <span className="flex-1 font-medium">{t("toolbar_lang")}</span>
-                        {selectedLanguage !== "en-IN" && <span className="text-[11px] opacity-75">{currentLang?.native}</span>}
-                      </button>
-                      {showLanguageMenu && (
-                        <div className="absolute bottom-0 left-full ml-2 w-52 bg-card border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden z-50">
-                          <div className="px-3 py-2 border-b border-gray-200 dark:border-slate-700">
-                            <p className="text-xs font-medium text-muted-foreground">{t("voice_lang_header")}</p>
-                          </div>
-                          <div className="max-h-72 overflow-y-auto py-1">
-                            {DEFAULT_LANGUAGES.filter(l => SARVAM_LANGUAGE_CODES.has(l.code) || l.code === "en-IN").map((lang) => (
-                              <button
-                                key={lang.code}
-                                data-testid={`button-lang-${lang.code}`}
-                                onClick={() => {
-                                  setSelectedLanguage(lang.code);
-                                  setShowLanguageMenu(false);
-                                  setShowToolMore(false);
-                                  try { localStorage.setItem("arya_lang", lang.code); } catch {}
-                                  const sc = lang.code.split("-")[0] as UiLanguage;
-                                  const validUi: UiLanguage[] = ["en","hi","mr","bn","ta","te","kn","ml","gu","pa","od"];
-                                  if (validUi.includes(sc)) setGlobalLanguage(sc);
-                                }}
-                                className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors ${
-                                  selectedLanguage === lang.code ? "text-primary bg-primary/10" : "text-gray-700 dark:text-gray-200"
-                                }`}
-                              >
-                                <span>{lang.name}</span>
-                                <span className="text-xs text-muted-foreground">{lang.native}</span>
-                              </button>
-                            ))}
-                            <div className="mx-3 my-1 border-t border-gray-100 dark:border-slate-700" />
-                            {DEFAULT_LANGUAGES.filter(l => isGlobalVoiceLang(l.code)).map((lang) => (
-                              <button
-                                key={lang.code}
-                                data-testid={`button-lang-${lang.code}`}
-                                onClick={() => {
-                                  setSelectedLanguage(lang.code);
-                                  setShowLanguageMenu(false);
-                                  setShowToolMore(false);
-                                  try { localStorage.setItem("arya_lang", lang.code); } catch {}
-                                }}
-                                className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors ${
-                                  selectedLanguage === lang.code ? "text-primary bg-primary/10" : "text-gray-700 dark:text-gray-200"
-                                }`}
-                              >
-                                <span>{lang.name}</span>
-                                <span className="text-xs text-muted-foreground">{lang.native}</span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    {/* Attach file row */}
-                    <button
-                      data-testid="button-attach-image"
-                      onClick={() => { imageInputRef.current?.click(); setShowToolMore(false); }}
-                      disabled={isStreaming || isScanningDoc}
-                      className="w-full text-left px-3 py-2.5 text-sm flex items-center gap-2.5 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 disabled:opacity-50 transition-colors"
-                    >
-                      <Paperclip className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400 flex-shrink-0" />
-                      <span className="font-medium">{t("toolbar_attach")}</span>
-                    </button>
-                    {/* Live voice row */}
-                    <button
-                      data-testid="button-voice-chat"
-                      onClick={() => { setShowVoiceMode(true); setShowToolMore(false); }}
-                      disabled={isStreaming || isRecording}
-                      className="w-full text-left px-3 py-2.5 text-sm flex items-center gap-2.5 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 disabled:opacity-50 transition-colors rounded-b-xl"
-                    >
-                      <Headphones className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 flex-shrink-0" />
-                      <span className="font-medium">{t("toolbar_live_voice")}</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-
               {isRecording ? (
-                <div className="flex-1 flex items-center gap-2 md:gap-3 py-1.5">
-                  <div className="flex gap-0.5 flex-shrink-0">
+                <div className="flex-1 flex items-center gap-2 md:gap-3 py-2 px-3 rounded-[22px] border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/10">
+                  <div className="flex gap-0.5 flex-shrink-0 items-end h-5">
                     {[...Array(5)].map((_, i) => (
                       <div
                         key={i}
                         className="w-1 bg-red-400 rounded-full animate-pulse"
                         style={{
-                          height: `${12 + Math.random() * 16}px`,
+                          height: `${10 + Math.random() * 10}px`,
                           animationDelay: `${i * 0.15}s`,
                         }}
                       />
@@ -5125,7 +5030,8 @@ export default function AryaChat() {
                   </button>
                 </div>
               ) : (
-                <div className="chat-input-pill flex-1 flex flex-col min-w-0 rounded-[22px] border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/60 transition-colors px-3">
+                /* ── Pill: takes all remaining width, contains textarea + icon footer ── */
+                <div className="chat-input-pill flex-1 flex flex-col min-w-0 rounded-[22px] border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/60 transition-colors overflow-visible">
                   {pendingFiles.length > 0 && (
                     <div className="flex flex-wrap gap-2 px-2 pt-2 pb-1">
                       {isScanningDoc ? (
@@ -5179,7 +5085,7 @@ export default function AryaChat() {
                     placeholder={pendingFiles.length > 0 ? t("ask_about_image") : t("ask_anything")}
                     disabled={isStreaming || isScanningDoc}
                     rows={1}
-                    className="w-full resize-none bg-transparent border-0 text-[15px] text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none py-3 max-h-40 leading-relaxed"
+                    className="w-full resize-none bg-transparent border-0 text-[15px] text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none px-4 pt-3 pb-1 max-h-40 leading-relaxed"
                     style={{ height: "auto", minHeight: "44px" }}
                     onInput={(e) => {
                       const target = e.target as HTMLTextAreaElement;
@@ -5187,6 +5093,114 @@ export default function AryaChat() {
                       target.style.height = Math.min(target.scrollHeight, 160) + "px";
                     }}
                   />
+                  {/* ── Pill footer: speaker + more (inside pill, bottom-left) ── */}
+                  <div className="flex items-center gap-0.5 px-2 pb-1.5">
+                    {/* Speaker */}
+                    <button
+                      data-testid="button-speaker-toggle"
+                      onClick={toggleSpeaker}
+                      title={speakerOn ? "ARYA speaks — tap to mute" : "Tap to hear ARYA speak"}
+                      className={`p-1.5 rounded-full transition-colors ${
+                        speakerOn
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                      }`}
+                    >
+                      {speakerOn ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                    </button>
+                    {/* More — language, attach, live voice */}
+                    <div className="relative" ref={toolMoreRef}>
+                      <button
+                        data-testid="button-toolbar-more"
+                        onClick={() => setShowToolMore(v => !v)}
+                        title={t("toolbar_more")}
+                        className={`p-1.5 rounded-full transition-colors ${
+                          showToolMore || selectedLanguage !== "en-IN"
+                            ? "text-amber-600 dark:text-amber-400"
+                            : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                        }`}
+                      >
+                        <MoreHorizontal className="w-3.5 h-3.5" />
+                      </button>
+                      {showToolMore && (
+                        <div className="absolute bottom-full left-0 mb-2 w-48 bg-card border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl z-50 py-1">
+                          {/* Voice language */}
+                          <div className="relative" ref={langMenuRef}>
+                            <button
+                              data-testid="button-language-select"
+                              onClick={() => setShowLanguageMenu(v => !v)}
+                              className={`w-full text-left px-3 py-2.5 text-sm flex items-center gap-2.5 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors rounded-t-xl ${
+                                selectedLanguage !== "en-IN" ? "text-amber-600 dark:text-amber-400" : "text-gray-700 dark:text-gray-200"
+                              }`}
+                            >
+                              <Globe className="w-3.5 h-3.5 flex-shrink-0" />
+                              <span className="flex-1 font-medium">{t("toolbar_lang")}</span>
+                              {selectedLanguage !== "en-IN" && <span className="text-[11px] opacity-75">{currentLang?.native}</span>}
+                            </button>
+                            {showLanguageMenu && (
+                              <div className="absolute bottom-0 left-full ml-2 w-52 bg-card border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden z-50">
+                                <div className="px-3 py-2 border-b border-gray-200 dark:border-slate-700">
+                                  <p className="text-xs font-medium text-muted-foreground">{t("voice_lang_header")}</p>
+                                </div>
+                                <div className="max-h-72 overflow-y-auto py-1">
+                                  {DEFAULT_LANGUAGES.filter(l => SARVAM_LANGUAGE_CODES.has(l.code) || l.code === "en-IN").map((lang) => (
+                                    <button key={lang.code} data-testid={`button-lang-${lang.code}`}
+                                      onClick={() => {
+                                        setSelectedLanguage(lang.code); setShowLanguageMenu(false); setShowToolMore(false);
+                                        try { localStorage.setItem("arya_lang", lang.code); } catch {}
+                                        const sc = lang.code.split("-")[0] as UiLanguage;
+                                        const validUi: UiLanguage[] = ["en","hi","mr","bn","ta","te","kn","ml","gu","pa","od"];
+                                        if (validUi.includes(sc)) setGlobalLanguage(sc);
+                                      }}
+                                      className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors ${selectedLanguage === lang.code ? "text-primary bg-primary/10" : "text-gray-700 dark:text-gray-200"}`}
+                                    >
+                                      <span>{lang.name}</span><span className="text-xs text-muted-foreground">{lang.native}</span>
+                                    </button>
+                                  ))}
+                                  <div className="mx-3 my-1 border-t border-gray-100 dark:border-slate-700" />
+                                  {DEFAULT_LANGUAGES.filter(l => isGlobalVoiceLang(l.code)).map((lang) => (
+                                    <button key={lang.code} data-testid={`button-lang-${lang.code}`}
+                                      onClick={() => {
+                                        setSelectedLanguage(lang.code); setShowLanguageMenu(false); setShowToolMore(false);
+                                        try { localStorage.setItem("arya_lang", lang.code); } catch {}
+                                      }}
+                                      className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors ${selectedLanguage === lang.code ? "text-primary bg-primary/10" : "text-gray-700 dark:text-gray-200"}`}
+                                    >
+                                      <span>{lang.name}</span><span className="text-xs text-muted-foreground">{lang.native}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          {/* Attach */}
+                          <button data-testid="button-attach-image"
+                            onClick={() => { imageInputRef.current?.click(); setShowToolMore(false); }}
+                            disabled={isStreaming || isScanningDoc}
+                            className="w-full text-left px-3 py-2.5 text-sm flex items-center gap-2.5 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 disabled:opacity-50 transition-colors"
+                          >
+                            <Paperclip className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400 flex-shrink-0" />
+                            <span className="font-medium">{t("toolbar_attach")}</span>
+                          </button>
+                          {/* Live voice */}
+                          <button data-testid="button-voice-chat"
+                            onClick={() => { setShowVoiceMode(true); setShowToolMore(false); }}
+                            disabled={isStreaming || isRecording}
+                            className="w-full text-left px-3 py-2.5 text-sm flex items-center gap-2.5 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 disabled:opacity-50 transition-colors rounded-b-xl"
+                          >
+                            <Headphones className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 flex-shrink-0" />
+                            <span className="font-medium">{t("toolbar_live_voice")}</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    {/* Language indicator */}
+                    {selectedLanguage !== "en-IN" && (
+                      <span className="ml-1 text-[10px] text-amber-600 dark:text-amber-400 flex items-center gap-0.5">
+                        <Globe className="w-2.5 h-2.5" />{currentLang?.native}
+                      </span>
+                    )}
+                  </div>
                 </div>
               )}
 
