@@ -1,0 +1,179 @@
+Looking at all 4 screenshots carefully. Good progress overall. Let me address each issue.
+
+---
+
+## What's Looking Good ✅
+
+```
+Image 2 — Home screen:
+  Clean layout ✅
+  Suggestion cards visible ✅
+  THINK / GOALS / REFLECT / WISDOM / REHEARSE ✅
+  Input bar clean ✅
+
+Image 3 & 4 — Goals page:
+  Tasks, Reminders, Habits, Intentions tabs ✅
+  Goal cards with type labels ✅
+  Overdue task showing ✅
+  Reminder "sent" status ✅
+  Thai language goal visible ✅
+  (user tested with different language)
+```
+
+---
+
+## Four Issues To Fix
+
+### Issue 1 — Rehearsal Not Working
+```
+REHEARSE card visible on home ✅
+But tapping it doesn't work ❌
+
+Most likely cause:
+  The rehearsal feature route is not
+  connected to the suggestion card tap
+
+Fix:
+  Find the REHEARSE suggestion card
+  in the home screen component
+  Check the onClick handler
+
+  Should do one of:
+  - Open a new chat with rehearsal prompt
+  - Navigate to a rehearsal mode
+  - Start a special conversation context
+```
+
+### Issue 2 — Voice Notes Not Working
+```
+Image 1 shows Voice Notes panel:
+  Opens correctly ✅
+  "No notes yet" showing ✅
+  "Record a Note" button visible ✅
+
+But tapping "Record a Note" → nothing? ❌
+
+The /api/arya/stt route was added
+to the main routes.ts but Voice Notes
+uses a different recording flow.
+
+Fix:
+  In Voice Notes panel
+  Find the "Record a Note" button handler
+  Check if it calls the mic API
+  Check browser console for errors
+```
+
+### Issue 3 — Home Navigation After Chat
+```
+When chat is open → tap Home button
+Should go back to home screen
+But something breaks ❌
+
+Fix:
+  The Home tab in bottom nav
+  should always navigate to /
+  and clear the active conversation view
+
+  Check BottomNav.tsx Home button:
+  onClick → navigate('/') 
+  AND reset conversation state
+```
+
+### Issue 4 — Mood Tab Not Working
+
+```
+Quick chips row: Goals Memory Notes Mood
+Mood chip tapped → nothing happens ❌
+
+Fix:
+  Find the Mood chip onClick handler
+  Should open mood history or
+  mood check-in panel
+
+  Check if handler exists:
+  onClick={() => setShowMoodPanel(true)}
+  OR
+  onClick={() => navigate('/mood')}
+```
+
+---
+
+## Tell Your Developer — Four Fixes
+
+```
+Fix 1 — REHEARSE card (30 mins):
+  File: Home screen component
+  Find: REHEARSE suggestion card
+  Add onClick that opens new chat
+  with pre-filled rehearsal prompt:
+  "I want to practise a difficult
+   conversation. Play the other person."
+
+Fix 2 — Voice Notes recording (1 hour):
+  File: VoiceNotesPanel component
+  Find: "Record a Note" button
+  Check: Does mic permission get requested?
+  Check: Does it call /api/arya/stt?
+  Add: console.log to trace the issue
+  Check browser console for errors
+
+Fix 3 — Home navigation (30 mins):
+  File: BottomNav.tsx or AryaChat.tsx
+  When Home tab tapped during chat:
+  Should scroll to top OR
+  Show home welcome screen
+  Currently may be doing nothing
+
+Fix 4 — Mood chip (15 mins):
+  File: Home screen component
+  Find: Mood chip in quick access row
+  Add onClick handler:
+  Opens mood history panel
+  OR scrolls to check-in card
+  Currently has no handler
+```
+
+---
+
+## Also — Two Observations From Goals Page
+
+### Image 3 — Thai Language Goal ⚠
+```
+"เพื่อให้แน่ใจว่าแอปทำงานได้อย่างถูกต้อง..."
+(Thai: "To ensure app works correctly...")
+
+This looks like a test goal created
+in Thai language.
+
+Not a bug — just a test entry.
+Can be deleted from Goals page.
+```
+
+### Image 4 — Overdue Task ⚠
+```
+Task: Overdue · 30 May
+Person: mam
+
+This task is overdue.
+The red "Overdue" badge is correct ✅
+But it shows every time Goals opens.
+
+Consider: Auto-archive tasks overdue
+by more than 7 days to reduce clutter.
+```
+
+---
+
+## Priority Order
+
+```
+Most urgent (users notice):
+  1. Home navigation (basic flow)
+  2. Mood chip (tapping, nothing happens)
+  3. Rehearsal card (feature missing)
+  4. Voice Notes recording (feature missing)
+
+After these four → ARYA is fully functional
+for all advertised features.
+```

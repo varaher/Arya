@@ -18,6 +18,10 @@ export default function BottomNav({ onOpenCustomize }: BottomNavProps = {}) {
   };
 
   function handleNav(path: string) {
+    if (path === "/" && location === "/") {
+      window.dispatchEvent(new CustomEvent("arya:go-home"));
+      return;
+    }
     setLocation(path);
   }
 

@@ -1719,6 +1719,7 @@ function VoiceNotesPanel({ onClose, token, uiLang = "en", voiceLang = "en-IN" }:
   const [recordingTime, setRecordingTime] = useState(0);
   const [transcript, setTranscript] = useState("");
   const [saving, setSaving] = useState(false);
+  const [voiceNoteError, setVoiceNoteError] = useState<string | null>(null);
   const mediaRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -1755,7 +1756,7 @@ function VoiceNotesPanel({ onClose, token, uiLang = "en", voiceLang = "en-IN" }:
       setRecordingTime(0);
       setTranscript("");
       timerRef.current = setInterval(() => setRecordingTime(t => t + 1), 1000);
-    } catch { alert("Microphone access required"); }
+    } catch { setVoiceNoteError("Microphone access required. Please allow mic permission and try again."); }
   };
 
   const stopRecording = () => {
@@ -1791,8 +1792,12 @@ function VoiceNotesPanel({ onClose, token, uiLang = "en", voiceLang = "en-IN" }:
             });
             queryClient.invalidateQueries({ queryKey: ["/api/user/voice-notes"] });
             setTranscript("");
+          } else {
+            setVoiceNoteError("Could not hear anything. Try speaking louder or check your microphone.");
           }
-        } catch { }
+        } catch (err) {
+          setVoiceNoteError("Recording failed. Please try again.");
+        }
         setSaving(false);
       };
       reader.readAsDataURL(blob);
@@ -1850,6 +1855,14 @@ function VoiceNotesPanel({ onClose, token, uiLang = "en", voiceLang = "en-IN" }:
               <div key={i} className="w-1 bg-red-400 rounded-full animate-pulse" style={{ height: `${8 + Math.random() * 10}px`, animationDelay: `${i * 0.15}s` }} />
             ))}
             <span className="text-[10px] text-red-500 ml-1">{tl("recording")}…</span>
+          </div>
+        )}
+        {voiceNoteError && (
+          <div className="flex items-start gap-1.5 px-2 py-1.5 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+            <span className="text-red-500 text-[10px] flex-1">{voiceNoteError}</span>
+            <button onClick={() => setVoiceNoteError(null)} className="text-red-400 hover:text-red-600 flex-shrink-0 mt-0.5">
+              <X className="w-3 h-3" />
+            </button>
           </div>
         )}
       </div>
@@ -2729,6 +2742,12 @@ export default function AryaChat() {
     return () => window.removeEventListener("arya-open-report", handler);
   }, []);
 
+  useEffect(() => {
+    const handler = () => { setActiveConversation(null); };
+    window.addEventListener("arya:go-home", handler);
+    return () => window.removeEventListener("arya:go-home", handler);
+  }, []);
+
   const [copiedMsgId, setCopiedMsgId] = useState<number | null>(null);
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
   const [renamingId, setRenamingId] = useState<number | null>(null);
@@ -2789,6 +2808,8 @@ export default function AryaChat() {
   const [futureLetterSaved, setFutureLetterSaved] = useState(false);
   const [showRehearsalSetup, setShowRehearsalSetup] = useState(false);
   const [showWelcomeCards, setShowWelcomeCards] = useState(false);
+  const rehearsalSetupRef = useRef<HTMLDivElement>(null);
+  const moodCardRef = useRef<HTMLDivElement>(null);
   const [rehearsalPerson, setRehearsalPerson] = useState("");
   const [rehearsalSituation, setRehearsalSituation] = useState("");
   const [rehearsalLoading, setRehearsalLoading] = useState(false);
@@ -4548,11 +4569,13 @@ export default function AryaChat() {
             />
 
             {isLoggedIn && token && !moodCheckedInToday && (
-              <MoodCheckInCard
-                token={token}
-                onComplete={() => setMoodCheckedInToday(true)}
-                uiLang={uiLanguage}
-              />
+              <div ref={moodCardRef}>
+                <MoodCheckInCard
+                  token={token}
+                  onComplete={() => setMoodCheckedInToday(true)}
+                  uiLang={uiLanguage}
+                />
+              </div>
             )}
 
             {/* ── Quick Access (horizontal scrollable pills) ── */}
@@ -4570,7 +4593,7 @@ export default function AryaChat() {
                     { icon: "🎯", label: t("goals"),     action: () => { setShowGoals(true); setShowMemory(false); setShowNotes(false); setShowReminders(false); setShowCalendar(false); } },
                     { icon: "🧠", label: t("memory"),    action: () => { setShowMemory(true); setShowGoals(false); setShowNotes(false); setShowReminders(false); setShowCalendar(false); } },
                     { icon: "📝", label: t("notes"),     action: () => { setShowNotes(true); setShowGoals(false); setShowMemory(false); setShowReminders(false); setShowCalendar(false); } },
-                    { icon: "😊", label: t("mood"),      action: () => setMoodCheckedInToday(false) },
+                    { icon: "😊", label: t("mood"),      action: () => { setMoodCheckedInToday(false); setTimeout(() => moodCardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 120); } },
                     { icon: "🔔", label: t("reminders"), action: () => { setShowReminders(true); setShowGoals(false); setShowMemory(false); setShowNotes(false); setShowCalendar(false); } },
                     { icon: "📅", label: t("calendar"),  action: () => { setShowCalendar(true); setShowGoals(false); setShowMemory(false); setShowNotes(false); setShowReminders(false); } },
                     { icon: "🏘️", label: t("community"), action: () => setLocation("/community") },
@@ -4652,7 +4675,11 @@ export default function AryaChat() {
               {/* Rehearse a tough conversation — full-width chip */}
               <motion.button
                 data-testid="button-suggestion-rehearse"
-                onClick={() => setShowRehearsalSetup(v => !v)}
+                onClick={() => {
+                  const next = !showRehearsalSetup;
+                  setShowRehearsalSetup(next);
+                  if (next) setTimeout(() => rehearsalSetupRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 220);
+                }}
                 className="col-span-1 sm:col-span-2 text-left px-3 md:px-4 py-2.5 md:py-3 rounded-xl border border-violet-200 dark:border-violet-800/60 bg-gradient-to-r from-violet-50/80 to-purple-50/60 dark:from-violet-950/40 dark:to-purple-950/30 hover:from-violet-100 hover:to-purple-50 dark:hover:from-violet-950/60 dark:hover:to-purple-950/50 hover:border-violet-300 dark:hover:border-violet-700 transition-all group"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -4683,6 +4710,7 @@ export default function AryaChat() {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -8, scale: 0.98 }}
                     transition={{ duration: 0.2 }}
+                    ref={rehearsalSetupRef}
                     className="col-span-1 sm:col-span-2 rounded-xl border border-violet-300 dark:border-violet-700 bg-white dark:bg-slate-900 p-4 shadow-md"
                     data-testid="panel-rehearsal-setup"
                   >
