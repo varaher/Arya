@@ -1778,9 +1778,14 @@ function VoiceNotesPanel({ onClose, token, uiLang = "en", voiceLang = "en-IN" }:
         try {
           const sttRes = await fetch("/api/arya/stt", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", "x-user-token": token },
             body: JSON.stringify({ audio: base64, language: voiceLang }),
           });
+          if (!sttRes.ok) {
+            setVoiceNoteError("Could not transcribe. Please try again.");
+            setSaving(false);
+            return;
+          }
           const sttData = await sttRes.json();
           const text = sttData.transcript || sttData.text || "";
           if (text.trim()) {
@@ -1792,11 +1797,13 @@ function VoiceNotesPanel({ onClose, token, uiLang = "en", voiceLang = "en-IN" }:
             });
             queryClient.invalidateQueries({ queryKey: ["/api/user/voice-notes"] });
             setTranscript("");
+          } else if (sttData.error) {
+            setVoiceNoteError(sttData.message || "Could not hear anything. Please speak clearly and try again.");
           } else {
-            setVoiceNoteError("Could not hear anything. Try speaking louder or check your microphone.");
+            setVoiceNoteError("Could not hear anything. Please speak clearly and try again.");
           }
         } catch (err) {
-          setVoiceNoteError("Recording failed. Please try again.");
+          setVoiceNoteError("Recording failed. Please check your connection and try again.");
         }
         setSaving(false);
       };
