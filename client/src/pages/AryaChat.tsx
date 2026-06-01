@@ -4631,14 +4631,6 @@ export default function AryaChat() {
             >
               {t("your_pa")}
             </motion.p>
-            <motion.p
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.3 }}
-              className="text-muted-foreground max-w-md mb-2 text-sm md:text-base hidden md:block"
-            >
-              {t("welcome_desc")}
-            </motion.p>
             <DailyQuoteCard token={token} />
             <div className="flex items-center gap-2 mb-1.5">
               {!isLoggedIn && (
@@ -4683,7 +4675,7 @@ export default function AryaChat() {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.35, delay: 0.32 }}
-                className="w-full max-w-2xl mb-1"
+                className="w-full mb-1"
               >
                 <div className="flex gap-2 overflow-x-auto pb-1 px-1"
                   style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch", touchAction: "pan-x" }}
