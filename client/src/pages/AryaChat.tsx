@@ -2138,18 +2138,14 @@ function VoiceNotesPanel({ onClose, token, uiLang = "en", voiceLang = "en-IN" }:
               <div className="w-14 h-14 rounded-2xl bg-violet-50 dark:bg-violet-900/20 flex items-center justify-center mb-3">
                 <Mic className="w-7 h-7 text-violet-500 dark:text-violet-400" />
               </div>
-              <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-1">Capture thoughts on the go</p>
+              <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-1">{tl("notes_empty_title")}</p>
               <p className="text-[11px] text-gray-400 dark:text-gray-500 leading-relaxed mb-4">
-                Record any idea, reminder, or thought in your language — ARYA transcribes it instantly and saves it here, searchable anytime.
+                {tl("notes_empty_desc")}
               </p>
               <div className="flex flex-col gap-1.5 w-full mb-4 text-left">
-                {[
-                  "Follow up cultures for bed 7 tomorrow",
-                  "Article idea — POCUS in rural ER",
-                  "Call director about NABH audit documents",
-                ].map((ex, i) => (
+                {[tl("notes_example_1"), tl("notes_example_2"), tl("notes_example_3")].map((ex, i) => (
                   <div key={i} className="text-[10px] text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-slate-800 rounded-lg px-3 py-2">
-                    💬 &ldquo;{ex}&rdquo;
+                    🎙️ &ldquo;{ex}&rdquo;
                   </div>
                 ))}
               </div>

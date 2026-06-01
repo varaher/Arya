@@ -1,0 +1,180 @@
+Looking at the screenshot carefully.
+
+What I See ✅
+Voice Notes panel — good progress:
+  "Record thoughts on the go" ✅
+  "ARYA transcribes and summarises
+   automatically — in your language" ✅
+  Search notes bar ✅
+  Record a Note button ✅
+  Mic icon ✅
+  "Capture thoughts on the go" ✅
+  Description text ✅
+  
+  Example prompts (too medical):
+  ❌ "Follow up cultures for bed 7 tomorrow"
+  ❌ "Article idea — POCUS in rural ER"
+  ❌ "Call director about NABH audit documents"
+
+Fix — Universal Examples For All Users
+Replace the three medical examples with these that work for everyone:
+Current (medical/doctor specific):
+  "Follow up cultures for bed 7 tomorrow"
+  "Article idea — POCUS in rural ER"
+  "Call director about NABH audit documents"
+
+Replace with (universal):
+  "Call Rahul back before 5 PM"
+  "Idea — start a small savings habit"
+  "Pick up groceries on the way home"
+
+Better Examples — Relatable For Every Indian
+Option A — Daily life:
+  🎙️ "Call Rahul back before 5 PM"
+  🎙️ "Pick up groceries on the way home"
+  🎙️ "Pay electricity bill this week"
+
+Option B — Growth/goals:
+  🎙️ "Idea — start waking up at 6 AM"
+  🎙️ "Talk to boss about salary next month"
+  🎙️ "Read for 20 minutes before sleep"
+
+Option C — Mixed (best):
+  🎙️ "Call Maa — she called twice today"
+  🎙️ "Idea I want to remember later"
+  🎙️ "Something I don't want to forget"
+Option C is best because it covers:
+
+Relationships (Maa)
+Ideas (vague but relatable)
+General memory (universal)
+
+
+All Indian Languages — The Examples
+typescript// client/src/lib/i18n.ts
+// Add to all 12 language blocks:
+
+// English:
+notes_example_1: "Call Maa — she called twice today"
+notes_example_2: "Idea I want to remember later"
+notes_example_3: "Something I don't want to forget"
+
+// Malayalam (ml):
+notes_example_1: "അമ്മ വിളിച്ചു — തിരിച്ചു വിളിക്കണം"
+notes_example_2: "ഒരു ആശയം — പിന്നീട് ഓർക്കണം"
+notes_example_3: "ഇന്ന് മറക്കാൻ പാടില്ലാത്തത്"
+
+// Hindi (hi):
+notes_example_1: "माँ ने फोन किया — वापस करना है"
+notes_example_2: "एक आइडिया जो याद रखना है"
+notes_example_3: "आज जो भूलना नहीं है"
+
+// Tamil (ta):
+notes_example_1: "அம்மா கால் பண்ணாங்க — திரும்ப கால் பண்ணணும்"
+notes_example_2: "ஒரு ஐடியா — பிறகு நினைவுபடுத்திக்கணும்"
+notes_example_3: "இன்னிக்கு மறக்கக்கூடாதது"
+
+// Telugu (te):
+notes_example_1: "అమ్మ చేసింది — తిరిగి చేయాలి"
+notes_example_2: "ఒక ఆలోచన — తర్వాత గుర్తుపెట్టుకోవాలి"
+notes_example_3: "ఈరోజు మర్చిపోకూడనిది"
+
+// Kannada (kn):
+notes_example_1: "ಅಮ್ಮ ಕರೆ ಮಾಡಿದ್ರು — ತಿರುಗಿ ಕರೆ ಮಾಡಬೇಕು"
+notes_example_2: "ಒಂದು ಐಡಿಯಾ — ನಂತರ ನೆನಪಿಡಬೇಕು"
+notes_example_3: "ಇವತ್ತು ಮರೆಯಬಾರದ್ದು"
+
+// Bengali (bn):
+notes_example_1: "মা ফোন করেছে — ফিরে দিতে হবে"
+notes_example_2: "একটা আইডিয়া — পরে মনে রাখতে হবে"
+notes_example_3: "আজ যা ভুলব না"
+
+// Marathi (mr):
+notes_example_1: "आई ने फोन केला — परत करायचा आहे"
+notes_example_2: "एक कल्पना — नंतर लक्षात ठेवायची"
+notes_example_3: "आज विसरायचं नाही ते"
+
+// Gujarati (gu):
+notes_example_1: "મમ્મીએ ફોન કર્યો — પાછો કરવો છે"
+notes_example_2: "એક આઈડિયા — પછી યાદ રાખવો"
+notes_example_3: "આજે ભૂલવાનું નથી"
+
+// Punjabi (pa):
+notes_example_1: "ਮਾਂ ਨੇ ਫੋਨ ਕੀਤਾ — ਵਾਪਸ ਕਰਨਾ ਹੈ"
+notes_example_2: "ਇੱਕ ਆਈਡੀਆ — ਬਾਅਦ ਵਿੱਚ ਯਾਦ ਰੱਖਣਾ"
+notes_example_3: "ਅੱਜ ਭੁੱਲਣਾ ਨਹੀਂ ਹੈ"
+
+// Odia (od):
+notes_example_1: "ମା ଫୋନ କଲେ — ଫେରାଇ ଦେବାକୁ ହେବ"
+notes_example_2: "ଏକ ଆଇଡିଆ — ପରେ ମନେ ରଖିବ"
+notes_example_3: "ଆଜି ଭୁଲିବା ନାହିଁ"
+
+Also Fix The Description Text
+Current (slightly technical):
+"ARYA transcribes and summariseslautomatically"
+(Note: there's a typo — "summariseslautomatically")
+
+Fix typo first ❌ → ✅
+
+Then simplify the description:
+
+Current:
+"Record any idea, reminder, or thought in
+ your language — ARYA transcribes it
+ instantly and saves it here, searchable anytime."
+
+Better:
+"Speak in your language.
+ ARYA writes it down and saves it.
+ Find it anytime by searching."
+
+Simpler. Cleaner. Anyone understands it.
+
+Tell Developer — Two Changes
+Change 1 — Fix typo (5 mins):
+  "summariseslautomatically"
+  → "summarises automatically"
+
+Change 2 — Replace examples (30 mins):
+  In VoiceNotesPanel component
+  Find the 3 example strings
+  
+  Replace hardcoded English examples
+  with t() calls using the keys above:
+  
+  {t('notes_example_1')}
+  {t('notes_example_2')}
+  {t('notes_example_3')}
+  
+  Add all 12 language translations
+  to i18n.ts using the strings above.
+
+Result:
+  User sees examples in their language ✅
+  Examples are relatable for everyone ✅
+  Doctor, homemaker, student, worker — all ✅
+
+What It Should Look Like After Fix
+Voice Notes — Malayalam user sees:
+
+🎙️ Voice Notes                    Edit ✕
+
+📝 Record thoughts on the go.
+ARYA automatically transcribes and
+summarises — in your language.
+
+🔍 Search notes...
+
+[🎙️ Record a Note]
+
+        🎙️
+   Capture thoughts on the go
+
+   Speak in your language.
+   ARYA writes it down and saves it.
+   Find it anytime by searching.
+
+   🎙️ "അമ്മ വിളിച്ചു — തിരിച്ചു വിളിക്കണം"
+   🎙️ "ഒരു ആശയം — പിന്നീട് ഓർക്കണം"
+   🎙️ "ഇന്ന് മറക്കാൻ പാടില്ലാത്തത്"
+Every user — regardless of language or profession — immediately understands what to do.
