@@ -1,0 +1,227 @@
+Looking at the screenshot carefully.
+
+---
+
+## What I Can See
+
+```
+Desktop view at 14:25
+Chips row: Goals Memory Notes Mood Reminders Calendar [+]
+All visible ✅ (fix worked partially)
+
+BUT several issues still visible:
+```
+
+---
+
+## Issues Visible In This Screenshot
+
+### Issue 1 — Subtitle Text Wrong
+```
+Current:
+"Think clearly. Set goals. Stay disciplined.
+ Reflect daily. Grow spiritually & professionally.
+ I'm here to help you become your best self."
+
+This is too long and generic.
+Should be the cleaner version:
+"YOUR PERSONAL THINKING & GROWTH ASSISTANT"
+(already shows below ARYA in small caps ✅)
+
+The long subtitle is redundant.
+Remove it OR replace with one line.
+```
+
+### Issue 2 — Get Inspired Not Visible
+```
+"▼ Get Inspired ▼" toggle exists
+but not visible in this view.
+
+It may be hidden below the fold
+OR the toggle is not rendering.
+
+Check: Is it below the input bar?
+       Is it inside a hidden container?
+```
+
+### Issue 3 — Chips Partially Cut Off Still
+```
+Calendar chip shows but
+the last icon after Calendar
+is still partially cut ❌
+
+The max-w-2xl fix helped
+but chips still overflow on
+some screen sizes.
+```
+
+### Issue 4 — "Share feedback or report an issue"
+```
+Shows at bottom right ✅
+This is good — keep it
+But it overlaps slightly with
+the send button area
+```
+
+### Issue 5 — Suggestion Cards Not Visible
+```
+THINK / GOALS / REFLECT cards
+not visible in current view
+"Get Inspired" toggle hidden
+
+User needs to see suggestions
+without having to scroll
+```
+
+---
+
+## The Repeated Content Problem
+
+```
+You mentioned: "same things are there
+in chat, under new chat"
+
+This means:
+  Home screen shows cards
+  AND chat shows same cards
+  
+  They are on the SAME scrollable page
+  
+  Home welcome content
+  + chat messages
+  = all mixed together
+
+This is the core layout issue.
+Home and chat should be separate views.
+```
+
+---
+
+## Tell Your Developer — Priority Fixes
+
+### Fix 1 — Separate Home From Chat (Most Important)
+```
+File: AryaChat.tsx
+
+Current structure (wrong):
+  <div className="page">
+    <WelcomeScreen />      ← home cards
+    <ChatMessages />       ← chat messages
+    <InputBar />
+  </div>
+
+Both scroll together → confusing
+
+Correct structure:
+  if (noActiveConversation) {
+    show: <WelcomeScreen /> + <InputBar />
+  } else {
+    show: <ChatMessages /> + <InputBar />
+  }
+
+When user starts chat:
+  Welcome screen hides
+  Chat messages show
+  
+When user taps Home or New Chat:
+  Chat messages hide  
+  Welcome screen shows again
+```
+
+### Fix 2 — Get Inspired Visibility
+```
+Find: "Get inspired" toggle component
+Check: Is it inside the welcome screen?
+       Is it only showing when no conversation?
+       
+It should always be visible on home screen
+above the input bar
+Not hidden or scrolled off screen
+```
+
+### Fix 3 — Subtitle Cleanup
+```
+Remove the long paragraph:
+"Think clearly. Set goals. Stay disciplined..."
+
+Keep only:
+  ARYA (large title)
+  • • • (dots)
+  YOUR PERSONAL THINKING & GROWTH ASSISTANT
+  (small caps subtitle)
+
+The long text is redundant and takes space.
+```
+
+### Fix 4 — Chips Row Final Fix
+```
+The max-w-2xl helped but not enough.
+For desktop — show all chips in one row:
+  
+  Remove max-width constraint entirely
+  OR use:
+  width: fit-content
+  max-width: 100%
+  
+For mobile — horizontal scroll:
+  overflow-x: auto
+  white-space: nowrap (keep on one line)
+  -webkit-overflow-scrolling: touch
+```
+
+---
+
+## What Home Screen Should Show
+
+```
+Clean home (no active chat):
+┌─────────────────────────────────┐
+│ History 27    New Chat    🔔 👤 │
+├─────────────────────────────────┤
+│           A R Y A               │
+│   YOUR PERSONAL ASSISTANT       │
+│                                 │
+│  ┌── Today's Reflection ──┐     │
+│  │ "The calm you seek..." │     │
+│  └────────────────────────┘     │
+│                                 │
+│  ┌── Talk to ARYA ────────┐     │
+│  │ 🎧 Speak freely  Start→│     │
+│  └────────────────────────┘     │
+│                                 │
+│  How are you feeling? 😢😊      │
+│                                 │
+│  Goals Memory Notes Mood →      │
+│                                 │
+│  ▼ Get inspired ▼               │
+│   [THINK] [GOALS] [REFLECT]     │
+│   [WISDOM] [REHEARSE]           │
+│                                 │
+├─────────────────────────────────┤
+│ 🎙️  Ask ARYA anything...    → │
+├─────────────────────────────────┤
+│ Home  Goals  KAAL  Niti  More  │
+└─────────────────────────────────┘
+```
+
+---
+
+## Simple Summary For Developer
+
+```
+Three things to fix:
+
+1. Home and chat on same page — separate them
+   When chatting: hide home cards
+   When on home: hide chat messages
+
+2. Remove long subtitle paragraph
+   Keep only ARYA + small caps subtitle
+
+3. Chips row — remove max-width constraint
+   Let it fit all chips naturally
+   Mobile: horizontal scroll
+
+One hour of work.
+Makes the whole layout correct.
+```
