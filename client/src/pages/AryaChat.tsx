@@ -1552,6 +1552,8 @@ function GoalsPanel({ onClose }: { onClose: () => void }) {
   const { token, isLoggedIn } = useUserAuth();
   const [newGoalTitle, setNewGoalTitle] = useState("");
   const [newGoalSteps, setNewGoalSteps] = useState("");
+  const [editModeGoals, setEditModeGoals] = useState(false);
+  const [selectedGoals, setSelectedGoals] = useState<Set<string>>(new Set());
 
   const { data: goals, isLoading } = useQuery<GoalItem[]>({
     queryKey: ["/api/user/goals"],
@@ -1615,11 +1617,36 @@ function GoalsPanel({ onClose }: { onClose: () => void }) {
         <div className="flex items-center gap-2">
           <Target className="w-4 h-4 text-amber-600 dark:text-amber-400" />
           <span className="text-sm font-semibold text-gray-900 dark:text-white">Goals & Plans</span>
-          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">{goalsList.filter(g => g.status === 'active').length}</span>
+          {!editModeGoals && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">{goalsList.filter(g => g.status === 'active').length}</span>}
         </div>
-        <button onClick={onClose} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-400">
-          <X className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-1">
+          {editModeGoals && (
+            <button
+              data-testid="button-bulk-delete-goals"
+              onClick={async () => {
+                await Promise.all(Array.from(selectedGoals).map(id => deleteGoalMutation.mutateAsync(id)));
+                setSelectedGoals(new Set());
+                setEditModeGoals(false);
+              }}
+              disabled={selectedGoals.size === 0}
+              className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 disabled:opacity-30 transition-all"
+            >
+              Delete{selectedGoals.size > 0 ? ` (${selectedGoals.size})` : ""}
+            </button>
+          )}
+          <button
+            data-testid="button-edit-goals"
+            onClick={() => { setEditModeGoals(v => !v); setSelectedGoals(new Set()); }}
+            className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full transition-colors ${
+              editModeGoals ? "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20" : "text-gray-400 hover:text-gray-600"
+            }`}
+          >
+            {editModeGoals ? "Done" : "Edit"}
+          </button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-400">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       <div className="p-3 border-b border-gray-200 dark:border-slate-700">
@@ -1652,21 +1679,48 @@ function GoalsPanel({ onClose }: { onClose: () => void }) {
       <div className="flex-1 overflow-y-auto p-3 space-y-3">
         {isLoading && <div className="flex items-center justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-amber-600 dark:text-amber-400" /></div>}
         {goalsList.map((goal) => (
-          <div key={goal.id} className="rounded-xl bg-gray-100 dark:bg-slate-700 border border-gray-200 dark:border-slate-700 p-3 group" data-testid={`card-goal-${goal.id}`}>
+          <div
+            key={goal.id}
+            className={`rounded-xl border p-3 group transition-all cursor-pointer ${
+              editModeGoals && selectedGoals.has(goal.id)
+                ? "bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700"
+                : "bg-gray-100 dark:bg-slate-700 border-gray-200 dark:border-slate-700"
+            }`}
+            data-testid={`card-goal-${goal.id}`}
+            onClick={() => {
+              if (!editModeGoals) return;
+              setSelectedGoals(prev => {
+                const next = new Set(prev);
+                if (next.has(goal.id)) next.delete(goal.id); else next.add(goal.id);
+                return next;
+              });
+            }}
+          >
             <div className="flex items-start justify-between mb-2">
-              <div className="flex-1">
-                <div className="flex items-center gap-1.5">
-                  <span className={`text-[9px] uppercase font-bold ${priorityColors[goal.priority]}`}>{goal.priority}</span>
-                  {goal.status === 'completed' && <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />}
+              <div className="flex items-start gap-2 flex-1 min-w-0">
+                {editModeGoals && (
+                  <div className={`w-4 h-4 mt-0.5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
+                    selectedGoals.has(goal.id) ? "bg-amber-500 border-amber-500" : "border-gray-300 dark:border-slate-500"
+                  }`}>
+                    {selectedGoals.has(goal.id) && <Check className="w-2.5 h-2.5 text-white" />}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className={`text-[9px] uppercase font-bold ${priorityColors[goal.priority]}`}>{goal.priority}</span>
+                    {goal.status === 'completed' && <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />}
+                  </div>
+                  <h4 className="text-xs font-medium text-gray-900 dark:text-white mt-0.5">{goal.title}</h4>
                 </div>
-                <h4 className="text-xs font-medium text-gray-900 dark:text-white mt-0.5">{goal.title}</h4>
               </div>
-              <button
-                onClick={() => deleteGoalMutation.mutate(goal.id)}
-                className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 transition-all"
-              >
-                <Trash2 className="w-3 h-3" />
-              </button>
+              {!editModeGoals && (
+                <button
+                  onClick={e => { e.stopPropagation(); deleteGoalMutation.mutate(goal.id); }}
+                  className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 transition-all"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              )}
             </div>
 
             {goal.steps.length > 0 && (
@@ -1711,12 +1765,15 @@ function GoalsPanel({ onClose }: { onClose: () => void }) {
   );
 }
 
-function NoteCard({ note, token, deleteNote, formatDate, formatDur }: {
+function NoteCard({ note, token, deleteNote, formatDate, formatDur, isEditMode, isSelected, onSelect }: {
   note: any;
   token: string | null;
   deleteNote: any;
   formatDate: (d: string | Date) => string;
   formatDur: (s: number) => string;
+  isEditMode?: boolean;
+  isSelected?: boolean;
+  onSelect?: () => void;
 }) {
   const qc = useQueryClient();
   const [tasksSaved, setTasksSaved] = useState(!!note.tasksSavedToGoals);
@@ -1745,9 +1802,23 @@ function NoteCard({ note, token, deleteNote, formatDate, formatDur }: {
   }
 
   return (
-    <div data-testid={`card-voice-note-${note.id}`} className="group flex items-start gap-2 px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-slate-800 border border-gray-100 dark:border-slate-700 hover:border-violet-200 dark:hover:border-violet-800 transition-all">
-      <div className="w-7 h-7 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center flex-shrink-0 mt-0.5">
-        <Mic className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" />
+    <div
+      data-testid={`card-voice-note-${note.id}`}
+      onClick={isEditMode ? onSelect : undefined}
+      className={`group flex items-start gap-2 px-3 py-2.5 rounded-xl border transition-all ${
+        isEditMode && isSelected
+          ? "bg-violet-50 dark:bg-violet-900/20 border-violet-300 dark:border-violet-700 cursor-pointer"
+          : "bg-gray-50 dark:bg-slate-800 border-gray-100 dark:border-slate-700 hover:border-violet-200 dark:hover:border-violet-800"
+      } ${isEditMode ? "cursor-pointer" : ""}`}
+    >
+      <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${
+        isEditMode && isSelected ? "bg-violet-500" : "bg-violet-100 dark:bg-violet-900/30"
+      }`}>
+        {isEditMode ? (
+          <Check className={`w-3.5 h-3.5 ${isSelected ? "text-white" : "text-transparent"}`} />
+        ) : (
+          <Mic className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" />
+        )}
       </div>
       <div className="flex-1 min-w-0">
         <div className="text-xs font-medium text-gray-700 dark:text-gray-200 truncate">{note.title || note.transcript?.slice(0, 40)}</div>
@@ -1787,13 +1858,15 @@ function NoteCard({ note, token, deleteNote, formatDate, formatDur }: {
           </button>
         )}
       </div>
-      <button
-        onClick={() => deleteNote.mutate(note.id)}
-        data-testid={`button-delete-note-${note.id}`}
-        className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-300 hover:text-red-500 transition-all flex-shrink-0"
-      >
-        <Trash2 className="w-3 h-3" />
-      </button>
+      {!isEditMode && (
+        <button
+          onClick={() => deleteNote.mutate(note.id)}
+          data-testid={`button-delete-note-${note.id}`}
+          className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-300 hover:text-red-500 transition-all flex-shrink-0"
+        >
+          <Trash2 className="w-3 h-3" />
+        </button>
+      )}
     </div>
   );
 }
@@ -1802,6 +1875,8 @@ function VoiceNotesPanel({ onClose, token, uiLang = "en", voiceLang = "en-IN" }:
   const tl = (key: string) => getTranslation(uiLang, key);
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const [editModeNotes, setEditModeNotes] = useState(false);
+  const [selectedNotes, setSelectedNotes] = useState<Set<string>>(new Set());
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [transcript, setTranscript] = useState("");
@@ -1908,9 +1983,37 @@ function VoiceNotesPanel({ onClose, token, uiLang = "en", voiceLang = "en-IN" }:
           <NotebookPen className="w-4 h-4 text-violet-600 dark:text-violet-400" />
           <span className="text-sm font-semibold text-gray-900 dark:text-white">{tl("voice_notes")}</span>
         </div>
-        <button onClick={onClose} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-400" data-testid="button-close-voice-notes">
-          <X className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-1">
+          {editModeNotes && (
+            <button
+              data-testid="button-bulk-delete-notes"
+              onClick={async () => {
+                await Promise.all(Array.from(selectedNotes).map(id =>
+                  fetch(`/api/user/voice-notes/${id}`, { method: "DELETE", headers: { "x-user-token": token } })
+                ));
+                setSelectedNotes(new Set());
+                setEditModeNotes(false);
+                queryClient.invalidateQueries({ queryKey: ["/api/user/voice-notes"] });
+              }}
+              disabled={selectedNotes.size === 0}
+              className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 disabled:opacity-30 transition-all"
+            >
+              Delete{selectedNotes.size > 0 ? ` (${selectedNotes.size})` : ""}
+            </button>
+          )}
+          <button
+            data-testid="button-edit-notes"
+            onClick={() => { setEditModeNotes(v => !v); setSelectedNotes(new Set()); }}
+            className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full transition-colors ${
+              editModeNotes ? "text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20" : "text-gray-400 hover:text-gray-600"
+            }`}
+          >
+            {editModeNotes ? "Done" : "Edit"}
+          </button>
+          <button onClick={onClose} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-400" data-testid="button-close-voice-notes">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       <div className="p-3 border-b border-gray-100 dark:border-slate-700 space-y-2">
@@ -1992,7 +2095,24 @@ function VoiceNotesPanel({ onClose, token, uiLang = "en", voiceLang = "en-IN" }:
             </div>
           )
         ) : notes.map((note) => (
-          <NoteCard key={note.id} note={note} token={token} deleteNote={deleteNote} formatDate={formatDate} formatDur={formatDur} />
+          <NoteCard
+            key={note.id}
+            note={note}
+            token={token}
+            deleteNote={deleteNote}
+            formatDate={formatDate}
+            formatDur={formatDur}
+            isEditMode={editModeNotes}
+            isSelected={selectedNotes.has(String(note.id))}
+            onSelect={() => {
+              setSelectedNotes(prev => {
+                const next = new Set(prev);
+                const id = String(note.id);
+                if (next.has(id)) next.delete(id); else next.add(id);
+                return next;
+              });
+            }}
+          />
         ))}
       </div>
     </div>
@@ -2850,6 +2970,8 @@ export default function AryaChat() {
   const [copiedMsgId, setCopiedMsgId] = useState<number | null>(null);
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
   const [renamingId, setRenamingId] = useState<number | null>(null);
+  const [editModeChats, setEditModeChats] = useState(false);
+  const [selectedChats, setSelectedChats] = useState<Set<number>>(new Set());
   const [renameValue, setRenameValue] = useState("");
   const [pinnedIds, setPinnedIds] = useState<Set<number>>(() => {
     try { return new Set(JSON.parse(localStorage.getItem("arya_pinned_convs") || "[]")); } catch { return new Set(); }
@@ -3907,25 +4029,63 @@ export default function AryaChat() {
           <div className="flex items-center gap-2 mb-3 px-1">
             <MessageSquare className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             <span className="text-sm font-semibold text-gray-900 dark:text-white">{t("chat_history")}</span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400 ml-auto">
-              {conversations.length}
-            </span>
+            {!editModeChats && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400">
+                {conversations.length}
+              </span>
+            )}
+            <button
+              data-testid="button-edit-chats"
+              onClick={() => { setEditModeChats(v => !v); setSelectedChats(new Set()); setOpenMenuId(null); }}
+              className={`ml-auto text-[11px] font-medium px-2.5 py-0.5 rounded-full transition-colors ${
+                editModeChats
+                  ? "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20"
+                  : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              }`}
+            >
+              {editModeChats ? "Done" : "Edit"}
+            </button>
           </div>
-          <Button
-            data-testid="button-new-chat"
-            onClick={() => {
-              setActiveConversation(null);
-              setStreamingContent("");
-              setIsStreaming(false);
-              setInput("");
-              setShowSidebar(false);
-            }}
-            className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:from-emerald-500 hover:to-emerald-400 shadow-lg shadow-emerald-300/30 dark:shadow-emerald-500/20"
-            size="sm"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            {t("new_chat")}
-          </Button>
+          {editModeChats ? (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-500 dark:text-gray-400 flex-1">
+                {selectedChats.size > 0 ? `${selectedChats.size} selected` : "Tap to select"}
+              </span>
+              <button
+                data-testid="button-bulk-delete-chats"
+                onClick={async () => {
+                  const ids = Array.from(selectedChats);
+                  await Promise.all(ids.map(id =>
+                    fetch(`/api/arya/conversations/${id}`, { method: "DELETE", headers: token ? { "x-user-token": token } : {} })
+                  ));
+                  if (activeConversation && selectedChats.has(activeConversation)) setActiveConversation(null);
+                  setSelectedChats(new Set());
+                  setEditModeChats(false);
+                  queryClient.invalidateQueries({ queryKey: ["/api/arya/conversations"] });
+                }}
+                disabled={selectedChats.size === 0}
+                className="px-3 py-1 rounded-lg text-xs font-semibold bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 border border-red-200 dark:border-red-800 disabled:opacity-30 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all"
+              >
+                Delete{selectedChats.size > 0 ? ` (${selectedChats.size})` : ""}
+              </button>
+            </div>
+          ) : (
+            <Button
+              data-testid="button-new-chat"
+              onClick={() => {
+                setActiveConversation(null);
+                setStreamingContent("");
+                setIsStreaming(false);
+                setInput("");
+                setShowSidebar(false);
+              }}
+              className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:from-emerald-500 hover:to-emerald-400 shadow-lg shadow-emerald-300/30 dark:shadow-emerald-500/20"
+              size="sm"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              {t("new_chat")}
+            </Button>
+          )}
         </div>
 
         <div className="px-2 py-2 border-b border-gray-100 dark:border-slate-700 flex gap-1 overflow-x-auto">
@@ -4003,26 +4163,44 @@ export default function AryaChat() {
                 <div
                   onClick={() => {
                     if (isRenaming) return;
+                    if (editModeChats) {
+                      setSelectedChats(prev => {
+                        const next = new Set(prev);
+                        if (next.has(conv.id)) next.delete(conv.id); else next.add(conv.id);
+                        return next;
+                      });
+                      return;
+                    }
                     setActiveConversation(conv.id);
                     setShowSidebar(false);
                     setOpenMenuId(null);
                   }}
                   className={`group flex items-start gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer transition-all ${
-                    activeConversation === conv.id
+                    editModeChats && selectedChats.has(conv.id)
+                      ? "bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-300 dark:border-emerald-700"
+                      : activeConversation === conv.id
                       ? "bg-gradient-to-r from-emerald-500/15 to-transparent border border-emerald-300 dark:border-emerald-700 text-gray-900 dark:text-white"
                       : "hover:bg-gray-100 dark:hover:bg-slate-700 text-muted-foreground hover:text-gray-900 dark:hover:text-white border border-transparent"
                   }`}
                 >
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 relative ${
-                    activeConversation === conv.id
+                    editModeChats && selectedChats.has(conv.id)
+                      ? "bg-emerald-500"
+                      : activeConversation === conv.id
                       ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"
                       : "bg-gray-100 dark:bg-slate-700 text-gray-400"
                   }`}>
-                    <MessageSquare className="w-3.5 h-3.5" />
-                    {isPinned && (
-                      <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-amber-400 rounded-full flex items-center justify-center">
-                        <Pin className="w-2 h-2 text-white" />
-                      </span>
+                    {editModeChats ? (
+                      <Check className={`w-3.5 h-3.5 ${selectedChats.has(conv.id) ? "text-white" : "text-transparent"}`} />
+                    ) : (
+                      <>
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        {isPinned && (
+                          <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-amber-400 rounded-full flex items-center justify-center">
+                            <Pin className="w-2 h-2 text-white" />
+                          </span>
+                        )}
+                      </>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -4044,7 +4222,7 @@ export default function AryaChat() {
                     )}
                     <span className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5 block">{timeStr}</span>
                   </div>
-                  {isRenaming ? (
+                  {!editModeChats && (isRenaming ? (
                     <div className="flex items-center gap-1 mt-1" onClick={e => e.stopPropagation()}>
                       <button
                         data-testid={`button-rename-confirm-${conv.id}`}
@@ -4076,7 +4254,7 @@ export default function AryaChat() {
                     >
                       <MoreHorizontal className="w-3.5 h-3.5" />
                     </button>
-                  )}
+                  ))}
                 </div>
 
                 {/* Context menu dropdown */}
