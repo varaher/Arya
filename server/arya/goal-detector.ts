@@ -13,6 +13,7 @@ const openai = new OpenAI({
 interface DetectedGoal {
   title: string;
   goal_type: GoalType;
+  priority: 'low' | 'medium' | 'high' | 'critical';
   due_date: string | null;
   reminder_at: string | null;
   recurrence: 'daily' | 'weekdays' | 'weekly' | null;
@@ -49,6 +50,7 @@ Return ONLY valid JSON (no markdown):
     {
       "title": "brief action-oriented title, max 80 chars",
       "goal_type": "task" | "habit" | "reminder" | "intention",
+      "priority": "low" | "medium" | "high" | "critical",
       "due_date": "ISO datetime or null",
       "reminder_at": "ISO datetime or null",
       "recurrence": "daily" | "weekdays" | "weekly" | null,
@@ -58,6 +60,12 @@ Return ONLY valid JSON (no markdown):
     }
   ]
 }
+
+Priority rules — infer from urgency signals in the message:
+- "critical": emergency, deadline today/tomorrow, crisis, health/safety
+- "high": deadline within a week, explicitly said "important" / "urgent" / "ASAP"
+- "low": "someday", "eventually", "would be nice", vague future wish
+- "medium": everything else (default)
 
 Rules:
 - Only include goals with confidence > 0.65
@@ -131,13 +139,16 @@ export async function detectAndCreateGoals(
         if (!isNaN(d.getTime())) reminderAt = d;
       }
 
+      const validPriorities = ['low', 'medium', 'high', 'critical'];
+      const priority = validPriorities.includes(g.priority) ? g.priority : 'medium';
+
       const [goal] = await db.insert(aryaGoals).values({
         tenantId,
         userId,
         title: g.title.slice(0, 200),
         description: g.context_note || null,
         status: 'active',
-        priority: 'medium',
+        priority: priority as any,
         goalType,
         conversationId: conversationId || null,
         peopleInvolved: g.people_involved?.length > 0 ? g.people_involved : null,

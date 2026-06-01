@@ -1,0 +1,119 @@
+So Why Is Mobile Still Not Scrolling?
+The CSS hides scrollbars ✅
+But something else is blocking scroll.
+
+CSS alone doesn't make things scroll.
+The CONTAINER must have:
+  overflow-y: auto or overflow-y: scroll
+  AND a defined height
+
+Without these → content just overflows
+and gets cut off, even with scrollbar hidden.
+
+The Real Fix Needed
+Find in App.tsx or the main page wrapper:
+
+Current (likely):
+  <div style={{ height: '100vh', overflow: 'hidden' }}>
+    ...content...
+  </div>
+
+This blocks ALL scroll. ❌
+
+Change to:
+  <div style={{ minHeight: '100vh', overflowY: 'auto' }}>
+    ...content...
+  </div>
+
+Tell Developer — Check These 3 Things
+Check 1 — Root Container
+File: client/src/App.tsx
+OR client/src/main.tsx
+
+Find the outermost div wrapping everything.
+Does it have:
+  overflow: hidden  ← REMOVE THIS
+  height: 100vh    ← CHANGE TO min-height: 100vh
+
+Example fix:
+  className="h-screen overflow-hidden"
+  → change to →
+  className="min-h-screen overflow-y-auto"
+Check 2 — Page Container
+File: client/src/pages/AryaChat.tsx
+
+Find the main page wrapper div.
+Same check:
+  overflow: hidden → remove
+  height: 100vh → min-height: 100vh
+
+The Tailwind classes to look for:
+  h-screen → min-h-screen
+  overflow-hidden → overflow-y-auto
+Check 3 — Mobile Specific
+On mobile the bottom nav is fixed.
+Content scrolls under it.
+But if container height is wrong:
+  Content gets stuck
+  Scroll doesn't work
+
+Add to the scrollable content area:
+  padding-bottom: 80px
+  (makes room for fixed bottom nav)
+  
+Without this → last content hidden
+behind bottom nav, can't scroll to it
+
+Quick Test For Developer
+Open browser DevTools
+Press F12
+Click the mobile phone icon (device toolbar)
+Select iPhone 12 or similar
+
+If content doesn't scroll in DevTools:
+  The overflow/height issue is confirmed
+  Fix the container as described above
+
+If it scrolls in DevTools but not real phone:
+  It's a touch event issue
+  Add: touch-action: pan-y
+  to the scrollable container
+
+Also — The Bigger Layout Issue
+From previous screenshots we know:
+  Home cards and chat messages
+  are on the SAME scrollable page.
+  
+This means:
+  User scrolls down on home
+  Sees old chat messages
+  Very confusing
+
+This needs to be fixed too:
+  When no active conversation:
+    Show home cards only
+  When conversation active:
+    Show chat messages only
+    Hide home cards
+
+This is a React state change:
+  if (activeConversation) → show chat
+  else → show welcome screen
+
+Priority For Developer Today
+1. Find overflow: hidden in App.tsx
+   Change to overflow-y: auto
+   (10 minutes — fixes mobile scroll)
+
+2. Separate home from chat view
+   (2 hours — fixes the cluttered layout)
+
+3. Test on real Android phone
+   Not just desktop DevTools
+   Real device confirmation needed
+
+After these two:
+  Mobile scroll works ✅
+  Home screen clean ✅
+  Chat screen clean ✅
+  Ready for launch ✅This chat has 89 of 100 images (including PDF pages). Consider starting a new chat.

@@ -1606,6 +1606,20 @@ function GoalsPanel({ onClose }: { onClose: () => void }) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/user/goals"] }),
   });
 
+  const completeGoalMutation = useMutation({
+    mutationFn: async ({ goalId, undo }: { goalId: string; undo?: boolean }) => {
+      await fetch(`/api/user/goals/${goalId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "x-user-token": token! },
+        body: JSON.stringify(undo
+          ? { status: "active", isCompleted: false }
+          : { status: "completed", isCompleted: true }
+        ),
+      });
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/user/goals"] }),
+  });
+
   const goalsList = goals || [];
   const priorityColors: Record<string, string> = {
     low: "text-gray-400", medium: "text-blue-400", high: "text-amber-600 dark:text-amber-400", critical: "text-red-500 dark:text-red-400"
@@ -1681,10 +1695,12 @@ function GoalsPanel({ onClose }: { onClose: () => void }) {
         {goalsList.map((goal) => (
           <div
             key={goal.id}
-            className={`rounded-xl border p-3 group transition-all cursor-pointer ${
+            className={`rounded-xl border transition-all ${
               editModeGoals && selectedGoals.has(goal.id)
-                ? "bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700"
-                : "bg-gray-100 dark:bg-slate-700 border-gray-200 dark:border-slate-700"
+                ? "bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700 cursor-pointer"
+                : goal.status === 'completed'
+                ? "bg-emerald-50/60 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/40"
+                : "bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:shadow-sm"
             }`}
             data-testid={`card-goal-${goal.id}`}
             onClick={() => {
@@ -1696,61 +1712,82 @@ function GoalsPanel({ onClose }: { onClose: () => void }) {
               });
             }}
           >
-            <div className="flex items-start justify-between mb-2">
-              <div className="flex items-start gap-2 flex-1 min-w-0">
-                {editModeGoals && (
-                  <div className={`w-4 h-4 mt-0.5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
-                    selectedGoals.has(goal.id) ? "bg-amber-500 border-amber-500" : "border-gray-300 dark:border-slate-500"
-                  }`}>
-                    {selectedGoals.has(goal.id) && <Check className="w-2.5 h-2.5 text-white" />}
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className={`text-[9px] uppercase font-bold ${priorityColors[goal.priority]}`}>{goal.priority}</span>
-                    {goal.status === 'completed' && <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />}
-                  </div>
-                  <h4 className="text-xs font-medium text-gray-900 dark:text-white mt-0.5">{goal.title}</h4>
+            {/* Goal header */}
+            <div className="flex items-start gap-2 px-3 pt-2.5 pb-1">
+              {editModeGoals && (
+                <div className={`w-4 h-4 mt-0.5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
+                  selectedGoals.has(goal.id) ? "bg-amber-500 border-amber-500" : "border-gray-300 dark:border-slate-500"
+                }`}>
+                  {selectedGoals.has(goal.id) && <Check className="w-2.5 h-2.5 text-white" />}
                 </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className={`text-[9px] uppercase font-bold tracking-wide ${priorityColors[goal.priority]}`}>{goal.priority}</span>
+                  {goal.status === 'completed' && (
+                    <span className="text-[9px] uppercase font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 px-1.5 py-0.5 rounded-full">Done</span>
+                  )}
+                </div>
+                <h4 className={`text-xs font-medium mt-0.5 ${
+                  goal.status === 'completed'
+                    ? "line-through text-gray-400 dark:text-gray-500"
+                    : "text-gray-900 dark:text-white"
+                }`}>{goal.title}</h4>
               </div>
               {!editModeGoals && (
-                <button
-                  onClick={e => { e.stopPropagation(); deleteGoalMutation.mutate(goal.id); }}
-                  className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 transition-all"
-                >
-                  <Trash2 className="w-3 h-3" />
-                </button>
+                <div className="flex items-center gap-0.5 flex-shrink-0">
+                  <button
+                    onClick={e => { e.stopPropagation(); completeGoalMutation.mutate({ goalId: goal.id, undo: goal.status === 'completed' }); }}
+                    data-testid={`button-complete-goal-${goal.id}`}
+                    title={goal.status === 'completed' ? "Mark active" : "Mark complete"}
+                    className={`p-1.5 rounded-lg transition-all ${
+                      goal.status === 'completed'
+                        ? "text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 hover:bg-emerald-200"
+                        : "text-gray-300 dark:text-gray-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 dark:hover:text-emerald-400"
+                    }`}
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={e => { e.stopPropagation(); deleteGoalMutation.mutate(goal.id); }}
+                    data-testid={`button-delete-goal-${goal.id}`}
+                    className="p-1.5 rounded-lg text-gray-300 dark:text-gray-600 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 dark:hover:text-red-400 transition-all"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               )}
             </div>
 
-            {goal.steps.length > 0 && (
-              <div className="mb-2">
-                <div className="w-full h-1 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-amber-500 to-emerald-500 rounded-full transition-all" style={{ width: `${goal.progress}%` }} />
+            {(goal.steps.length > 0) && (
+              <div className="px-3 pb-3">
+                <div className="mb-2">
+                  <div className="w-full h-1 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-amber-500 to-emerald-500 rounded-full transition-all" style={{ width: `${goal.progress}%` }} />
+                  </div>
+                  <span className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5 block">{goal.progress}%</span>
                 </div>
-                <span className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5 block">{goal.progress}%</span>
+                <div className="space-y-0.5">
+                  {goal.steps.map((step) => (
+                    <button
+                      key={step.id}
+                      onClick={e => { e.stopPropagation(); toggleStepMutation.mutate({ stepId: step.id, status: step.status }); }}
+                      className="w-full flex items-start gap-2 text-left px-1.5 py-1 rounded hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+                      data-testid={`button-step-${step.id}`}
+                    >
+                      <div className={`w-3.5 h-3.5 mt-0.5 rounded border flex-shrink-0 flex items-center justify-center ${
+                        step.status === 'completed' ? 'bg-emerald-100 dark:bg-emerald-900/30 border-emerald-300' : 'border-gray-200 dark:border-slate-700'
+                      }`}>
+                        {step.status === 'completed' && <Check className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" />}
+                      </div>
+                      <span className={`text-[11px] ${step.status === 'completed' ? 'text-gray-300 dark:text-gray-600 line-through' : 'text-gray-600 dark:text-gray-300'}`}>
+                        {step.description}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
-
-            <div className="space-y-1">
-              {goal.steps.map((step) => (
-                <button
-                  key={step.id}
-                  onClick={() => toggleStepMutation.mutate({ stepId: step.id, status: step.status })}
-                  className="w-full flex items-start gap-2 text-left px-1.5 py-1 rounded hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
-                  data-testid={`button-step-${step.id}`}
-                >
-                  <div className={`w-3.5 h-3.5 mt-0.5 rounded border flex-shrink-0 flex items-center justify-center ${
-                    step.status === 'completed' ? 'bg-emerald-100 dark:bg-emerald-900/30 border-emerald-300' : 'border-gray-200 dark:border-slate-700'
-                  }`}>
-                    {step.status === 'completed' && <Check className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" />}
-                  </div>
-                  <span className={`text-[11px] ${step.status === 'completed' ? 'text-gray-300 dark:text-gray-600 line-through' : 'text-gray-600 dark:text-gray-300'}`}>
-                    {step.description}
-                  </span>
-                </button>
-              ))}
-            </div>
           </div>
         ))}
         {!isLoading && goalsList.length === 0 && (
