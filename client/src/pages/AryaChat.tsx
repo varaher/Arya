@@ -3928,7 +3928,7 @@ export default function AryaChat() {
           </Button>
         </div>
 
-        <div className="px-2 py-2 border-b border-gray-100 dark:border-slate-700 flex gap-1 overflow-x-auto" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+        <div className="px-2 py-2 border-b border-gray-100 dark:border-slate-700 flex gap-1 overflow-x-auto">
           <button
             data-testid="button-toggle-memory"
             onClick={() => { setShowMemory(!showMemory); setShowGoals(false); setShowReminders(false); }}
@@ -4677,9 +4677,7 @@ export default function AryaChat() {
                 transition={{ duration: 0.35, delay: 0.32 }}
                 className="w-full mb-1"
               >
-                <div className="flex gap-2 overflow-x-auto pb-1 px-1"
-                  style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch", touchAction: "pan-x" }}
-                >
+                <div className="grid grid-cols-4 gap-2 px-1">
                   {[
                     { icon: "🎯", label: t("goals"),     action: () => { setShowGoals(true); setShowMemory(false); setShowNotes(false); setShowReminders(false); setShowCalendar(false); } },
                     { icon: "🧠", label: t("memory"),    action: () => { setShowMemory(true); setShowGoals(false); setShowNotes(false); setShowReminders(false); setShowCalendar(false); } },
@@ -4688,21 +4686,20 @@ export default function AryaChat() {
                     { icon: "🔔", label: t("reminders"), action: () => { setShowReminders(true); setShowGoals(false); setShowMemory(false); setShowNotes(false); setShowCalendar(false); } },
                     { icon: "📅", label: t("calendar"),  action: () => { setShowCalendar(true); setShowGoals(false); setShowMemory(false); setShowNotes(false); setShowReminders(false); } },
                     { icon: "🏘️", label: t("community"), action: () => setLocation("/community") },
-                    { icon: "⚖️", label: "Niti",         action: () => setLocation("/niti") },
                   ].map((item, i) => (
                     <motion.button
                       key={item.label}
                       data-testid={`button-quick-access-${i}`}
                       onClick={item.action}
-                      initial={{ opacity: 0, x: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.2, delay: 0.34 + i * 0.04 }}
-                      whileHover={{ scale: 1.05 }}
+                      whileHover={{ scale: 1.04 }}
                       whileTap={{ scale: 0.92 }}
-                      className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-emerald-200 dark:hover:border-slate-500 transition-all"
+                      className="flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-emerald-200 dark:hover:border-slate-500 transition-all"
                     >
-                      <span className="text-base leading-none">{item.icon}</span>
-                      <span className="text-xs font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">{item.label}</span>
+                      <span className="text-sm leading-none">{item.icon}</span>
+                      <span className="text-[11px] font-medium text-gray-600 dark:text-gray-300 truncate">{item.label}</span>
                     </motion.button>
                   ))}
                 </div>

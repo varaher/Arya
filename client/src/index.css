@@ -157,13 +157,9 @@
   display: none;
 }
 
-/* kept for backward compat */
-.hide-scrollbar {
-  scrollbar-width: none;
-}
-.hide-scrollbar::-webkit-scrollbar {
-  display: none;
-}
+/* kept for explicit usage in JSX className */
+.hide-scrollbar { scrollbar-width: none; }
+.hide-scrollbar::-webkit-scrollbar { display: none; }
 
 /* ── Smooth momentum scroll on all touch containers ──────────────── */
 [style*="overflow"],
