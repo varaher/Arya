@@ -4829,8 +4829,8 @@ export default function AryaChat() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.4 }}
-            className="flex-1 flex flex-col items-center justify-start text-center px-4 pt-6 pb-28 overflow-y-auto min-h-0"
-            style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}
+            className="overflow-y-auto min-h-0 flex flex-col items-center justify-start text-center px-4 pt-6 pb-20"
+            style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y", maxHeight: "100%" }}
           >
             <motion.div
               data-testid="img-arya-logo"
@@ -4912,7 +4912,7 @@ export default function AryaChat() {
                 transition={{ duration: 0.35, delay: 0.32 }}
                 className="w-full mb-1"
               >
-                <div className="grid grid-cols-4 gap-2 px-1">
+                <div className="flex flex-wrap justify-center gap-2 px-1">
                   {[
                     { icon: "🎯", label: t("goals"),     action: () => { setShowGoals(true); setShowMemory(false); setShowNotes(false); setShowReminders(false); setShowCalendar(false); } },
                     { icon: "🧠", label: t("memory"),    action: () => { setShowMemory(true); setShowGoals(false); setShowNotes(false); setShowReminders(false); setShowCalendar(false); } },
@@ -4931,10 +4931,10 @@ export default function AryaChat() {
                       transition={{ duration: 0.2, delay: 0.34 + i * 0.04 }}
                       whileHover={{ scale: 1.04 }}
                       whileTap={{ scale: 0.92 }}
-                      className="flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-emerald-200 dark:hover:border-slate-500 transition-all"
+                      className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-emerald-200 dark:hover:border-slate-500 transition-all whitespace-nowrap flex-shrink-0"
                     >
                       <span className="text-sm leading-none">{item.icon}</span>
-                      <span className="text-[11px] font-medium text-gray-600 dark:text-gray-300 truncate">{item.label}</span>
+                      <span className="text-[11px] font-medium text-gray-600 dark:text-gray-300">{item.label}</span>
                     </motion.button>
                   ))}
                 </div>
@@ -5294,7 +5294,7 @@ export default function AryaChat() {
           </div>{/* end max-w-3xl */}
         </div>{/* end messages scroll */}
 
-        <div className="border-t border-gray-100 dark:border-slate-800 bg-white dark:bg-[#0f1117] px-3 md:px-6 pb-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:pb-4 pt-2">
+        <div className={`border-t border-gray-100 dark:border-slate-800 bg-white dark:bg-[#0f1117] px-3 md:px-6 pb-[env(safe-area-inset-bottom,4px)] md:pb-4 pt-2 ${(!activeConversation && messages.length === 0 && !streamingContent) ? "absolute bottom-0 left-0 right-0 z-10" : ""}`}>
           {playingAudio && (
             <div className="flex items-center justify-center gap-2 mb-2">
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 dark:bg-amber-900/20 border border-amber-300">
