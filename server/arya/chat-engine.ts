@@ -565,6 +565,24 @@ async function getUserPreferenceContext(userId?: string | null): Promise<string>
   }
 }
 
+function getMaxTokens(userMessage: string, voiceMode: boolean, isDeep: boolean): number {
+  if (voiceMode) return 300;
+
+  const msg = userMessage.toLowerCase();
+  const isLongForm =
+    msg.includes("article") || msg.includes("essay") || msg.includes("speech") ||
+    msg.includes("write a ") || msg.includes("draft ") || msg.includes(" report") ||
+    msg.includes("explain in detail") || msg.includes("comprehensive") ||
+    msg.includes("in-depth") || msg.includes("step by step") ||
+    msg.includes("full guide") || msg.includes("complete guide") ||
+    msg.includes("detailed plan") || msg.includes("write me a") ||
+    /\b(letter|email|proposal|story|poem|blog post|cover letter)\b/.test(msg);
+
+  if (isLongForm) return 4096;
+  if (isDeep) return 2048;
+  return 1500;
+}
+
 export async function generateAryaResponse(
   userMessage: string,
   conversationHistory: ChatMessage[],
@@ -782,8 +800,24 @@ export async function generateAryaResponse(
     ? `\n\nVOICE MODE ACTIVE: The user is speaking to you via voice. Keep your response SHORT and conversational — 2-3 sentences max. No bullet points, no markdown, no numbered lists. Speak naturally as if talking to a friend. Get to the point immediately.${voiceLangLock}`
     : "";
 
+  const _msgLower = userMessage.toLowerCase();
+  const isLongFormRequest =
+    !voiceMode && (
+      _msgLower.includes("article") || _msgLower.includes("essay") || _msgLower.includes("speech") ||
+      _msgLower.includes("write a ") || _msgLower.includes("draft ") || _msgLower.includes(" report") ||
+      _msgLower.includes("explain in detail") || _msgLower.includes("comprehensive") ||
+      _msgLower.includes("in-depth") || _msgLower.includes("step by step") ||
+      _msgLower.includes("full guide") || _msgLower.includes("complete guide") ||
+      _msgLower.includes("write me a") ||
+      /\b(letter|email|proposal|story|poem|blog post|cover letter)\b/.test(_msgLower)
+    );
+
+  const longFormInstruction = isLongFormRequest
+    ? `\n\nLONG-FORM WRITING MODE: You are producing extended content. Write fully and completely — do not cut yourself short. If you are about to reach your response limit before finishing, always complete the current paragraph cleanly, then end with exactly: "— *continued in next message* —". Never stop mid-sentence or mid-thought.`
+    : "";
+
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-    { role: "system", content: ARYA_SYSTEM_PROMPT + userPrefs + (langInstruction ? `\n\n${langInstruction}` : "") + sectionToneAddition + knowledgeContext + newsContext + memoryContext + uncertaintyGuidance + voiceInstruction },
+    { role: "system", content: ARYA_SYSTEM_PROMPT + userPrefs + (langInstruction ? `\n\n${langInstruction}` : "") + sectionToneAddition + knowledgeContext + newsContext + memoryContext + uncertaintyGuidance + voiceInstruction + longFormInstruction },
     ...conversationHistory.slice(-20).map(m => ({
       role: m.role as "user" | "assistant",
       content: m.content,
@@ -800,7 +834,7 @@ export async function generateAryaResponse(
     model: selectedModel,
     messages,
     stream: true,
-    max_completion_tokens: voiceMode ? 300 : isDeep ? 2048 : 1024,
+    max_completion_tokens: getMaxTokens(userMessage, voiceMode, isDeep),
   });
 
   const meta: AryaResponseMeta = {

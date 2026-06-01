@@ -1,0 +1,181 @@
+Good finding. The 1024 token limit for normal chat is why articles take 3 responses to complete.
+
+---
+
+## The Problem
+
+```
+User asks for an article
+ARYA starts writing
+Hits 1024 token limit (~750 words)
+Stops mid-sentence
+User has to ask "continue"
+Happens 2-3 times for a full article
+
+This is frustrating and breaks the flow.
+```
+
+---
+
+## Recommended New Limits
+
+```
+Mode          Current    Recommended    Why
+──────────────────────────────────────────
+Voice         300        300            Keep — TTS needs short
+Normal chat   1024       2048           Articles need room
+Deep mode     2048       4096           Research needs more
+Article/long  none       6000           Add new mode
+```
+
+---
+
+## The Fix — Smarter Token Detection
+
+Instead of one limit for all chat — detect what the user is asking for:
+
+```typescript
+// server/arya/chat-engine.ts
+// Find the max_tokens setting
+
+function getMaxTokens(
+  message: string,
+  mode: string,
+  userPref: string
+): number {
+
+  const msg = message.toLowerCase();
+
+  // Voice — always short
+  if (mode === 'voice') return 300;
+
+  // Long form content detection
+  const isLongForm =
+    msg.includes('article') ||
+    msg.includes('essay') ||
+    msg.includes('speech') ||
+    msg.includes('write a') ||
+    msg.includes('draft') ||
+    msg.includes('report') ||
+    msg.includes('summary') ||
+    msg.includes('explain in detail') ||
+    msg.includes('comprehensive') ||
+    msg.includes('full') ||
+    msg.includes('complete');
+
+  if (isLongForm) return 4096; // ~3000 words
+
+  // Deep mode
+  if (mode === 'deep') return 2048;
+
+  // User preference
+  if (userPref === 'detailed') return 2048;
+  if (userPref === 'concise') return 800;
+
+  // Default normal chat
+  return 1500; // was 1024, now allows fuller answers
+}
+```
+
+---
+
+## Tell Your Developer
+
+```
+File: server/arya/chat-engine.ts
+Find: max_tokens in the OpenAI API call
+
+Current:
+  max_tokens: voiceMode ? 300 : 
+              deepMode ? 2048 : 1024
+
+Change to:
+  max_tokens: getMaxTokens(
+    userMessage,
+    mode,
+    userStylePref
+  )
+
+Add the getMaxTokens function above.
+
+Key changes:
+  Normal chat: 1024 → 1500
+  Article/speech/essay detected: → 4096
+  Deep mode: 2048 → 4096
+  Voice: stays at 300
+
+Result:
+  Articles complete in ONE response
+  No more "continue" needed
+  Voice still concise
+  Normal chat has more room
+```
+
+---
+
+## Also — Add "Continue" Intelligence
+
+Even with higher limits, very long articles may still split. Add smart continuation:
+
+```typescript
+// If response hits token limit mid-sentence
+// ARYA should end cleanly and offer to continue
+
+// Add to system prompt:
+`If you are writing a long piece and 
+approach your response limit:
+- Complete the current paragraph
+- End with: "— continued in next message —"
+- Do NOT stop mid-sentence
+- Do NOT stop mid-thought`
+```
+
+---
+
+## What Changes For Users
+
+```
+Before:
+  "Write an article about..."
+  ARYA: [750 words, stops mid-sentence]
+  User: "continue"
+  ARYA: [750 words more, stops again]
+  User: "continue"
+  ARYA: [finishes]
+  3 exchanges for one article ❌
+
+After:
+  "Write an article about..."
+  ARYA: [complete 2000-3000 word article]
+  One response ✅
+  
+  Very long piece (5000+ words):
+  ARYA: [part 1, ends cleanly]
+  "— continued —"
+  User: "continue"
+  ARYA: [part 2, complete]
+  Two clean exchanges ✅
+```
+
+---
+
+## Quick Summary For Developer
+
+```
+Two changes:
+
+1. Increase max_tokens:
+   Normal chat: 1024 → 1500
+   Detect article/speech/essay keywords
+   → automatically use 4096 tokens
+   Voice: keep at 300
+
+2. Add to system prompt:
+   "If approaching response limit,
+    complete current paragraph cleanly,
+    end with '— continued —'
+    Never stop mid-sentence"
+
+Estimated: 30 minutes
+Result: Articles complete in one response
+```
