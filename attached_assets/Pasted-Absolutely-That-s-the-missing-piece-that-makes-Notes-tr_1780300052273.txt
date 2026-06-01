@@ -1,0 +1,217 @@
+Absolutely. That's the missing piece that makes Notes truly powerful.
+
+---
+
+## What Notes Should Do — Complete Flow
+
+```
+You record → ARYA transcribes → ARYA summarises
+All three happen automatically.
+```
+
+---
+
+## Example — Full Flow
+
+```
+You speak (Malayalam, 2 minutes):
+"ഇന്ന് Dr. Edwina വരുന്നു. Extension
+ decision എടുക്കണം. Shortage July ൽ
+ ആണ്. Dr. Neeraj പറഞ്ഞു today finish
+ ചെയ്യണം എന്ന്. Management meeting
+ നാളെ 10 AM. NABH documents Friday
+ deadline. Bed 7 cultures follow up."
+
+ARYA saves:
+
+─────────────────────────────────
+🎙️ Today, 1:03 PM  •  2 min
+
+SUMMARY:
+• Dr. Edwina joining — extension decision needed today
+• Shortage expected from July
+• Management meeting tomorrow 10 AM
+• NABH documents due Friday
+• Bed 7 cultures — follow up
+
+TRANSCRIPT:
+"ഇന്ന് Dr. Edwina വരുന്നു. Extension
+ decision എടുക്കണം..."
+[Show full transcript ▾]
+
+[🔊 Play] [🗑️ Delete]
+─────────────────────────────────
+```
+
+---
+
+## Why Summary Matters
+
+```
+Without summary:
+  Record 2 minute note
+  Later: read full transcript
+  Scan through everything
+  Find what you need
+  Time consuming ❌
+
+With summary:
+  Record 2 minute note
+  Later: see 5 bullet points
+  Instantly know what it was about
+  Tap to read full if needed
+  10 seconds ✅
+```
+
+---
+
+## What ARYA Extracts Automatically
+
+```
+From any voice note ARYA identifies:
+
+TASKS → things to do
+  "Need to call director"
+  "Follow up cultures bed 7"
+
+DECISIONS → things to decide
+  "Extension decision today"
+  "NABH audit approach"
+
+REMINDERS → time-based
+  "Meeting tomorrow 10 AM"
+  "Friday deadline"
+
+PEOPLE → who is involved
+  "Dr. Edwina, Dr. Neeraj, management"
+
+KEY FACTS → important information
+  "Shortage from July"
+  "Bed 7 MDR patient"
+```
+
+---
+
+## Even Better — Convert To Goals
+
+```
+After saving note with summary
+ARYA asks:
+
+"I noticed 3 actionable items
+ in this note:
+
+ 1. Extension decision — today
+ 2. NABH documents — Friday
+ 3. Follow up Bed 7 cultures — tomorrow
+
+ Want me to save these as tasks
+ in your Goals?"
+
+User taps Yes →
+All 3 automatically added to Goals
+With deadlines ✅
+```
+
+---
+
+## The Complete Notes Feature
+
+```
+RECORD:
+  One tap → speak in any language
+  ARYA listens
+
+TRANSCRIBE:
+  Full transcript saved
+  In your language
+
+SUMMARISE:
+  3-7 bullet points
+  Key actions, people, deadlines
+
+CONVERT:
+  Actionable items → Tasks in Goals
+  With one tap
+
+SEARCH:
+  Type any word
+  Finds across all notes
+  In any language
+
+REFERENCE:
+  In chat: "What did I note yesterday?"
+  ARYA reads your notes and answers
+```
+
+---
+
+## Tell Your Developer — Summary Feature
+
+```
+When voice note is saved:
+
+Step 1 — Transcribe (already done)
+  Sarvam STT → transcript text
+
+Step 2 — Summarise (add this)
+  After transcription, call OpenAI:
+  
+  prompt: "Summarise this voice note
+           in 3-7 bullet points.
+           Extract: tasks, decisions,
+           reminders, people, key facts.
+           Keep each bullet under 10 words.
+           Respond in same language as note.
+           Note: {transcript}"
+  
+  Save summary alongside transcript
+  in arya_voice_notes table
+
+Step 3 — Show in UI
+  Display summary first (bold bullets)
+  Full transcript below (collapsed)
+  "Show full transcript ▾" toggle
+
+Step 4 — Offer to create tasks
+  If summary contains action items:
+  Show: "Save X items as tasks?"
+  One tap → adds to Goals
+
+Estimated: 3-4 hours
+Result: Voice notes become
+        the most useful feature in ARYA
+```
+
+---
+
+## Database Change Needed
+
+```sql
+-- Add summary column to voice notes table
+ALTER TABLE arya_voice_notes
+  ADD COLUMN IF NOT EXISTS summary TEXT,
+  ADD COLUMN IF NOT EXISTS extracted_tasks JSONB,
+  ADD COLUMN IF NOT EXISTS extracted_people TEXT[],
+  ADD COLUMN IF NOT EXISTS extracted_deadlines JSONB;
+```
+
+---
+
+## What Users Will Say
+
+```
+Without summary:
+  "I recorded but I never go back
+   to listen to it"
+  (happens with every voice notes app)
+
+With summary:
+  "I recorded it, ARYA told me
+   what I said, and added it to
+   my tasks automatically"
+  
+  That's a feature people tell others about.
+  That's what makes ARYA different
+  from every other notes app.
+```

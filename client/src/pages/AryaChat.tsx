@@ -1711,6 +1711,93 @@ function GoalsPanel({ onClose }: { onClose: () => void }) {
   );
 }
 
+function NoteCard({ note, token, deleteNote, formatDate, formatDur }: {
+  note: any;
+  token: string | null;
+  deleteNote: any;
+  formatDate: (d: string | Date) => string;
+  formatDur: (s: number) => string;
+}) {
+  const qc = useQueryClient();
+  const [tasksSaved, setTasksSaved] = useState(!!note.tasksSavedToGoals);
+  const [savingTasks, setSavingTasks] = useState(false);
+
+  const tasks: Array<{ task: string; deadline?: string | null }> =
+    Array.isArray(note.extractedTasks) ? note.extractedTasks : [];
+
+  const summaryLines: string[] = note.summary
+    ? note.summary.split(/\n/).filter(Boolean).slice(0, 5)
+    : [];
+
+  async function handleSaveTasks() {
+    if (!token || tasksSaved) return;
+    setSavingTasks(true);
+    try {
+      await fetch(`/api/user/voice-notes/${note.id}/save-tasks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-user-token": token },
+      });
+      setTasksSaved(true);
+      qc.invalidateQueries({ queryKey: ["/api/user/goals"] });
+    } catch { /* silent */ } finally {
+      setSavingTasks(false);
+    }
+  }
+
+  return (
+    <div data-testid={`card-voice-note-${note.id}`} className="group flex items-start gap-2 px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-slate-800 border border-gray-100 dark:border-slate-700 hover:border-violet-200 dark:hover:border-violet-800 transition-all">
+      <div className="w-7 h-7 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+        <Mic className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-xs font-medium text-gray-700 dark:text-gray-200 truncate">{note.title || note.transcript?.slice(0, 40)}</div>
+
+        {summaryLines.length > 0 ? (
+          <ul className="mt-1 space-y-0.5">
+            {summaryLines.map((line: string, i: number) => (
+              <li key={i} className="text-[10px] text-gray-500 dark:text-gray-400 leading-relaxed">{line}</li>
+            ))}
+          </ul>
+        ) : (
+          <div className="text-[10px] text-gray-400 mt-0.5 line-clamp-2">{note.transcript}</div>
+        )}
+
+        <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 flex items-center gap-2">
+          <span>{formatDate(note.createdAt)}</span>
+          {note.durationSeconds > 0 && <span>· {formatDur(note.durationSeconds)}</span>}
+        </div>
+
+        {tasks.length > 0 && (
+          <button
+            onClick={handleSaveTasks}
+            disabled={tasksSaved || savingTasks}
+            data-testid={`button-save-tasks-${note.id}`}
+            className={`mt-1.5 text-[10px] flex items-center gap-1 font-medium transition-colors ${
+              tasksSaved
+                ? "text-emerald-600 dark:text-emerald-400 cursor-default"
+                : "text-violet-600 dark:text-violet-400 hover:text-violet-700 cursor-pointer"
+            }`}
+          >
+            <Check className="w-3 h-3 flex-shrink-0" />
+            {tasksSaved
+              ? `${tasks.length} task${tasks.length > 1 ? "s" : ""} saved to Goals`
+              : savingTasks
+              ? "Saving…"
+              : `Save ${tasks.length} task${tasks.length > 1 ? "s" : ""} to Goals`}
+          </button>
+        )}
+      </div>
+      <button
+        onClick={() => deleteNote.mutate(note.id)}
+        data-testid={`button-delete-note-${note.id}`}
+        className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-300 hover:text-red-500 transition-all flex-shrink-0"
+      >
+        <Trash2 className="w-3 h-3" />
+      </button>
+    </div>
+  );
+}
+
 function VoiceNotesPanel({ onClose, token, uiLang = "en", voiceLang = "en-IN" }: { onClose: () => void; token: string; uiLang?: UiLanguage; voiceLang?: string }) {
   const tl = (key: string) => getTranslation(uiLang, key);
   const queryClient = useQueryClient();
@@ -1878,32 +1965,34 @@ function VoiceNotesPanel({ onClose, token, uiLang = "en", voiceLang = "en-IN" }:
         {isLoading ? (
           <div className="flex items-center justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-violet-500" /></div>
         ) : notes.length === 0 ? (
-          <div className="text-center py-10 px-3">
-            <NotebookPen className="w-8 h-8 text-gray-200 mx-auto mb-2" />
-            <p className="text-sm text-gray-400">{search ? "No notes match your search" : tl("no_notes")}</p>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{search ? "" : tl("start_recording")}</p>
-          </div>
-        ) : notes.map((note) => (
-          <div key={note.id} data-testid={`card-voice-note-${note.id}`} className="group flex items-start gap-2 px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-slate-800 border border-gray-100 dark:border-slate-700 hover:border-violet-200 dark:hover:border-violet-800 transition-all">
-            <div className="w-7 h-7 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <Mic className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" />
+          search ? (
+            <div className="text-center py-10 px-3">
+              <p className="text-sm text-gray-400">No notes match your search</p>
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-xs font-medium text-gray-700 dark:text-gray-200 truncate">{note.title || note.transcript?.slice(0, 40)}</div>
-              <div className="text-[10px] text-gray-400 mt-0.5 line-clamp-2">{note.transcript}</div>
-              <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 flex items-center gap-2">
-                <span>{formatDate(note.createdAt)}</span>
-                {note.durationSeconds > 0 && <span>· {formatDur(note.durationSeconds)}</span>}
+          ) : (
+            <div className="flex flex-col items-center py-6 px-3 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-violet-50 dark:bg-violet-900/20 flex items-center justify-center mb-3">
+                <Mic className="w-7 h-7 text-violet-500 dark:text-violet-400" />
+              </div>
+              <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-1">Capture thoughts on the go</p>
+              <p className="text-[11px] text-gray-400 dark:text-gray-500 leading-relaxed mb-4">
+                Record any idea, reminder, or thought in your language — ARYA transcribes it instantly and saves it here, searchable anytime.
+              </p>
+              <div className="flex flex-col gap-1.5 w-full mb-4 text-left">
+                {[
+                  "Follow up cultures for bed 7 tomorrow",
+                  "Article idea — POCUS in rural ER",
+                  "Call director about NABH audit documents",
+                ].map((ex, i) => (
+                  <div key={i} className="text-[10px] text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-slate-800 rounded-lg px-3 py-2">
+                    💬 &ldquo;{ex}&rdquo;
+                  </div>
+                ))}
               </div>
             </div>
-            <button
-              onClick={() => deleteNote.mutate(note.id)}
-              data-testid={`button-delete-note-${note.id}`}
-              className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-300 hover:text-red-500 transition-all flex-shrink-0"
-            >
-              <Trash2 className="w-3 h-3" />
-            </button>
-          </div>
+          )
+        ) : notes.map((note) => (
+          <NoteCard key={note.id} note={note} token={token} deleteNote={deleteNote} formatDate={formatDate} formatDur={formatDur} />
         ))}
       </div>
     </div>
@@ -4502,7 +4591,7 @@ export default function AryaChat() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.4 }}
-            className="flex-1 flex flex-col items-center justify-center text-center px-4 pt-2 pb-2 overflow-y-auto"
+            className="flex-1 flex flex-col items-center justify-start text-center px-4 pt-6 pb-28 overflow-y-auto min-h-0"
             style={{ WebkitOverflowScrolling: "touch" }}
           >
             <motion.div
@@ -5138,7 +5227,7 @@ export default function AryaChat() {
                       className={`p-1.5 rounded-full transition-colors ${
                         speakerOn
                           ? "text-emerald-600 dark:text-emerald-400"
-                          : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                          : "text-red-400 dark:text-red-400 hover:text-red-500 dark:hover:text-red-300"
                       }`}
                     >
                       {speakerOn ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}

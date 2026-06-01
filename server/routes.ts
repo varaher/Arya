@@ -2503,8 +2503,98 @@ export async function registerRoutes(
         language: language || "en",
       }).returning();
       res.json(note);
+
+      // Background: summarize + extract tasks with GPT
+      (async () => {
+        try {
+          const openaiNote = new OpenAI({ apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY, baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL });
+          const summaryRes = await openaiNote.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [{
+              role: "user",
+              content: `Summarize this voice note in 3-6 concise bullet points (each starting with "• "). Extract actionable tasks, people mentioned, and deadlines. Respond ONLY with valid JSON — no markdown fences.
+
+Schema:
+{
+  "summary": ["• bullet 1", "• bullet 2"],
+  "extracted_tasks": [{"task": "short action", "deadline": null}],
+  "extracted_people": ["Name"],
+  "extracted_deadlines": [{"task": "short action", "date": "natural language or YYYY-MM-DD"}]
+}
+
+Keep each bullet under 12 words. Reply in the same language as the note.
+
+Note: """${(transcript as string).trim()}"""`,
+            }],
+            max_completion_tokens: 600,
+          } as any);
+
+          const raw = (summaryRes as any).choices?.[0]?.message?.content || "{}";
+          let parsed: any = {};
+          try {
+            const jsonStart = raw.indexOf("{");
+            const jsonEnd = raw.lastIndexOf("}");
+            parsed = JSON.parse(jsonStart >= 0 ? raw.slice(jsonStart, jsonEnd + 1) : raw);
+          } catch { /* leave empty */ }
+
+          const summaryText = Array.isArray(parsed.summary) ? parsed.summary.join("\n") : null;
+          const extractedTasks = Array.isArray(parsed.extracted_tasks) ? parsed.extracted_tasks : [];
+          const extractedPeople = Array.isArray(parsed.extracted_people) ? parsed.extracted_people : [];
+          const extractedDeadlines = Array.isArray(parsed.extracted_deadlines) ? parsed.extracted_deadlines : [];
+
+          await db.update(aryaVoiceNotes).set({
+            summary: summaryText,
+            extractedTasks: extractedTasks as any,
+            extractedPeople: extractedPeople,
+            extractedDeadlines: extractedDeadlines as any,
+          }).where(eq(aryaVoiceNotes.id, note.id));
+
+          const taskCount = extractedTasks.length;
+          const notifBody = taskCount > 0
+            ? `Note saved — ${taskCount} action item${taskCount > 1 ? "s" : ""} found. Tap to review.`
+            : "Note saved and transcribed.";
+
+          await db.insert(aryaNotifications).values({
+            userId,
+            type: "notes_reminder" as any,
+            title: "🎙️ Voice note saved",
+            message: notifBody,
+          }).catch(() => {});
+        } catch (err: any) {
+          console.error("[VOICE NOTE] Summarization failed:", err.message);
+        }
+      })();
     } catch (err: any) {
       res.status(500).json({ error: "Failed to save voice note" });
+    }
+  });
+
+  app.post("/api/user/voice-notes/:id/save-tasks", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const { id } = req.params;
+      const [note] = await db.select().from(aryaVoiceNotes)
+        .where(and(eq(aryaVoiceNotes.id, id), eq(aryaVoiceNotes.userId, userId))).limit(1);
+      if (!note) return res.status(404).json({ error: "Note not found" });
+
+      const tasks: Array<{ task: string; deadline?: string | null }> =
+        Array.isArray(note.extractedTasks) ? (note.extractedTasks as any) : [];
+
+      for (const t of tasks) {
+        await db.insert(aryaGoals).values({
+          userId,
+          title: t.task,
+          description: `From voice note recorded on ${new Date(note.createdAt).toLocaleDateString()}`,
+          category: "personal",
+          priority: "medium",
+          status: "active",
+        } as any).catch(() => {});
+      }
+
+      await db.update(aryaVoiceNotes).set({ tasksSavedToGoals: true }).where(eq(aryaVoiceNotes.id, id));
+      res.json({ success: true, tasksCreated: tasks.length });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to save tasks" });
     }
   });
 

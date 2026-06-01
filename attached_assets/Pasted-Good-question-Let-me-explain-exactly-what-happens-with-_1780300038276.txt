@@ -1,0 +1,199 @@
+Good question. Let me explain exactly what happens with voice notes.
+
+---
+
+## What Happens When You Record A Voice Note
+
+```
+You open Notes panel
+Tap "Record a Note"
+Speak in Malayalam:
+"ഇന്ന് Dr. Edwina വരുന്നു,
+ extension decision എടുക്കണം"
+
+ARYA does this automatically:
+  1. Records your voice
+  2. Transcribes to Malayalam text
+  3. Saves with timestamp
+  4. Searchable instantly
+```
+
+---
+
+## What You See After Recording
+
+```
+📝 Voice Notes
+
+🔍 Search notes...
+
+─────────────────────────────
+🎙️ Today, 1:03 PM
+
+"ഇന്ന് Dr. Edwina വരുന്നു,
+ extension decision എടുക്കണം"
+
+[🔊 Play] [🗑️ Delete]
+─────────────────────────────
+
+🎙️ Yesterday, 11:30 PM
+
+"The MDR patient in bed 4 —
+ follow up on cultures tomorrow"
+
+[🔊 Play] [🗑️ Delete]
+─────────────────────────────
+```
+
+---
+
+## Real Use Cases — Doctor Example
+
+```
+Use Case 1 — Clinical reminder:
+  Walking between patients
+  Tap mic, speak:
+  "Bed 7 — repeat CBC tomorrow morning,
+   discuss with family about discharge"
+  
+  Saved instantly.
+  Check it later between consults.
+
+Use Case 2 — Article idea:
+  Reading a paper at night
+  Tap mic, speak:
+  "Write about POCUS in rural ER —
+   how we use it differently from textbook"
+  
+  Saved. Open later when writing.
+
+Use Case 3 — Administrative:
+  Walking to canteen
+  Tap mic, speak:
+  "Remind about NABH audit documents —
+   due next Friday"
+  
+  Saved. Search "NABH" to find it.
+
+Use Case 4 — Personal:
+  Driving home
+  Tap mic, speak:
+  "Buy Amma's medicine —
+   Amlodipine 5mg"
+  
+  Saved. Never forgotten.
+```
+
+---
+
+## What ARYA Does With Notes — The Powerful Part
+
+```
+This is where it becomes special.
+
+In a chat conversation you say:
+"What did I want to follow up on?"
+
+ARYA searches your voice notes:
+"From your note yesterday at 11:30 PM —
+ you wanted to follow up on cultures
+ for the MDR patient in bed 4.
+ 
+ Also from this morning — the extension
+ decision about Dr. Edwina."
+
+Your voice notes become memory.
+ARYA connects them to your conversations.
+```
+
+---
+
+## In Any Indian Language
+
+```
+Record in Malayalam → saved in Malayalam ✅
+Record in Hindi → saved in Hindi ✅
+Record in English → saved in English ✅
+Switch languages mid-note → works ✅
+
+Search in any language:
+  Type "Edwina" → finds Malayalam note ✅
+  Type "extension" → finds it ✅
+  Type "ഡോക്ടർ" → finds it ✅
+```
+
+---
+
+## The Empty State Should Say This
+
+```
+Current (confusing):
+  "No notes yet.
+   Tap to start recording."
+
+Should say:
+
+🎙️ Voice Notes
+
+Record any thought in your language —
+ARYA transcribes and saves it instantly.
+
+Speak a clinical reminder, an article idea,
+a task, or anything you don't want to forget.
+Your notes are searchable anytime,
+and ARYA remembers them across conversations.
+
+[🎙️ Record a Note]
+
+Examples:
+  "Follow up cultures for bed 7 tomorrow"
+  "Article idea about POCUS in rural ER"
+  "Call hospital director about NABH audit"
+```
+
+---
+
+## Tell Your Developer
+
+```
+File: VoiceNotesPanel component
+Find: Empty state section
+Replace the current empty state text
+with the description above.
+
+Show 3 example prompts as grey chips
+so user immediately understands
+what to record.
+
+After recording — show:
+  Timestamp
+  Transcript text
+  Play button (replay audio)
+  Delete button
+
+This makes Notes instantly useful
+instead of confusing.
+```
+
+---
+
+## Summary
+
+```
+Voice Notes = your memory on the go
+
+Record in any language
+ARYA transcribes it
+Saves with timestamp
+Search anytime
+ARYA references them in chat
+
+For a doctor:
+  Clinical reminders between patients
+  Article ideas at any moment
+  Administrative tasks while walking
+  Personal reminders while driving
+
+One tap. Speak. Done.
+Never lose a thought again.
+```

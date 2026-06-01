@@ -27,6 +27,14 @@ export async function generateWeeklyReview(userId: string): Promise<string> {
       updatedAt: aryaGoals.updatedAt,
     }).from(aryaGoals).where(eq(aryaGoals.userId, userId)).limit(10);
 
+    const notesThisWeek = await db.select({
+      summary: aryaVoiceNotes.summary,
+      transcript: aryaVoiceNotes.transcript,
+      createdAt: aryaVoiceNotes.createdAt,
+    }).from(aryaVoiceNotes)
+      .where(and(eq(aryaVoiceNotes.userId, userId), gte(aryaVoiceNotes.createdAt, weekAgo)))
+      .limit(10);
+
     const moodData = await db.select({
       mood: aryaMoodCheckins.mood,
       energy: aryaMoodCheckins.energy,
@@ -54,6 +62,11 @@ export async function generateWeeklyReview(userId: string): Promise<string> {
       : uiLang === "gu"
       ? `${firstName}, વધુ એક અઠવાડિયું તારી કહાણીમાં લખાઈ ગયું. આ અઠવાડિયે તેં જે પસંદ કર્યું — અને જે ન કર્યું — તે બધું information છે. તેનો ઉપયોગ કર.`
       : `${firstName}, another week written into your story. What you chose — and didn't choose — this week is information. Use it.`;
+
+    const notesContext = notesThisWeek.length > 0
+      ? `\nVoice notes this week (${notesThisWeek.length} total):\n` +
+        notesThisWeek.map(n => n.summary || n.transcript.slice(0, 120)).join("\n---\n")
+      : "";
 
     const goalsText = activeGoals.length > 0
       ? activeGoals.map(g => `"${g.title}" — ${g.progress}% progress, ${g.streakCount}-day streak`).join("\n")
@@ -111,12 +124,14 @@ Their data:
 Goals: ${goalsText}
 ${completedText ? `Completed: ${completedText}` : ""}
 Mood: ${moodText}
+${notesContext}
 ${futureLetterContext}
 ${flashbackContext}
 
 Rules:
 - Name their goals by actual title
 - Reference their mood data if meaningful
+- If they captured voice notes this week, mention one theme naturally — not as a list, woven into the narrative
 - If they wrote a future letter, echo one phrase back — briefly, not loudly
 - If a voice flashback is present, open with it: "About a month ago, you said: '[short quote]'. Look at where you are now." Then continue the review.
 - End with exactly ONE sentence they'll carry into the week. Make it true, not motivational-poster true.`;

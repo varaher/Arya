@@ -1,0 +1,364 @@
+Perfect. Notes should be woven into the whole ARYA experience — not just a standalone panel.
+
+---
+
+## Complete Notes Integration — All Three Areas
+
+---
+
+## 1. Notifications For Notes
+
+### What ARYA Should Notify About
+
+```
+Notification 1 — Task Reminder From Note:
+  You recorded: "NABH documents Friday deadline"
+  ARYA extracted: deadline = Friday
+  
+  Thursday evening notification:
+  "📝 From your voice note:
+   NABH documents due tomorrow.
+   Want to mark it done or get help?"
+
+Notification 2 — Unactioned Items:
+  You recorded 3 tasks 2 days ago
+  None marked done yet
+  
+  ARYA notifies:
+  "🎙️ You have 3 unactioned items
+   from your voice notes this week.
+   Tap to review."
+
+Notification 3 — Note Saved Confirmation:
+  Immediately after recording:
+  "✅ Note saved — 4 action items found.
+   Tap to review summary."
+
+Notification 4 — Weekly Reminder:
+  Sunday morning:
+  "📝 You captured 7 notes this week.
+   Your Sunday Review includes a summary."
+```
+
+---
+
+## 2. Sunday Review — Notes Section
+
+### What It Should Show
+
+```
+Current Sunday Review has:
+  ✅ Mood chart
+  ✅ Goals stats
+  ✅ ARYA's letter
+  ✅ KAAL cosmic section
+  ✅ Business Mind (Niti)
+
+MISSING:
+  ❌ Voice Notes summary
+
+Add this section:
+
+─────────────────────────────
+🎙️ YOUR WEEK IN NOTES
+─────────────────────────────
+
+You captured 7 notes this week.
+
+What you were thinking about:
+• Extension decision and Dr. Edwina
+• NABH audit preparation
+• MDR patient in bed 7
+• Article ideas about POCUS
+• Personal: Amma's medicine
+
+Tasks you captured:
+  ✅ Extension decision — done
+  ✅ Dr. Edwina joining — confirmed
+  ❌ NABH documents — still pending
+  ❌ Bed 7 follow up — not marked done
+
+ARYA noticed:
+  "Most of your notes this week were
+   work-related. You captured clinical
+   reminders between patients — that
+   discipline shows how much you carry
+   in a single shift."
+
+─────────────────────────────
+```
+
+---
+
+## 3. ARYA References Notes In Chat
+
+```
+You ask in chat:
+"What do I need to do today?"
+
+ARYA checks:
+  Your goals ✅
+  Your voice notes ✅
+  Your calendar ✅
+
+ARYA responds:
+"From your goals: NABH audit preparation
+ is still active.
+
+From your voice notes this week:
+  • NABH documents due Friday
+    (you mentioned this on Tuesday)
+  • Bed 7 cultures — follow up
+    (noted on Wednesday, not marked done)
+  • Management meeting at 10 AM
+    (from yesterday's note — is this today?)
+
+From your calendar: Nothing synced yet.
+
+Want me to help you work through
+any of these right now?"
+```
+
+---
+
+## Complete Notes Feature Map
+
+```
+CAPTURE:
+  One tap → speak → saved ✅
+
+TRANSCRIBE:
+  Full text in your language ✅
+
+SUMMARISE:
+  3-7 bullet points ← add this
+
+EXTRACT:
+  Tasks, people, deadlines ← add this
+
+NOTIFY:
+  Task reminders from notes ← add this
+  Unactioned items alert ← add this
+  Note saved confirmation ← add this
+
+SUNDAY REVIEW:
+  "Your week in notes" section ← add this
+  Tasks captured vs completed ← add this
+  ARYA's observation on patterns ← add this
+
+CHAT INTEGRATION:
+  "What do I need to do?" ← add this
+  ARYA reads notes as context ← add this
+  References old notes naturally ← add this
+
+CONVERT TO GOALS:
+  Actionable items → Tasks ← add this
+  One tap confirmation ← add this
+```
+
+---
+
+## Tell Your Developer — Build Order
+
+### Phase 1 — This Week (Core)
+```
+1. Summarise note after transcription
+   Call GPT with transcript
+   Extract bullet points
+   Save to arya_voice_notes.summary
+   Show in UI above transcript
+
+2. Extract tasks from summary
+   Save to extracted_tasks column
+   Show "Save as tasks?" prompt
+   One tap → adds to Goals
+
+3. Notification after note saved
+   "Note saved — X items found"
+   Tap → opens Notes panel
+```
+
+### Phase 2 — Next Week (Integration)
+```
+4. Sunday Review notes section
+   Query all notes from the week
+   Generate "week in notes" summary
+   Show tasks captured vs done
+   Add ARYA's observation
+
+5. Task deadline notifications
+   Check extracted deadlines daily
+   Send reminder day before deadline
+   Reference the original note
+
+6. Chat integration
+   When user asks "what do I need to do"
+   ARYA checks voice notes + goals
+   Combines into one answer
+```
+
+### Phase 3 — Later (Advanced)
+```
+7. Note search across all conversations
+   Find notes by keyword
+   Find notes by person mentioned
+   Find notes by date range
+
+8. Note patterns in Sunday Review
+   "You mostly note things at 10 PM"
+   "Clinical notes vs personal ratio"
+   "Most active note day: Wednesday"
+```
+
+---
+
+## SQL Changes Needed
+
+```sql
+-- Run in Replit → Database → SQL Editor
+
+ALTER TABLE arya_voice_notes
+  ADD COLUMN IF NOT EXISTS summary
+    TEXT,
+  ADD COLUMN IF NOT EXISTS extracted_tasks
+    JSONB DEFAULT '[]',
+  ADD COLUMN IF NOT EXISTS extracted_people
+    TEXT[] DEFAULT '{}',
+  ADD COLUMN IF NOT EXISTS extracted_deadlines
+    JSONB DEFAULT '[]',
+  ADD COLUMN IF NOT EXISTS tasks_saved_to_goals
+    BOOLEAN DEFAULT false;
+```
+
+---
+
+## The Notification Flow — Exact Logic
+
+```typescript
+// server/arya/notes-scheduler.ts
+// Run daily at 8 AM
+
+async function checkNoteReminders(userId: string) {
+
+  // Get all notes with unactioned tasks
+  const notes = await db.query(`
+    SELECT * FROM arya_voice_notes
+    WHERE user_id = $1
+    AND tasks_saved_to_goals = false
+    AND created_at >= NOW() - INTERVAL '7 days'
+  `, [userId]);
+
+  if (notes.length > 0) {
+    const taskCount = notes.reduce((sum, note) =>
+      sum + (note.extracted_tasks?.length || 0), 0
+    );
+
+    if (taskCount > 0) {
+      await sendNotification(userId, {
+        type: 'notes_reminder',
+        title: '🎙️ Unactioned voice notes',
+        body: `You have ${taskCount} items from
+               your notes not yet added to goals.`,
+        data: { screen: 'notes' }
+      });
+    }
+  }
+
+  // Check deadline reminders
+  const deadlineNotes = await db.query(`
+    SELECT * FROM arya_voice_notes
+    WHERE user_id = $1
+    AND extracted_deadlines != '[]'::jsonb
+    AND created_at >= NOW() - INTERVAL '7 days'
+  `, [userId]);
+
+  for (const note of deadlineNotes) {
+    for (const deadline of note.extracted_deadlines) {
+      const dueDate = new Date(deadline.date);
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      if (dueDate.toDateString() ===
+          tomorrow.toDateString()) {
+        await sendNotification(userId, {
+          type: 'deadline_reminder',
+          title: '📅 Due tomorrow',
+          body: `From your note: ${deadline.task}`,
+          data: { screen: 'notes', noteId: note.id }
+        });
+      }
+    }
+  }
+}
+```
+
+---
+
+## Sunday Review Addition — Exact Prompt
+
+```typescript
+// server/arya/weekly-review.ts
+// Add this section to Sunday Review generation
+
+const notesThisWeek = await db.query(`
+  SELECT * FROM arya_voice_notes
+  WHERE user_id = $1
+  AND created_at >= $2
+  AND created_at <= $3
+`, [userId, weekStart, weekEnd]);
+
+const notesSummaryPrompt = `
+${langInstruction}
+
+The user captured ${notesThisWeek.length} voice notes this week.
+
+Summaries:
+${notesThisWeek.map(n => n.summary).join('\n')}
+
+Write a warm, personal 3-4 sentence reflection:
+1. What themes came up in their notes this week
+2. One specific observation about their patterns
+3. One encouraging line about what their notes reveal
+
+Keep it personal to ${userName}.
+Do NOT list all the notes.
+Find the human story in them.
+`;
+
+const notesReflection = await generateText(
+  notesSummaryPrompt
+);
+```
+
+---
+
+## What This Becomes
+
+```
+Right now Notes is:
+  Record → transcribe → save
+  Useful but basic
+
+After these additions:
+  Record → transcribe → summarise
+  → extract tasks → notify
+  → appear in Sunday Review
+  → referenced in chat
+  → converted to goals
+
+Notes becomes:
+  The thread that connects
+  everything you think
+  to everything you do.
+
+A thought recorded on Monday
+shows up in Sunday's review.
+A deadline mentioned casually
+becomes a notification Thursday.
+A clinical observation becomes
+a task in Goals automatically.
+
+This is what makes ARYA
+truly different from every
+other notes app ever built.
+```
