@@ -137,12 +137,27 @@
   box-shadow: 0 0 0 2px rgb(5 150 105 / 0.12);
 }
 
-/* ── Hide scrollbar on messages list ─────────────────────────────── */
+/* ── Hide all scrollbars globally — scroll still works ───────────── */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+}
+
+/* kept for backward compat */
 .hide-scrollbar {
   scrollbar-width: none;
 }
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+/* ── Smooth momentum scroll on all touch containers ──────────────── */
+[style*="overflow"],
+[class*="overflow"] {
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ── Hide Replit's injected feedback badge ────────────────────────── */

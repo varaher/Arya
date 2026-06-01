@@ -2239,6 +2239,7 @@ function DailyQuoteCard({ token }: { token: string | null }) {
   const lang = getStoredUiLanguage();
   const today = new Date().toDateString();
   const cacheKey = `arya_quote_v3_${today}_${lang}`;
+  const [quoteExpanded, setQuoteExpanded] = useState(false);
 
   const { data, isLoading } = useQuery<{ quote: string; source?: string }>({
     queryKey: ["/api/arya/daily-quote", lang],
@@ -2279,9 +2280,10 @@ function DailyQuoteCard({ token }: { token: string | null }) {
       >
         <div className="px-3 py-2">
           <p
-            className="text-xs leading-snug text-gray-700 dark:text-gray-200 font-medium mb-1"
+            className={`text-xs leading-snug text-gray-700 dark:text-gray-200 font-medium mb-1 break-words cursor-pointer ${quoteExpanded ? "" : "line-clamp-2"}`}
             style={{ fontFamily: "'Space Grotesk', sans-serif" }}
             data-testid="text-daily-quote"
+            onClick={() => setQuoteExpanded(v => !v)}
           >
             {STATIC_HOME_QUOTES[staticQuoteIdx]}
           </p>
@@ -2318,9 +2320,10 @@ function DailyQuoteCard({ token }: { token: string | null }) {
             transition={{ duration: 0.2 }}
           >
             <p
-              className="text-xs leading-snug text-gray-700 dark:text-gray-200 font-medium mb-1 break-words"
+              className={`text-xs leading-snug text-gray-700 dark:text-gray-200 font-medium mb-1 break-words cursor-pointer ${quoteExpanded ? "" : "line-clamp-2"}`}
               style={{ fontFamily: "'Space Grotesk', sans-serif" }}
               data-testid="text-daily-quote"
+              onClick={() => setQuoteExpanded(v => !v)}
             >
               {quoteText}
             </p>
