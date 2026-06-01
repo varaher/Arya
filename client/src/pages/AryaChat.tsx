@@ -4834,7 +4834,7 @@ export default function AryaChat() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.4 }}
             className="flex-1 flex flex-col items-center justify-start text-center px-4 pt-6 pb-28 overflow-y-auto min-h-0"
-            style={{ WebkitOverflowScrolling: "touch" }}
+            style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}
           >
             <motion.div
               data-testid="img-arya-logo"
@@ -5158,7 +5158,7 @@ export default function AryaChat() {
             </button>
           </div>
         )}
-        <div className={`hide-scrollbar overflow-y-auto py-6 ${(!activeConversation && messages.length === 0 && !streamingContent) ? "hidden" : "flex-1"}`} data-testid="list-messages">
+        <div className={`hide-scrollbar overflow-y-auto py-6 min-h-0 ${(!activeConversation && messages.length === 0 && !streamingContent) ? "hidden" : "flex-1"}`} style={{ touchAction: "pan-y" }} data-testid="list-messages">
           <div className="max-w-3xl mx-auto px-4 md:px-6 space-y-6">
           {messages.map((msg, msgIndex) => (
             <motion.div
