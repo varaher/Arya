@@ -4683,10 +4683,10 @@ export default function AryaChat() {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.35, delay: 0.32 }}
-                className="w-full max-w-md mb-1"
+                className="w-full max-w-2xl mb-1"
               >
-                <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1"
-                  style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+                <div className="flex gap-2 overflow-x-auto pb-1 px-1 snap-x snap-mandatory"
+                  style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" }}
                 >
                   {[
                     { icon: "🎯", label: t("goals"),     action: () => { setShowGoals(true); setShowMemory(false); setShowNotes(false); setShowReminders(false); setShowCalendar(false); } },
