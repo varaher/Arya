@@ -4728,13 +4728,13 @@ export default function AryaChat() {
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.28 }}
               style={{ overflow: "hidden" }}
-              className="w-full max-w-lg"
+              className="w-full"
             >
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.1 }}
-              className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3 w-full"
+              className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3 w-full px-0.5 pt-1 pb-3"
             >
               {[
                 { text: t("suggest_think"),   badge: t("badge_think"),   icon: "🧠" },
