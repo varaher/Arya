@@ -433,7 +433,7 @@ function PersonalizedStatsCard({ profile, onEdit }: { profile: HealthProfile; on
     <div style={{ background: `linear-gradient(135deg, rgba(61,217,192,0.07), rgba(124,106,255,0.07))`, border: `1px solid ${C.tealBorder}`, borderRadius: 18, padding: "16px", marginBottom: 20 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: C.teal, letterSpacing: "0.1em", textTransform: "uppercase" as const }}>Your Health Profile</div>
-        <button onClick={onEdit} style={{ background: "none", border: "none", fontSize: 11, color: C.textDim, cursor: "pointer", fontFamily: sans, padding: "4px 8px", borderRadius: 6, border: `1px solid ${C.border}` }}>Edit</button>
+        <button onClick={onEdit} style={{ background: "none", border: `1px solid ${C.border}`, fontSize: 11, color: C.textDim, cursor: "pointer", fontFamily: sans, padding: "4px 8px", borderRadius: 6 }}>Edit</button>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: `repeat(${stats.length}, 1fr)`, gap: 10 }}>
         {stats.map((s, i) => (

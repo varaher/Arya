@@ -6,7 +6,7 @@ import { useUserAuth } from "@/lib/user-auth";
 import { requestNotificationPermission } from "@/lib/push-notifications";
 import {
   Bell, Plus, Trash2, X, Clock, Droplets, Briefcase,
-  Pill, Dumbbell, AlarmClock, ChevronDown, ChevronUp, Check
+  Pill, Dumbbell, AlarmClock, ChevronDown, ChevronUp, Check, Pencil
 } from "lucide-react";
 
 interface Reminder {
@@ -67,6 +67,13 @@ function formatTime(dt: string): string {
   return new Date(dt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
 }
 
+function toTimeInputValue(dt: string): string {
+  const d = new Date(dt);
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
 export default function RemindersPanel({ onClose }: { onClose: () => void }) {
   const { token, isLoggedIn } = useUserAuth();
   const [reminders, setReminders] = useState<Reminder[]>([]);
@@ -74,6 +81,9 @@ export default function RemindersPanel({ onClose }: { onClose: () => void }) {
   const [showForm, setShowForm] = useState(false);
   const [notifPermission, setNotifPermission] = useState<NotificationPermission>("default");
   const [requestingPerm, setRequestingPerm] = useState(false);
+  const [editingReminder, setEditingReminder] = useState<Reminder | null>(null);
+  const [editTime, setEditTime] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
   const [form, setForm] = useState({
     title: "",
     message: "",
@@ -99,43 +109,22 @@ export default function RemindersPanel({ onClose }: { onClose: () => void }) {
 
   async function enableNotifications() {
     if (!token || requestingPerm) return;
-    // If already denied at OS level, can't prompt again — guide user to settings
-    if (Notification.permission === "denied") {
-      setNotifPermission("denied");
-      return;
-    }
+    if (Notification.permission === "denied") { setNotifPermission("denied"); return; }
     setRequestingPerm(true);
     try {
       const perm = await requestNotificationPermission(token);
       setNotifPermission(perm);
-    } catch {
-      // ignore
-    } finally {
-      setRequestingPerm(false);
-    }
+    } catch {}
+    finally { setRequestingPerm(false); }
   }
 
   async function createReminder(data?: typeof QUICK_TEMPLATES[0]) {
     if (!token) return;
     const now = new Date();
     const defaultSchedule = new Date(now.getTime() + 5 * 60 * 1000).toISOString().slice(0, 16);
-
     const payload = data
-      ? {
-          title: data.title,
-          message: data.message,
-          type: data.type,
-          scheduledAt: new Date(now.getTime() + 5 * 60 * 1000).toISOString(),
-          recurrence: data.recurrence,
-          recurrenceMinutes: data.recurrenceMinutes,
-          isActive: true,
-          soundEnabled: true,
-        }
-      : {
-          ...form,
-          scheduledAt: form.scheduledAt ? new Date(form.scheduledAt).toISOString() : defaultSchedule,
-        };
-
+      ? { title: data.title, message: data.message, type: data.type, scheduledAt: new Date(now.getTime() + 5 * 60 * 1000).toISOString(), recurrence: data.recurrence, recurrenceMinutes: data.recurrenceMinutes, isActive: true, soundEnabled: true }
+      : { ...form, scheduledAt: form.scheduledAt ? new Date(form.scheduledAt).toISOString() : defaultSchedule };
     const res = await fetch("/api/reminders", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -165,225 +154,265 @@ export default function RemindersPanel({ onClose }: { onClose: () => void }) {
     setReminders((prev) => prev.filter((r) => r.id !== id));
   }
 
+  function openEditModal(reminder: Reminder) {
+    setEditingReminder(reminder);
+    setEditTime(toTimeInputValue(reminder.scheduledAt));
+  }
+
+  async function saveEditTime() {
+    if (!token || !editingReminder || !editTime) return;
+    setEditSaving(true);
+    try {
+      const [hh, mm] = editTime.split(":").map(Number);
+      const newDate = new Date(editingReminder.scheduledAt);
+      newDate.setHours(hh, mm, 0, 0);
+      const res = await fetch(`/api/reminders/${editingReminder.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ scheduledAt: newDate.toISOString() }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setReminders((prev) => prev.map((r) => r.id === updated.id ? updated : r));
+        setEditingReminder(null);
+      }
+    } catch {}
+    setEditSaving(false);
+  }
+
   const activeReminders = reminders.filter((r) => r.isActive);
   const inactiveReminders = reminders.filter((r) => !r.isActive);
 
   return (
-    <motion.div
-      initial={{ x: "100%" }}
-      animate={{ x: 0 }}
-      exit={{ x: "100%" }}
-      transition={{ type: "spring", damping: 25, stiffness: 200 }}
-      className="fixed inset-y-0 right-0 z-50 w-full sm:w-96 bg-[#0d1326] border-l border-white/10 flex flex-col shadow-2xl"
-    >
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-        <div className="flex items-center gap-2">
-          <Bell className="w-5 h-5 text-cyan-400" />
-          <h2 className="text-base font-semibold text-white">Reminders & Alarms</h2>
-        </div>
-        <button onClick={onClose} className="text-muted-foreground hover:text-white transition-colors">
-          <X className="w-5 h-5" />
-        </button>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {notifPermission === "denied" && (
-          <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 flex items-start gap-3">
-            <Bell className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-xs text-red-300 font-medium">Notifications blocked</p>
-              <p className="text-xs text-red-400/70 mt-0.5">
-                Your browser has blocked notifications. To fix this, open your browser settings → Site settings → Notifications → allow this site.
-              </p>
-            </div>
+    <>
+      <motion.div
+        initial={{ x: "100%" }}
+        animate={{ x: 0 }}
+        exit={{ x: "100%" }}
+        transition={{ type: "spring", damping: 25, stiffness: 200 }}
+        className="fixed inset-y-0 right-0 z-50 w-full sm:w-96 bg-[#0d1326] border-l border-white/10 flex flex-col shadow-2xl"
+      >
+        <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+          <div className="flex items-center gap-2">
+            <Bell className="w-5 h-5 text-cyan-400" />
+            <h2 className="text-base font-semibold text-white">Reminders & Alarms</h2>
           </div>
-        )}
-
-        {notifPermission === "default" && (
-          <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex items-start gap-3">
-            <Bell className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-xs text-amber-300 font-medium">Enable notifications</p>
-              <p className="text-xs text-amber-400/70 mt-0.5">Allow notifications so ARYA can remind you even when the app is in the background.</p>
-              <Button
-                size="sm"
-                onClick={enableNotifications}
-                disabled={requestingPerm}
-                className="mt-2 bg-amber-500 hover:bg-amber-400 text-black text-xs h-7 px-3 disabled:opacity-60"
-              >
-                {requestingPerm ? "Requesting…" : "Enable Now"}
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {notifPermission === "granted" && (
-          <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-3 flex items-center gap-2">
-            <Check className="w-4 h-4 text-green-400 shrink-0" />
-            <p className="text-xs text-green-300">Notifications enabled — ARYA will alert you even in background</p>
-          </div>
-        )}
-
-        <div>
-          <p className="text-xs font-medium text-muted-foreground mb-2">Quick Add</p>
-          <div className="grid grid-cols-2 gap-2">
-            {QUICK_TEMPLATES.map((t) => (
-              <button
-                key={t.label}
-                onClick={() => createReminder(t)}
-                className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl px-3 py-2 text-left transition-colors"
-              >
-                <span className={TYPE_COLORS[t.type]}>{TYPE_ICONS[t.type]}</span>
-                <span className="text-xs text-white">{t.label}</span>
-              </button>
-            ))}
-          </div>
+          <button onClick={onClose} className="text-muted-foreground hover:text-white transition-colors">
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="w-full flex items-center justify-between px-4 py-2.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 rounded-xl transition-colors"
-        >
-          <div className="flex items-center gap-2 text-cyan-400">
-            <Plus className="w-4 h-4" />
-            <span className="text-sm font-medium">Custom Reminder</span>
-          </div>
-          {showForm ? <ChevronUp className="w-4 h-4 text-cyan-400" /> : <ChevronDown className="w-4 h-4 text-cyan-400" />}
-        </button>
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {notifPermission === "denied" && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 flex items-start gap-3">
+              <Bell className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-red-300 font-medium">Notifications blocked</p>
+                <p className="text-xs text-red-400/70 mt-0.5">Open browser settings → Site settings → Notifications → allow this site.</p>
+              </div>
+            </div>
+          )}
 
-        <AnimatePresence>
-          {showForm && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden"
-            >
-              <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Title</label>
-                  <Input
-                    value={form.title}
-                    onChange={(e) => setForm({ ...form, title: e.target.value })}
-                    placeholder="e.g. Morning Walk"
-                    className="bg-background/50 border-white/10 text-white text-sm h-9"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Message</label>
-                  <Input
-                    value={form.message}
-                    onChange={(e) => setForm({ ...form, message: e.target.value })}
-                    placeholder="What should I remind you?"
-                    className="bg-background/50 border-white/10 text-white text-sm h-9"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
+          {notifPermission === "default" && (
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex items-start gap-3">
+              <Bell className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-amber-300 font-medium">Enable notifications</p>
+                <p className="text-xs text-amber-400/70 mt-0.5">Allow notifications so ARYA can remind you even when the app is in the background.</p>
+                <Button size="sm" onClick={enableNotifications} disabled={requestingPerm}
+                  className="mt-2 bg-amber-500 hover:bg-amber-400 text-black text-xs h-7 px-3 disabled:opacity-60">
+                  {requestingPerm ? "Requesting…" : "Enable Now"}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {notifPermission === "granted" && (
+            <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-3 flex items-center gap-2">
+              <Check className="w-4 h-4 text-green-400 shrink-0" />
+              <p className="text-xs text-green-300">Notifications enabled — ARYA will alert you even in background</p>
+            </div>
+          )}
+
+          <div>
+            <p className="text-xs font-medium text-muted-foreground mb-2">Quick Add</p>
+            <div className="grid grid-cols-2 gap-2">
+              {QUICK_TEMPLATES.map((t) => (
+                <button key={t.label} onClick={() => createReminder(t)}
+                  className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl px-3 py-2 text-left transition-colors">
+                  <span className={TYPE_COLORS[t.type]}>{TYPE_ICONS[t.type]}</span>
+                  <span className="text-xs text-white">{t.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button onClick={() => setShowForm(!showForm)}
+            className="w-full flex items-center justify-between px-4 py-2.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 rounded-xl transition-colors">
+            <div className="flex items-center gap-2 text-cyan-400">
+              <Plus className="w-4 h-4" />
+              <span className="text-sm font-medium">Custom Reminder</span>
+            </div>
+            {showForm ? <ChevronUp className="w-4 h-4 text-cyan-400" /> : <ChevronDown className="w-4 h-4 text-cyan-400" />}
+          </button>
+
+          <AnimatePresence>
+            {showForm && (
+              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">
                   <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Type</label>
-                    <select
-                      value={form.type}
-                      onChange={(e) => setForm({ ...form, type: e.target.value })}
-                      className="w-full bg-background/50 border border-white/10 rounded-md text-white text-sm h-9 px-2"
-                    >
-                      <option value="reminder">Reminder</option>
-                      <option value="alarm">Alarm</option>
-                      <option value="water">Water</option>
-                      <option value="work">Work</option>
-                      <option value="medicine">Medicine</option>
-                      <option value="exercise">Exercise</option>
-                    </select>
+                    <label className="text-xs text-muted-foreground mb-1 block">Title</label>
+                    <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
+                      placeholder="e.g. Morning Walk" className="bg-background/50 border-white/10 text-white text-sm h-9" />
                   </div>
                   <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Repeat</label>
-                    <select
-                      value={form.recurrence}
-                      onChange={(e) => setForm({ ...form, recurrence: e.target.value })}
-                      className="w-full bg-background/50 border border-white/10 rounded-md text-white text-sm h-9 px-2"
-                    >
-                      <option value="once">Once</option>
-                      <option value="daily">Daily</option>
-                      <option value="weekly">Weekly</option>
-                      <option value="hourly">Hourly</option>
-                      <option value="custom">Custom</option>
-                    </select>
+                    <label className="text-xs text-muted-foreground mb-1 block">Message</label>
+                    <Input value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })}
+                      placeholder="What should I remind you?" className="bg-background/50 border-white/10 text-white text-sm h-9" />
                   </div>
-                </div>
-                {form.recurrence === "custom" && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Type</label>
+                      <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}
+                        className="w-full bg-background/50 border border-white/10 rounded-md text-white text-sm h-9 px-2">
+                        <option value="reminder">Reminder</option>
+                        <option value="alarm">Alarm</option>
+                        <option value="water">Water</option>
+                        <option value="work">Work</option>
+                        <option value="medicine">Medicine</option>
+                        <option value="exercise">Exercise</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Repeat</label>
+                      <select value={form.recurrence} onChange={(e) => setForm({ ...form, recurrence: e.target.value })}
+                        className="w-full bg-background/50 border border-white/10 rounded-md text-white text-sm h-9 px-2">
+                        <option value="once">Once</option>
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="hourly">Hourly</option>
+                        <option value="custom">Custom</option>
+                      </select>
+                    </div>
+                  </div>
+                  {form.recurrence === "custom" && (
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Every (minutes)</label>
+                      <Input type="number" value={form.recurrenceMinutes}
+                        onChange={(e) => setForm({ ...form, recurrenceMinutes: parseInt(e.target.value) || 60 })}
+                        min={5} className="bg-background/50 border-white/10 text-white text-sm h-9" />
+                    </div>
+                  )}
                   <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Every (minutes)</label>
-                    <Input
-                      type="number"
-                      value={form.recurrenceMinutes}
-                      onChange={(e) => setForm({ ...form, recurrenceMinutes: parseInt(e.target.value) || 60 })}
-                      min={5}
-                      className="bg-background/50 border-white/10 text-white text-sm h-9"
-                    />
+                    <label className="text-xs text-muted-foreground mb-1 block">When</label>
+                    <Input type="datetime-local" value={form.scheduledAt}
+                      onChange={(e) => setForm({ ...form, scheduledAt: e.target.value })}
+                      className="bg-background/50 border-white/10 text-white text-sm h-9" />
                   </div>
-                )}
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">When</label>
-                  <Input
-                    type="datetime-local"
-                    value={form.scheduledAt}
-                    onChange={(e) => setForm({ ...form, scheduledAt: e.target.value })}
-                    className="bg-background/50 border-white/10 text-white text-sm h-9"
-                  />
+                  <Button onClick={() => createReminder()} disabled={!form.title || !form.message}
+                    className="w-full bg-cyan-600 hover:bg-cyan-500 text-white h-9 text-sm">
+                    Create Reminder
+                  </Button>
                 </div>
-                <Button
-                  onClick={() => createReminder()}
-                  disabled={!form.title || !form.message}
-                  className="w-full bg-cyan-600 hover:bg-cyan-500 text-white h-9 text-sm"
-                >
-                  Create Reminder
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground text-sm">Loading reminders...</div>
+          ) : (
+            <>
+              {activeReminders.length > 0 && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Active ({activeReminders.length})</p>
+                  <div className="space-y-2">
+                    {activeReminders.map((r) => (
+                      <ReminderCard key={r.id} reminder={r} onToggle={toggleReminder} onDelete={deleteReminder} onEdit={openEditModal} />
+                    ))}
+                  </div>
+                </div>
+              )}
+              {activeReminders.length === 0 && (
+                <div className="text-center py-6 text-muted-foreground text-sm">
+                  <Bell className="w-8 h-8 mx-auto mb-2 opacity-20" />
+                  <p>No active reminders.</p>
+                  <p className="text-xs mt-1">Use Quick Add or ask ARYA in chat!</p>
+                </div>
+              )}
+              {inactiveReminders.length > 0 && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Completed/Inactive</p>
+                  <div className="space-y-2">
+                    {inactiveReminders.slice(0, 5).map((r) => (
+                      <ReminderCard key={r.id} reminder={r} onToggle={toggleReminder} onDelete={deleteReminder} onEdit={openEditModal} />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </motion.div>
+
+      {/* ── Edit Time Modal ── */}
+      <AnimatePresence>
+        {editingReminder && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-end justify-center bg-black/70"
+            onClick={() => setEditingReminder(null)}>
+            <motion.div initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 260, damping: 28 }}
+              className="w-full max-w-sm bg-[#0d1326] border border-white/10 rounded-t-2xl p-6"
+              onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-sm font-semibold text-white">Edit reminder time</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-[220px]">{editingReminder.title}</p>
+                </div>
+                <button onClick={() => setEditingReminder(null)} className="text-muted-foreground hover:text-white">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="mb-5">
+                <label className="text-xs text-muted-foreground mb-2 block">New time</label>
+                <input
+                  type="time"
+                  value={editTime}
+                  onChange={(e) => setEditTime(e.target.value)}
+                  data-testid="input-reminder-time-edit"
+                  className="w-full bg-white/5 border border-white/20 rounded-xl px-4 py-3 text-white text-xl font-semibold text-center focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                  style={{ colorScheme: "dark" }}
+                />
+                <p className="text-xs text-muted-foreground mt-2 text-center">
+                  {editingReminder.recurrence !== "once" ? `Will repeat ${formatRecurrence(editingReminder).toLowerCase()} at this time` : "One-time reminder"}
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={() => setEditingReminder(null)}
+                  className="flex-1 border-white/10 text-white hover:bg-white/5 h-11">
+                  Cancel
+                </Button>
+                <Button onClick={saveEditTime} disabled={!editTime || editSaving}
+                  data-testid="button-save-reminder-time"
+                  className="flex-1 bg-cyan-600 hover:bg-cyan-500 text-white h-11">
+                  {editSaving ? "Saving…" : "Save time"}
                 </Button>
               </div>
             </motion.div>
-          )}
-        </AnimatePresence>
-
-        {loading ? (
-          <div className="text-center py-8 text-muted-foreground text-sm">Loading reminders...</div>
-        ) : (
-          <>
-            {activeReminders.length > 0 && (
-              <div>
-                <p className="text-xs font-medium text-muted-foreground mb-2">Active ({activeReminders.length})</p>
-                <div className="space-y-2">
-                  {activeReminders.map((r) => (
-                    <ReminderCard key={r.id} reminder={r} onToggle={toggleReminder} onDelete={deleteReminder} />
-                  ))}
-                </div>
-              </div>
-            )}
-            {activeReminders.length === 0 && (
-              <div className="text-center py-6 text-muted-foreground text-sm">
-                <Bell className="w-8 h-8 mx-auto mb-2 opacity-20" />
-                <p>No active reminders.</p>
-                <p className="text-xs mt-1">Use Quick Add or ask ARYA in chat!</p>
-              </div>
-            )}
-            {inactiveReminders.length > 0 && (
-              <div>
-                <p className="text-xs font-medium text-muted-foreground mb-2">Completed/Inactive</p>
-                <div className="space-y-2">
-                  {inactiveReminders.slice(0, 5).map((r) => (
-                    <ReminderCard key={r.id} reminder={r} onToggle={toggleReminder} onDelete={deleteReminder} />
-                  ))}
-                </div>
-              </div>
-            )}
-          </>
+          </motion.div>
         )}
-      </div>
-    </motion.div>
+      </AnimatePresence>
+    </>
   );
 }
 
-function ReminderCard({ reminder, onToggle, onDelete }: {
+function ReminderCard({ reminder, onToggle, onDelete, onEdit }: {
   reminder: Reminder;
   onToggle: (id: string, active: boolean) => void;
   onDelete: (id: string) => void;
+  onEdit: (reminder: Reminder) => void;
 }) {
   const icon = TYPE_ICONS[reminder.type] || TYPE_ICONS.reminder;
   const color = TYPE_COLORS[reminder.type] || TYPE_COLORS.reminder;
@@ -396,6 +425,14 @@ function ReminderCard({ reminder, onToggle, onDelete }: {
         <p className="text-xs text-muted-foreground">{formatRecurrence(reminder)} · {formatTime(reminder.scheduledAt)}</p>
       </div>
       <div className="flex items-center gap-1">
+        <button
+          onClick={() => onEdit(reminder)}
+          data-testid={`button-reminder-edit-${reminder.id}`}
+          className="w-8 h-8 rounded-lg flex items-center justify-center bg-white/5 text-muted-foreground hover:bg-white/10 hover:text-cyan-400 transition-colors"
+          title="Edit time"
+        >
+          <Pencil className="w-3.5 h-3.5" />
+        </button>
         <button
           onClick={() => onToggle(reminder.id, !reminder.isActive)}
           className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${reminder.isActive ? "bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30" : "bg-white/5 text-muted-foreground hover:bg-white/10"}`}

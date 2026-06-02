@@ -4925,7 +4925,6 @@ export default function AryaChat() {
                     { icon: "🎯", label: t("goals"),     action: () => { setShowGoals(true); setShowMemory(false); setShowNotes(false); setShowReminders(false); setShowCalendar(false); } },
                     { icon: "🧠", label: t("memory"),    action: () => { setShowMemory(true); setShowGoals(false); setShowNotes(false); setShowReminders(false); setShowCalendar(false); } },
                     { icon: "📝", label: t("notes"),     action: () => { setShowNotes(true); setShowGoals(false); setShowMemory(false); setShowReminders(false); setShowCalendar(false); } },
-                    { icon: "😊", label: t("mood"),      action: () => { setMoodCheckedInToday(false); setTimeout(() => moodCardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 120); } },
                     { icon: "🔔", label: t("reminders"), action: () => { setShowReminders(true); setShowGoals(false); setShowMemory(false); setShowNotes(false); setShowCalendar(false); } },
                     { icon: "📅", label: t("calendar"),  action: () => { setShowCalendar(true); setShowGoals(false); setShowMemory(false); setShowNotes(false); setShowReminders(false); } },
                     { icon: "🏘️", label: t("community"), action: () => setLocation("/community") },
@@ -4966,18 +4965,18 @@ export default function AryaChat() {
             {showWelcomeCards && (
             <motion.div
               key="welcome-cards"
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
+              initial={{ opacity: 0, maxHeight: 0 }}
+              animate={{ opacity: 1, maxHeight: 480 }}
+              exit={{ opacity: 0, maxHeight: 0 }}
               transition={{ duration: 0.28 }}
-              style={{ overflow: "hidden" }}
+              style={{ overflowY: "auto", WebkitOverflowScrolling: "touch" as any }}
               className="w-full"
             >
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.1 }}
-              className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3 w-full px-0.5 pt-1 pb-3"
+              className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3 w-full px-0.5 pt-1 pb-28"
             >
               {[
                 { text: t("suggest_think"),   badge: t("badge_think"),   icon: "🧠" },

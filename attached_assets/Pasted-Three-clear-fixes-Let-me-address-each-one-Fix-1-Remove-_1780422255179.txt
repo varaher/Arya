@@ -1,0 +1,125 @@
+Three clear fixes. Let me address each one.
+
+---
+
+## Fix 1 — Remove Mood Chip
+
+```
+File: AryaChat.tsx or HomeScreen
+Find the quick chips row:
+  Goals | Memory | Notes | Mood | Reminders...
+
+Remove the Mood chip entirely.
+The check-in row above already has
+the 5 emojis — Mood chip is redundant.
+
+Simple delete:
+  { id: 'mood', label: 'Mood', ... }
+  ← remove this one entry
+```
+
+---
+
+## Fix 2 — Get Inspired Scroll + REHEARSE Visible
+
+```
+Two parts to this fix:
+
+Part A — Scroll when expanded:
+  When "Get inspired" is tapped
+  The suggestion cards container needs:
+  
+  max-height: 400px
+  overflow-y: auto
+  -webkit-overflow-scrolling: touch
+  
+  So user can scroll to see
+  REHEARSE and WISDOM cards
+
+Part B — REHEARSE not masked:
+  The last 1-2 cards are hidden
+  behind the fixed input bar
+  
+  Add padding-bottom to suggestions:
+  padding-bottom: 100px
+  
+  This pushes last card above
+  the input bar — fully visible
+```
+
+---
+
+## Fix 3 — Reminder Time Edit
+
+```
+User can't edit the reminder time.
+This is a form/input issue.
+
+Find: Reminder creation/edit form
+Check: Is the time picker rendering?
+       Is it disabled by mistake?
+       
+Common cause on mobile:
+  <input type="time" disabled />
+  OR
+  The time field is read-only
+  
+Fix:
+  Find the reminder time input field
+  Remove disabled or readOnly attribute
+  
+  Also check: after saving a reminder
+  can user tap it to edit?
+  If not — add edit handler:
+  onClick → opens edit modal
+  with pre-filled current time
+```
+
+---
+
+## Tell Developer — Three Fixes
+
+```
+Fix 1 — Mood chip (5 mins):
+  Remove Mood from quick chips array
+  Keep: Goals Memory Notes Reminders
+        Calendar Community
+  Remove: Mood (duplicate of check-in row)
+
+Fix 2 — Get inspired scroll (30 mins):
+  Suggestions container:
+    max-height: 400px
+    overflow-y: auto
+    padding-bottom: 100px
+  
+  This makes it scrollable AND
+  ensures REHEARSE card not hidden
+  behind input bar
+
+Fix 3 — Reminder time edit (1 hour):
+  Find reminder time input
+  Remove disabled/readOnly if present
+  Add edit functionality:
+    Tap existing reminder → edit modal
+    Time picker works on mobile
+    Save updates the reminder time
+  
+  Check: does the time picker work
+  on Android Chrome specifically?
+  Some time pickers fail on Android.
+  Use HTML native:
+  <input type="time" /> 
+  This works on all Android browsers.
+```
+
+---
+
+## Quick Summary
+
+```
+Remove:  Mood chip ← duplicate
+Fix:     Get inspired → scrollable
+         REHEARSE visible ← padding fix
+Fix:     Reminder time → editable
+         Native time picker
+```
