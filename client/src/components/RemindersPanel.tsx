@@ -362,7 +362,7 @@ export default function RemindersPanel({ onClose }: { onClose: () => void }) {
             onClick={() => setEditingReminder(null)}>
             <motion.div initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }}
               transition={{ type: "spring", stiffness: 260, damping: 28 }}
-              className="w-full max-w-sm bg-[#0d1326] border border-white/10 rounded-t-2xl p-6"
+              className="w-full max-w-sm bg-[#0d1326] border border-white/10 rounded-t-2xl p-6 pb-[max(24px,env(safe-area-inset-bottom))] max-h-[70vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-4">
                 <div>
