@@ -442,6 +442,10 @@ export const aryaUsers = pgTable("arya_users", {
   businessChallenge: text("business_challenge"),
   businessFocusAreas: text("business_focus_areas").array(),
   voicePreference: varchar("voice_preference", { length: 20 }).default("female"),
+  heightCm: integer("height_cm"),
+  weightKg: decimal("weight_kg", { precision: 5, scale: 1 }),
+  sex: varchar("sex", { length: 20 }),
+  activityLevel: varchar("activity_level", { length: 20 }).default("moderate"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

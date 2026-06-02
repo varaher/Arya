@@ -2488,6 +2488,119 @@ export async function registerRoutes(
     }
   });
 
+  // ── Health Profile ──────────────────────────────────────────────────────────
+  app.get("/api/user/health/profile", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const [user] = await db.select({
+        heightCm: aryaUsers.heightCm,
+        weightKg: aryaUsers.weightKg,
+        sex: aryaUsers.sex,
+        activityLevel: aryaUsers.activityLevel,
+        age: aryaUsers.age,
+      }).from(aryaUsers).where(eq(aryaUsers.id, userId));
+      res.json(user || {});
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to fetch health profile" });
+    }
+  });
+
+  app.put("/api/user/health/profile", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const { heightCm, weightKg, sex, activityLevel, age } = req.body;
+      const updates: Record<string, any> = {};
+      if (heightCm != null) updates.heightCm = parseInt(String(heightCm));
+      if (weightKg != null) updates.weightKg = String(weightKg);
+      if (sex) updates.sex = sex;
+      if (activityLevel) updates.activityLevel = activityLevel;
+      if (age != null) updates.age = parseInt(String(age));
+      await db.update(aryaUsers).set(updates).where(eq(aryaUsers.id, userId));
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to update health profile" });
+    }
+  });
+
+  // ── Health Coaching (SSE) ───────────────────────────────────────────────────
+  app.post("/api/user/health/coach", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const { message } = req.body;
+      if (!message?.trim()) return res.status(400).json({ error: "Message required" });
+
+      const [user] = await db.select({
+        heightCm: aryaUsers.heightCm, weightKg: aryaUsers.weightKg,
+        sex: aryaUsers.sex, activityLevel: aryaUsers.activityLevel, age: aryaUsers.age, name: aryaUsers.name,
+      }).from(aryaUsers).where(eq(aryaUsers.id, userId));
+
+      const since = new Date(); since.setDate(since.getDate() - 14);
+      const readings = await db.select().from(aryaHealthReadings)
+        .where(and(eq(aryaHealthReadings.userId, userId), sql`${aryaHealthReadings.loggedAt} >= ${since}`))
+        .orderBy(desc(aryaHealthReadings.loggedAt)).limit(100);
+
+      let bmiStr = "";
+      if (user?.heightCm && user?.weightKg) {
+        const hM = user.heightCm / 100;
+        const bmiVal = parseFloat(String(user.weightKg)) / (hM * hM);
+        const cat = bmiVal < 18.5 ? "Underweight" : bmiVal < 25 ? "Normal" : bmiVal < 30 ? "Overweight" : "Obese";
+        bmiStr = ` | BMI: ${bmiVal.toFixed(1)} (${cat})`;
+      }
+
+      const profileLine = user ? [
+        user.heightCm ? `Height ${user.heightCm}cm` : null,
+        user.weightKg ? `Weight ${user.weightKg}kg` : null,
+        bmiStr || null,
+        user.sex ? `Sex: ${user.sex}` : null,
+        user.age ? `Age: ${user.age}` : null,
+        user.activityLevel ? `Activity: ${user.activityLevel}` : null,
+      ].filter(Boolean).join(" | ") : "No profile yet";
+
+      const summary: Record<string, number[]> = {};
+      readings.forEach(r => { if (!summary[r.metric]) summary[r.metric] = []; summary[r.metric].push(parseFloat(r.value)); });
+      const readingsCtx = Object.entries(summary).map(([m, vals]) => {
+        const avg = (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1);
+        return `${m}: avg ${avg}, latest ${vals[0]} (${vals.length} readings)`;
+      }).join("\n") || "No readings logged yet.";
+
+      const systemPrompt = `You are ARYA's personal health coach — warm, knowledgeable, and practical. You help people understand their body and make small positive changes.
+
+USER PROFILE: ${profileLine}
+RECENT DATA (14 days):
+${readingsCtx}
+
+RULES:
+- Personalise every response using their actual data above
+- NEVER diagnose any medical condition or name any disease
+- NEVER prescribe medication, supplements, or specific dosages
+- For any concerning values, calmly say "worth mentioning to your doctor"
+- Be warm and direct — like a knowledgeable friend, not a clinical report
+- Keep it concise (3-5 sentences) unless a detailed explanation is genuinely needed
+- End with one small, actionable step they can take today`;
+
+      res.setHeader("Content-Type", "text/event-stream");
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Connection", "keep-alive");
+      res.flushHeaders();
+
+      const openai = new OpenAI({ apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY, baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL });
+      const stream = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [{ role: "system", content: systemPrompt }, { role: "user", content: message }],
+        max_tokens: 450, temperature: 0.75, stream: true,
+      });
+      for await (const chunk of stream) {
+        const text = chunk.choices[0]?.delta?.content || "";
+        if (text) res.write(`data: ${JSON.stringify({ token: text })}\n\n`);
+      }
+      res.write("data: [DONE]\n\n");
+    } catch (err: any) {
+      res.write(`data: ${JSON.stringify({ error: "Coach unavailable right now" })}\n\n`);
+    } finally {
+      res.end();
+    }
+  });
+
   // ── Voice Notes ────────────────────────────────────────────────────────────
   app.post("/api/user/voice-notes", requireUser, async (req: Request, res: Response) => {
     try {
