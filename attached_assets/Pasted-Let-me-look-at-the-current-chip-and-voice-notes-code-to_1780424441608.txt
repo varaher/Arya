@@ -1,0 +1,181 @@
+Let me look at the current chip and voice notes code to give exact fixes:
+
+I don't have direct access to your Replit files, but from the screenshots I can see exactly what's wrong. Here are the **precise fixes** for both:
+
+---
+
+## Fix 1 — Chip Labels Cut Off
+
+**The problem:** Chips have a fixed width or `min-w` too small. "Reminders" becomes "Remin..." and "Calendar" becomes "Calen..."
+
+**Two approaches — pick one:**
+
+### Option A — Let chips grow (simplest)
+```tsx
+// Find your chip/pill row in AryaChat.tsx
+// Change from something like:
+<div className="flex flex-wrap gap-2">
+  {chips.map(chip => (
+    <button className="flex items-center gap-1.5 px-3 py-1.5 
+                       rounded-full border text-sm
+                       whitespace-nowrap">  {/* ADD THIS */}
+      {chip.icon} {chip.label}
+    </button>
+  ))}
+</div>
+```
+
+Key addition: `whitespace-nowrap` — prevents label from being clipped.
+
+### Option B — Shorten the labels (cleaner on mobile)
+```tsx
+// In your chips array definition, shorten long labels:
+const quickChips = [
+  { icon: '🎯', label: 'Goals' },
+  { icon: '🧠', label: 'Memory' },
+  { icon: '📝', label: 'Notes' },
+  { icon: '🔔', label: 'Reminders' },  // was getting cut
+  { icon: '📅', label: 'Calendar' },   // was getting cut
+  { icon: '🏘️', label: 'Community' },  // was getting cut
+];
+```
+
+Then make the second row scroll horizontally:
+```tsx
+<div className="flex gap-2 overflow-x-auto 
+                scrollbar-hide pb-1
+                -mx-4 px-4">  {/* bleed to edges */}
+  {secondRowChips.map(...)}
+</div>
+```
+
+**My recommendation: Option B + horizontal scroll.** Looks much cleaner on mobile.
+
+---
+
+## Fix 2 — Voice Notes AI Summary Missing
+
+From your screenshot (Image 10), the voice note shows raw Malayalam transcription but **no English summary below it.**
+
+**The problem is in your voice note save flow.** After Sarvam transcribes, you need to call Claude/GPT to summarize.
+
+### Step 1 — Server side (`routes.ts`)
+
+Find your voice note POST route and add summarization:
+
+```typescript
+// routes.ts — after Sarvam transcription succeeds
+app.post('/api/voice-notes', async (req, res) => {
+  const { audioData, language } = req.body;
+  
+  // Step 1: Transcribe with Sarvam (already working)
+  const transcription = await sarvamService.transcribe(audioData, language);
+  
+  // Step 2: Summarize with GPT (ADD THIS)
+  const summaryResponse = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    messages: [
+      {
+        role: 'system',
+        content: `You are ARYA. Summarize this voice note in 1-2 clear English sentences. 
+                  Extract the key point or action item. Be concise.
+                  If it's in another language, still summarize in English.`
+      },
+      {
+        role: 'user', 
+        content: transcription
+      }
+    ],
+    max_tokens: 100
+  });
+  
+  const summary = summaryResponse.choices[0].message.content;
+  
+  // Step 3: Save both to DB
+  const note = await db.insert(voiceNotes).values({
+    userId: req.user.id,
+    transcription,
+    summary,          // ADD this column if not exists
+    language,
+    duration: req.body.duration,
+    createdAt: new Date()
+  }).returning();
+  
+  res.json(note[0]);
+});
+```
+
+### Step 2 — Database migration
+
+Add `summary` column if not already there:
+```sql
+ALTER TABLE voice_notes ADD COLUMN IF NOT EXISTS summary TEXT;
+```
+
+Or in Drizzle schema:
+```typescript
+// shared/schema.ts — in voiceNotes table
+summary: text('summary'),
+```
+
+### Step 3 — Display in UI
+
+In your Voice Notes panel component:
+```tsx
+{/* Each voice note card */}
+<div className="bg-white/5 rounded-xl p-4">
+  {/* Header */}
+  <div className="flex items-center gap-2 mb-2">
+    <span className="text-purple-400">🎙️</span>
+    <span className="text-sm text-white/60">
+      {formatDate(note.createdAt)} · {note.duration}s
+    </span>
+  </div>
+
+  {/* AI Summary — show this prominently */}
+  {note.summary && (
+    <div className="mb-3 p-2 bg-purple-500/10 
+                    rounded-lg border border-purple-500/20">
+      <p className="text-xs text-purple-300 font-medium mb-1">
+        ✨ ARYA Summary
+      </p>
+      <p className="text-sm text-white/90">{note.summary}</p>
+    </div>
+  )}
+
+  {/* Raw transcription — collapsible */}
+  <details>
+    <summary className="text-xs text-white/40 cursor-pointer">
+      View full transcription
+    </summary>
+    <p className="text-xs text-white/60 mt-2 leading-relaxed">
+      {note.transcription}
+    </p>
+  </details>
+</div>
+```
+
+---
+
+## Summary — Tell Your Developer
+
+**Two files to change:**
+
+**`AryaChat.tsx`** (chips):
+- Add `whitespace-nowrap` to chip buttons
+- Make second chip row `overflow-x-auto` + `scrollbar-hide`
+
+**`routes.ts`** (voice notes):
+- After Sarvam transcription, call GPT-4o to summarize in 1-2 English sentences
+- Save `summary` field to DB alongside `transcription`
+
+**`VoiceNotesPanel` component:**
+- Show summary in a purple highlighted box above the transcription
+- Make raw transcription collapsible with `<details>`
+
+**`schema.ts`:**
+- Add `summary: text('summary')` to voiceNotes table
+
+---
+
+This is about **45 minutes of work** total. The summary feature will make voice notes 10x more useful — users record in Malayalam, see the key point in English instantly. Want me to write the complete VoiceNotesPanel component replacement?

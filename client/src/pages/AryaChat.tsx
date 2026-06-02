@@ -1888,16 +1888,31 @@ function NoteCard({ note, token, deleteNote, formatDate, formatDur, isEditMode, 
         )}
       </div>
 
-      {/* Content: summary bullets OR transcript */}
+      {/* Content: summary bullets + collapsible raw transcript */}
       <div className="px-3 pb-2.5">
         {summaryLines.length > 0 ? (
-          <ul className="space-y-0.5 border-l-2 border-violet-200 dark:border-violet-800 pl-2 mt-1">
-            {summaryLines.map((line: string, i: number) => (
-              <li key={i} className="text-[11px] text-gray-600 dark:text-gray-300 leading-relaxed">
-                📝 {line}
-              </li>
-            ))}
-          </ul>
+          <>
+            <div className="flex items-center gap-1 mt-1 mb-1">
+              <span className="text-[9px] font-semibold uppercase tracking-widest text-violet-400 dark:text-violet-500">✨ Summary</span>
+            </div>
+            <ul className="space-y-0.5 border-l-2 border-violet-200 dark:border-violet-800 pl-2">
+              {summaryLines.map((line: string, i: number) => (
+                <li key={i} className="text-[11px] text-gray-600 dark:text-gray-300 leading-relaxed">
+                  {line}
+                </li>
+              ))}
+            </ul>
+            {note.transcript && (
+              <details className="mt-1.5">
+                <summary className="text-[10px] text-gray-400 dark:text-gray-500 cursor-pointer select-none hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                  View full transcript
+                </summary>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed mt-1 italic">
+                  "{note.transcript}"
+                </p>
+              </details>
+            )}
+          </>
         ) : note.transcript ? (
           <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-3 mt-1 italic">
             "{note.transcript}"
@@ -2016,6 +2031,8 @@ function VoiceNotesPanel({ onClose, token, uiLang = "en", voiceLang = "en-IN" }:
               body: JSON.stringify({ transcript: text, durationSeconds: duration }),
             });
             queryClient.invalidateQueries({ queryKey: ["/api/user/voice-notes"] });
+            // Refetch after 6 s so background GPT summary has time to land
+            setTimeout(() => queryClient.invalidateQueries({ queryKey: ["/api/user/voice-notes"] }), 6000);
             setTranscript("");
           } else if (sttData.error) {
             setVoiceNoteError(sttData.message || "Could not hear anything. Please speak clearly and try again.");
@@ -4935,7 +4952,7 @@ export default function AryaChat() {
                 transition={{ duration: 0.35, delay: 0.32 }}
                 className="w-full mb-1"
               >
-                <div className="flex flex-wrap justify-center gap-2 px-1">
+                <div className="flex gap-2 overflow-x-auto scrollbar-hide px-4 pb-1 -mx-4">
                   {[
                     { icon: "🎯", label: t("goals"),     action: () => { setShowGoals(true); setShowMemory(false); setShowNotes(false); setShowReminders(false); setShowCalendar(false); } },
                     { icon: "🧠", label: t("memory"),    action: () => { setShowMemory(true); setShowGoals(false); setShowNotes(false); setShowReminders(false); setShowCalendar(false); } },
