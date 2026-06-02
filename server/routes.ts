@@ -28,7 +28,8 @@ import {
   SUPPORTED_LANGUAGES,
   type SarvamLanguageCode,
 } from "./arya/sarvam-service";
-import { QueryRequestSchema, DomainSchema, aryaKnowledge, aryaClinicalRecords, aryaVoiceQualityLog, aryaMemory, aryaNitiSessions, aryaNitiMessages, aryaPortfolioHoldings, aryaHealthReadings } from "@shared/schema";
+import { QueryRequestSchema, DomainSchema, aryaKnowledge, aryaClinicalRecords, aryaVoiceQualityLog, aryaMemory, aryaNitiSessions, aryaNitiMessages, aryaPortfolioHoldings, aryaHealthReadings, aryaDrishyaStories } from "@shared/schema";
+import { generateDrishyaStory, type DrishyaWorld } from "./arya/drishya";
 import OpenAI from "openai";
 import { eq, and, desc, asc, sql, or, isNull, lte, inArray } from "drizzle-orm";
 import { db } from "./db";
@@ -4481,6 +4482,88 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
     } catch (error: any) {
       console.error("[Product Intelligence]", error.message);
       res.status(500).json({ error: "Failed to fetch product intelligence" });
+    }
+  });
+
+  // ============================================================
+  // DRISHYA — Stories that find you
+  // ============================================================
+
+  // Generate a story (SSE streaming)
+  app.post("/api/drishya/story", optionalUser, async (req: Request, res: Response) => {
+    const { world, request: userRequest, language } = req.body as { world: string; request: string; language?: string };
+    if (!userRequest?.trim()) return res.status(400).json({ error: "Request is required" });
+    const validWorlds = ["night", "film", "everyday"];
+    const storyWorld = validWorlds.includes(world) ? (world as DrishyaWorld) : "everyday";
+
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.flushHeaders();
+
+    try {
+      for await (const token of generateDrishyaStory(storyWorld, userRequest, language || "en")) {
+        res.write(`data: ${JSON.stringify({ token })}\n\n`);
+      }
+      res.write("data: [DONE]\n\n");
+    } catch (err: any) {
+      console.error("[Drishya] Story generation error:", err.message);
+      res.write(`data: ${JSON.stringify({ error: "Story generation failed" })}\n\n`);
+    } finally {
+      res.end();
+    }
+  });
+
+  // Save a story
+  app.post("/api/drishya/stories/save", requireUser, async (req: Request, res: Response) => {
+    const userId = (req as any).userId;
+    const tenantId = (req as any).tenantId || "varah";
+    const { world, request: userRequest, story } = req.body as { world: string; request: string; story: string };
+    if (!story?.trim() || !userRequest?.trim()) return res.status(400).json({ error: "Missing fields" });
+    const validWorlds = ["night", "film", "everyday"];
+    const storyWorld = validWorlds.includes(world) ? world : "everyday";
+    try {
+      const [saved] = await db.insert(aryaDrishyaStories).values({
+        userId, tenantId,
+        world: storyWorld as any,
+        request: userRequest,
+        story,
+        language: req.body.language || "en",
+      }).returning();
+      res.json(saved);
+    } catch (err: any) {
+      console.error("[Drishya] Save error:", err.message);
+      res.status(500).json({ error: "Failed to save story" });
+    }
+  });
+
+  // Get saved stories for user
+  app.get("/api/drishya/stories", requireUser, async (req: Request, res: Response) => {
+    const userId = (req as any).userId;
+    try {
+      const stories = await db.select().from(aryaDrishyaStories)
+        .where(eq(aryaDrishyaStories.userId, userId))
+        .orderBy(desc(aryaDrishyaStories.createdAt))
+        .limit(50);
+      res.json(stories);
+    } catch (err: any) {
+      console.error("[Drishya] Fetch error:", err.message);
+      res.status(500).json({ error: "Failed to fetch stories" });
+    }
+  });
+
+  // Delete a saved story
+  app.delete("/api/drishya/stories/:id", requireUser, async (req: Request, res: Response) => {
+    const userId = (req as any).userId;
+    const { id } = req.params;
+    try {
+      await db.delete(aryaDrishyaStories)
+        .where(and(eq(aryaDrishyaStories.id, id), eq(aryaDrishyaStories.userId, userId)));
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error("[Drishya] Delete error:", err.message);
+      res.status(500).json({ error: "Failed to delete story" });
     }
   });
 

@@ -1,0 +1,1 @@
+- [Drishya Architecture](drishya-architecture.md) — Stories segment: knowledge domain='stories', 16 records seeded, SSE streaming via /api/drishya/story, saved in arya_drishya_stories table.

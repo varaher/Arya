@@ -20,7 +20,7 @@ export type User = typeof users.$inferSelect;
 // ARYA Core Tables
 
 // Domain enum
-export const DomainSchema = z.enum(['medical', 'business', 'sanskrit', 'chanakya', 'jyotish']);
+export const DomainSchema = z.enum(['medical', 'business', 'sanskrit', 'chanakya', 'jyotish', 'stories']);
 export type Domain = z.infer<typeof DomainSchema>;
 
 // Knowledge Base Table (published knowledge)
@@ -1013,6 +1013,24 @@ export const aryaReflectionShares = pgTable("arya_reflection_shares", {
 export const insertAryaReflectionShareSchema = createInsertSchema(aryaReflectionShares).omit({ id: true, createdAt: true });
 export type InsertAryaReflectionShare = z.infer<typeof insertAryaReflectionShareSchema>;
 export type AryaReflectionShare = typeof aryaReflectionShares.$inferSelect;
+
+// =============================================
+// DRISHYA — Stories segment
+// =============================================
+
+export const aryaDrishyaStories = pgTable("arya_drishya_stories", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull(),
+  tenantId: varchar("tenant_id", { length: 100 }).notNull().default("varah"),
+  world: varchar("world", { length: 20 }).notNull().$type<"night" | "film" | "everyday">(),
+  request: text("request").notNull(),
+  story: text("story").notNull(),
+  language: varchar("language", { length: 10 }).default("en"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export const insertAryaDrishyaStorySchema = createInsertSchema(aryaDrishyaStories).omit({ id: true, createdAt: true });
+export type InsertAryaDrishyaStory = z.infer<typeof insertAryaDrishyaStorySchema>;
+export type AryaDrishyaStory = typeof aryaDrishyaStories.$inferSelect;
 
 // Re-export chat models
 export * from "./models/chat";

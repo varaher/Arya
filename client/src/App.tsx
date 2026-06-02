@@ -58,6 +58,7 @@ import WeeklyReviewPage from "@/pages/WeeklyReviewPage";
 import OnboardingFlow from "@/pages/OnboardingFlow";
 import AdminARYA from "@/pages/AdminARYA";
 import PranaPage from "@/pages/PranaPage";
+import DrishyaPage from "@/pages/DrishyaPage";
 import PricingPage from "@/pages/PricingPage";
 import BottomNav from "@/components/BottomNav";
 import LanguageSettingsPage from "@/pages/LanguageSettingsPage";
@@ -258,6 +259,10 @@ function Router() {
 
         <Route path="/prana">
           <PranaPage />
+        </Route>
+
+        <Route path="/drishya">
+          <DrishyaPage />
         </Route>
 
         <Route path="/pricing">

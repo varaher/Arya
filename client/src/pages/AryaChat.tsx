@@ -4473,6 +4473,14 @@ export default function AryaChat() {
                       <span className="truncate">{t("menu_prana")}</span>
                     </button>
                     <button
+                      data-testid="button-drishya-sidebar"
+                      onClick={() => { setShowUserMenu(false); setLocation("/drishya"); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
+                    >
+                      <span className="text-violet-500 shrink-0 text-sm">🎭</span>
+                      <span className="truncate">✦ Drishya — Stories</span>
+                    </button>
+                    <button
                       data-testid="button-weekly-review-sidebar"
                       onClick={() => { setShowUserMenu(false); setLocation("/review"); }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"

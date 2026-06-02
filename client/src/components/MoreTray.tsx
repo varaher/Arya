@@ -1,6 +1,6 @@
 import { useLocation } from "wouter";
 import { AnimatePresence, motion } from "framer-motion";
-import { Activity, BookOpen, SlidersHorizontal, Brain, Users, Lock, Megaphone, X } from "lucide-react";
+import { Activity, BookOpen, SlidersHorizontal, Brain, Users, Lock, Megaphone, X, Clapperboard } from "lucide-react";
 import { getTranslation, getStoredUiLanguage } from "@/lib/i18n";
 
 interface MoreTrayProps {
@@ -15,6 +15,14 @@ export default function MoreTray({ isOpen, onClose, onOpenCustomize }: MoreTrayP
   const t = (key: string) => getTranslation(lang, key as any);
 
   const mainFeatures = [
+    {
+      icon: <Clapperboard size={22} />,
+      emoji: "🎭",
+      label: "Drishya",
+      sub: "Stories that find you",
+      color: "#a78bfa",
+      action: () => setLocation("/drishya"),
+    },
     {
       icon: <Activity size={22} />,
       emoji: "🫁",
