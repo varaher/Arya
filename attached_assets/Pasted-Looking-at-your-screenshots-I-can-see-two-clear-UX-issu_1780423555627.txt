@@ -1,0 +1,109 @@
+Looking at your screenshots, I can see two clear UX issues to fix:
+
+## What I See
+
+**1. Side tap to dismiss** — modals (Goals, Memory, Reminders, Voice Notes) should close when user taps the dark overlay on the left side
+
+**2. Navigation bar issues:**
+- Bottom nav cuts off modal content
+- Labels may be too small
+- Active state could be clearer
+
+---
+
+Let me see the current code first to give you exact fixes:
+
+Since I can't access your Replit files directly, here are the **exact code patterns** to implement both fixes. Share the relevant section of `AryaChat.tsx` and I'll write the precise replacement.
+
+---
+
+## Fix 1 — Tap Outside to Close (Overlay Dismiss)
+
+Every panel/modal that slides in from the side has a semi-transparent overlay behind it. That overlay needs an `onClick` handler:
+
+```tsx
+{/* OVERLAY — tap to close */}
+<div
+  className="fixed inset-0 bg-black/50 z-40"
+  onClick={() => setActivePanel(null)}  // or setShowGoals(false), etc.
+/>
+
+{/* PANEL — sits above overlay */}
+<div className="fixed right-0 top-0 h-full w-[85%] z-50 bg-white ...">
+  {/* panel content */}
+</div>
+```
+
+**The key:** overlay is `z-40`, panel is `z-50`. Clicking the dark left strip closes everything.
+
+---
+
+## Fix 2 — Navigation Bar Refinements
+
+```tsx
+{/* Bottom Nav — fixed, safe area aware */}
+<nav className="fixed bottom-0 left-0 right-0 z-30
+                bg-[#1a1a1a] border-t border-white/10
+                pb-[env(safe-area-inset-bottom,0px)]">
+  <div className="flex items-center justify-around h-14">
+    {navItems.map(item => (
+      <button
+        key={item.id}
+        onClick={() => navigate(item.path)}
+        className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl
+                    transition-all duration-200
+                    ${isActive(item.path)
+                      ? 'text-amber-400'           // active: amber
+                      : 'text-white/40'             // inactive: faded
+                    }`}
+      >
+        <item.icon size={20} />
+        <span className="text-[10px] font-medium">{item.label}</span>
+      </button>
+    ))}
+  </div>
+</nav>
+
+{/* CRITICAL — page content must not hide behind nav */}
+<main className="pb-[calc(56px+env(safe-area-inset-bottom,0px))]">
+  {/* your page */}
+</main>
+```
+
+---
+
+## Fix 3 — Modal Bottom Sheet Safe Area (the OK button issue)
+
+```tsx
+{/* Bottom sheet — edit reminder time */}
+<div className="fixed inset-x-0 bottom-0 z-50
+                bg-[#0f1923] rounded-t-2xl
+                px-5 pt-5
+                pb-[calc(env(safe-area-inset-bottom,16px)+16px)]">
+
+  <h3>Edit reminder time</h3>
+  {/* ... time picker ... */}
+
+  {/* Buttons always visible */}
+  <div className="flex gap-3 mt-5">
+    <button className="flex-1 py-3 rounded-xl border border-white/20">
+      Cancel
+    </button>
+    <button className="flex-1 py-3 rounded-xl bg-teal-600 text-white font-bold">
+      Save
+    </button>
+  </div>
+</div>
+```
+
+---
+
+## Summary of Changes for Your Developer
+
+Tell them to make **3 changes** in `AryaChat.tsx`:
+
+1. **Every panel overlay div** → add `onClick={() => closePanel()}` 
+2. **Bottom `<nav>`** → add `pb-[env(safe-area-inset-bottom,0px)]` and ensure main content has matching bottom padding
+3. **Edit reminder bottom sheet** → add `pb-[calc(env(safe-area-inset-bottom,16px)+16px)]` so Save button is never hidden
+
+Want me to write the complete `RemindersPanel` component replacement with all three fixes included?

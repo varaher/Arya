@@ -4756,36 +4756,36 @@ export default function AryaChat() {
           {showMemory && (
             <motion.div
               key="memory-panel"
-              initial={{ x: 320, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: 320, opacity: 0 }}
-              transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="absolute right-0 top-0 bottom-0 z-40"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-40"
             >
+              <div className="absolute inset-0 bg-black/40" onClick={() => setShowMemory(false)} />
               <MemoryPanel onClose={() => setShowMemory(false)} token={token} />
             </motion.div>
           )}
           {showGoals && (
             <motion.div
               key="goals-panel"
-              initial={{ x: 320, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: 320, opacity: 0 }}
-              transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="absolute right-0 top-0 bottom-0 z-40"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-40"
             >
+              <div className="absolute inset-0 bg-black/40" onClick={() => setShowGoals(false)} />
               <GoalsPanel onClose={() => setShowGoals(false)} />
             </motion.div>
           )}
           {showCustomize && isLoggedIn && token && (
             <motion.div
               key="customize-panel"
-              initial={{ x: 384, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: 384, opacity: 0 }}
-              transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="absolute right-0 top-0 bottom-0 z-40"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-40"
             >
+              <div className="absolute inset-0 bg-black/40" onClick={() => setShowCustomize(false)} />
               <CustomizePanel onClose={() => setShowCustomize(false)} token={token} />
             </motion.div>
           )}
@@ -4804,24 +4804,24 @@ export default function AryaChat() {
           {showNotes && isLoggedIn && token && (
             <motion.div
               key="notes-panel"
-              initial={{ x: 384, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: 384, opacity: 0 }}
-              transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="absolute right-0 top-0 bottom-0 z-40"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-40"
             >
+              <div className="absolute inset-0 bg-black/40" onClick={() => setShowNotes(false)} />
               <VoiceNotesPanel onClose={() => setShowNotes(false)} token={token} uiLang={uiLanguage} voiceLang={selectedLanguage} />
             </motion.div>
           )}
           {showCalendar && isLoggedIn && token && (
             <motion.div
               key="calendar-panel"
-              initial={{ x: 384, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: 384, opacity: 0 }}
-              transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="absolute right-0 top-0 bottom-0 z-40"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-40"
             >
+              <div className="absolute inset-0 bg-black/40" onClick={() => setShowCalendar(false)} />
               <CalendarPanel onClose={() => setShowCalendar(false)} token={token} />
             </motion.div>
           )}

@@ -57,9 +57,9 @@ export default function BottomNav({ onOpenCustomize }: BottomNavProps = {}) {
                 cursor: "pointer", transition: "color 0.18s",
               }}
             >
-              <Icon size={18} strokeWidth={active ? 2.5 : 1.7} />
+              <Icon size={20} strokeWidth={active ? 2.5 : 1.7} />
               <span style={{
-                fontSize: 9, fontFamily: "Inter, sans-serif",
+                fontSize: 10, fontFamily: "Inter, sans-serif",
                 letterSpacing: "0.03em", fontWeight: active ? 600 : 400,
                 whiteSpace: "nowrap",
               }}>
