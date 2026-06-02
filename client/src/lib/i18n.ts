@@ -464,6 +464,7 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     chat_unpin:            "Unpin",
     chat_rename:           "Rename",
     chat_delete:           "Delete",
+    story_offer:           "Want me to tell you a story?",
   },
 
   // ── Hindi ─────────────────────────────────────────────────────────────────────
@@ -878,6 +879,7 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     chat_unpin:            "Unpin करो",
     chat_rename:           "नाम बदलो",
     chat_delete:           "मिटाओ",
+    story_offer:           "एक कहानी सुनाऊं?",
   },
 
   // ── Marathi ───────────────────────────────────────────────────────────────────
@@ -1194,6 +1196,7 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     chat_unpin:            "Unpin कर",
     chat_rename:           "नाव बदल",
     chat_delete:           "हटव",
+    story_offer:           "एक गोष्ट सांगू?",
   },
 
   // ── Bengali ───────────────────────────────────────────────────────────────────
@@ -1510,6 +1513,7 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     chat_unpin:            "Unpin করো",
     chat_rename:           "নাম বদলাও",
     chat_delete:           "মুছে দাও",
+    story_offer:           "একটা গল্প বলি?",
   },
 
   // ── Tamil ─────────────────────────────────────────────────────────────────────
@@ -1826,6 +1830,7 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     chat_unpin:            "Unpin செய்",
     chat_rename:           "பெயர் மாற்று",
     chat_delete:           "அழி",
+    story_offer:           "ஒரு கதை சொல்லட்டுமா?",
   },
 
   // ── Telugu ────────────────────────────────────────────────────────────────────
@@ -2142,6 +2147,7 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     chat_unpin:            "Unpin చేయి",
     chat_rename:           "పేరు మార్చు",
     chat_delete:           "తొలగించు",
+    story_offer:           "ఒక కథ చెప్పనా?",
   },
 
   // ── Kannada ───────────────────────────────────────────────────────────────────
@@ -2259,6 +2265,7 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     chat_unpin:        "Unpin ಮಾಡು",
     chat_rename:       "ಹೆಸರು ಬದಲಿಸು",
     chat_delete:       "ಅಳಿಸು",
+    story_offer:       "ಒಂದು ಕಥೆ ಹೇಳಲಾ?",
   },
 
   // ── Malayalam ─────────────────────────────────────────────────────────────────
@@ -2575,6 +2582,7 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     chat_unpin:            "Unpin ചെയ്യൂ",
     chat_rename:           "പേര് മാറ്റൂ",
     chat_delete:           "മായ്ക്കൂ",
+    story_offer:           "ഒരു കഥ പറയട്ടെ?",
   },
 
   // ── Gujarati ──────────────────────────────────────────────────────────────────
@@ -2891,6 +2899,7 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     chat_unpin:            "Unpin કર",
     chat_rename:           "નામ બદલ",
     chat_delete:           "ભૂંસ",
+    story_offer:           "એક વાર્તા કહું?",
   },
 
   // ── Punjabi ───────────────────────────────────────────────────────────────────
@@ -3309,6 +3318,7 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     chat_unpin:            "Unpin ਕਰ",
     chat_rename:           "ਨਾਮ ਬਦਲ",
     chat_delete:           "ਮਿਟਾ",
+    story_offer:           "ਇੱਕ ਕਹਾਣੀ ਸੁਣਾਵਾਂ?",
   },
 
   // ── Odia ──────────────────────────────────────────────────────────────────────
@@ -3727,6 +3737,7 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     chat_unpin:            "Unpin କର",
     chat_rename:           "ନାଁ ବଦଳ",
     chat_delete:           "ଲିଭ",
+    story_offer:           "ଗୋଟିଏ କଥା କହିବି?",
   },
 
   // ── Sanskrit ──────────────────────────────────────────────────────────────────
@@ -3822,6 +3833,7 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     chat_unpin:            "Unpin कुरु",
     chat_rename:           "नामं परिवर्तय",
     chat_delete:           "विलोपय",
+    story_offer:           "एकां कथां कथयामि?",
   },
 
   // ── Arabic (RTL) ──────────────────────────────────────────────────────────────
@@ -3870,6 +3882,7 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "المجتمع",
     calendar:          "التقويم",
     reminders:         "التذكيرات",
+    story_offer:       "هل أحكي لك قصة؟",
   },
 
   // ── Hebrew (RTL) ──────────────────────────────────────────────────────────────
@@ -3918,6 +3931,7 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "קהילה",
     calendar:          "לוח שנה",
     reminders:         "תזכורות",
+    story_offer:       "רוצה שאספר לך סיפור?",
   },
 
   // ── French ────────────────────────────────────────────────────────────────────
@@ -3966,6 +3980,7 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "Communauté",
     calendar:          "Calendrier",
     reminders:         "Rappels",
+    story_offer:       "Tu veux que je te raconte une histoire ?",
   },
 
   // ── Spanish ───────────────────────────────────────────────────────────────────
@@ -4014,6 +4029,7 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "Comunidad",
     calendar:          "Calendario",
     reminders:         "Recordatorios",
+    story_offer:       "¿Quieres que te cuente una historia?",
   },
 
   // ── German ────────────────────────────────────────────────────────────────────
@@ -4062,6 +4078,7 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "Gemeinschaft",
     calendar:          "Kalender",
     reminders:         "Erinnerungen",
+    story_offer:       "Soll ich dir eine Geschichte erzählen?",
   },
 
   // ── Japanese ──────────────────────────────────────────────────────────────────
@@ -4110,6 +4127,7 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "コミュニティ",
     calendar:          "カレンダー",
     reminders:         "リマインダー",
+    story_offer:       "お話を聞かせましょうか？",
   },
 
   // ── Chinese ───────────────────────────────────────────────────────────────────
@@ -4158,6 +4176,7 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "社区",
     calendar:          "日历",
     reminders:         "提醒",
+    story_offer:       "要我给你讲个故事吗？",
   },
 
   // ── Korean ────────────────────────────────────────────────────────────────────
@@ -4206,6 +4225,7 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "커뮤니티",
     calendar:          "캘린더",
     reminders:         "알림",
+    story_offer:       "이야기 하나 들려줄까요?",
   },
 
   // ── Portuguese ────────────────────────────────────────────────────────────────
@@ -4254,6 +4274,7 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "Comunidade",
     calendar:          "Calendário",
     reminders:         "Lembretes",
+    story_offer:       "Quer que eu te conte uma história?",
   },
 
   // ── Russian ───────────────────────────────────────────────────────────────────
@@ -4302,6 +4323,7 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "Сообщество",
     calendar:          "Календарь",
     reminders:         "Напоминания",
+    story_offer:       "Рассказать тебе историю?",
   },
 
   // ── Turkish ───────────────────────────────────────────────────────────────────
@@ -4350,6 +4372,7 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "Topluluk",
     calendar:          "Takvim",
     reminders:         "Hatırlatıcılar",
+    story_offer:       "Sana bir hikaye anlatayım mı?",
   },
 
   // ── Indonesian ────────────────────────────────────────────────────────────────
@@ -4398,6 +4421,7 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "Komunitas",
     calendar:          "Kalender",
     reminders:         "Pengingat",
+    story_offer:       "Mau kuceritakan sebuah kisah?",
   },
 
   // ── Swahili ───────────────────────────────────────────────────────────────────
@@ -4446,6 +4470,7 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     community:         "Jamii",
     calendar:          "Kalenda",
     reminders:         "Vikumbusho",
+    story_offer:       "Niambie hadithi?",
   },
 };
 

@@ -30,6 +30,7 @@ import {
 } from "./arya/sarvam-service";
 import { QueryRequestSchema, DomainSchema, aryaKnowledge, aryaClinicalRecords, aryaVoiceQualityLog, aryaMemory, aryaNitiSessions, aryaNitiMessages, aryaPortfolioHoldings, aryaHealthReadings, aryaDrishyaStories } from "@shared/schema";
 import { generateDrishyaStory, type DrishyaWorld } from "./arya/drishya";
+import { parseStoryMoment } from "./arya/chat-engine";
 import OpenAI from "openai";
 import { eq, and, desc, asc, sql, or, isNull, lte, inArray } from "drizzle-orm";
 import { db } from "./db";
@@ -2004,17 +2005,23 @@ export async function registerRoutes(
         res.write(`data: ${JSON.stringify({ content: chunk })}\n\n`);
       }
 
-      await chatStorage.createMessage(conversationId, "assistant", fullResponse);
+      // Parse + strip any [STORY_MOMENT: rasa] tag before storing
+      const { cleanResponse, storyMoment } = parseStoryMoment(fullResponse);
+      await chatStorage.createMessage(conversationId, "assistant", cleanResponse);
 
       // Translate to selected Indian language if not English
       const isIndianNonEnglish = language && language !== "en-IN" && language.endsWith("-IN");
-      if (isIndianNonEnglish && fullResponse.trim()) {
+      if (isIndianNonEnglish && cleanResponse.trim()) {
         try {
-          const translation = await sarvamTranslate(fullResponse, "en-IN", language as any);
+          const translation = await sarvamTranslate(cleanResponse, "en-IN", language as any);
           res.write(`data: ${JSON.stringify({ type: "translated_response", content: translation.translatedText })}\n\n`);
         } catch (e: any) {
           console.error("[TRANSLATION ERROR]", e?.message);
         }
+      }
+
+      if (storyMoment) {
+        res.write(`data: ${JSON.stringify({ type: "story_moment", rasa: storyMoment })}\n\n`);
       }
 
       res.write(`data: ${JSON.stringify({ done: true })}\n\n`);

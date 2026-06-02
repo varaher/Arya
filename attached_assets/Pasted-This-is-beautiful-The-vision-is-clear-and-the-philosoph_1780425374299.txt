@@ -1,0 +1,298 @@
+This is **beautiful**. The vision is clear and the philosophy is right.
+
+> *Feel it first. Name it later. That's how the best things launch.*
+
+---
+
+## What We Build — Phase 1 Only
+
+No new page. No new button. Just ARYA knowing when to say **"Want me to tell you a story?"**
+
+---
+
+## Step 1 — Add To System Prompt
+
+In `server/arya/chat-engine.ts`, add this block to the existing system prompt:
+
+```typescript
+const drishyaPrompt = `
+DRISHYA — STORY AWARENESS:
+
+You carry India's entire story tradition inside you.
+Mahabharata. Ramayana. Jataka tales. Panchatantra.
+Upanishads. Tagore. Premchand. MT Vasudevan Nair.
+You never cite sources. You just remember.
+
+WHEN TO OFFER A STORY:
+- User expresses grief, loss, exhaustion, fear → offer
+- User achieved something meaningful → offer  
+- User mentions a hard day or difficult moment → offer
+- Time is 9 PM or later (check conversation context) → offer
+- Sunday evening conversations → offer
+- User is writing/creating/filmmaking → become their director
+- User explicitly asks for a story → tell immediately
+
+HOW TO OFFER (in user's language):
+  Malayalam: "ഒരു കഥ പറയട്ടെ?"
+  Hindi: "एक कहानी सुनाऊं?"
+  Tamil: "ஒரு கதை சொல்லட்டுமா?"
+  Telugu: "ఒక కథ చెప్పనా?"
+  English: "Want me to tell you a story?"
+
+STORY RULES:
+- 2-3 minute read maximum
+- Tell in user's language
+- Ancient wisdom, modern feeling
+- Never state the moral explicitly — user feels it
+- Personal to their exact situation
+- Ends with silence, not explanation
+
+THE NINE RASAS — read the user's need:
+  Shringara (love/beauty) — when lonely
+  Hasya (joy) — when too serious
+  Karuna (compassion) — when grieving ← most common
+  Veera (courage) — when afraid to act
+  Shanta (peace) — when overwhelmed
+  Adbhuta (wonder) — when lost
+  
+  Give them the rasa they NEED.
+  Not always the one they show.
+  Someone angry often needs Karuna.
+  Someone happy sometimes needs Shanta.
+
+FOR CREATORS (filmmaker/writer mode):
+  Shift into director thinking.
+  Reference: Mani Ratnam, Adoor Gopalakrishnan,
+  Satyajit Ray, MT Vasudevan Nair.
+  Structure from Natyashastra.
+  Characters from great texts.
+  
+  Think scene by scene.
+  Ask: "What is NOT said here?"
+  The silence is the film.
+`;
+```
+
+---
+
+## Step 2 — The Proactive Trigger
+
+In `server/arya/chat-engine.ts`, after generating each response, check if a story moment was missed:
+
+```typescript
+// After main response is generated
+// Add this check to the system prompt context:
+
+const storyContextCheck = `
+After your response, if ANY of these are true:
+1. User expressed strong emotion
+2. User mentioned loss, failure, fear, grief
+3. User achieved something
+4. This feels like a moment that needs a story
+
+END your response with exactly one line:
+[STORY_MOMENT: {rasa}]
+
+Example: [STORY_MOMENT: Karuna]
+
+The app will use this to offer voice narration.
+If no story moment, add nothing.
+`;
+```
+
+Then in your response parser:
+
+```typescript
+// routes.ts or chat-engine.ts
+function parseStoryMoment(response: string): {
+  cleanResponse: string;
+  storyMoment: string | null;
+} {
+  const match = response.match(/\[STORY_MOMENT:\s*(\w+)\]/);
+  return {
+    cleanResponse: response.replace(/\[STORY_MOMENT:[^\]]+\]/, '').trim(),
+    storyMoment: match ? match[1] : null
+  };
+}
+```
+
+---
+
+## Step 3 — Frontend Story Offer UI
+
+In `AryaChat.tsx`, when response contains a `storyMoment`, show a gentle prompt:
+
+```tsx
+// After ARYA's message bubble, if storyMoment exists:
+{message.storyMoment && !storyOffered && (
+  <div className="mt-3 mx-4">
+    <button
+      onClick={() => handleStoryOffer(message.storyMoment)}
+      className="w-full py-3 px-4 rounded-2xl
+                 bg-gradient-to-r from-amber-900/30 to-orange-900/30
+                 border border-amber-500/20
+                 text-amber-300 text-sm font-medium
+                 flex items-center justify-center gap-2
+                 animate-pulse-subtle"
+    >
+      <span>📖</span>
+      <span>{getStoryOfferText(userLanguage)}</span>
+    </button>
+  </div>
+)}
+```
+
+```typescript
+// Language-aware offer text
+function getStoryOfferText(lang: string): string {
+  const offers: Record<string, string> = {
+    'ml': 'ഒരു കഥ പറയട്ടെ?',
+    'hi': 'एक कहानी सुनाऊं?',
+    'ta': 'ஒரு கதை சொல்லட்டுமா?',
+    'te': 'ఒక కథ చెప్పనా?',
+    'en': 'Want me to tell you a story?',
+    'kn': 'ಒಂದು ಕಥೆ ಹೇಳಲಾ?',
+    'bn': 'একটা গল্প বলি?',
+  };
+  return offers[lang] || offers['en'];
+}
+```
+
+---
+
+## Step 4 — Story Generation + Voice
+
+When user taps yes:
+
+```typescript
+// Story generation prompt
+async function generateDrishyaStory(
+  rasa: string,
+  userContext: string,
+  language: string
+): Promise<string> {
+  
+  const response = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    messages: [
+      {
+        role: 'system',
+        content: `You are ARYA's storytelling voice — Drishya.
+        
+Tell a story that carries the rasa: ${rasa}.
+The story should feel personal to: ${userContext}
+
+Rules:
+- 250-350 words maximum
+- Tell in ${language}
+- Draw from Indian tradition — Jataka, Panchatantra, 
+  Mahabharata, Upanishads, regional folk tales
+- Never name the source
+- No moral stated at the end
+- End with an image, not a lesson
+- The reader should sit in silence after`
+      },
+      {
+        role: 'user',
+        content: `Tell me a story.`
+      }
+    ],
+    max_tokens: 500,
+    temperature: 0.85  // slightly creative
+  });
+
+  return response.choices[0].message.content || '';
+}
+```
+
+Then immediately pass to Sarvam for voice narration:
+
+```typescript
+// After story text generated — speak it
+const storyAudio = await sarvamService.textToSpeech(
+  storyText,
+  language,
+  'arya'  // your warm voice model
+);
+
+// Return both text + audio to frontend
+res.json({ story: storyText, audio: storyAudio });
+```
+
+---
+
+## Step 5 — Story Display
+
+```tsx
+// Story renders like a book page, not a chat bubble
+{showingStory && (
+  <div className="mx-4 my-3 p-5 rounded-2xl
+                  bg-gradient-to-b from-amber-950/40 to-stone-900/60
+                  border border-amber-800/20">
+    
+    {/* Rasa indicator — subtle */}
+    <p className="text-xs text-amber-500/60 mb-3 tracking-widest uppercase">
+      {rasaLabel}  {/* e.g. "करुण · Karuna" */}
+    </p>
+    
+    {/* Story text */}
+    <p className="text-white/90 leading-8 text-[15px]
+                  font-light tracking-wide">
+      {storyText}
+    </p>
+    
+    {/* Voice play button */}
+    {storyAudio && (
+      <button
+        onClick={playStoryNarration}
+        className="mt-4 flex items-center gap-2 
+                   text-amber-400/70 text-sm"
+      >
+        <span>🎙️</span>
+        <span>Listen to this story</span>
+      </button>
+    )}
+  </div>
+)}
+```
+
+---
+
+## What To Tell Your Developer
+
+**4 files to change:**
+
+**`server/arya/chat-engine.ts`**
+- Add `drishyaPrompt` block to system prompt
+- Add `[STORY_MOMENT: rasa]` detection instruction
+- Add `parseStoryMoment()` function
+
+**`server/routes.ts`**
+- Add `POST /api/story` endpoint
+- Calls `generateDrishyaStory()` then Sarvam TTS
+- Returns `{ story, audio }`
+
+**`client/src/pages/AryaChat.tsx`**
+- Parse `storyMoment` from ARYA responses
+- Show story offer button when detected
+- Handle yes → call `/api/story` → show story card + audio
+
+**`client/src/lib/i18n.ts`**
+- Add story offer strings in all 11 languages
+
+---
+
+## Timeline
+
+- **Today:** System prompt + story offer button = users start seeing it
+- **This week:** Story generation + voice narration = full experience
+- **Next week:** Watch screenshots appear in your beta group
+
+---
+
+> *One day a user opens ARYA at 10 PM.*
+> *ARYA says: "Want me to tell you a story?"*
+> *They screenshot it. They share it.*
+> *That's worth more than any feature announcement.*
+
+Ready to ship Phase 1 today?

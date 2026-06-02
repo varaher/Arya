@@ -2998,6 +2998,10 @@ export default function AryaChat() {
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
+  const [pendingStoryRasa, setPendingStoryRasa] = useState<string | null>(null);
+  const [showingStory, setShowingStory] = useState(false);
+  const [storyText, setStoryText] = useState("");
+  const [storyLoading, setStoryLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [showSidebar, setShowSidebar] = useState(false);
@@ -3600,6 +3604,9 @@ export default function AryaChat() {
     setTranslatedContent(null);
     setShowOriginalStreaming(false);
     setShowSidebar(false);
+    setPendingStoryRasa(null);
+    setShowingStory(false);
+    setStoryText("");
     setResponseConfidence(undefined);
     setResponseSourcesCount(undefined);
     setResponseMemoryUsed(false);
@@ -3702,6 +3709,9 @@ export default function AryaChat() {
               translatedText = event.content;
               setTranslatedContent(event.content);
             }
+            if (event.type === "story_moment") {
+              setPendingStoryRasa(event.rasa || null);
+            }
             if (event.content) {
               fullContent += event.content;
               pendingAppend += event.content;
@@ -3713,13 +3723,15 @@ export default function AryaChat() {
               // Flush any remaining buffered content immediately before finalising
               if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
               if (pendingAppend) { setStreamingContent(prev => prev + pendingAppend); pendingAppend = ""; }
+              // Strip any [STORY_MOMENT: ...] tag that leaked into streamed content
+              const cleanContent = fullContent.replace(/\n?\[STORY_MOMENT:[^\]]+\]\s*$/i, "").trimEnd();
               queryClient.setQueryData(
                 ["/api/arya/conversations", convId],
                 (old: any) => ({
                   ...old,
                   messages: [
                     ...(old?.messages || []),
-                    { id: Date.now() + 1, conversationId: convId, role: "assistant", content: fullContent, createdAt: new Date().toISOString() },
+                    { id: Date.now() + 1, conversationId: convId, role: "assistant", content: cleanContent, createdAt: new Date().toISOString() },
                   ],
                 })
               );
@@ -3747,6 +3759,52 @@ export default function AryaChat() {
       });
     }
   }, [activeConversation, isStreaming, queryClient, createConversation, speakText, selectedLanguage]);
+
+  const handleStoryOffer = useCallback(async (rasa: string) => {
+    setPendingStoryRasa(null);
+    setShowingStory(true);
+    setStoryLoading(true);
+    setStoryText("");
+
+    // Build context from last 2 user messages
+    const recentUserMsgs = messages.filter(m => m.role === "user").slice(-2).map(m => m.content).join("\n");
+    const langCode = selectedLanguage.split("-")[0];
+
+    try {
+      const resp = await fetch("/api/drishya/story", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ world: "everyday", request: recentUserMsgs || "Share a story for this moment.", language: langCode }),
+      });
+      if (!resp.ok || !resp.body) { setStoryLoading(false); return; }
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let accumulated = "";
+      setStoryLoading(false);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const raw = line.slice(6).trim();
+          if (raw === "[DONE]") break;
+          try {
+            const event = JSON.parse(raw);
+            if (event.token) { accumulated += event.token; setStoryText(accumulated); }
+          } catch {}
+        }
+      }
+    } catch (err) {
+      console.error("[DRISHYA] story fetch error", err);
+      setStoryLoading(false);
+    }
+  }, [messages, selectedLanguage]);
 
   const handleImageSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -5370,7 +5428,7 @@ export default function AryaChat() {
                       )}
                     </>
                   ) : (
-                    <StreamingText content={streamingContent} />
+                    <StreamingText content={streamingContent.replace(/\n?\[STORY_MOMENT:[^\]]+\]\s*$/i, "")} />
                   )}
                 </div>
               </div>
@@ -5397,6 +5455,75 @@ export default function AryaChat() {
               </div>
             </motion.div>
           )}
+
+          {/* ── Story Offer Button ── */}
+          {!isStreaming && pendingStoryRasa && !showingStory && (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.25 }}
+              className="mt-2"
+            >
+              <button
+                onClick={() => handleStoryOffer(pendingStoryRasa)}
+                data-testid="button-story-offer"
+                className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-stone-900/60 border border-amber-200 dark:border-amber-800/30 text-amber-700 dark:text-amber-300 text-sm font-medium flex items-center justify-center gap-2 hover:from-amber-100 hover:to-orange-100 dark:hover:from-amber-900/40 dark:hover:to-stone-800/60 transition-all"
+              >
+                <span>📖</span>
+                <span>{getTranslation(uiLang, "story_offer")}</span>
+              </button>
+            </motion.div>
+          )}
+
+          {/* ── Story Card ── */}
+          <AnimatePresence>
+            {showingStory && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.3 }}
+                className="mt-2 p-5 rounded-2xl bg-gradient-to-b from-amber-950/30 to-stone-900/50 dark:from-amber-950/50 dark:to-stone-950/70 border border-amber-800/20 dark:border-amber-700/20"
+                data-testid="card-drishya-story"
+              >
+                {storyLoading && (
+                  <div className="flex items-center gap-2 text-amber-500/70 text-sm">
+                    <span className="flex gap-1">
+                      {[0, 0.2, 0.4].map(d => (
+                        <span key={d} className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-bounce" style={{ animationDelay: `${d}s` }} />
+                      ))}
+                    </span>
+                    <span>Weaving a story…</span>
+                  </div>
+                )}
+                {storyText && (
+                  <>
+                    <p className="text-amber-200/80 dark:text-amber-300/70 leading-[1.85] text-[14.5px] font-light tracking-wide whitespace-pre-wrap">
+                      {storyText}
+                    </p>
+                    <div className="mt-4 flex items-center justify-between">
+                      <button
+                        onClick={() => speakText(storyText)}
+                        data-testid="button-story-listen"
+                        className="flex items-center gap-1.5 text-amber-500/60 hover:text-amber-400 text-xs transition-colors"
+                      >
+                        <span>🎙️</span>
+                        <span>Listen</span>
+                      </button>
+                      <button
+                        onClick={() => { setShowingStory(false); setStoryText(""); }}
+                        data-testid="button-story-dismiss"
+                        className="text-xs text-amber-700/40 dark:text-amber-500/30 hover:text-amber-600/60 dark:hover:text-amber-400/50 transition-colors"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  </>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <div ref={messagesEndRef} />
           </div>{/* end max-w-3xl */}
