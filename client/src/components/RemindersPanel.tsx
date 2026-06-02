@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useUserAuth } from "@/lib/user-auth";
 import { requestNotificationPermission } from "@/lib/push-notifications";
+import { playARYASound } from "@/utils/reminderSound";
 import {
   Bell, Plus, Trash2, X, Clock, Droplets, Briefcase,
   Pill, Dumbbell, AlarmClock, ChevronDown, ChevronUp, Check, Pencil
@@ -135,6 +136,7 @@ export default function RemindersPanel({ onClose }: { onClose: () => void }) {
       setReminders((prev) => [created, ...prev]);
       setShowForm(false);
       setForm({ title: "", message: "", type: "reminder", scheduledAt: "", recurrence: "once", recurrenceMinutes: 60, soundEnabled: true });
+      playARYASound('reminder');
     }
   }
 

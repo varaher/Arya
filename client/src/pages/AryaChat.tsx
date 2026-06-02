@@ -84,6 +84,7 @@ import { useTheme } from "@/lib/theme";
 import RemindersPanel from "@/components/RemindersPanel";
 import PricingModal from "@/components/PricingModal";
 import { requestNotificationPermission } from "@/lib/push-notifications";
+import { playARYASound } from "@/utils/reminderSound";
 
 function CodeBlock({ children, language }: { children: string; language?: string }) {
   const [copied, setCopied] = useState(false);
@@ -1581,6 +1582,7 @@ function GoalsPanel({ onClose }: { onClose: () => void }) {
       queryClient.invalidateQueries({ queryKey: ["/api/user/goals"] });
       setNewGoalTitle("");
       setNewGoalSteps("");
+      playARYASound('goal');
     },
   });
 
@@ -1617,7 +1619,10 @@ function GoalsPanel({ onClose }: { onClose: () => void }) {
         ),
       });
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/user/goals"] }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/user/goals"] });
+      if (!variables.undo) playARYASound('success');
+    },
   });
 
   const goalsList = goals || [];
@@ -2763,6 +2768,16 @@ function NotificationBell({ token }: { token: string }) {
   );
 
   const serverUnread = data?.unreadCount ?? 0;
+
+  // Play gentle chime when new notifications arrive
+  const prevUnreadRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (prevUnreadRef.current !== null && serverUnread > prevUnreadRef.current) {
+      playARYASound('gentle');
+    }
+    prevUnreadRef.current = serverUnread;
+  }, [serverUnread]);
+
   // Use localUnread override immediately after marking-read, sync when null
   const dbUnreadCount = localUnread !== null ? localUnread : serverUnread;
   const hasNewAnnouncement = seenVersion !== LATEST_ANNOUNCEMENT_VERSION;
