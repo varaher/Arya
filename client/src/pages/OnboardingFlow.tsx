@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, Check, Loader2 } from "lucide-react";
 import { useUserAuth } from "@/lib/user-auth";
 import { LANGUAGE_OPTIONS } from "@/lib/i18n";
+import { useLanguage } from "@/lib/language-context";
 
 const C = {
   bg: "#070710",
@@ -127,15 +128,16 @@ function S1() {
 }
 
 function S2({ name, setName, firstName }: { name: string; setName: (v: string) => void; firstName: string }) {
+  const { t } = useLanguage();
   return (
     <div>
-      <Heading>What should<br />ARYA call you?</Heading>
-      <Sub>Just your first name is fine. This is how ARYA will speak to you.</Sub>
+      <Heading>{t("onb_name_prompt")}</Heading>
+      <Sub>{t("onb_name_sub")}</Sub>
       <input
         data-testid="input-onboarding-name"
         value={name}
         onChange={e => setName(e.target.value)}
-        placeholder="Your name"
+        placeholder={t("onb_name_ph")}
         autoFocus
         style={{ width: "100%", background: C.surface, border: `1.5px solid ${name.trim().length >= 2 ? C.cyan : C.border}`, borderRadius: 12, padding: "16px 18px", color: C.text, fontSize: 22, fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, marginBottom: 20, transition: "border-color 0.2s" }}
       />
@@ -234,23 +236,24 @@ function S5({ accountName, setAccountName, accountPhone, setAccountPhone }: {
   accountName: string; setAccountName: (v: string) => void;
   accountPhone: string; setAccountPhone: (v: string) => void;
 }) {
+  const { t } = useLanguage();
   return (
     <div>
       <Heading>Who holds<br />you accountable?</Heading>
       <Sub>ARYA mentions them quietly — a gentle nudge, not surveillance. Completely optional.</Sub>
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <div>
-          <div style={{ fontSize: 12, color: C.muted, letterSpacing: "0.06em", marginBottom: 6 }}>Name</div>
+          <div style={{ fontSize: 12, color: C.muted, letterSpacing: "0.06em", marginBottom: 6 }}>{t("onb_name_label")}</div>
           <input
             data-testid="input-account-name"
             value={accountName}
             onChange={e => setAccountName(e.target.value)}
-            placeholder="Their name"
+            placeholder={t("onb_their_name_ph")}
             style={{ width: "100%", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: "13px 16px", color: C.text, fontSize: 14 }}
           />
         </div>
         <div>
-          <div style={{ fontSize: 12, color: C.muted, letterSpacing: "0.06em", marginBottom: 6 }}>WhatsApp number</div>
+          <div style={{ fontSize: 12, color: C.muted, letterSpacing: "0.06em", marginBottom: 6 }}>{t("onb_whatsapp")}</div>
           <input
             data-testid="input-account-phone"
             value={accountPhone}
@@ -279,6 +282,7 @@ function S6({ briefingTime, setBriefingTime, language, setLanguage, weeklyReview
   language: string; setLanguage: (v: string) => void;
   weeklyReview: boolean; setWeeklyReview: (v: boolean) => void;
 }) {
+  const { t } = useLanguage();
   return (
     <div>
       <Heading>Make ARYA<br />yours.</Heading>
@@ -353,8 +357,8 @@ function S6({ briefingTime, setBriefingTime, language, setLanguage, weeklyReview
 
       <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div>
-          <div style={{ fontSize: 14, fontWeight: 600, color: C.text }}>Weekly Sunday Review</div>
-          <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>ARYA writes you a personal letter each Sunday</div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: C.text }}>{t("onb_weekly_review")}</div>
+          <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>{t("onb_weekly_review_sub")}</div>
         </div>
         <button
           data-testid="toggle-weekly-review-onboarding"

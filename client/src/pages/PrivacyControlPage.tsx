@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useUserAuth } from "@/lib/user-auth";
+import { useLanguage } from "@/lib/language-context";
 import { Button } from "@/components/ui/button";
 import {
   Shield,
@@ -34,10 +35,10 @@ const CATEGORY_META: Record<string, { label: string; description: string; icon: 
 };
 
 const PERIODS = [
-  { key: "30", label: "Last month", description: "The past 30 days", days: 30 },
-  { key: "90", label: "Last 3 months", description: "The past quarter", days: 90 },
-  { key: "180", label: "Last 6 months", description: "Half a year", days: 180 },
-  { key: "365", label: "Last year", description: "The past 12 months", days: 365 },
+  { key: "30", labelKey: "priv_last_month", description: "The past 30 days", days: 30 },
+  { key: "90", labelKey: "priv_last_3m", description: "The past quarter", days: 90 },
+  { key: "180", labelKey: "priv_last_6m", description: "Half a year", days: 180 },
+  { key: "365", labelKey: "priv_last_year", description: "The past 12 months", days: 365 },
 ];
 
 const CONFIRM_PHRASES: Record<Path, string> = {
@@ -46,39 +47,43 @@ const CONFIRM_PHRASES: Record<Path, string> = {
   fresh_start: "fresh start",
 };
 
-const PATH_META = {
-  let_go: {
-    title: "Let Go",
-    badge: "SELECTIVE",
-    badgeColor: "bg-cyan-100 dark:bg-cyan-900/40 text-cyan-700 dark:text-cyan-300",
-    description: "Remove specific topics, conversations, or memories. Everything else stays intact.",
-    borderColor: "border-cyan-200 dark:border-cyan-800",
-    accentColor: "text-cyan-700 dark:text-cyan-300",
-    bgColor: "bg-cyan-50/50 dark:bg-cyan-950/20",
-  },
-  new_chapter: {
-    title: "New Chapter",
-    badge: "PERIOD",
-    badgeColor: "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300",
-    description: "Wipe a window of time — a month, a quarter, a chapter you've moved past.",
-    borderColor: "border-amber-200 dark:border-amber-800",
-    accentColor: "text-amber-700 dark:text-amber-300",
-    bgColor: "bg-amber-50/50 dark:bg-amber-950/20",
-  },
-  fresh_start: {
-    title: "Fresh Start",
-    badge: "COMPLETE RESET",
-    badgeColor: "bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300",
-    description: "Delete everything. Your account remains but ARYA meets you as if for the first time.",
-    borderColor: "border-rose-200 dark:border-rose-800",
-    accentColor: "text-rose-700 dark:text-rose-300",
-    bgColor: "bg-rose-50/50 dark:bg-rose-950/20",
-  },
-};
+function getPathMeta(t: (k: string) => string) {
+  return {
+    let_go: {
+      title: t("priv_let_go"),
+      badge: t("priv_selective"),
+      badgeColor: "bg-cyan-100 dark:bg-cyan-900/40 text-cyan-700 dark:text-cyan-300",
+      description: "Remove specific topics, conversations, or memories. Everything else stays intact.",
+      borderColor: "border-cyan-200 dark:border-cyan-800",
+      accentColor: "text-cyan-700 dark:text-cyan-300",
+      bgColor: "bg-cyan-50/50 dark:bg-cyan-950/20",
+    },
+    new_chapter: {
+      title: t("priv_new_chapter"),
+      badge: t("priv_period_badge"),
+      badgeColor: "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300",
+      description: "Wipe a window of time — a month, a quarter, a chapter you've moved past.",
+      borderColor: "border-amber-200 dark:border-amber-800",
+      accentColor: "text-amber-700 dark:text-amber-300",
+      bgColor: "bg-amber-50/50 dark:bg-amber-950/20",
+    },
+    fresh_start: {
+      title: t("priv_fresh_start"),
+      badge: t("priv_reset_badge"),
+      badgeColor: "bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300",
+      description: "Delete everything. Your account remains but ARYA meets you as if for the first time.",
+      borderColor: "border-rose-200 dark:border-rose-800",
+      accentColor: "text-rose-700 dark:text-rose-300",
+      bgColor: "bg-rose-50/50 dark:bg-rose-950/20",
+    },
+  };
+}
 
 export default function PrivacyControlPage() {
   const [, setLocation] = useLocation();
   const { token, isLoggedIn } = useUserAuth();
+  const { t } = useLanguage();
+  const PATH_META = getPathMeta(t);
 
   const [step, setStep] = useState<Step>("landing");
   const [path, setPath] = useState<Path | null>(null);
@@ -340,7 +345,7 @@ export default function PrivacyControlPage() {
                       }`}
                     >
                       <div className="flex-1 text-left">
-                        <p className="text-sm font-semibold text-gray-900 dark:text-white">{period.label}</p>
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white">{t(period.labelKey)}</p>
                         <p className="text-xs text-gray-400 dark:text-gray-500">{period.description}</p>
                       </div>
                       <div className={`w-4 h-4 rounded-full border-2 transition-all ${selectedPeriod === period.key ? "border-amber-500 bg-amber-500" : "border-gray-300 dark:border-slate-600"}`} />
@@ -428,7 +433,7 @@ export default function PrivacyControlPage() {
                   ))}
                   {path === "new_chapter" && (
                     <p className="text-xs text-gray-600 dark:text-gray-400">
-                      All data from the {PERIODS.find(p => p.key === selectedPeriod)?.label.toLowerCase()}
+                      All data from the {(() => { const p = PERIODS.find(p => p.key === selectedPeriod); return p ? t(p.labelKey).toLowerCase() : ""; })()}
                     </p>
                   )}
                   {path === "fresh_start" && (
@@ -497,7 +502,7 @@ export default function PrivacyControlPage() {
                 <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs leading-relaxed">
                   {receipt.recordsDeleted > 0
                     ? `${receipt.recordsDeleted} records have been permanently removed.`
-                    : "Your selected data has been permanently removed."
+                    : t("priv_data_removed")
                   } What's gone is gone.
                 </p>
 

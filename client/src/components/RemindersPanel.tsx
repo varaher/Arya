@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useUserAuth } from "@/lib/user-auth";
+import { useLanguage } from "@/lib/language-context";
 import { requestNotificationPermission } from "@/lib/push-notifications";
 import { playARYASound } from "@/utils/reminderSound";
 import {
@@ -49,11 +50,11 @@ const QUICK_TEMPLATES = [
   { label: "Work Break", type: "work", title: "Take a Break 💼", message: "Step away from your screen for 5 minutes.", recurrence: "custom", recurrenceMinutes: 60 },
 ];
 
-function formatRecurrence(reminder: Reminder): string {
-  if (reminder.recurrence === "once") return "One time";
-  if (reminder.recurrence === "daily") return "Every day";
-  if (reminder.recurrence === "weekly") return "Every week";
-  if (reminder.recurrence === "hourly") return "Every hour";
+function formatRecurrence(reminder: Reminder, t: (k: string) => string): string {
+  if (reminder.recurrence === "once") return t("rem_one_time");
+  if (reminder.recurrence === "daily") return t("rem_every_day");
+  if (reminder.recurrence === "weekly") return t("rem_every_week");
+  if (reminder.recurrence === "hourly") return t("rem_every_hour");
   if (reminder.recurrence === "custom" && reminder.recurrenceMinutes) {
     const h = Math.floor(reminder.recurrenceMinutes / 60);
     const m = reminder.recurrenceMinutes % 60;
@@ -77,6 +78,7 @@ function toTimeInputValue(dt: string): string {
 
 export default function RemindersPanel({ onClose }: { onClose: () => void }) {
   const { token, isLoggedIn } = useUserAuth();
+  const { t } = useLanguage();
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -223,7 +225,7 @@ export default function RemindersPanel({ onClose }: { onClose: () => void }) {
                 <p className="text-xs text-amber-400/70 mt-0.5">Allow notifications so ARYA can remind you even when the app is in the background.</p>
                 <Button size="sm" onClick={enableNotifications} disabled={requestingPerm}
                   className="mt-2 bg-amber-500 hover:bg-amber-400 text-black text-xs h-7 px-3 disabled:opacity-60">
-                  {requestingPerm ? "Requesting…" : "Enable Now"}
+                  {requestingPerm ? t("rem_requesting") : t("rem_enable_now")}
                 </Button>
               </div>
             </div>
@@ -277,23 +279,23 @@ export default function RemindersPanel({ onClose }: { onClose: () => void }) {
                       <label className="text-xs text-muted-foreground mb-1 block">Type</label>
                       <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}
                         className="w-full bg-background/50 border border-white/10 rounded-md text-white text-sm h-9 px-2">
-                        <option value="reminder">Reminder</option>
-                        <option value="alarm">Alarm</option>
-                        <option value="water">Water</option>
-                        <option value="work">Work</option>
-                        <option value="medicine">Medicine</option>
-                        <option value="exercise">Exercise</option>
+                        <option value="reminder">{t("rem_type_reminder")}</option>
+                        <option value="alarm">{t("rem_type_alarm")}</option>
+                        <option value="water">{t("rem_type_water")}</option>
+                        <option value="work">{t("rem_type_work")}</option>
+                        <option value="medicine">{t("rem_type_medicine")}</option>
+                        <option value="exercise">{t("rem_type_exercise")}</option>
                       </select>
                     </div>
                     <div>
                       <label className="text-xs text-muted-foreground mb-1 block">Repeat</label>
                       <select value={form.recurrence} onChange={(e) => setForm({ ...form, recurrence: e.target.value })}
                         className="w-full bg-background/50 border border-white/10 rounded-md text-white text-sm h-9 px-2">
-                        <option value="once">Once</option>
-                        <option value="daily">Daily</option>
-                        <option value="weekly">Weekly</option>
-                        <option value="hourly">Hourly</option>
-                        <option value="custom">Custom</option>
+                        <option value="once">{t("rem_once")}</option>
+                        <option value="daily">{t("rem_daily")}</option>
+                        <option value="weekly">{t("rem_weekly")}</option>
+                        <option value="hourly">{t("rem_hourly")}</option>
+                        <option value="custom">{t("rem_custom")}</option>
                       </select>
                     </div>
                   </div>
@@ -329,7 +331,7 @@ export default function RemindersPanel({ onClose }: { onClose: () => void }) {
                   <p className="text-xs font-medium text-muted-foreground mb-2">Active ({activeReminders.length})</p>
                   <div className="space-y-2">
                     {activeReminders.map((r) => (
-                      <ReminderCard key={r.id} reminder={r} onToggle={toggleReminder} onDelete={deleteReminder} onEdit={openEditModal} />
+                      <ReminderCard key={r.id} reminder={r} onToggle={toggleReminder} onDelete={deleteReminder} onEdit={openEditModal} t={t} />
                     ))}
                   </div>
                 </div>
@@ -337,7 +339,7 @@ export default function RemindersPanel({ onClose }: { onClose: () => void }) {
               {activeReminders.length === 0 && (
                 <div className="text-center py-6 text-muted-foreground text-sm">
                   <Bell className="w-8 h-8 mx-auto mb-2 opacity-20" />
-                  <p>No active reminders.</p>
+                  <p>{t("rem_no_reminders")}</p>
                   <p className="text-xs mt-1">Use Quick Add or ask ARYA in chat!</p>
                 </div>
               )}
@@ -346,7 +348,7 @@ export default function RemindersPanel({ onClose }: { onClose: () => void }) {
                   <p className="text-xs font-medium text-muted-foreground mb-2">Completed/Inactive</p>
                   <div className="space-y-2">
                     {inactiveReminders.slice(0, 5).map((r) => (
-                      <ReminderCard key={r.id} reminder={r} onToggle={toggleReminder} onDelete={deleteReminder} onEdit={openEditModal} />
+                      <ReminderCard key={r.id} reminder={r} onToggle={toggleReminder} onDelete={deleteReminder} onEdit={openEditModal} t={t} />
                     ))}
                   </div>
                 </div>
@@ -387,7 +389,7 @@ export default function RemindersPanel({ onClose }: { onClose: () => void }) {
                   style={{ colorScheme: "dark" }}
                 />
                 <p className="text-xs text-muted-foreground mt-2 text-center">
-                  {editingReminder.recurrence !== "once" ? `Will repeat ${formatRecurrence(editingReminder).toLowerCase()} at this time` : "One-time reminder"}
+                  {editingReminder.recurrence !== "once" ? `Will repeat ${formatRecurrence(editingReminder, t).toLowerCase()} at this time` : t("rem_one_time")}
                 </p>
               </div>
 
@@ -399,7 +401,7 @@ export default function RemindersPanel({ onClose }: { onClose: () => void }) {
                 <Button onClick={saveEditTime} disabled={!editTime || editSaving}
                   data-testid="button-save-reminder-time"
                   className="flex-1 bg-cyan-600 hover:bg-cyan-500 text-white h-11">
-                  {editSaving ? "Saving…" : "Save time"}
+                  {editSaving ? t("rem_saving") : t("rem_save")}
                 </Button>
               </div>
             </motion.div>
@@ -410,11 +412,12 @@ export default function RemindersPanel({ onClose }: { onClose: () => void }) {
   );
 }
 
-function ReminderCard({ reminder, onToggle, onDelete, onEdit }: {
+function ReminderCard({ reminder, onToggle, onDelete, onEdit, t }: {
   reminder: Reminder;
   onToggle: (id: string, active: boolean) => void;
   onDelete: (id: string) => void;
   onEdit: (reminder: Reminder) => void;
+  t: (k: string) => string;
 }) {
   const icon = TYPE_ICONS[reminder.type] || TYPE_ICONS.reminder;
   const color = TYPE_COLORS[reminder.type] || TYPE_COLORS.reminder;
@@ -424,7 +427,7 @@ function ReminderCard({ reminder, onToggle, onDelete, onEdit }: {
       <span className={color}>{icon}</span>
       <div className="flex-1 min-w-0">
         <p className="text-sm text-white truncate">{reminder.title}</p>
-        <p className="text-xs text-muted-foreground">{formatRecurrence(reminder)} · {formatTime(reminder.scheduledAt)}</p>
+        <p className="text-xs text-muted-foreground">{formatRecurrence(reminder, t)} · {formatTime(reminder.scheduledAt)}</p>
       </div>
       <div className="flex items-center gap-1">
         <button

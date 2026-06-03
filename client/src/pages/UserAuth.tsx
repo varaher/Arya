@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useUserAuth } from "@/lib/user-auth";
+import { useLanguage } from "@/lib/language-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Eye, EyeOff, Phone, User, Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
@@ -20,6 +21,7 @@ declare global {
 
 export default function UserAuth({ onClose }: { onClose?: () => void }) {
   const { login, signup, loginWithGoogle } = useUserAuth();
+  const { t } = useLanguage();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -137,10 +139,10 @@ export default function UserAuth({ onClose }: { onClose?: () => void }) {
             <span className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-amber-400 bg-clip-text text-transparent">A</span>
           </div>
           <h1 className="text-2xl font-bold text-white" data-testid="text-auth-title">
-            {mode === "login" ? "Welcome Back" : "Join ARYA"}
+            {mode === "login" ? t("auth_welcome_back") : t("auth_join_arya")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {mode === "login" ? "Sign in to continue your journey" : "Create your account to get started"}
+            {mode === "login" ? t("auth_signin_sub") : t("auth_create_sub")}
           </p>
         </div>
 
@@ -162,7 +164,7 @@ export default function UserAuth({ onClose }: { onClose?: () => void }) {
             </div>
             <div className="flex items-center gap-3 my-4">
               <div className="flex-1 h-px bg-white/10" />
-              <span className="text-xs text-muted-foreground/60">or continue with phone</span>
+              <span className="text-xs text-muted-foreground/60">{t("auth_or_phone")}</span>
               <div className="flex-1 h-px bg-white/10" />
             </div>
           </div>
@@ -172,7 +174,7 @@ export default function UserAuth({ onClose }: { onClose?: () => void }) {
           <div className="bg-card/50 backdrop-blur-sm rounded-2xl border border-white/5 p-6 space-y-4">
             {mode === "signup" && (
               <div className="space-y-1.5">
-                <label className="text-xs text-muted-foreground font-medium">Your Name</label>
+                <label className="text-xs text-muted-foreground font-medium">{t("auth_your_name")}</label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
@@ -189,7 +191,7 @@ export default function UserAuth({ onClose }: { onClose?: () => void }) {
             )}
 
             <div className="space-y-1.5">
-              <label className="text-xs text-muted-foreground font-medium">Phone Number</label>
+              <label className="text-xs text-muted-foreground font-medium">{t("auth_phone_num")}</label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
@@ -259,7 +261,7 @@ export default function UserAuth({ onClose }: { onClose?: () => void }) {
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <>
-                  {mode === "login" ? "Sign In" : "Create Account"}
+                  {mode === "login" ? t("auth_sign_in_btn") : t("auth_create_btn")}
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </>
               )}

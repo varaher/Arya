@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLanguage } from "@/lib/language-context";
 
 import {
   Users, Flame, CheckCircle2, Trophy, Heart, Zap, ChevronRight,
@@ -110,6 +111,7 @@ function CheckBox({ checked, onChange, label }: { checked: boolean; onChange: ()
 
 function JoinFormModal({ onClose, userSession }: { onClose: () => void; userSession: UserSession | null }) {
   const { toast } = useToast();
+  const { t } = useLanguage();
   const qc = useQueryClient();
 
   const [form, setForm] = useState({
@@ -348,7 +350,7 @@ function JoinFormModal({ onClose, userSession }: { onClose: () => void; userSess
             disabled={!form.name || !form.email || !form.consentAi || !form.consentUpdates || joinMutation.isPending}
             className="w-full rounded-full h-12 text-base font-semibold bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 text-white border-0 shadow-lg"
           >
-            {joinMutation.isPending ? "Joining…" : "🚀 Become an Early Member"}
+            {joinMutation.isPending ? t("comm_joining") : `🚀 ${t("comm_join_member")}`}
           </Button>
         </div>
       </motion.div>
@@ -359,6 +361,7 @@ function JoinFormModal({ onClose, userSession }: { onClose: () => void; userSess
 // ─── Post Card ─────────────────────────────────────────────────────────────────
 function PostCard({ post, token, currentUserId }: { post: Post; token: string | null; currentUserId: string | null }) {
   const { toast } = useToast();
+  const { t } = useLanguage();
   const qc = useQueryClient();
   const [localCount, setLocalCount] = useState(post.reactionCount);
   const [reacted, setReacted] = useState(!!post.userReaction);
@@ -381,7 +384,7 @@ function PostCard({ post, token, currentUserId }: { post: Post; token: string | 
     },
     onError: (e: any) => {
       if (e.message === "Sign in to react") {
-        toast({ title: "Sign in to react", description: "Create a free ARYA account to cheer members on." });
+        toast({ title: t("comm_sign_in_react"), description: "Create a free ARYA account to cheer members on." });
       }
     },
   });
@@ -423,7 +426,7 @@ function PostCard({ post, token, currentUserId }: { post: Post; token: string | 
               }`}
           >
             <Flame className={`w-3 h-3 ${reacted ? "fill-amber-400" : ""}`} />
-            <span>{localCount > 0 ? localCount : ""} {reacted ? "Cheering" : "Cheer"}</span>
+            <span>{localCount > 0 ? localCount : ""} {reacted ? t("comm_cheering") : t("comm_cheer")}</span>
           </button>
         </div>
       </div>
@@ -486,6 +489,7 @@ function ShareableLinkCard() {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function Community() {
   const { toast } = useToast();
+  const { t } = useLanguage();
   const qc = useQueryClient();
   const [showJoinForm, setShowJoinForm] = useState(false);
   const [showPostBox, setShowPostBox] = useState(false);
@@ -561,7 +565,7 @@ export default function Community() {
       setPostCompleted(false);
       setShowPostBox(false);
       qc.invalidateQueries({ queryKey: ["/api/community/posts"] });
-      toast({ title: "Posted!", description: "Your update is live in the community feed." });
+      toast({ title: t("comm_posted"), description: "Your update is live in the community feed." });
     },
     onError: (e: any) => {
       if (e.message === "auth") {
@@ -771,7 +775,7 @@ export default function Community() {
                   disabled={!postContent.trim() || postMutation.isPending}
                   className="rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 text-white border-0 h-10 px-6 font-semibold"
                 >
-                  {postMutation.isPending ? "Posting…" : "Post Update"}
+                  {postMutation.isPending ? t("comm_posting") : "Post Update"}
                 </Button>
               </div>
             </motion.div>
