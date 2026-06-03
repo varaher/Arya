@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { useUserAuth } from "@/lib/user-auth";
 import { useLanguage } from "@/lib/language-context";
 import { X, Loader2, Trash2, ChevronLeft, Wifi, AlertCircle, Send, User, ChevronRight, CheckCircle2 } from "lucide-react";
+import PranaOnboarding from "@/components/PranaOnboarding";
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 const C = {
@@ -818,7 +819,7 @@ function InsightsTab({ token }: { token?: string | null }) {
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function PranaPage() {
   const [, setLocation] = useLocation();
-  const { token, isLoggedIn } = useUserAuth();
+  const { token, isLoggedIn, user } = useUserAuth();
   const { t } = useLanguage();
   const [tab, setTab] = useState<Tab>("log");
   const [readings, setReadings] = useState<HealthReading[]>([]);
@@ -851,7 +852,6 @@ export default function PranaPage() {
         const d = await r.json();
         const profile: HealthProfile = { heightCm: d.heightCm || null, weightKg: d.weightKg ? parseFloat(d.weightKg) : null, sex: d.sex || null, activityLevel: d.activityLevel || "moderate", age: d.age || null };
         setHealthProfile(profile);
-        if (!hasProfile(profile)) setShowProfileSetup(true);
       }
     } catch {}
     setProfileLoaded(true);
@@ -881,6 +881,19 @@ export default function PranaPage() {
     { key: "insights", label: t("health_tab_insights"), emoji: "✨" },
     { key: "coach",    label: "Coach",                  emoji: "💬" },
   ];
+
+  // ── Full-screen onboarding for first-time users ───────────────────────────
+  if (profileLoaded && isLoggedIn && token && !hasProfile(healthProfile)) {
+    return (
+      <PranaOnboarding
+        userName={user?.name || ""}
+        token={token}
+        onComplete={(p) => {
+          setHealthProfile({ ...p, weightKg: p.weightKg, age: null });
+        }}
+      />
+    );
+  }
 
   return (
     <div style={{ background: C.bg, minHeight: "100vh", color: C.text, fontFamily: sans, position: "relative" }}>
