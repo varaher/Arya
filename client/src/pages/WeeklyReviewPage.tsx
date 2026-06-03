@@ -296,7 +296,7 @@ export default function WeeklyReviewPage() {
             onClick={handleDownload}
             style={{ display: "flex", alignItems: "center", gap: 5, padding: "7px 12px", borderRadius: 8, border: `1px solid rgba(0,0,0,0.12)`, background: "transparent", color: P.steel, fontSize: 12, cursor: "pointer", fontFamily: "Inter, sans-serif" }}
           >
-            <Download size={12} /> Save
+            <Download size={12} /> {t("review_save_btn")}
           </button>
         )}
       </div>
@@ -317,7 +317,7 @@ export default function WeeklyReviewPage() {
         <div style={{ padding: "60px 28px", textAlign: "center" }}>
           <div style={{ fontSize: 36, marginBottom: 16 }}>🔒</div>
           <div style={{ fontSize: 16, color: P.text, marginBottom: 8, fontWeight: 600 }}>{t("review_auth_h")}</div>
-          <div style={{ fontSize: 14, color: P.muted }}>Your personal Sunday letter from ARYA lives here.</div>
+          <div style={{ fontSize: 14, color: P.muted }}>{t("review_auth_s")}</div>
         </div>
       )}
 
@@ -325,12 +325,12 @@ export default function WeeklyReviewPage() {
       {!loading && error === "load_failed" && (
         <div style={{ padding: "60px 28px", textAlign: "center" }}>
           <div style={{ fontSize: 36, marginBottom: 16 }}>📭</div>
-          <div style={{ fontSize: 15, color: P.text, marginBottom: 18, fontWeight: 600 }}>Couldn't load your review</div>
+          <div style={{ fontSize: 15, color: P.text, marginBottom: 18, fontWeight: 600 }}>{t("review_error_h")}</div>
           <button
             onClick={() => { setError(""); setLoading(true); window.location.reload(); }}
             style={{ padding: "9px 18px", borderRadius: 8, border: `1px solid ${P.gold}`, background: "transparent", color: P.gold, fontSize: 13, cursor: "pointer", fontFamily: "Inter, sans-serif" }}
           >
-            Try again
+            {t("review_retry")}
           </button>
         </div>
       )}
@@ -368,14 +368,14 @@ export default function WeeklyReviewPage() {
 
           {/* ── 3. MOOD THIS WEEK ── */}
           <section>
-            <SLabel text="Your week in mood" />
+            <SLabel text={t("review_mood_section")} />
             {data.moodArc.checkInCount === 0 ? (
               <div style={{ background: P.surface, borderRadius: 12, padding: "18px 16px", textAlign: "center" }}>
                 <p style={{ fontSize: 15, color: P.steel, margin: "0 0 6px" }}>
-                  You didn't check in on your mood this week.
+                  {t("review_mood_none_text")}
                 </p>
                 <p style={{ fontSize: 13, color: P.muted, fontStyle: "italic", margin: 0 }}>
-                  Takes 5 seconds tomorrow. Just one emoji. ARYA learns from it over time.
+                  {t("review_mood_none_sub")}
                 </p>
               </div>
             ) : (
@@ -392,7 +392,7 @@ export default function WeeklyReviewPage() {
 
           {/* ── 4. GOALS THIS WEEK ── */}
           <section>
-            <SLabel text="Goals this week" />
+            <SLabel text={t("review_goals_section")} />
 
             {data.goals.active === 0 ? (
               <div style={{ background: P.surface, borderRadius: 12, padding: "16px", textAlign: "center", fontSize: 14, color: P.steel, fontStyle: "italic" }}>
@@ -403,9 +403,9 @@ export default function WeeklyReviewPage() {
                 {/* Stats row */}
                 <div style={{ display: "flex", marginBottom: 20 }}>
                   {[
-                    { label: "ACTIVE", value: data.goals.active },
-                    { label: "CHECK-INS", value: data.goals.activeThisWeek },
-                    { label: "UNTOUCHED", value: data.goals.untouched },
+                    { label: t("review_active_lbl"), value: data.goals.active },
+                    { label: t("review_checkins_lbl"), value: data.goals.activeThisWeek },
+                    { label: t("review_untouched"), value: data.goals.untouched },
                   ].map(({ label, value }) => (
                     <div key={label} style={{ flex: 1, textAlign: "center" }}>
                       <div style={{ fontFamily: "'Crimson Pro', serif", fontSize: 32, fontWeight: 600, color: P.text, lineHeight: 1 }}>
@@ -420,7 +420,7 @@ export default function WeeklyReviewPage() {
 
                 {data.goals.untouched > 10 && (
                   <p style={{ fontSize: 13, color: P.steel, fontStyle: "italic", marginBottom: 16, lineHeight: 1.6 }}>
-                    Many of these were picked up from your conversations. Which ones actually matter to you right now?
+                    {t("review_goals_many")}
                   </p>
                 )}
 
@@ -428,7 +428,7 @@ export default function WeeklyReviewPage() {
                   <div style={{ background: P.greenBg, border: `1px solid ${P.greenBorder}`, borderRadius: 10, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
                     <span style={{ fontSize: 18, lineHeight: 1 }}>🔥</span>
                     <div>
-                      <div style={{ fontSize: 14, color: P.green, fontWeight: 600 }}>{data.goals.bestStreak.count}-day streak</div>
+                      <div style={{ fontSize: 14, color: P.green, fontWeight: 600 }}>{t("review_streak_day").replace("{n}", String(data.goals.bestStreak.count))}</div>
                       <div style={{ fontSize: 13, color: P.steel, marginTop: 1 }}>"{data.goals.bestStreak.title}"</div>
                     </div>
                   </div>
@@ -451,15 +451,15 @@ export default function WeeklyReviewPage() {
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 15, color: P.body }}>{g.title}</div>
                         <div style={{ fontSize: 12, color: P.muted, marginTop: 2, fontFamily: "Inter, sans-serif" }}>
-                          {g.progress > 0 ? `${g.progress}% done` : "Not started"}
-                          {g.streak > 0 ? ` · 🔥 ${g.streak}-day streak` : ""}
+                          {g.progress > 0 ? `${g.progress}% done` : t("review_not_started")}
+                          {g.streak > 0 ? ` · 🔥 ${t("review_streak_day").replace("{n}", String(g.streak))}` : ""}
                         </div>
                       </div>
                     </div>
                   ))}
                   {data.goals.active > 5 && (
                     <div style={{ fontSize: 12, color: P.muted, paddingTop: 8, fontStyle: "italic" }}>
-                      +{data.goals.active - 5} more goals
+                      {t("review_more_goals").replace("{n}", String(data.goals.active - 5))}
                     </div>
                   )}
                 </div>
@@ -473,7 +473,7 @@ export default function WeeklyReviewPage() {
           <section>
             <div style={{ background: P.darkCard, borderRadius: 16, padding: "20px" }}>
               <div style={{ fontFamily: "'Cinzel', serif", fontSize: 9, letterSpacing: "0.2em", color: P.darkGold, marginBottom: 14, display: "flex", alignItems: "center", gap: 6 }}>
-                <span>◆</span> SOMETHING ARYA NOTICED
+                <span>◆</span> {t("review_arya_noticed").toUpperCase()}
               </div>
               <div style={{ fontFamily: "'Crimson Pro', serif", fontSize: 16, fontStyle: "italic", lineHeight: 1.7, color: P.darkText }}>
                 {data.whatAryaNoticed}
@@ -486,7 +486,7 @@ export default function WeeklyReviewPage() {
               {data.patternConfirmed && (
                 <div style={{ marginTop: 12, fontSize: 12, color: P.darkGold, display: "flex", alignItems: "center", gap: 5 }}>
                   <div style={{ width: 5, height: 5, borderRadius: "50%", background: P.darkGold, flexShrink: 0 }} />
-                  Pattern confirmed across multiple weeks
+                  {t("review_pattern_conf")}
                 </div>
               )}
             </div>
@@ -496,7 +496,7 @@ export default function WeeklyReviewPage() {
 
           {/* ── 6. BUSINESS MIND THIS WEEK ── */}
           <section>
-            <SLabel text="Business Mind this week" />
+            <SLabel text={t("review_biz_section")} />
             {!data.businessRecap.hasData ? (
               <div style={{ background: P.surface, borderRadius: 12, padding: "16px", fontSize: 14, color: P.steel, fontStyle: "italic", lineHeight: 1.6 }}>
                 You didn't open Niti this week. Big decisions think better out loud.
@@ -525,7 +525,7 @@ export default function WeeklyReviewPage() {
           {/* ── 7. COSMIC WEEK ── */}
           <section>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-              <SLabel text={`Your Cosmic Week — ${data.cosmicWeek.name}`} />
+              <SLabel text={`${t("review_cosmic_section") || "Your Cosmic Week"} — ${data.cosmicWeek.name}`} />
               <div style={{ display: "flex", gap: 2, marginTop: -14 }}>
                 {[1, 2, 3, 4, 5].map(i => (
                   <span key={i} style={{ fontSize: 13, color: i <= data.cosmicWeek.stars ? P.gold : "rgba(0,0,0,0.12)" }}>★</span>
@@ -545,10 +545,10 @@ export default function WeeklyReviewPage() {
             <>
               <SDivider />
               <section>
-                <SLabel text="From your past" />
+                <SLabel text={t("review_from_past")} />
                 <div style={{ background: P.surface, borderLeft: `3px solid ${P.gold}`, borderRadius: "0 12px 12px 0", padding: "16px 18px" }}>
                   <div style={{ fontFamily: "Inter, sans-serif", fontSize: 11, letterSpacing: "0.08em", color: P.muted, textTransform: "uppercase", marginBottom: 8 }}>
-                    {data.voiceFlashback.weeksAgo} weeks ago
+                    {t("review_weeks_ago").replace("{n}", String(data.voiceFlashback.weeksAgo))}
                   </div>
                   <div style={{ fontFamily: "'Crimson Pro', serif", fontSize: 16, fontStyle: "italic", lineHeight: 1.65, color: P.body, marginBottom: data.voiceFlashback.aryaText ? 10 : 0 }}>
                     "{data.voiceFlashback.summary}"
@@ -567,7 +567,7 @@ export default function WeeklyReviewPage() {
 
           {/* ── 9. ARYA'S QUESTION ── */}
           <section>
-            <SLabel text="ARYA's question for you" />
+            <SLabel text={t("review_arya_q")} />
             <div style={{ fontFamily: "'Crimson Pro', serif", fontSize: 22, fontStyle: "italic", lineHeight: 1.5, color: P.text, marginBottom: 18 }}>
               "{data.aryasQuestion}"
             </div>
@@ -604,7 +604,7 @@ export default function WeeklyReviewPage() {
 
           {/* ── 10. INTENTION NEXT WEEK ── */}
           <section>
-            <SLabel text="Your intention next week" />
+            <SLabel text={t("review_intention")} />
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
               {data.intentionOptions.map((chip, i) => (
                 <button

@@ -1,0 +1,546 @@
+Completely understood. Right now the UI language changes but many sections probably still show English text hardcoded inside components.
+
+Let me see the current state first:
+
+I don't have direct access to your files. But from the language system audit document you shared, I have everything I need to give your developer a complete, precise plan.
+
+---
+
+## The Problem — Clearly Stated
+
+```
+Two types of text in ARYA:
+
+TYPE 1 — Translation keys (already works)
+  t("goals") → "Goals" / "लक्ष्य" / "ലക്ഷ്യങ്ങൾ"
+  These translate correctly ✅
+
+TYPE 2 — Hardcoded strings (broken)
+  <p>No active reminders.</p>
+  <p>Use Quick Add or ask ARYA in chat!</p>
+  <button>Save and continue</button>
+  These NEVER translate ❌
+```
+
+Every section has both. The job is finding every hardcoded string and replacing it with a translation key.
+
+---
+
+## Complete Translation Key Plan
+
+### Every Section — Every String That Needs Translation
+
+Here's the complete list organised by section. Tell your developer to go through each file and replace every hardcoded string with `t("key")`.
+
+---
+
+### SECTION 1 — Home / AryaChat
+
+```typescript
+// Add to i18n.ts — all 25 languages:
+
+// Greeting & reflection
+home_reflection_label: "ARYA · TODAY'S REFLECTION",
+home_talk_title: "Talk to ARYA",
+home_talk_sub: "Speak freely — ARYA listens and replies",
+home_talk_start: "Start →",
+home_mood_question: "How are you feeling today?",
+home_get_inspired: "▼ Get inspired ▼",
+home_hide_suggestions: "▲ Hide suggestions ▲",
+
+// Quick chips
+chip_goals: "Goals",
+chip_memory: "Memory",
+chip_notes: "Notes",
+chip_reminders: "Reminders",
+chip_calendar: "Calendar",
+chip_community: "Community",
+
+// Input
+input_placeholder: "Ask ARYA anything...",
+input_voice_language: "Voice language",
+input_attach_file: "Attach file",
+input_live_voice: "Live voice",
+
+// Message actions
+msg_copy: "Copy",
+msg_speak: "Speak",
+msg_thumbs_up: "Helpful",
+msg_thumbs_down: "Not helpful",
+```
+
+---
+
+### SECTION 2 — Goals Panel
+
+```typescript
+goals_title: "Goals & Plans",
+goals_add_placeholder: "What's your goal?",
+goals_steps_placeholder: "Steps (one per line, optional)",
+goals_add_btn: "Add Goal",
+goals_edit: "Edit",
+goals_done: "Done",
+goals_delete_selected: "Delete ({n})",
+goals_empty: "No goals yet. Add one above.",
+goals_completed_section: "Completed ({n})",
+goals_restore: "Restore",
+goals_priority_high: "HIGH",
+goals_priority_medium: "MEDIUM",
+goals_priority_low: "LOW",
+goals_steps_count: "{n} steps",
+goals_progress: "{n}% done",
+```
+
+---
+
+### SECTION 3 — Reminders Panel
+
+```typescript
+reminders_title: "Reminders & Alarms",
+reminders_notifications_on: "Notifications enabled — ARYA will alert you even in background",
+reminders_notifications_off: "Notifications blocked. Tap to enable.",
+reminders_quick_add: "Quick Add",
+reminders_drink_water: "Drink Water",
+reminders_medicine: "Take Medicine",
+reminders_exercise: "Exercise",
+reminders_work_break: "Work Break",
+reminders_custom: "+ Custom Reminder",
+reminders_active: "Active ({n})",
+reminders_empty: "No active reminders.",
+reminders_empty_sub: "Use Quick Add or ask ARYA in chat!",
+reminders_completed: "Completed/Inactive",
+reminders_every_day: "Every day",
+reminders_every_hours: "Every {n} hours",
+reminders_every_hour: "Every 1 hour",
+reminders_edit_time: "Edit reminder time",
+reminders_new_time: "New time",
+reminders_will_repeat: "Will repeat {frequency} at this time",
+reminders_cancel: "Cancel",
+reminders_save: "Save",
+reminders_custom_name: "Reminder name",
+reminders_custom_time: "Time",
+reminders_custom_repeat: "Repeat",
+reminders_add_reminder: "Add Reminder",
+```
+
+---
+
+### SECTION 4 — Memory Panel
+
+```typescript
+memory_title: "Your Memory",
+memory_privacy_note: "This is your memory, not ours. ARYA uses it to know you better. You can delete any entry or clear everything at any time.",
+memory_category_relationship: "RELATIONSHIP",
+memory_category_fact: "FACT",
+memory_category_context: "CONTEXT",
+memory_category_preference: "PREFERENCE",
+memory_clear_all: "Clear all memory",
+memory_privacy_link: "Your data rights & privacy →",
+memory_empty: "No memories yet. ARYA learns from your conversations.",
+memory_delete_confirm: "Delete this memory?",
+```
+
+---
+
+### SECTION 5 — Voice Notes Panel
+
+```typescript
+notes_title: "Voice Notes",
+notes_record_tagline: "Record thoughts on the go.",
+notes_record_sub: "ARYA transcribes and summarises automatically — in your language.",
+notes_search: "Search notes...",
+notes_record_btn: "Record a Note",
+notes_summary_label: "✨ SUMMARY",
+notes_transcript_label: "View full transcript",
+notes_empty: "No voice notes yet.",
+notes_empty_sub: "Tap Record to capture a thought.",
+notes_recording: "Recording...",
+notes_processing: "Processing...",
+notes_delete: "Delete note",
+```
+
+---
+
+### SECTION 6 — Prana
+
+```typescript
+// Onboarding
+prana_onboard_welcome_title: "Your body\ntells a story.",
+prana_onboard_welcome_sub: "ARYA listens to it.\nGently. Without judgment.",
+prana_onboard_begin: "Let's begin",
+prana_onboard_name_sub: "Everything here is yours.\nNot ours. Not anyone else's.",
+prana_onboard_yes_me: "Yes, that's me",
+prana_onboard_metrics_title: "Tell ARYA\nabout your body.",
+prana_onboard_metrics_sub: "So ARYA understands your numbers,\nnot just your words.",
+prana_onboard_height: "Height",
+prana_onboard_weight: "Weight",
+prana_onboard_sex_male: "Male",
+prana_onboard_sex_female: "Female",
+prana_onboard_sex_other: "Prefer not to say",
+prana_onboard_privacy: "Only used to personalise your health insights.",
+prana_onboard_activity_title: "How does your\nbody move?",
+prana_onboard_goal_title: "What matters most\nto you right now?",
+prana_onboard_goal_sub: "Pick all that apply.",
+prana_onboard_ready_title: "ARYA is ready\nto look after you.",
+prana_onboard_ready_sub: "Your numbers are yours.\nYour story is yours.\nARYA just listens.",
+prana_onboard_open: "Open Prana",
+
+// Activity options
+prana_activity_sedentary: "Mostly sitting",
+prana_activity_light: "Light movement",
+prana_activity_moderate: "Moderately active",
+prana_activity_very: "Very active",
+prana_activity_athlete: "Athlete level",
+
+// Goal options
+prana_goal_sleep: "Better sleep",
+prana_goal_stress: "Manage stress",
+prana_goal_vitals: "Track vitals",
+prana_goal_weight: "Weight journey",
+prana_goal_energy: "More energy",
+prana_goal_aware: "Stay aware",
+
+// Dashboard
+prana_tabs_log: "Daily Log",
+prana_tabs_trends: "Trends",
+prana_tabs_insights: "ARYA Insights",
+prana_tabs_coach: "Coach",
+prana_profile_title: "YOUR HEALTH PROFILE",
+prana_profile_edit: "Edit",
+prana_metrics_title: "QUICK METRICS",
+prana_tap_to_log: "Tap to log",
+prana_heart_rate: "Heart Rate",
+prana_blood_oxygen: "Blood Oxygen",
+prana_steps: "Steps",
+prana_stress: "Stress",
+prana_calories: "Calories",
+prana_weight: "Weight",
+prana_sleep: "Sleep",
+prana_bmi: "BMI",
+prana_bmr: "BMR",
+prana_normal: "Normal",
+prana_warning: "Warning",
+prana_alert: "Alert",
+prana_coach_placeholder: "Ask your health coach...",
+prana_insights_empty: "No insights yet. Log some vitals first.",
+```
+
+---
+
+### SECTION 7 — KAAL
+
+```typescript
+kaal_title: "KAAL",
+kaal_subtitle: "COSMIC TIMING",
+kaal_setup_q: "How do you connect with timing?",
+kaal_setup_sub: "ARYA adapts its language to how you see the world.",
+kaal_path_star: "I know my star sign",
+kaal_path_star_sub: "Use your Western zodiac as the base",
+kaal_path_rashi: "I know my Rashi",
+kaal_path_rashi_sub: "Use your Moon sign for deeper guidance",
+kaal_path_neither: "Neither — just tell me when",
+kaal_path_neither_sub: "Pure personal timing based on your birth data",
+kaal_continue: "Continue →",
+kaal_skip: "I don't know my sign — skip",
+kaal_birth_title: "Your birth details",
+kaal_birth_sub: "This lets ARYA map your personal timing patterns.",
+kaal_dob: "DATE OF BIRTH",
+kaal_birth_city: "BIRTH CITY OR TOWN",
+kaal_birth_city_hint: "e.g. Mumbai, Chennai, Delhi...",
+kaal_birth_time: "APPROXIMATE BIRTH TIME",
+kaal_dont_know_time: "I don't know my birth time",
+kaal_dont_know_sub: "Still meaningful — just not to the precise hour",
+kaal_privacy: "Your birth details are stored privately and used solely to personalise your ARYA Lens. Never shared.",
+kaal_build_profile: "Build my profile →",
+kaal_skip_use: "Skip — use what I've given",
+kaal_profile_ready: "YOUR PROFILE IS READY",
+kaal_is_active: "is active.",
+kaal_see_briefing: "See today's briefing →",
+kaal_moon_sign: "Moon sign",
+kaal_birth_star: "Birth star",
+kaal_current_cycle: "Current cycle",
+
+// Dashboard
+kaal_tab_today: "Today",
+kaal_tab_week: "This Week",
+kaal_tab_chapter: "Your Chapter",
+kaal_best_window: "Best window today",
+kaal_strength_today: "STRENGTH TODAY",
+kaal_handle_care: "HANDLE WITH CARE",
+kaal_money: "Money & decisions",
+kaal_relationships: "Relationships",
+kaal_body_energy: "Body & energy",
+kaal_your_chapter: "YOUR CURRENT CHAPTER",
+kaal_years_left: "{n} years remaining",
+kaal_today_guidance: "TODAY'S GUIDANCE",
+kaal_arya_lens: "ARYA LENS",
+```
+
+---
+
+### SECTION 8 — Niti
+
+```typescript
+niti_title: "Niti",
+niti_subtitle: "YOUR BUSINESS THINKING PARTNER",
+niti_tagline: "Not generic advice. Thinking built around you.",
+niti_personalize: "Personalise ARYA for me →",
+niti_your_business: "Your business",
+niti_your_business_sub: "So ARYA speaks to your actual situation — not someone else's.",
+niti_type: "TYPE",
+niti_stage: "STAGE",
+niti_role: "YOUR ROLE",
+niti_mind_q: "WHAT'S ON YOUR MIND RIGHT NOW?",
+niti_mind_placeholder: "The decision I'm wrestling with, the problem I keep returning to...",
+niti_focus_q: "What should ARYA focus on?",
+niti_focus_sub: "Select the areas most relevant to where you are right now.",
+niti_areas_selected: "{n} areas selected",
+niti_ready_title: "ARYA is ready for you",
+niti_ready_sub: "Personalised to your business. Ready to think with you.",
+niti_begin: "Begin first session →",
+niti_session_q: "How do you want to think today?",
+niti_session_decide: "Help me decide",
+niti_session_decide_sub: "I have a choice to make",
+niti_session_stress: "Stress-test this",
+niti_session_stress_sub: "Push back on my plan",
+niti_session_people: "People situation",
+niti_session_people_sub: "Someone or something is stuck",
+niti_session_aloud: "Think out loud",
+niti_session_aloud_sub: "I don't know what I need yet",
+niti_recent: "RECENT THINKING",
+niti_continue: "Continue →",
+niti_no_sessions: "No sessions yet. The council awaits.",
+niti_journal: "Journal",
+niti_decision_record: "DECISION RECORD",
+niti_what_wrestling: "WHAT YOU WERE WRESTLING WITH",
+niti_what_emerged: "WHAT EMERGED",
+niti_question_mattered: "THE QUESTION THAT MATTERED",
+niti_what_decided: "What I decided...",
+niti_revisit: "REVISIT IN",
+niti_market_pulse: "MARKET PULSE",
+```
+
+---
+
+### SECTION 9 — Sunday Review
+
+```typescript
+review_letter_label: "ARYA'S SUNDAY LETTER",
+review_to: "to",
+review_mood_title: "YOUR WEEK IN MOOD",
+review_mood_empty: "You didn't check in on your mood this week.",
+review_mood_empty_sub: "Takes 5 seconds tomorrow. Just one emoji.",
+review_goals_title: "GOALS THIS WEEK",
+review_goals_active: "ACTIVE",
+review_goals_checkins: "CHECK-INS",
+review_goals_untouched: "UNTOUCHED",
+review_goals_context: "Many of these were picked up from your conversations. Which ones actually matter to you right now?",
+review_noticed_label: "◆ SOMETHING ARYA NOTICED",
+review_pattern: "Pattern seen across multiple weeks",
+review_business_title: "BUSINESS MIND THIS WEEK",
+review_niti_empty: "You didn't open Niti this week.",
+review_cosmic_title: "YOUR COSMIC WEEK",
+review_flashback_title: "FROM YOUR PAST",
+review_flashback_weeks: "{n} weeks ago",
+review_question_title: "ARYA'S QUESTION FOR YOU",
+review_question_placeholder: "Sit with this. Write what comes...",
+review_intention_title: "YOUR INTENTION NEXT WEEK",
+review_intention_custom: "Or write your own...",
+review_intention_set: "Set my intention for next week",
+review_footer: "ARYA · Your personal thinking partner",
+review_download: "Download",
+review_share: "Share",
+```
+
+---
+
+### SECTION 10 — Community
+
+```typescript
+community_title: "ARYA Growth Community",
+community_tagline: "Grow Together. Rise Together.",
+community_sub: "A movement of people committed to clarity, growth, discipline, and transformation.",
+community_members: "Members",
+community_updates: "Updates Shared",
+community_challenges: "Day Challenges",
+community_founding: "Become a Founding Member →",
+community_founding_sub: "Free forever for founding members",
+community_week_challenge: "This Week's Challenge",
+community_days_left: "{n} days left",
+community_no_updates: "No updates yet. Be the first to share.",
+```
+
+---
+
+### SECTION 11 — Navigation
+
+```typescript
+nav_home: "Home",
+nav_goals: "Goals",
+nav_kaal: "KAAL",
+nav_niti: "Niti",
+nav_more: "More",
+nav_back: "Back",
+nav_close: "Close",
+```
+
+---
+
+### SECTION 12 — Profile Menu
+
+```typescript
+menu_upgrade: "Upgrade Plan",
+menu_profile: "My Profile",
+menu_goals: "My Goals",
+menu_customize: "Customize ARYA",
+menu_tutorial: "Quick Tutorial",
+menu_kaal: "KAAL — Cosmic Timing",
+menu_niti: "Niti — Business Wisdom",
+menu_prana: "Prana — Health Tracking",
+menu_review: "Sunday Review",
+menu_report: "Report Issue",
+menu_privacy: "Privacy & Control",
+menu_signout: "Sign Out",
+```
+
+---
+
+## The Hindi + Malayalam Translations
+
+For every key above, here are the two most important Indian languages as a starting point. Your developer needs all 25, but these are the foundation:
+
+```typescript
+// HINDI (hi)
+chip_goals: "लक्ष्य",
+chip_memory: "स्मृति",
+chip_notes: "नोट्स",
+chip_reminders: "रिमाइंडर",
+chip_calendar: "कैलेंडर",
+chip_community: "समुदाय",
+home_talk_title: "ARYA से बात करें",
+home_talk_sub: "खुलकर बोलें — ARYA सुनती है और जवाब देती है",
+reminders_empty: "कोई सक्रिय रिमाइंडर नहीं।",
+reminders_empty_sub: "Quick Add का उपयोग करें या ARYA से चैट में पूछें!",
+goals_empty: "अभी कोई लक्ष्य नहीं। ऊपर एक जोड़ें।",
+prana_tap_to_log: "लॉग करने के लिए टैप करें",
+kaal_tab_today: "आज",
+kaal_tab_week: "इस सप्ताह",
+kaal_tab_chapter: "आपका अध्याय",
+niti_session_decide: "निर्णय लेने में मदद",
+niti_session_aloud: "ज़ोर से सोचें",
+review_footer: "ARYA · आपका व्यक्तिगत सोच साथी",
+nav_home: "होम",
+nav_goals: "लक्ष्य",
+nav_more: "अधिक",
+
+// MALAYALAM (ml)
+chip_goals: "ലക്ഷ്യങ്ങൾ",
+chip_memory: "ഓർമ്മ",
+chip_notes: "നോട്ടുകൾ",
+chip_reminders: "ഓർമ്മപ്പെടുത്തലുകൾ",
+chip_calendar: "കലണ്ടർ",
+chip_community: "സമൂഹം",
+home_talk_title: "ARYA-യോട് സംസാരിക്കൂ",
+home_talk_sub: "സ്വതന്ത്രമായി സംസാരിക്കൂ — ARYA ശ്രദ്ധിക്കും",
+reminders_empty: "സജീവ ഓർമ്മപ്പെടുത്തലുകൾ ഇല്ല.",
+reminders_empty_sub: "Quick Add ഉപയോഗിക്കൂ അല്ലെങ്കിൽ ARYA-യോട് ചോദിക്കൂ!",
+goals_empty: "ഇതുവരെ ലക്ഷ്യങ്ങൾ ഇല്ല. ഒന്ന് ചേർക്കൂ.",
+prana_tap_to_log: "ലോഗ് ചെയ്യാൻ ടാപ്പ് ചെയ്യൂ",
+kaal_tab_today: "ഇന്ന്",
+kaal_tab_week: "ഈ ആഴ്ച",
+kaal_tab_chapter: "നിങ്ങളുടെ അധ്യായം",
+niti_session_decide: "തീരുമാനിക്കാൻ സഹായിക്കൂ",
+niti_session_aloud: "ഉച്ചത്തിൽ ചിന്തിക്കൂ",
+review_footer: "ARYA · നിങ്ങളുടെ വ്യക്തിഗത ചിന്താ പങ്കാളി",
+nav_home: "ഹോം",
+nav_goals: "ലക്ഷ്യങ്ങൾ",
+nav_more: "കൂടുതൽ",
+```
+
+---
+
+## The Implementation Strategy
+
+Tell your developer to do this in order:
+
+**Day 1 — Audit:**
+```bash
+# Find every hardcoded string in TSX files
+grep -rn '"[A-Z][a-z]' client/src/pages/ --include="*.tsx" \
+  | grep -v "t(" | grep -v "className" | grep -v "//"`
+```
+
+This gives a list of every hardcoded English string that needs a translation key.
+
+**Day 2 — Add keys to i18n.ts:**
+Add all keys above to English section first. App still works — just now using `t("key")` instead of hardcoded strings.
+
+**Day 3 — Replace in components:**
+Go file by file. Replace every hardcoded string:
+```tsx
+// Before:
+<p>No active reminders.</p>
+<p>Use Quick Add or ask ARYA in chat!</p>
+
+// After:
+<p>{t('reminders_empty')}</p>
+<p>{t('reminders_empty_sub')}</p>
+```
+
+**Day 4 — Add translations:**
+For each key, add translations in all 25 language sections. Use GPT-4o to translate — it handles Indian scripts well. Human review for Malayalam and Hindi (most common users).
+
+**Day 5 — Test:**
+Switch to Malayalam. Go through every screen. Screenshot anything still in English. Fix.
+
+---
+
+## The GPT Translation Prompt
+
+Your developer can use this to generate all translations at once:
+
+```
+Translate these UI strings into {language}.
+Keep them short — they are button labels and UI text.
+Use natural, everyday language — not formal.
+Return as JSON with the same keys.
+
+Strings:
+{paste the key: "English value" pairs}
+
+Rules:
+- Keep proper nouns (ARYA, KAAL, Niti, Prana) unchanged
+- Medical terms can stay in English
+- Brand names unchanged
+- Emoji stay unchanged
+- {n} placeholder stays as {n}
+```
+
+---
+
+## The Result
+
+When a user selects Malayalam in Customize:
+
+```
+EVERY screen changes:
+
+Home:    "Ask ARYA anything..." → "ARYA-യോട് എന്തും ചോദിക്കൂ..."
+Goals:   "Add Goal" → "ലക്ഷ്യം ചേർക്കൂ"
+Prana:   "Tap to log" → "ലോഗ് ചെയ്യാൻ ടാപ്പ് ചെയ്യൂ"
+KAAL:    "This Week" → "ഈ ആഴ്ച"
+Niti:    "Think out loud" → "ഉച്ചത്തിൽ ചിന്തിക്കൂ"
+Review:  "Your thinking partner" → "നിങ്ങളുടെ ചിന്താ പങ്കാളി"
+Nav:     "Goals" → "ലക്ഷ്യങ്ങൾ"
+
+Plus ARYA speaks in Malayalam.
+Plus voice is in Malayalam.
+Plus the font is Noto Sans Malayalam.
+
+The entire app is Malayalam.
+Not translated. Transformed.
+```
+
+That's what "properly translate" means.
+
+Shall I generate the complete translations for all 25 languages for every key above?

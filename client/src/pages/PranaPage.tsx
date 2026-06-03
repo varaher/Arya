@@ -888,7 +888,7 @@ export default function PranaPage() {
     { key: "log",      label: t("health_tab_log"),      emoji: "📋" },
     { key: "trends",   label: t("health_tab_trends"),   emoji: "📈" },
     { key: "insights", label: t("health_tab_insights"), emoji: "✨" },
-    { key: "coach",    label: "Coach",                  emoji: "💬" },
+    { key: "coach",    label: t("health_coach"),         emoji: "💬" },
   ];
 
   // ── Full-screen onboarding for first-time users ───────────────────────────

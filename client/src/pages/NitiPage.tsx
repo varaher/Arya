@@ -525,9 +525,9 @@ export default function NitiPage() {
         <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 21, color: N.cream, fontWeight: 700 }}>{t("niti_your_biz")}</div>
         <div style={{ fontSize: 13, color: N.steel, marginTop: 4, lineHeight: 1.5 }}>{t("niti_context_sub")}</div>
       </div>
-      <div><Label text="Type" /><ChipSelector options={BUSINESS_TYPES}  value={bizType}  onChange={setBizType}  /></div>
-      <div><Label text="Stage" /><ChipSelector options={BUSINESS_STAGES} value={bizStage} onChange={setBizStage} /></div>
-      <div><Label text="Your role" /><ChipSelector options={BUSINESS_ROLES}  value={bizRole}  onChange={setBizRole}  /></div>
+      <div><Label text={t("niti_type_label")} /><ChipSelector options={BUSINESS_TYPES}  value={bizType}  onChange={setBizType}  /></div>
+      <div><Label text={t("niti_stage_label")} /><ChipSelector options={BUSINESS_STAGES} value={bizStage} onChange={setBizStage} /></div>
+      <div><Label text={t("niti_role_label")} /><ChipSelector options={BUSINESS_ROLES}  value={bizRole}  onChange={setBizRole}  /></div>
       <div>
         <Label text={t("niti_challenge_q")} />
         <textarea value={bizChallenge} onChange={e => setBizChallenge(e.target.value)} rows={3}
@@ -536,7 +536,7 @@ export default function NitiPage() {
       </div>
       <div style={{ display: "flex", gap: 10 }}>
         <BackBtn onClick={() => setScreen("intro")} />
-        <div style={{ flex: 1 }}><GoldBtn label="Continue →" onClick={() => setScreen("focus")} disabled={!bizType || !bizStage || !bizRole} /></div>
+        <div style={{ flex: 1 }}><GoldBtn label={t("niti_continue")} onClick={() => setScreen("focus")} disabled={!bizType || !bizStage || !bizRole} /></div>
       </div>
     </motion.div>
   );
@@ -564,7 +564,7 @@ export default function NitiPage() {
         })}
       </div>
       <div style={{ fontSize: 12, color: N.muted, textAlign: "center" as const }}>
-        {focusAreas.length === 0 ? "Select all that apply — or all of them" : `${focusAreas.length} area${focusAreas.length > 1 ? "s" : ""} selected`}
+        {focusAreas.length === 0 ? t("niti_select_all") : t("niti_n_selected").replace("{n}", String(focusAreas.length))}
       </div>
       <div style={{ display: "flex", gap: 10 }}>
         <BackBtn onClick={() => setScreen("context")} />
@@ -585,7 +585,7 @@ export default function NitiPage() {
       </div>
       <div style={{ background: N.surface2, border: `1px solid ${N.border}`, borderRadius: 14, padding: 20, textAlign: "left" as const }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: bizChallenge ? 16 : 0 }}>
-          {[["Type", bizType], ["Stage", bizStage], ["Role", bizRole]].map(([k, v]) => v ? (
+          {[[t("niti_type_label"), bizType], [t("niti_stage_label"), bizStage], [t("niti_role_label"), bizRole]].map(([k, v]) => v ? (
             <div key={k}>
               <div style={{ fontSize: 10, letterSpacing: "0.1em", color: N.muted, textTransform: "uppercase" as const, marginBottom: 3 }}>{k}</div>
               <div style={{ fontSize: 13, color: N.cream }}>{v}</div>
@@ -600,7 +600,7 @@ export default function NitiPage() {
         )}
         <div style={{ borderTop: `1px solid ${N.border}`, paddingTop: 12, marginTop: 12, display: "flex", alignItems: "center", gap: 8 }}>
           <Sparkles size={13} color={N.gold} />
-          <div style={{ fontSize: 12, color: N.gold }}>Powered by ARYA</div>
+          <div style={{ fontSize: 12, color: N.gold }}>{t("niti_powered")}</div>
         </div>
       </div>
       {focusAreas.length > 0 && (
@@ -613,7 +613,7 @@ export default function NitiPage() {
       {/* Reform 2 — Recent sessions on ready screen */}
       {sessions.length > 0 && (
         <div style={{ textAlign: "left" as const }}>
-          <Label text="Continue where you left off" />
+          <Label text={t("niti_continue_where")} />
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {sessions.slice(0, 3).map(s => {
               const sType = SESSION_TYPES.find(st => st.key === s.sessionType);
@@ -650,10 +650,10 @@ export default function NitiPage() {
 
       <div style={{ paddingTop: 4 }}>
         <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 22, color: N.cream, fontWeight: 700, lineHeight: 1.3 }}>
-          How do you want<br />to think today?
+          {t("niti_session_q")}
         </div>
         <div style={{ fontSize: 13, color: N.steel, marginTop: 6, lineHeight: 1.5 }}>
-          Choose how ARYA should show up for this session.
+          {t("niti_session_q_sub")}
         </div>
       </div>
 
@@ -690,7 +690,7 @@ export default function NitiPage() {
       {/* What's on your mind — textarea + voice (Reform 3) */}
       <div>
         <div style={{ fontSize: 11, letterSpacing: "0.1em", color: N.steel, textTransform: "uppercase" as const, marginBottom: 10 }}>
-          What's on your mind? <span style={{ opacity: 0.5, fontSize: 10, letterSpacing: 0 }}>(optional)</span>
+          {t("niti_whats_mind")} <span style={{ opacity: 0.5, fontSize: 10, letterSpacing: 0 }}>(optional)</span>
         </div>
         <div style={{ position: "relative" as const }}>
           <textarea
@@ -726,7 +726,7 @@ export default function NitiPage() {
         {isVoiceMind && (
           <div style={{ fontSize: 11, color: N.gold, marginTop: 6, display: "flex", alignItems: "center", gap: 6 }}>
             <div style={{ width: 6, height: 6, borderRadius: "50%", background: N.gold, animation: "pulse 0.8s ease-in-out infinite" }} />
-            Listening… speak now
+            {t("niti_listening")}
           </div>
         )}
       </div>
@@ -736,7 +736,7 @@ export default function NitiPage() {
         <BackBtn onClick={() => setScreen("home")} />
         <div style={{ flex: 1 }}>
           <GoldBtn
-            label={isLoading ? "Opening…" : "Begin session →"}
+            label={isLoading ? t("niti_opening") : t("niti_begin_session")}
             loading={isLoading}
             onClick={() => selectedSessionKey && startSession(selectedSessionKey, sessionMindText)}
             disabled={!selectedSessionKey || isLoading}
@@ -753,13 +753,13 @@ export default function NitiPage() {
 
       {/* Disclaimer */}
       <div style={{ fontSize: 11, color: N.muted, textAlign: "center" as const, paddingTop: 2 }}>
-        Indicative values · Not real-time · Not investment advice
+        {t("niti_market_disclaimer")}
       </div>
 
       {/* Indices */}
       {indices.length > 0 ? (
         <div>
-          <Label text="Today's Markets" />
+          <Label text={t("niti_todays_markets")} />
           <div style={{ display: "flex", gap: 10, overflowX: "auto" as const, paddingBottom: 4, scrollbarWidth: "none" as const }}>
             {indices.map((idx: any) => {
               const pos = idx.changePercent >= 0;
@@ -789,7 +789,7 @@ export default function NitiPage() {
       {/* News */}
       {marketNews.length > 0 && (
         <div>
-          <Label text="What's happening" />
+          <Label text={t("niti_whats_happening")} />
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {marketNews.map((item: any) => (
               <div key={item.id} style={{ background: N.surface2, border: `1px solid ${N.border}`, borderRadius: 12, padding: 16 }}>
@@ -808,7 +808,7 @@ export default function NitiPage() {
                 )}
                 <button onClick={() => askMarket(item.headline)} data-testid={`news-ask-${item.id}`}
                   style={{ width: "100%", padding: "9px 14px", borderRadius: 8, border: `1px solid ${N.goldDim}`, background: N.goldFaint, color: N.gold, fontSize: 12, cursor: "pointer", fontWeight: 600, transition: "all 0.15s" }}>
-                  What does this mean for me?
+                  {t("niti_mean_for_me")}
                 </button>
               </div>
             ))}
@@ -819,7 +819,7 @@ export default function NitiPage() {
       {/* Portfolio Journal */}
       <div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-          <Label text="Portfolio Journal" />
+          <Label text={t("niti_portfolio_journal")} />
           <button onClick={() => setShowAddHolding(true)} data-testid="portfolio-add-btn"
             style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 8, border: `1px solid ${N.goldDim}`, background: "transparent", color: N.gold, fontSize: 12, cursor: "pointer" }}>
             <Plus size={12} /> Add
@@ -827,8 +827,8 @@ export default function NitiPage() {
         </div>
         {portfolio.length === 0 ? (
           <div style={{ background: N.surface2, border: `1px dashed ${N.border}`, borderRadius: 12, padding: "20px 16px", textAlign: "center" as const }}>
-            <div style={{ fontSize: 13, color: N.steel, lineHeight: 1.6 }}>Add your holdings and ARYA will ask you honest questions about them.</div>
-            <div style={{ fontSize: 11, color: N.muted, marginTop: 4 }}>No data is sold. No advice given. Ever.</div>
+            <div style={{ fontSize: 13, color: N.steel, lineHeight: 1.6 }}>{t("niti_portfolio_empty")}</div>
+            <div style={{ fontSize: 11, color: N.muted, marginTop: 4 }}>{t("niti_portfolio_privacy")}</div>
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -851,7 +851,7 @@ export default function NitiPage() {
                 <button onClick={() => askMarket(`I hold ${h.quantity || "some"} units of ${h.name}${h.avgPrice && parseFloat(h.avgPrice) > 0 ? ` at an average price of ₹${parseFloat(h.avgPrice).toLocaleString("en-IN")}` : ""}. Help me think about this.`)}
                   style={{ width: "100%", padding: "7px 10px", borderRadius: 7, border: `1px solid ${N.border2}`, background: "transparent", color: N.steel, fontSize: 12, cursor: "pointer", textAlign: "left" as const, display: "flex", alignItems: "center", gap: 6 }}>
                   <ChevronRight size={10} color={N.gold} style={{ flexShrink: 0 }} />
-                  Think about this with ARYA
+                  {t("niti_think_arya_btn")}
                 </button>
               </div>
             ))}
@@ -861,7 +861,7 @@ export default function NitiPage() {
 
       {/* Think with ARYA */}
       <div>
-        <Label text="Think with ARYA" />
+        <Label text={t("niti_think_arya")} />
         <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
           {THINK_QUESTIONS.map((q, i) => (
             <button key={i} onClick={() => askMarket(q)} data-testid={`think-q-${i}`}
@@ -874,7 +874,7 @@ export default function NitiPage() {
         <div style={{ display: "flex", gap: 8 }}>
           <input value={thinkInput} onChange={e => setThinkInput(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter" && thinkInput.trim()) { askMarket(thinkInput); setThinkInput(""); } }}
-            placeholder="Or ask your own question…" data-testid="think-custom-input"
+            placeholder={t("niti_think_arya_ph")} data-testid="think-custom-input"
             style={{ flex: 1, background: N.surface2, border: `1px solid ${N.border2}`, borderRadius: 10, padding: "10px 14px", color: N.cream, fontSize: 13, outline: "none", fontFamily: "Inter, sans-serif" }} />
           <button onClick={() => { if (thinkInput.trim()) { askMarket(thinkInput); setThinkInput(""); } }} disabled={!thinkInput.trim()}
             style={{ width: 40, height: 40, borderRadius: 10, border: "none", background: thinkInput.trim() ? `linear-gradient(135deg, ${N.gold}, #b8892a)` : N.surface2, color: thinkInput.trim() ? "#0a0d14" : N.muted, cursor: thinkInput.trim() ? "pointer" : "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.2s" }}>
@@ -890,7 +890,7 @@ export default function NitiPage() {
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
         <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 19, color: N.cream, fontWeight: 700 }}>What are you dealing with?</div>
+          <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 19, color: N.cream, fontWeight: 700 }}>{t("niti_dealing_with")}</div>
           {bizChallenge && (
             <div style={{ fontSize: 13, color: N.steel, marginTop: 6, lineHeight: 1.5, fontStyle: "italic", borderLeft: `2px solid ${N.goldDim}`, paddingLeft: 10 }}>
               "{bizChallenge}"
@@ -922,12 +922,12 @@ export default function NitiPage() {
       {isLoading && (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, color: N.steel, fontSize: 13 }}>
           <Loader2 size={14} style={{ animation: "spin 0.8s linear infinite" }} />
-          Opening session…
+          {t("niti_opening_session")}
         </div>
       )}
       {sessions.length > 0 && (
         <div>
-          <Label text="Recent sessions" />
+          <Label text={t("niti_recent_sessions")} />
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {sessions.slice(0, 8).map(s => {
               const sType = SESSION_TYPES.find(st => st.key === s.sessionType);
@@ -958,7 +958,7 @@ export default function NitiPage() {
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                     <div style={{ padding: "3px 8px", borderRadius: 20, background: s.status === "resolved" ? "rgba(74,157,122,0.15)" : "rgba(212,168,83,0.1)", color: s.status === "resolved" ? N.green : N.gold, fontSize: 10 }}>
-                      {s.status === "resolved" ? "Resolved" : "Active"}
+                      {s.status === "resolved" ? t("niti_resolved") : t("niti_active_label")}
                     </div>
                     <ChevronRight size={14} color={N.steel} />
                   </div>
@@ -976,17 +976,17 @@ export default function NitiPage() {
   const JournalContent = (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div>
-        <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 19, color: N.cream, fontWeight: 700, marginBottom: 4 }}>Thinking Journal</div>
+        <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 19, color: N.cream, fontWeight: 700, marginBottom: 4 }}>{t("niti_thinking_journal")}</div>
         <div style={{ fontSize: 13, color: N.steel, lineHeight: 1.5 }}>
-          After each session, ARYA writes a record of what you wrestled with and what emerged.
+          {t("niti_journal_sub")}
         </div>
       </div>
       {journalSessions.length === 0 ? (
         <div style={{ background: N.surface2, border: `1px dashed ${N.border}`, borderRadius: 14, padding: "32px 24px", textAlign: "center" as const }}>
           <div style={{ fontSize: 32, marginBottom: 10 }}>📋</div>
-          <div style={{ fontSize: 14, color: N.cream, marginBottom: 6, fontWeight: 500 }}>Your first record will appear here</div>
+          <div style={{ fontSize: 14, color: N.cream, marginBottom: 6, fontWeight: 500 }}>{t("niti_journal_first")}</div>
           <div style={{ fontSize: 12, color: N.steel, lineHeight: 1.65, maxWidth: 280, margin: "0 auto" }}>
-            Start a Decisions session. When you leave, ARYA writes a honest summary of what happened in your thinking.
+            {t("niti_journal_first_sub")}
           </div>
         </div>
       ) : (

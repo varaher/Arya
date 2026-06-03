@@ -533,6 +533,7 @@ function CosmicTicker({ pills, path }: { pills: Array<{ emoji: string; text: str
 function WeekView({ weekDays, path }: { weekDays: VedicBriefing["weekDays"]; path: VedicPath }) {
   const [selected, setSelected] = useState<number | null>(null);
   const a = ACCENT[path];
+  const { t } = useLanguage();
 
   if (!weekDays?.length) return (
     <div style={{ padding: "40px 24px", textAlign: "center" as const, color: C.textDim, fontSize: 14 }}>
@@ -565,7 +566,7 @@ function WeekView({ weekDays, path }: { weekDays: VedicBriefing["weekDays"]; pat
                 border: `1.5px solid ${isSel ? a.main : day.isToday ? `${a.main}88` : C.border}`,
               }}>
               <div style={{ fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase" as const, marginBottom: 4, fontWeight: day.isToday ? 700 : 400, color: day.isToday ? a.main : C.textDim }}>
-                {day.isToday ? "TODAY" : day.dayName}
+                {day.isToday ? t("kaal_today_lbl") : day.dayName}
               </div>
               <div style={{ fontSize: 22, fontWeight: 700, color: isSel ? a.main : C.text, marginBottom: 10 }}>{day.dayDate}</div>
               <div style={{ width: 20, height: 40, background: C.surface2, borderRadius: 4, overflow: "hidden" as const, display: "flex", flexDirection: "column", justifyContent: "flex-end", margin: "0 auto 8px" }}>
@@ -587,9 +588,9 @@ function WeekView({ weekDays, path }: { weekDays: VedicBriefing["weekDays"]; pat
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {[
-                { icon: "⏰", label: "Best window", text: sel.bestWindow, color: C.text },
-                { icon: "✦",  label: "Quality",     text: sel.quality,    color: C.text },
-                { icon: "◈",  label: "Handle with care", text: sel.avoid,  color: C.textDim },
+                { icon: "⏰", label: t("kaal_best_window"), text: sel.bestWindow, color: C.text },
+                { icon: "✦",  label: t("kaal_quality"),     text: sel.quality,    color: C.text },
+                { icon: "◈",  label: t("kaal_handle_care_lbl"), text: sel.avoid,  color: C.textDim },
               ].map(row => (
                 <div key={row.label} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                   <span style={{ fontSize: 16, flexShrink: 0, marginTop: 2 }}>{row.icon}</span>
@@ -605,7 +606,7 @@ function WeekView({ weekDays, path }: { weekDays: VedicBriefing["weekDays"]; pat
       </AnimatePresence>
 
       {!sel && (
-        <p style={{ fontSize: 12, color: C.textMuted, textAlign: "center" as const, marginTop: 14 }}>Tap any day to see details</p>
+        <p style={{ fontSize: 12, color: C.textMuted, textAlign: "center" as const, marginTop: 14 }}>{t("kaal_tap_day")}</p>
       )}
     </div>
   );
@@ -614,6 +615,7 @@ function WeekView({ weekDays, path }: { weekDays: VedicBriefing["weekDays"]; pat
 // ── ChapterView — Venus cycle + dasha + profile strip ─────────────────────────
 function ChapterView({ briefing, profile, path }: { briefing: VedicBriefing; profile: LensProfile | null; path: VedicPath }) {
   const a = ACCENT[path];
+  const { t } = useLanguage();
   const b = briefing;
   const venusParts = (b.venusPhase || "").split(" — ");
   const venusLabel = venusParts[0] || "";
@@ -647,7 +649,7 @@ function ChapterView({ briefing, profile, path }: { briefing: VedicBriefing; pro
         <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
             <span style={{ fontSize: 20 }}>♀</span>
-            <div style={{ fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase" as const, color: C.textDim, fontWeight: 600 }}>Venus Cycle</div>
+            <div style={{ fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase" as const, color: C.textDim, fontWeight: 600 }}>{t("kaal_venus_cycle")}</div>
           </div>
           <div style={{ fontSize: 14, color: a.main, fontWeight: 500, marginBottom: venusDesc ? 6 : 0 }}>{venusLabel}</div>
           {venusDesc && <div style={{ fontSize: 12, color: C.textDim, lineHeight: 1.7 }}>{venusDesc}</div>}
@@ -745,9 +747,9 @@ function BriefingScreen({ briefing, loading, error, onHome, onRetry, path, profi
   const activeGoals = goalsArr.filter((g: any) => g.isActive).slice(0, 4);
 
   const TABS: Array<{ key: "today" | "week" | "chapter"; label: string; icon: string }> = [
-    { key: "today",   label: "Today",       icon: "☀️" },
-    { key: "week",    label: "This Week",   icon: "📅" },
-    { key: "chapter", label: "Your Chapter", icon: "🌊" },
+    { key: "today",   label: t("kaal_tab_today"),   icon: "☀️" },
+    { key: "week",    label: t("kaal_tab_week"),    icon: "📅" },
+    { key: "chapter", label: t("kaal_tab_chapter"), icon: "🌊" },
   ];
 
   return (

@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Volume2, VolumeX, Bookmark, BookmarkCheck, Trash2, Plus, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { useUserAuth } from "@/lib/user-auth";
+import { useLanguage } from "@/lib/language-context";
 
 type DrishyaWorld = "night" | "film" | "everyday";
 
@@ -51,6 +52,7 @@ const BG_GRADIENTS: Record<DrishyaWorld, string> = {
 export default function DrishyaPage() {
   const [, setLocation] = useLocation();
   const { token } = useUserAuth();
+  const { t } = useLanguage();
 
   const [world, setWorld] = useState<DrishyaWorld>("night");
   const [request, setRequest] = useState("");
@@ -276,7 +278,7 @@ export default function DrishyaPage() {
             Drishya
           </div>
           <div style={{ fontSize: 14, color: "rgba(240,235,224,0.45)", letterSpacing: "0.04em" }}>
-            Stories that find you
+            {t("drishya_subtitle")}
           </div>
         </motion.div>
 
@@ -391,7 +393,7 @@ export default function DrishyaPage() {
                     }}
                   >
                     {isNarrating ? <VolumeX size={14} /> : <Volume2 size={14} />}
-                    {isNarrating ? "Stop" : "Listen"}
+                    {isNarrating ? t("drishya_stop") : t("drishya_listen")}
                   </button>
 
                   {token && (
@@ -409,7 +411,7 @@ export default function DrishyaPage() {
                       }}
                     >
                       {isSaved ? <BookmarkCheck size={14} /> : <Bookmark size={14} />}
-                      {isSaved ? "Saved" : "Save"}
+                      {isSaved ? t("drishya_saved_btn") : t("drishya_save")}
                     </button>
                   )}
 
@@ -425,7 +427,7 @@ export default function DrishyaPage() {
                       fontSize: 13, cursor: "pointer",
                     }}
                   >
-                    <Plus size={14} /> New story
+                    <Plus size={14} /> {t("drishya_new_story")}
                   </button>
                 </motion.div>
               )}
@@ -444,7 +446,7 @@ export default function DrishyaPage() {
               {/* Suggestion chips */}
               <div style={{ marginBottom: 16 }}>
                 <div style={{ fontSize: 10, color: "rgba(240,235,224,0.3)", letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 10, fontWeight: 600 }}>
-                  ASK FOR A STORY
+                  {t("drishya_ask_label").toUpperCase()}
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                   {SUGGESTIONS[world].map((s) => (
@@ -476,9 +478,9 @@ export default function DrishyaPage() {
                   onChange={(e) => setRequest(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) generateStory(); }}
                   placeholder={
-                    world === "night" ? "What story are you looking for tonight…" :
-                    world === "film" ? "Describe the scene or character…" :
-                    "What story should find you today…"
+                    world === "night" ? t("drishya_night_ph") :
+                    world === "film" ? t("drishya_film_ph") :
+                    t("drishya_everyday_ph")
                   }
                   data-testid="input-drishya-request"
                   rows={3}
@@ -526,16 +528,16 @@ export default function DrishyaPage() {
                 {isGenerating ? (
                   <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
                     <Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} />
-                    Finding your story…
+                    {t("drishya_finding")}
                   </span>
                 ) : (
-                  `Tell this story  ${activeWorld.emoji}`
+                  `${t("drishya_tell_story")}  ${activeWorld.emoji}`
                 )}
               </motion.button>
 
               {/* Footer hint */}
               <div style={{ textAlign: "center", marginTop: 12, fontSize: 11, color: "rgba(240,235,224,0.22)", letterSpacing: "0.03em" }}>
-                Every story arrives whole. No sources. No citations. Only the story.
+                {t("drishya_footer_note")}
               </div>
             </motion.div>
           )}
@@ -555,7 +557,7 @@ export default function DrishyaPage() {
                 height: 1, background: "rgba(255,255,255,0.07)", marginBottom: 20,
               }} />
               <div style={{ fontSize: 10, color: "rgba(240,235,224,0.3)", letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 14, fontWeight: 600 }}>
-                SAVED STORIES
+                {t("drishya_saved_stories").toUpperCase()}
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {savedStories.map((s) => {

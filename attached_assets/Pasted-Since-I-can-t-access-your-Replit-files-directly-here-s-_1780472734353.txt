@@ -1,0 +1,650 @@
+Since I can't access your Replit files directly, here's the exact instruction set for your developer — precise, copy-paste ready.
+
+---
+
+## The Plan
+
+**7 pages to wire. In this order:**
+
+```
+1. GoalsPanel        → ~25 strings
+2. MemoryPanel       → ~15 strings  
+3. PranaPage         → ~40 strings
+4. VedicLensPage     → ~30 strings
+5. NitiPage          → ~35 strings
+6. WeeklyReviewPage  → ~20 strings
+7. DrishyaPage       → ~10 strings
+```
+
+---
+
+## Step 1 — Add All Keys to i18n.ts First
+
+Tell your developer to add these to **all 25 language blocks** in `i18n.ts`:
+
+```typescript
+// ── GOALS ──────────────────────────────────
+goals_panel_title: "Goals & Plans",
+goals_add_placeholder: "What's your goal?",
+goals_steps_placeholder: "Steps (one per line, optional)",
+goals_add_btn: "+ Add Goal",
+goals_edit_btn: "Edit",
+goals_done_btn: "Done",
+goals_delete_n: "Delete ({n})",
+goals_empty: "No goals yet. Add one above.",
+goals_completed_n: "Completed ({n})",
+goals_high: "HIGH",
+goals_medium: "MEDIUM",
+goals_low: "LOW",
+goals_n_steps: "{n} steps",
+goals_restore: "Restore",
+goals_no_steps: "No steps added",
+goals_add_step: "Add a step",
+goals_due: "Due {date}",
+goals_overdue: "Overdue",
+
+// ── MEMORY ─────────────────────────────────
+memory_panel_title: "Your Memory",
+memory_count: "{n} memories",
+memory_privacy_note: "This is your memory, not ours. ARYA uses it to know you better.",
+memory_delete_all: "Clear all memory",
+memory_privacy_link: "Your data rights & privacy →",
+memory_empty: "No memories yet. ARYA learns from your conversations.",
+memory_cat_relationship: "RELATIONSHIP",
+memory_cat_fact: "FACT",
+memory_cat_context: "CONTEXT",
+memory_cat_preference: "PREFERENCE",
+memory_cat_goal: "GOAL",
+memory_delete_confirm: "Delete this memory?",
+memory_confirm_yes: "Delete",
+memory_confirm_no: "Keep",
+
+// ── PRANA ──────────────────────────────────
+prana_daily_log: "Daily Log",
+prana_trends: "Trends",
+prana_insights: "ARYA Insights",
+prana_coach: "Coach",
+prana_profile_heading: "YOUR HEALTH PROFILE",
+prana_edit: "Edit",
+prana_bmi_label: "BMI",
+prana_step_goal: "Step goal",
+prana_daily_target: "daily target",
+prana_quick_metrics: "QUICK METRICS",
+prana_heart_rate: "HEART RATE",
+prana_blood_oxygen: "BLOOD OXYGEN",
+prana_steps: "STEPS",
+prana_stress: "STRESS",
+prana_calories: "CALORIES",
+prana_weight: "WEIGHT",
+prana_sleep: "SLEEP",
+prana_tap_to_log: "Tap to log",
+prana_normal: "Normal",
+prana_warning: "Warning",
+prana_alert: "Alert",
+prana_no_readings: "No readings yet",
+prana_coach_placeholder: "Ask your health coach anything...",
+prana_coach_send: "Send",
+prana_insights_empty: "No insights yet. Log some vitals first.",
+prana_connect_wearable: "Connect your wearable",
+prana_coming_soon: "Coming soon",
+prana_log_reading: "Log reading",
+prana_value: "Value",
+prana_save: "Save",
+prana_cancel: "Cancel",
+prana_today: "Today",
+prana_this_week: "This week",
+prana_days: "{n} days",
+prana_trend_up: "Improving",
+prana_trend_down: "Declining",
+prana_trend_stable: "Stable",
+prana_sleep_chart: "SLEEP (LAST 7 DAYS)",
+prana_hours: "{n}h",
+
+// ── KAAL ───────────────────────────────────
+kaal_good_morning: "Good morning",
+kaal_good_afternoon: "Good afternoon",
+kaal_good_evening: "Good evening",
+kaal_good_night: "Good night",
+kaal_for_you: "Here's what today holds — for you, specifically.",
+kaal_tab_today: "Today",
+kaal_tab_week: "This Week",
+kaal_tab_chapter: "Your Chapter",
+kaal_arya_insight: "ARYA · Blended Insight",
+kaal_best_window: "Best window today",
+kaal_todays_guidance: "TODAY'S GUIDANCE",
+kaal_arya_lens: "ARYA LENS",
+kaal_strength_today: "STRENGTH TODAY",
+kaal_handle_care: "HANDLE WITH CARE",
+kaal_money_decisions: "Money & decisions",
+kaal_relationships: "Relationships",
+kaal_body_energy: "Body & energy",
+kaal_your_chapter: "YOUR CURRENT CHAPTER",
+kaal_years_left: "{n} years remaining",
+kaal_your_profile: "Your Profile",
+kaal_moon_sign: "Moon sign",
+kaal_birth_star: "Birth star",
+kaal_current_cycle: "Current cycle",
+kaal_peak: "Peak",
+kaal_high: "High",
+kaal_mid: "Mid",
+kaal_rest: "Rest",
+kaal_best_for: "Best for",
+kaal_avoid: "Avoid",
+kaal_profile_ready: "YOUR PROFILE IS READY",
+kaal_is_active: "is active.",
+kaal_see_briefing: "See today's briefing →",
+kaal_every_briefing: "Every briefing now includes personal timing context — in plain language.",
+kaal_cosmic_setup: "KAAL · COSMIC SETUP",
+kaal_how_connect: "How do you connect with timing?",
+kaal_pick_path: "ARYA adapts its language to how you see the world. Pick the path that feels natural.",
+kaal_star_sign: "I know my star sign",
+kaal_star_sign_sub: "Use your Western zodiac as the base for personal insights.",
+kaal_rashi: "I know my Rashi",
+kaal_rashi_sub: "Use your Moon sign for deeper cycle-based guidance.",
+kaal_neither: "Neither — just tell me when",
+kaal_neither_sub: "No signs, no zodiac. Pure personal timing patterns based on your birth data.",
+kaal_change_anytime: "You can change this at any time in your settings.",
+kaal_step_1_of_3: "STEP 1 OF 3",
+kaal_step_2_of_3: "STEP 2 OF 3",
+kaal_step_3_of_3: "STEP 3 OF 3",
+kaal_moon_q: "What is your Moon sign?",
+kaal_star_q: "What's your star sign?",
+kaal_pick_recognise: "Each card shows both names — pick whichever you recognise.",
+kaal_birth_title: "Your birth details",
+kaal_birth_sub: "This lets ARYA build your personal profile — precise life cycles and timing.",
+kaal_dob: "DATE OF BIRTH",
+kaal_birth_city: "BIRTH CITY OR TOWN",
+kaal_birth_city_hint: "e.g. Mumbai, Chennai, Delhi...",
+kaal_birth_time: "APPROXIMATE BIRTH TIME",
+kaal_dont_know_time: "I don't know my birth time",
+kaal_dont_know_sub: "Still meaningful — just not to the precise hour",
+kaal_privacy_note: "Your birth details are stored privately and used solely to personalise your ARYA Lens. Never shared. Delete any time via Privacy & Control.",
+kaal_build_profile: "Build my profile →",
+kaal_skip_use: "Skip — use what I've given",
+kaal_also_rashi: "I also know my Rashi",
+kaal_rashi_optional: "Add an extra layer of depth — optional",
+kaal_continue: "Continue →",
+kaal_skip: "I don't know my sign — skip",
+
+// ── NITI ───────────────────────────────────
+niti_subtitle: "YOUR BUSINESS THINKING PARTNER",
+niti_tagline: "Not generic advice. Thinking built around you.",
+niti_how_arya_thinks: "HOW ARYA THINKS WITH YOU",
+niti_personalize: "Personalise ARYA for me →",
+niti_your_business: "Your business",
+niti_business_sub: "So ARYA speaks to your actual situation — not someone else's.",
+niti_type_label: "TYPE",
+niti_stage_label: "STAGE",
+niti_role_label: "YOUR ROLE",
+niti_mind_label: "WHAT'S ON YOUR MIND RIGHT NOW?",
+niti_mind_hint: "The decision I'm wrestling with, the problem I keep returning to...",
+niti_mind_voice: "Speak it",
+niti_focus_q: "What should ARYA focus on?",
+niti_focus_sub: "Select the areas most relevant to where you are right now.",
+niti_n_selected: "{n} areas selected",
+niti_save_continue: "Save and continue →",
+niti_ready_title: "ARYA is ready for you",
+niti_ready_sub: "Personalised to your business. Ready to think with you.",
+niti_powered: "Powered by ARYA",
+niti_begin: "Begin first session →",
+niti_session_q: "How do you want to think today?",
+niti_decide: "Help me decide",
+niti_decide_sub: "I have a choice to make",
+niti_stress: "Stress-test this",
+niti_stress_sub: "Push back on my plan",
+niti_people: "People situation",
+niti_people_sub: "Someone or something is stuck",
+niti_aloud: "Think out loud",
+niti_aloud_sub: "I don't know what I need yet",
+niti_begin_session: "Begin session →",
+niti_recent: "RECENT THINKING",
+niti_no_sessions: "No sessions yet. The council awaits.",
+niti_continue_session: "Continue →",
+niti_exchanges: "{n} exchanges",
+niti_journal_tab: "Journal",
+niti_decisions_tab: "Decisions",
+niti_market_tab: "Market",
+niti_thinking_tab: "Think",
+niti_decision_record: "DECISION RECORD",
+niti_wrestling: "WHAT YOU WERE WRESTLING WITH",
+niti_emerged: "WHAT EMERGED",
+niti_question_mattered: "THE QUESTION THAT MATTERED",
+niti_what_decided: "What I decided...",
+niti_revisit: "REVISIT IN",
+niti_no_journal: "No decision records yet. Complete a Niti session to see your record here.",
+niti_market_pulse: "MARKET PULSE · Live",
+niti_type_startup: "Startup",
+niti_type_small: "Small Business",
+niti_type_enterprise: "Enterprise",
+niti_type_freelancer: "Freelancer",
+niti_type_consultant: "Consultant",
+niti_stage_idea: "Idea Stage",
+niti_stage_early: "Early (< 1 yr)",
+niti_stage_growth: "Growth (1–3 yrs)",
+niti_stage_scale: "Scale (3–7 yrs)",
+niti_stage_established: "Established (7+ yrs)",
+niti_role_founder: "Founder",
+niti_role_cofounder: "Co-founder",
+niti_role_ceo: "CEO / MD",
+niti_role_manager: "Manager",
+niti_role_consultant: "Consultant",
+niti_role_professional: "Professional",
+
+// ── SUNDAY REVIEW ──────────────────────────
+review_letter_label: "ARYA'S SUNDAY LETTER",
+review_to: "to",
+review_mood_week: "YOUR WEEK IN MOOD",
+review_mood_none: "You didn't check in on your mood this week.",
+review_mood_none_sub: "Takes 5 seconds tomorrow. Just one emoji. ARYA learns from it over time.",
+review_goals_week: "GOALS THIS WEEK",
+review_active: "ACTIVE",
+review_checkins: "CHECK-INS",
+review_untouched: "UNTOUCHED",
+review_goals_note: "Many of these were picked up from your conversations. Which ones actually matter to you right now?",
+review_noticed: "◆ SOMETHING ARYA NOTICED",
+review_pattern_confirmed: "Pattern seen across multiple weeks",
+review_business_week: "BUSINESS MIND THIS WEEK",
+review_niti_none: "You didn't open Niti this week. Big decisions think better out loud.",
+review_cosmic_week: "YOUR COSMIC WEEK",
+review_from_past: "FROM YOUR PAST",
+review_weeks_ago: "{n} weeks ago",
+review_arya_q: "ARYA'S QUESTION FOR YOU",
+review_q_placeholder: "Sit with this. Write what comes...",
+review_intention: "YOUR INTENTION NEXT WEEK",
+review_intention_custom: "Or write your own...",
+review_set_intention: "Set my intention for next week",
+review_footer: "ARYA · Your personal thinking partner",
+review_not_started: "Not started",
+review_progress_pct: "{n}% done",
+review_generating: "ARYA is writing your letter...",
+review_no_review: "Your Sunday Review will appear here each week.",
+
+// ── DRISHYA ────────────────────────────────
+drishya_title: "Drishya",
+drishya_subtitle: "Stories that find you",
+drishya_night_world: "Night World",
+drishya_film_world: "Film World",
+drishya_everyday: "Everyday",
+drishya_tell_story: "Tell me a story",
+drishya_listen: "🎙️ Listen to this story",
+drishya_dismiss: "Dismiss",
+drishya_saved: "Saved stories",
+drishya_no_saved: "No saved stories yet.",
+drishya_save: "Save this story",
+drishya_generating: "ARYA is finding your story...",
+drishya_offer: "Want me to tell you a story?",
+```
+
+---
+
+## Step 2 — Hindi + Malayalam for All New Keys
+
+Add these to the `hi` and `ml` blocks (your developer can use GPT for the other 23):
+
+```typescript
+// HINDI (hi) — new keys
+goals_panel_title: "लक्ष्य और योजनाएं",
+goals_add_placeholder: "आपका लक्ष्य क्या है?",
+goals_steps_placeholder: "चरण (एक प्रति पंक्ति, वैकल्पिक)",
+goals_add_btn: "+ लक्ष्य जोड़ें",
+goals_edit_btn: "संपादित करें",
+goals_done_btn: "हो गया",
+goals_empty: "अभी कोई लक्ष्य नहीं। ऊपर एक जोड़ें।",
+goals_completed_n: "पूर्ण ({n})",
+goals_high: "उच्च",
+goals_medium: "मध्यम",
+goals_low: "निम्न",
+goals_restore: "पुनर्स्थापित करें",
+memory_panel_title: "आपकी स्मृति",
+memory_empty: "अभी कोई स्मृति नहीं। ARYA आपकी बातचीत से सीखती है।",
+memory_delete_all: "सभी स्मृति हटाएं",
+prana_daily_log: "दैनिक लॉग",
+prana_trends: "रुझान",
+prana_insights: "ARYA अंतर्दृष्टि",
+prana_coach: "कोच",
+prana_tap_to_log: "लॉग करने के लिए टैप करें",
+prana_heart_rate: "हृदय गति",
+prana_sleep: "नींद",
+prana_normal: "सामान्य",
+prana_warning: "चेतावनी",
+kaal_tab_today: "आज",
+kaal_tab_week: "इस सप्ताह",
+kaal_tab_chapter: "आपका अध्याय",
+kaal_strength_today: "आज की शक्ति",
+kaal_handle_care: "सावधानी से संभालें",
+kaal_moon_sign: "चंद्र राशि",
+kaal_birth_star: "जन्म नक्षत्र",
+kaal_current_cycle: "वर्तमान चक्र",
+kaal_peak: "शिखर",
+kaal_rest: "विश्राम",
+niti_subtitle: "आपका व्यापार सोच साथी",
+niti_decide: "निर्णय लेने में सहायता",
+niti_decide_sub: "मुझे एक विकल्प चुनना है",
+niti_stress: "इसे परखें",
+niti_stress_sub: "मेरी योजना पर सवाल उठाएं",
+niti_people: "लोगों की स्थिति",
+niti_people_sub: "कोई या कुछ फंसा हुआ है",
+niti_aloud: "ज़ोर से सोचें",
+niti_aloud_sub: "मुझे नहीं पता मुझे क्या चाहिए",
+niti_no_sessions: "अभी कोई सत्र नहीं। परिषद प्रतीक्षा करती है।",
+review_letter_label: "ARYA का रविवार पत्र",
+review_to: "को",
+review_mood_week: "इस सप्ताह आपका मूड",
+review_mood_none: "इस सप्ताह आपने मूड चेक-इन नहीं किया।",
+review_goals_week: "इस सप्ताह के लक्ष्य",
+review_active: "सक्रिय",
+review_untouched: "अनछुआ",
+review_noticed: "◆ ARYA ने कुछ देखा",
+review_footer: "ARYA · आपका व्यक्तिगत सोच साथी",
+drishya_tell_story: "मुझे एक कहानी सुनाओ",
+drishya_offer: "क्या मैं आपको एक कहानी सुनाऊं?",
+
+// MALAYALAM (ml) — new keys
+goals_panel_title: "ലക്ഷ്യങ്ങളും പദ്ധതികളും",
+goals_add_placeholder: "നിങ്ങളുടെ ലക്ഷ്യം എന്താണ്?",
+goals_steps_placeholder: "ഘട്ടങ്ങൾ (ഒരു വരിയിൽ ഒന്ന്, ഐച്ഛികം)",
+goals_add_btn: "+ ലക്ഷ്യം ചേർക്കൂ",
+goals_edit_btn: "തിരുത്തുക",
+goals_done_btn: "പൂർത്തിയായി",
+goals_empty: "ഇതുവരെ ലക്ഷ്യങ്ങൾ ഇല്ല. മുകളിൽ ഒന്ന് ചേർക്കൂ.",
+goals_completed_n: "പൂർത്തിയായത് ({n})",
+goals_high: "ഉയർന്നത്",
+goals_medium: "മധ്യമം",
+goals_low: "കുറഞ്ഞത്",
+goals_restore: "പുനഃസ്ഥാപിക്കൂ",
+memory_panel_title: "നിങ്ങളുടെ ഓർമ്മ",
+memory_empty: "ഇതുവരെ ഓർമ്മകൾ ഇല്ല. ARYA നിങ്ങളുടെ സംഭാഷണങ്ങളിൽ നിന്ന് പഠിക്കുന്നു.",
+memory_delete_all: "എല്ലാ ഓർമ്മകളും മായ്ക്കൂ",
+prana_daily_log: "ദൈനംദിന ലോഗ്",
+prana_trends: "പ്രവണതകൾ",
+prana_insights: "ARYA ഉൾക്കാഴ്ചകൾ",
+prana_coach: "കോച്ച്",
+prana_tap_to_log: "ലോഗ് ചെയ്യാൻ ടാപ്പ് ചെയ്യൂ",
+prana_heart_rate: "ഹൃദയ മിടിപ്പ്",
+prana_sleep: "ഉറക്കം",
+prana_normal: "സാധാരണ",
+prana_warning: "മുന്നറിയിപ്പ്",
+kaal_tab_today: "ഇന്ന്",
+kaal_tab_week: "ഈ ആഴ്ച",
+kaal_tab_chapter: "നിങ്ങളുടെ അധ്യായം",
+kaal_strength_today: "ഇന്നത്തെ ശക്തി",
+kaal_handle_care: "ശ്രദ്ധയോടെ കൈകാര്യം ചെയ്യൂ",
+kaal_moon_sign: "ചന്ദ്ര രാശി",
+kaal_birth_star: "ജന്മ നക്ഷത്രം",
+kaal_current_cycle: "നിലവിലെ ചക്രം",
+kaal_peak: "പരമോന്നതം",
+kaal_rest: "വിശ്രമം",
+niti_subtitle: "നിങ്ങളുടെ ബിസിനസ് ചിന്താ പങ്കാളി",
+niti_decide: "തീരുമാനിക്കാൻ സഹായിക്കൂ",
+niti_decide_sub: "എനിക്ക് ഒരു തിരഞ്ഞെടുപ്പ് നടത്തണം",
+niti_stress: "ഇത് പരീക്ഷിക്കൂ",
+niti_stress_sub: "എന്റെ പദ്ധതിയെ ചോദ്യം ചെയ്യൂ",
+niti_people: "ആൾ സ്ഥിതി",
+niti_people_sub: "ആരോ അല്ലെങ്കിൽ എന്തോ കുടുങ്ങിയിരിക്കുന്നു",
+niti_aloud: "ഉച്ചത്തിൽ ചിന്തിക്കൂ",
+niti_aloud_sub: "എനിക്ക് എന്ത് വേണമെന്ന് അറിയില്ല",
+niti_no_sessions: "ഇതുവരെ സെഷനുകൾ ഇല്ല. കൗൺസിൽ കാത്തിരിക്കുന്നു.",
+review_letter_label: "ARYA-യുടെ ഞായറാഴ്ച കത്ത്",
+review_to: "ക്ക്",
+review_mood_week: "ഈ ആഴ്ച നിങ്ങളുടെ മൂഡ്",
+review_mood_none: "ഈ ആഴ്ച നിങ്ങൾ മൂഡ് ചെക്ക്-ഇൻ ചെയ്തില്ല.",
+review_goals_week: "ഈ ആഴ്ചത്തെ ലക്ഷ്യങ്ങൾ",
+review_active: "സജീവം",
+review_untouched: "തൊടാത്തത്",
+review_noticed: "◆ ARYA ഒന്ന് ശ്രദ്ധിച്ചു",
+review_footer: "ARYA · നിങ്ങളുടെ വ്യക്തിഗത ചിന്താ പങ്കാളി",
+drishya_tell_story: "എനിക്ക് ഒരു കഥ പറഞ്ഞുതരൂ",
+drishya_offer: "ഒരു കഥ പറയട്ടെ?",
+```
+
+---
+
+## Step 3 — Wire Each Page
+
+Tell your developer exactly what to do in each file:
+
+### GoalsPanel component
+
+```tsx
+// Top of component:
+const { t } = useLanguage();
+
+// Replace every hardcoded string:
+"Goals & Plans"              → {t('goals_panel_title')}
+"What's your goal?"          → {t('goals_add_placeholder')}
+"Steps (one per line...)"    → {t('goals_steps_placeholder')}
+"+ Add Goal"                 → {t('goals_add_btn')}
+"Edit"                       → {t('goals_edit_btn')}
+"Done"                       → {t('goals_done_btn')}
+"No goals yet..."            → {t('goals_empty')}
+"HIGH"                       → {t('goals_high')}
+"MEDIUM"                     → {t('goals_medium')}
+"LOW"                        → {t('goals_low')}
+"Completed ({n})"            → {t('goals_completed_n').replace('{n}', count)}
+"Restore"                    → {t('goals_restore')}
+```
+
+### MemoryPanel component
+
+```tsx
+const { t } = useLanguage();
+
+"Your Memory"                → {t('memory_panel_title')}
+"This is your memory..."     → {t('memory_privacy_note')}
+"Clear all memory"           → {t('memory_delete_all')}
+"Your data rights..."        → {t('memory_privacy_link')}
+"No memories yet..."         → {t('memory_empty')}
+"RELATIONSHIP"               → {t('memory_cat_relationship')}
+"FACT"                       → {t('memory_cat_fact')}
+"CONTEXT"                    → {t('memory_cat_context')}
+"PREFERENCE"                 → {t('memory_cat_preference')}
+```
+
+### PranaPage
+
+```tsx
+const { t } = useLanguage();
+
+"Daily Log"                  → {t('prana_daily_log')}
+"Trends"                     → {t('prana_trends')}
+"ARYA Insights"              → {t('prana_insights')}
+"Coach"                      → {t('prana_coach')}
+"YOUR HEALTH PROFILE"        → {t('prana_profile_heading')}
+"Edit"                       → {t('prana_edit')}
+"QUICK METRICS"              → {t('prana_quick_metrics')}
+"HEART RATE"                 → {t('prana_heart_rate')}
+"BLOOD OXYGEN"               → {t('prana_blood_oxygen')}
+"STEPS"                      → {t('prana_steps')}
+"STRESS"                     → {t('prana_stress')}
+"CALORIES"                   → {t('prana_calories')}
+"WEIGHT"                     → {t('prana_weight')}
+"SLEEP"                      → {t('prana_sleep')}
+"Tap to log"                 → {t('prana_tap_to_log')}
+"Normal"                     → {t('prana_normal')}
+"Warning"                    → {t('prana_warning')}
+"Alert"                      → {t('prana_alert')}
+"Ask your health coach..."   → {t('prana_coach_placeholder')}
+"No insights yet..."         → {t('prana_insights_empty')}
+"Connect your wearable"      → {t('prana_connect_wearable')}
+"Coming soon"                → {t('prana_coming_soon')}
+"Save"                       → {t('prana_save')}
+"Cancel"                     → {t('prana_cancel')}
+"SLEEP (LAST 7 DAYS)"        → {t('prana_sleep_chart')}
+```
+
+### VedicLensPage (KAAL)
+
+```tsx
+const { t } = useLanguage();
+
+"Today"                      → {t('kaal_tab_today')}
+"This Week"                  → {t('kaal_tab_week')}
+"Your Chapter"               → {t('kaal_tab_chapter')}
+"ARYA · Blended Insight"     → {t('kaal_arya_insight')}
+"Best window today"          → {t('kaal_best_window')}
+"TODAY'S GUIDANCE"           → {t('kaal_todays_guidance')}
+"ARYA LENS"                  → {t('kaal_arya_lens')}
+"STRENGTH TODAY"             → {t('kaal_strength_today')}
+"HANDLE WITH CARE"           → {t('kaal_handle_care')}
+"Money & decisions"          → {t('kaal_money_decisions')}
+"Relationships"              → {t('kaal_relationships')}
+"Body & energy"              → {t('kaal_body_energy')}
+"YOUR CURRENT CHAPTER"       → {t('kaal_your_chapter')}
+"{n} years remaining"        → {t('kaal_years_left').replace('{n}', years)}
+"Moon sign"                  → {t('kaal_moon_sign')}
+"Birth star"                 → {t('kaal_birth_star')}
+"Current cycle"              → {t('kaal_current_cycle')}
+"Peak"                       → {t('kaal_peak')}
+"High"                       → {t('kaal_high')}
+"Mid"                        → {t('kaal_mid')}
+"Rest"                       → {t('kaal_rest')}
+"YOUR PROFILE IS READY"      → {t('kaal_profile_ready')}
+"is active."                 → {t('kaal_is_active')}
+"See today's briefing →"     → {t('kaal_see_briefing')}
+// Setup screens:
+"How do you connect..."      → {t('kaal_how_connect')}
+"I know my star sign"        → {t('kaal_star_sign')}
+"I know my Rashi"            → {t('kaal_rashi')}
+"Neither — just tell me"     → {t('kaal_neither')}
+"Continue →"                 → {t('kaal_continue')}
+"Your birth details"         → {t('kaal_birth_title')}
+"DATE OF BIRTH"              → {t('kaal_dob')}
+"BIRTH CITY OR TOWN"         → {t('kaal_birth_city')}
+"APPROXIMATE BIRTH TIME"     → {t('kaal_birth_time')}
+"I don't know my birth time" → {t('kaal_dont_know_time')}
+"Build my profile →"         → {t('kaal_build_profile')}
+```
+
+### NitiPage
+
+```tsx
+const { t } = useLanguage();
+
+"YOUR BUSINESS THINKING..."  → {t('niti_subtitle')}
+"Not generic advice..."      → {t('niti_tagline')}
+"Personalise ARYA for me →"  → {t('niti_personalize')}
+"Your business"              → {t('niti_your_business')}
+"TYPE"                       → {t('niti_type_label')}
+"STAGE"                      → {t('niti_stage_label')}
+"YOUR ROLE"                  → {t('niti_role_label')}
+"WHAT'S ON YOUR MIND"        → {t('niti_mind_label')}
+"What should ARYA focus on?" → {t('niti_focus_q')}
+"{n} areas selected"         → {t('niti_n_selected').replace('{n}', n)}
+"Save and continue →"        → {t('niti_save_continue')}
+"ARYA is ready for you"      → {t('niti_ready_title')}
+"Begin first session →"      → {t('niti_begin')}
+"How do you want to think?"  → {t('niti_session_q')}
+"Help me decide"             → {t('niti_decide')}
+"Stress-test this"           → {t('niti_stress')}
+"People situation"           → {t('niti_people')}
+"Think out loud"             → {t('niti_aloud')}
+"Begin session →"            → {t('niti_begin_session')}
+"RECENT THINKING"            → {t('niti_recent')}
+"No sessions yet..."         → {t('niti_no_sessions')}
+"DECISION RECORD"            → {t('niti_decision_record')}
+"What I decided..."          → {t('niti_what_decided')}
+// Business types:
+"Startup"                    → {t('niti_type_startup')}
+"Small Business"             → {t('niti_type_small')}
+"Founder"                    → {t('niti_role_founder')}
+```
+
+### WeeklyReviewPage
+
+```tsx
+const { t } = useLanguage();
+
+"ARYA'S SUNDAY LETTER"       → {t('review_letter_label')}
+"to"                         → {t('review_to')}
+"YOUR WEEK IN MOOD"          → {t('review_mood_week')}
+"You didn't check in..."     → {t('review_mood_none')}
+"GOALS THIS WEEK"            → {t('review_goals_week')}
+"ACTIVE"                     → {t('review_active')}
+"CHECK-INS"                  → {t('review_checkins')}
+"UNTOUCHED"                  → {t('review_untouched')}
+"◆ SOMETHING ARYA NOTICED"   → {t('review_noticed')}
+"BUSINESS MIND THIS WEEK"    → {t('review_business_week')}
+"YOUR COSMIC WEEK"           → {t('review_cosmic_week')}
+"FROM YOUR PAST"             → {t('review_from_past')}
+"{n} weeks ago"              → {t('review_weeks_ago').replace('{n}', n)}
+"ARYA'S QUESTION FOR YOU"    → {t('review_arya_q')}
+"Sit with this..."           → {t('review_q_placeholder')}
+"YOUR INTENTION NEXT WEEK"   → {t('review_intention')}
+"Or write your own..."       → {t('review_intention_custom')}
+"Set my intention..."        → {t('review_set_intention')}
+"ARYA · Your personal..."    → {t('review_footer')}
+"Not started"                → {t('review_not_started')}
+```
+
+### DrishyaPage
+
+```tsx
+const { t } = useLanguage();
+
+"Stories that find you"      → {t('drishya_subtitle')}
+"Night World"                → {t('drishya_night_world')}
+"Film World"                 → {t('drishya_film_world')}
+"Everyday"                   → {t('drishya_everyday')}
+"Tell me a story"            → {t('drishya_tell_story')}
+"🎙️ Listen to this story"    → {t('drishya_listen')}
+"Dismiss"                    → {t('drishya_dismiss')}
+"Saved stories"              → {t('drishya_saved')}
+"No saved stories yet."      → {t('drishya_no_saved')}
+"Save this story"            → {t('drishya_save')}
+"ARYA is finding your story" → {t('drishya_generating')}
+"Want me to tell you..."     → {t('drishya_offer')}
+```
+
+---
+
+## Step 4 — Generate Remaining 23 Languages
+
+Your developer uses this GPT prompt for each language:
+
+```
+Translate these UI strings into {language name}.
+Rules:
+- Short, natural everyday language
+- Keep proper nouns unchanged: ARYA, KAAL, Niti, Prana, Drishya
+- Keep {n} placeholder as {n}
+- Keep emoji unchanged
+- Medical terms can stay in English
+- Return as TypeScript object with same keys
+
+{paste the English key-value pairs}
+```
+
+Run once per language. Takes 2 minutes each. 23 languages × 2 min = 46 minutes total.
+
+---
+
+## Step 5 — Final Verification
+
+After all pages are wired, test by switching to Malayalam:
+
+```
+✓ Goals panel — all Malayalam
+✓ Memory panel — all Malayalam  
+✓ Prana — all Malayalam
+✓ KAAL tabs + setup — all Malayalam
+✓ Niti — all Malayalam
+✓ Sunday Review — all Malayalam
+✓ Drishya — all Malayalam
+✓ Navigation — all Malayalam
+✓ Menu — all Malayalam
+✓ Auth screens — all Malayalam
+```
+
+Screenshot any remaining English that isn't a proper noun and add a key for it.
+
+---
+
+## What This Achieves
+
+When a user in Kerala selects Malayalam — every word in the entire app is Malayalam. Every button, every label, every empty state, every section heading.
+
+**ARYA doesn't feel like an English app translated into Malayalam. It feels like it was built in Malayalam.**
+
+That's the difference.
+
+Shall your developer start now?
