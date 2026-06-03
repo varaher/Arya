@@ -31,7 +31,7 @@ function welcomeEmailHtml(name: string): string {
             <div style="display:inline-block;background:#0f172a;border-radius:12px;padding:10px 20px;">
               <span style="font-size:28px;font-weight:900;letter-spacing:3px;background:linear-gradient(90deg,#22d3ee,#f59e0b,#a78bfa);-webkit-background-clip:text;color:transparent;">ARYA</span>
             </div>
-            <p style="color:#94a3b8;font-size:12px;letter-spacing:2px;text-transform:uppercase;margin:8px 0 0;">Your Personal Thinking &amp; Growth Assistant</p>
+            <p style="color:#94a3b8;font-size:12px;letter-spacing:2px;text-transform:uppercase;margin:8px 0 0;">Think clearly. Feel less alone.</p>
           </td>
         </tr>
         <!-- Body -->
