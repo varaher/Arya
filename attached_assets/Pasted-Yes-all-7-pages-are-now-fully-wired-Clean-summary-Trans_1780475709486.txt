@@ -1,0 +1,207 @@
+Yes, all 7 pages are now fully wired. Clean summary:
+
+---
+
+## ✅ Translation Wiring — Complete
+
+### 7 Pages Wired
+
+| Page | Strings wired | Status |
+|------|-------------|--------|
+| GoalsPanel | ~17 | ✅ |
+| MemoryPanel | ~12 | ✅ |
+| PranaPage | Coach tab + vitals | ✅ |
+| VedicLensPage (KAAL) | Tabs + WeekView + ChapterView | ✅ |
+| NitiPage | 46 strings across all screens | ✅ |
+| WeeklyReviewPage | All 7 sections + stats | ✅ |
+| DrishyaPage | 13 strings | ✅ |
+
+### i18n.ts
+- **7,798 lines** covering all 25 languages
+- 3 missing keys added: `niti_powered`, `niti_continue_where`, `review_cosmic_section`
+
+---
+
+## Now — Sarvam Integration Status
+
+From the audit document, here's what's **already working:**
+
+```
+✅ Sarvam saarika:v2.5 — STT (11 Indian languages)
+✅ Sarvam bulbul:v2 — TTS (11 Indian languages)
+✅ Script detection — Unicode range check
+✅ OpenAI Whisper fallback
+✅ OpenAI nova TTS fallback
+✅ Both languages sync on Indian selection
+✅ Language persisted to DB
+```
+
+---
+
+## What's Still Pending For Full Multilingual Voice
+
+**Two things not yet done:**
+
+### 1. Auto-detection Mid-Conversation
+```typescript
+// Currently:
+language_code: "hi-IN"  // fixed — breaks if user switches
+
+// Should be:
+language_code: "unknown"  // Sarvam auto-detects every time
+```
+
+### 2. International Language Voice
+```
+French, Spanish, German, Arabic etc
+→ STT: OpenAI Whisper (already exists as fallback)
+→ TTS: OpenAI voices by language
+→ Not yet wired properly
+```
+
+---
+
+## The Two Fixes — Exact Code
+
+### Fix 1 — Always Auto-detect in sarvam-service.ts
+
+Find the `transcribe()` function and change one line:
+
+```typescript
+// BEFORE:
+body: JSON.stringify({
+  model: 'saarika:v2.5',
+  language_code: languageCode,  // fixed language
+  audio: audioBase64,
+})
+
+// AFTER:
+body: JSON.stringify({
+  model: 'saarika:v2.5',
+  language_code: 'unknown',     // always auto-detect
+  audio: audioBase64,
+})
+
+// Also return the detected language:
+return {
+  transcript: data.transcript,
+  detectedLanguage: data.language_code || languageCode,
+}
+```
+
+### Fix 2 — International TTS in routes.ts
+
+Find the voice response TTS section:
+
+```typescript
+// BEFORE:
+// Only Sarvam or OpenAI nova
+
+// AFTER:
+const INDIAN_LANGS = [
+  'hi-IN', 'ml-IN', 'ta-IN', 'te-IN',
+  'kn-IN', 'bn-IN', 'mr-IN', 'gu-IN',
+  'pa-IN', 'od-IN', 'en-IN'
+];
+
+const INTERNATIONAL_VOICES: Record<string, string> = {
+  'fr': 'alloy',
+  'de': 'nova',
+  'es': 'shimmer',
+  'ar': 'echo',
+  'ja': 'fable',
+  'zh': 'onyx',
+  'ko': 'alloy',
+  'ru': 'nova',
+  'pt': 'shimmer',
+  'tr': 'echo',
+  'id': 'alloy',
+  'sw': 'nova',
+  'he': 'fable',
+};
+
+// TTS routing:
+let audioBase64: string | null = null;
+
+if (INDIAN_LANGS.includes(detectedLanguage)) {
+  // Indian language → Sarvam
+  audioBase64 = await sarvamService.textToSpeech(
+    responseText,
+    detectedLanguage
+  );
+} else {
+  // International → OpenAI TTS
+  const langCode = detectedLanguage.split('-')[0];
+  const voice = INTERNATIONAL_VOICES[langCode] || 'nova';
+  
+  const speech = await openai.audio.speech.create({
+    model: 'tts-1',
+    voice,
+    input: responseText,
+  });
+  
+  const buffer = Buffer.from(await speech.arrayBuffer());
+  audioBase64 = buffer.toString('base64');
+}
+```
+
+---
+
+## The Complete Flow After Both Fixes
+
+```
+User speaks in ANY language
+        ↓
+Sarvam receives: language_code = 'unknown'
+        ↓
+Sarvam auto-detects: "ml-IN"
+        ↓
+ARYA responds in Malayalam
+        ↓
+Sarvam TTS: bulbul:v2 in ml-IN
+        ↓
+User hears Malayalam
+
+User switches mid-conversation to French
+        ↓
+Sarvam detects: "fr" 
+→ Falls through to Whisper
+        ↓
+ARYA responds in French
+        ↓
+OpenAI TTS: alloy voice in French
+        ↓
+User hears French
+
+User mixes Malayalam + English
+        ↓
+Sarvam detects dominant: "ml-IN"
+        ↓
+ARYA replies in the same mix
+        ↓
+User feels understood
+```
+
+---
+
+## Tell Your Developer
+
+```
+2 files. 2 changes. 30 minutes.
+
+1. server/arya/sarvam-service.ts
+   → Change language_code to 'unknown'
+   → Return detectedLanguage in response
+
+2. server/routes.ts (voice endpoint)
+   → Add INDIAN_LANGS array
+   → Add INTERNATIONAL_VOICES map
+   → Route TTS: Indian → Sarvam, 
+     International → OpenAI
+```
+
+After this — ARYA speaks and understands every language ARYA supports. Naturally. Without the user thinking about it.
+
+**This is the last technical piece before Razorpay.**
+
+Shall we do these two fixes now?

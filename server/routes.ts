@@ -2251,13 +2251,31 @@ export async function registerRoutes(
           }
         }
 
-        // 2️⃣ OpenAI TTS: primary for English, fallback for any Indian lang Sarvam couldn't handle
+        // 2️⃣ OpenAI TTS: primary for English + international, fallback for Indian langs Sarvam couldn't handle
         if (!ttsAudioBase64) {
           try {
-            const audioBuffer = await openaiTextToSpeech(ttsText, "nova", "wav");
+            // Pick a voice appropriate for the detected language
+            const INTL_VOICES: Record<string, string> = {
+              "fr": "alloy", "fr-FR": "alloy", "fr-CA": "alloy",
+              "de": "nova",  "de-DE": "nova",
+              "es": "shimmer","es-ES": "shimmer","es-MX": "shimmer","es-US": "shimmer",
+              "ar": "echo",  "ar-SA": "echo", "ar-AE": "echo",
+              "ja": "fable", "ja-JP": "fable",
+              "zh": "onyx",  "zh-CN": "onyx", "zh-TW": "onyx",
+              "ko": "alloy", "ko-KR": "alloy",
+              "ru": "nova",  "ru-RU": "nova",
+              "pt": "shimmer","pt-BR": "shimmer","pt-PT": "shimmer",
+              "tr": "echo",  "tr-TR": "echo",
+              "id": "alloy", "id-ID": "alloy",
+              "sw": "nova",
+              "he": "fable", "he-IL": "fable",
+            };
+            const langKey = detectedLanguage.split("-")[0];
+            const ttsVoice = (INTL_VOICES[detectedLanguage] || INTL_VOICES[langKey] || "nova") as "alloy" | "echo" | "fable" | "onyx" | "nova" | "shimmer";
+            const audioBuffer = await openaiTextToSpeech(ttsText, ttsVoice, "wav");
             ttsAudioBase64 = audioBuffer.toString("base64");
             ttsFormat = "wav";
-            console.log(`[Voice] OpenAI TTS size: ${ttsAudioBase64.length} chars (lang: ${detectedLanguage})`);
+            console.log(`[Voice] OpenAI TTS size: ${ttsAudioBase64.length} chars (lang: ${detectedLanguage}, voice: ${ttsVoice})`);
           } catch (openaiErr: any) {
             console.error("[Voice] OpenAI TTS also failed:", openaiErr.message);
           }
