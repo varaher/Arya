@@ -461,6 +461,10 @@ export const aryaNitiSessions = pgTable("arya_niti_sessions", {
   title: varchar("title", { length: 255 }),
   status: varchar("status", { length: 20 }).default("active"),
   philosopher: varchar("philosopher", { length: 30 }),
+  mindText: text("mind_text"),
+  decisionRecord: text("decision_record"),
+  userDecision: text("user_decision"),
+  closedAt: timestamp("closed_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

@@ -4290,13 +4290,103 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
     try {
       const userId = (req as any).userId;
       if (!userId) return res.status(401).json({ error: "Not authenticated" });
-      const { sessionType } = req.body;
+      const { sessionType, mindText } = req.body;
       if (!sessionType) return res.status(400).json({ error: "sessionType required" });
-      const result = await createNitiSession(userId, sessionType);
+      const result = await createNitiSession(userId, sessionType, mindText?.trim() || undefined);
       res.json(result);
     } catch (err: any) {
       console.error("[Niti] create session error:", err);
       res.status(500).json({ error: "Failed to create Niti session" });
+    }
+  });
+
+  app.post("/api/niti/sessions/:id/record", optionalUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const sessionId = parseInt(req.params.id);
+      if (isNaN(sessionId)) return res.status(400).json({ error: "Invalid session id" });
+
+      const [session] = await db.select().from(aryaNitiSessions)
+        .where(and(eq(aryaNitiSessions.id, sessionId), eq(aryaNitiSessions.userId, userId)))
+        .limit(1);
+      if (!session) return res.status(404).json({ error: "Session not found" });
+      if (session.decisionRecord) return res.json({ decisionRecord: session.decisionRecord });
+
+      const msgs = await db.select({ role: aryaNitiMessages.role, content: aryaNitiMessages.content })
+        .from(aryaNitiMessages)
+        .where(eq(aryaNitiMessages.sessionId, sessionId))
+        .orderBy(asc(aryaNitiMessages.createdAt));
+
+      if (msgs.length < 2) {
+        await db.update(aryaNitiSessions).set({ closedAt: new Date() }).where(eq(aryaNitiSessions.id, sessionId));
+        return res.json({ decisionRecord: null });
+      }
+
+      const transcript = msgs.map(m => `${m.role === "arya" ? "ARYA" : "User"}: ${m.content}`).join("\n");
+
+      const { OpenAI } = await import("openai");
+      const openai = new OpenAI({
+        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+      });
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [{
+          role: "system",
+          content: `You are closing a Niti thinking session. Write a Decision Record in exactly this format — no deviations, no extra headers:
+
+WHAT YOU WERE WRESTLING WITH:
+[1–2 sentences — the real question underneath the surface one]
+
+WHAT EMERGED:
+[What shifted during the thinking. The insight, even if partial.]
+
+THE QUESTION THAT MATTERED:
+[The single question that changed something]
+
+WHAT YOU MIGHT DECIDE:
+[Leave this open and honest — don't fill it in for them]
+
+REVISIT IN:
+[7 / 14 / 30 days — based on urgency of what was discussed]
+
+Be honest. Be brief. No padding. Write like someone who was present in the room.`,
+        }, {
+          role: "user",
+          content: `Session transcript:\n${transcript}`,
+        }],
+        max_tokens: 350,
+        temperature: 0.6,
+      } as any);
+
+      const decisionRecord = (completion as any).choices[0].message.content?.trim() || null;
+
+      await db.update(aryaNitiSessions)
+        .set({ decisionRecord, closedAt: new Date() })
+        .where(eq(aryaNitiSessions.id, sessionId));
+
+      res.json({ decisionRecord });
+    } catch (err: any) {
+      console.error("[Niti] record error:", err);
+      res.status(500).json({ error: "Failed to generate decision record" });
+    }
+  });
+
+  app.patch("/api/niti/sessions/:id/decision", optionalUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const sessionId = parseInt(req.params.id);
+      if (isNaN(sessionId)) return res.status(400).json({ error: "Invalid session id" });
+      const { userDecision } = req.body;
+      await db.update(aryaNitiSessions)
+        .set({ userDecision: userDecision ?? null })
+        .where(and(eq(aryaNitiSessions.id, sessionId), eq(aryaNitiSessions.userId, userId)));
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to save decision" });
     }
   });
 

@@ -223,13 +223,14 @@ Return ONLY valid JSON (no markdown):
 export async function createNitiSession(
   userId: string,
   sessionType: string,
+  mindText?: string,
 ): Promise<{ sessionId: number; opening: NitiResponse }> {
   const [session] = await db
     .insert(aryaNitiSessions)
-    .values({ userId, sessionType, status: "active" })
+    .values({ userId, sessionType, status: "active", mindText: mindText || null })
     .returning();
 
-  const opening = await generateNitiResponse(session.id, "", userId, sessionType, true);
+  const opening = await generateNitiResponse(session.id, mindText || "", userId, sessionType, true);
 
   await db.insert(aryaNitiMessages).values({
     sessionId: session.id,

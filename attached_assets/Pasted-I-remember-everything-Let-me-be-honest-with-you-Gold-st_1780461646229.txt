@@ -1,0 +1,295 @@
+I remember everything. Let me be honest with you:
+
+**Gold stays for Niti.** Here's why this matters deeply:
+
+---
+
+## The Emotional Logic
+
+```
+Green = Life, growth, the present moment
+        Home · Prana · Chat
+
+Gold  = Gravitas, wisdom, consequence  
+        Niti · Decisions · Business
+
+Blue  = Time, cosmos, the long view
+        KAAL
+
+Amber = Stories, firelight, memory
+        Drishya
+```
+
+When a founder opens Niti to make a hard decision — the gold tells their nervous system *"this is serious."*
+
+Green would make it feel like another chat. **The color is doing emotional work.**
+
+Emerald green is beautiful. But it belongs to ARYA's heart — the home, the body, the daily conversation. Niti is the **mind under pressure.** That needs gold.
+
+---
+
+## Now — The Reforms
+
+I remember all 5. Let me build them in order of impact.
+
+**Starting with the session type selector** — the most important missing piece.
+
+Here's exactly what to tell your developer to add in `NitiPage.tsx`:
+
+---
+
+### Reform 1 — Session Type Selector
+
+Add this screen **between** the onboarding completion and the chat opening:
+
+```tsx
+const sessionTypes = [
+  {
+    id: 'decide',
+    icon: '🤔',
+    title: 'Help me decide',
+    sub: 'I have a choice to make',
+    prompt: `The user needs to make a decision. 
+    Don't give them the answer. 
+    Help them find it themselves.
+    Start by understanding what's 
+    actually at stake for them.`
+  },
+  {
+    id: 'stress',
+    icon: '🔥', 
+    title: 'Stress-test this',
+    sub: 'Push back on my plan',
+    prompt: `The user wants their plan challenged.
+    Be a rigorous thinking partner.
+    Find the assumptions they haven't questioned.
+    The gaps they haven't seen.
+    Not to discourage — to strengthen.`
+  },
+  {
+    id: 'people',
+    icon: '👥',
+    title: 'People situation',
+    sub: 'Someone or something is stuck',
+    prompt: `There's a human situation involved.
+    A co-founder. An employee. A partner.
+    Help them see it from every angle.
+    What does the other person need?
+    What is the user actually feeling?`
+  },
+  {
+    id: 'aloud',
+    icon: '💭',
+    title: 'Think out loud',
+    sub: "I don't know what I need yet",
+    prompt: `The user needs space to think.
+    Don't push toward conclusions.
+    Ask one question at a time.
+    Follow their thread wherever it goes.
+    Sometimes the destination finds itself.`
+  }
+];
+```
+
+```tsx
+// UI — gold theme, 2x2 grid
+<div className="session-select-screen">
+  <h2 className="session-title">
+    How do you want<br />to think today?
+  </h2>
+  
+  <div className="session-grid">
+    {sessionTypes.map(type => (
+      <button
+        key={type.id}
+        className={`session-card 
+          ${selected === type.id ? 'selected' : ''}`}
+        onClick={() => setSelected(type.id)}
+      >
+        <span className="session-icon">{type.icon}</span>
+        <span className="session-title">{type.title}</span>
+        <span className="session-sub">{type.sub}</span>
+      </button>
+    ))}
+  </div>
+
+  <button 
+    className="begin-btn"
+    onClick={() => beginSession(selected)}
+    disabled={!selected}
+  >
+    Begin session →
+  </button>
+</div>
+```
+
+The selected `prompt` gets prepended to the Niti system prompt invisibly. User just sees ARYA opening with exactly the right energy.
+
+---
+
+### Reform 2 — Recent Sessions on Ready Screen
+
+In the "ARYA is ready for you" screen, below the profile card:
+
+```tsx
+// Fetch last 3 niti sessions
+const { data: recentSessions } = useQuery({
+  queryKey: ['niti-sessions'],
+  queryFn: () => fetch('/api/niti/sessions?limit=3').then(r => r.json())
+});
+
+// Display
+{recentSessions?.length > 0 && (
+  <div className="recent-sessions">
+    <p className="section-label">RECENT THINKING</p>
+    {recentSessions.map(session => (
+      <button 
+        key={session.id}
+        className="session-history-card"
+        onClick={() => continueSession(session.id)}
+      >
+        <span className="session-dot">📍</span>
+        <div>
+          <p className="session-preview">
+            {session.title || session.firstMessage}
+          </p>
+          <p className="session-meta">
+            {timeAgo(session.createdAt)} · 
+            {session.messageCount} exchanges
+          </p>
+        </div>
+        <span className="continue-arrow">→</span>
+      </button>
+    ))}
+  </div>
+)}
+```
+
+---
+
+### Reform 3 — Voice Input on "What's On Your Mind"
+
+```tsx
+// Replace plain textarea with voice-enabled version
+<div className="mind-input-wrapper">
+  <textarea
+    placeholder="The decision I'm wrestling with, 
+    the problem I keep returning to..."
+    value={mindText}
+    onChange={e => setMindText(e.target.value)}
+  />
+  
+  {/* Voice button — uses existing Sarvam STT */}
+  <button 
+    className="voice-mind-btn"
+    onClick={startVoiceInput}
+  >
+    🎤
+  </button>
+</div>
+
+// When voice input completes:
+function onVoiceResult(transcript: string) {
+  setMindText(transcript);
+  // Auto-continue after 1.5s if text captured
+  setTimeout(() => {
+    if (transcript.trim()) handleContinue();
+  }, 1500);
+}
+```
+
+---
+
+### Reform 4 — Decision Record
+
+At session end (when user closes or after 30 min inactivity), ARYA auto-generates:
+
+```typescript
+// server/routes.ts — POST /api/niti/sessions/:id/record
+async function generateDecisionRecord(sessionId: number) {
+  const messages = await getSessionMessages(sessionId);
+  
+  const record = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    messages: [{
+      role: 'system',
+      content: `You are closing a Niti thinking session.
+      Write a Decision Record in this exact format:
+      
+      WHAT YOU WERE WRESTLING WITH:
+      [1-2 sentences — the real question, not the surface one]
+      
+      WHAT EMERGED:
+      [What shifted during the thinking. The insight.]
+      
+      THE QUESTION THAT MATTERED:
+      [The single push question that changed something]
+      
+      WHAT YOU MIGHT DECIDE:
+      [Leave this open — user fills it]
+      
+      REVISIT IN:
+      [7 / 14 / 30 days — based on urgency]
+      
+      Be honest. Be brief. No padding.
+      Write like someone who was in the room.`
+    }, {
+      role: 'user',
+      content: `Session transcript:\n${messages
+        .map(m => `${m.role}: ${m.content}`)
+        .join('\n')}`
+    }],
+    max_tokens: 300
+  });
+
+  // Save to session
+  await db.update(arya_niti_sessions)
+    .set({ 
+      decisionRecord: record.choices[0].message.content,
+      closedAt: new Date()
+    })
+    .where(eq(arya_niti_sessions.id, sessionId));
+}
+```
+
+Display in a **Thinking Journal** tab:
+
+```tsx
+// New tab in Niti: Home | Decisions | Market | Journal
+<div className="journal-tab">
+  {sessions.map(session => (
+    <div className="decision-card">
+      <p className="decision-date">
+        {formatDate(session.createdAt)}
+      </p>
+      <p className="decision-record">
+        {session.decisionRecord}
+      </p>
+      {/* User fills in what they decided */}
+      <textarea 
+        placeholder="What I decided..."
+        value={session.userDecision}
+        onChange={e => updateDecision(session.id, e.target.value)}
+      />
+    </div>
+  ))}
+</div>
+```
+
+---
+
+## Complete Reform Summary
+
+Tell your developer — **4 changes to NitiPage.tsx + routes.ts:**
+
+| # | File | Change |
+|---|------|--------|
+| 1 | `NitiPage.tsx` | Add session type selector screen after onboarding |
+| 2 | `NitiPage.tsx` | Add recent sessions to ready screen |
+| 3 | `NitiPage.tsx` | Add voice input to "what's on your mind" |
+| 4 | `routes.ts` | Add `/api/niti/sessions/:id/record` endpoint |
+| 4 | `NitiPage.tsx` | Add Thinking Journal tab + Decision Record display |
+
+**Gold stays. Indian wisdom stays invisible. These 4 reforms make Niti irreplaceable.**
+
+Ready to ship?

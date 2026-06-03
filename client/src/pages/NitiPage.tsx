@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Send, Loader2, CheckCircle2, Users, Brain, Scale,
-  Microscope, ChevronRight, Sparkles, Settings, Plus, X, Trash2,
+  Microscope, ChevronRight, Sparkles, Settings, Plus, X, Trash2, Mic,
 } from "lucide-react";
 import { useUserAuth } from "@/lib/user-auth";
 import { useLanguage } from "@/lib/language-context";
@@ -28,7 +28,7 @@ const N = {
 };
 
 // ── Types ────────────────────────────────────────────────────
-type NitiScreen = "intro" | "context" | "focus" | "ready" | "home" | "session";
+type NitiScreen = "intro" | "context" | "focus" | "ready" | "home" | "session" | "session_setup";
 
 interface NitiMessage {
   id: number;
@@ -46,6 +46,9 @@ interface NitiSessionMeta {
   title?: string;
   status: string;
   philosopher?: string;
+  decisionRecord?: string | null;
+  userDecision?: string | null;
+  closedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -188,7 +191,12 @@ export default function NitiPage() {
   const msgEnd = useRef<HTMLDivElement>(null);
 
   // Home tab
-  const [activeTab, setActiveTab] = useState<"decisions" | "market">("decisions");
+  const [activeTab, setActiveTab] = useState<"decisions" | "market" | "journal">("decisions");
+
+  // Session setup (Reform 1 & 3)
+  const [selectedSessionKey, setSelectedSessionKey] = useState<string>("");
+  const [sessionMindText, setSessionMindText] = useState("");
+  const [isVoiceMind, setIsVoiceMind] = useState(false);
 
   // Market Lens
   const [marketConv, setMarketConv]   = useState<MarketConv | null>(null);
@@ -333,7 +341,7 @@ export default function NitiPage() {
     setScreen("ready");
   };
 
-  const startSession = async (sessionType: string) => {
+  const startSession = async (sessionType: string, mindText?: string) => {
     if (!token) return;
     setIsLoading(true);
     setMessages([]);
@@ -342,7 +350,7 @@ export default function NitiPage() {
       const r = await fetch("/api/niti/sessions", {
         method: "POST",
         headers: { "x-user-token": token, "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionType }),
+        body: JSON.stringify({ sessionType, mindText: mindText?.trim() || undefined }),
       });
       const data = await r.json();
       if (data.sessionId && data.opening) {
@@ -409,10 +417,66 @@ export default function NitiPage() {
   const toggleFocus = (area: string) =>
     setFocusAreas(prev => prev.includes(area) ? prev.filter(a => a !== area) : [...prev, area]);
 
+  // Reform 4 — generate decision record when leaving a session
+  const generateRecord = useCallback(async (sessionId: number) => {
+    if (!token) return;
+    try {
+      const r = await fetch(`/api/niti/sessions/${sessionId}/record`, {
+        method: "POST",
+        headers: { "x-user-token": token, "Content-Type": "application/json" },
+      });
+      if (r.ok) loadSessions();
+    } catch {}
+  }, [token, loadSessions]);
+
+  // Reform 4 — save user's written decision
+  const updateUserDecision = useCallback(async (sessionId: number, text: string) => {
+    setSessions(prev => prev.map(s => s.id === sessionId ? { ...s, userDecision: text } : s));
+    if (!token) return;
+    try {
+      await fetch(`/api/niti/sessions/${sessionId}/decision`, {
+        method: "PATCH",
+        headers: { "x-user-token": token, "Content-Type": "application/json" },
+        body: JSON.stringify({ userDecision: text }),
+      });
+    } catch {}
+  }, [token]);
+
+  // Reform 3 — voice input on "what's on your mind" textarea
+  const startVoiceMind = useCallback(() => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) {
+      alert("Voice input isn't supported on this browser. Please type your thought instead.");
+      return;
+    }
+    setIsVoiceMind(true);
+    const recog = new SR();
+    recog.continuous = false;
+    recog.interimResults = false;
+    recog.lang = "en-IN";
+    recog.onend = () => setIsVoiceMind(false);
+    recog.onerror = () => setIsVoiceMind(false);
+    recog.onresult = (e: any) => {
+      const transcript = e.results[0]?.[0]?.transcript || "";
+      setSessionMindText(transcript);
+      if (transcript.trim() && selectedSessionKey) {
+        setTimeout(() => startSession(selectedSessionKey, transcript), 1500);
+      }
+    };
+    try { recog.start(); } catch { setIsVoiceMind(false); }
+  }, [selectedSessionKey]);
+
   // ── Nav ────────────────────────────────────────────────────
   const navBack = () => {
-    if (screen === "session") { setScreen("home"); loadSessions(); }
-    else setLocation("/");
+    if (screen === "session") {
+      if (currentSession) generateRecord(currentSession.id);
+      setScreen("home");
+      loadSessions();
+    } else if (screen === "session_setup") {
+      setScreen("home");
+    } else {
+      setLocation("/");
+    }
   };
   const _sessionType = SESSION_TYPES.find(s => s.key === currentSession?.sessionType);
   const sessionLabel = _sessionType ? t(`niti_${_sessionType.key}`) : undefined;
@@ -546,7 +610,139 @@ export default function NitiPage() {
           ))}
         </div>
       )}
+      {/* Reform 2 — Recent sessions on ready screen */}
+      {sessions.length > 0 && (
+        <div style={{ textAlign: "left" as const }}>
+          <Label text="Continue where you left off" />
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {sessions.slice(0, 3).map(s => {
+              const sType = SESSION_TYPES.find(st => st.key === s.sessionType);
+              const ts = new Date(s.updatedAt || s.createdAt);
+              const dateStr = ts.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+              return (
+                <button key={s.id} onClick={() => { setScreen("home"); resumeSession(s); }}
+                  data-testid={`ready-session-${s.id}`}
+                  style={{ background: N.surface2, border: `1px solid ${N.border}`, borderRadius: 10, padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", width: "100%", textAlign: "left" as const, transition: "border-color 0.15s" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = N.gold; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = N.border; }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, color: N.cream, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
+                      {s.title || (sType ? t(`niti_${sType.key}`) : s.sessionType)}
+                    </div>
+                    <div style={{ fontSize: 11, color: N.steel, marginTop: 3 }}>{dateStr}</div>
+                  </div>
+                  <ChevronRight size={14} color={N.gold} style={{ flexShrink: 0 }} />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <GoldBtn label={t("niti_begin")} onClick={() => setScreen("home")} />
+    </motion.div>
+  );
+
+  // ── SCREEN 4b — Session Setup (Reform 1 + 3) ─────────────
+  const SessionSetupScreen = (
+    <motion.div key="session_setup" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}
+      style={{ padding: "0 20px 36px", display: "flex", flexDirection: "column", gap: 24 }}>
+
+      <div style={{ paddingTop: 4 }}>
+        <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 22, color: N.cream, fontWeight: 700, lineHeight: 1.3 }}>
+          How do you want<br />to think today?
+        </div>
+        <div style={{ fontSize: 13, color: N.steel, marginTop: 6, lineHeight: 1.5 }}>
+          Choose how ARYA should show up for this session.
+        </div>
+      </div>
+
+      {/* 2×2 session type selector */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        {SESSION_TYPES.map(({ key, Icon, philKey }) => {
+          const phil = PHILOSOPHER_META[philKey];
+          const active = selectedSessionKey === key;
+          return (
+            <button key={key} onClick={() => setSelectedSessionKey(key)}
+              data-testid={`stype-${key}`}
+              style={{
+                background: active ? "rgba(212,168,83,0.10)" : N.surface2,
+                border: `1px solid ${active ? N.gold : N.border}`,
+                borderTop: `3px solid ${active ? N.gold : phil.color}`,
+                borderRadius: 14, padding: 16, textAlign: "left" as const,
+                cursor: "pointer", transition: "all 0.18s",
+                display: "flex", flexDirection: "column" as const, gap: 8,
+                position: "relative" as const,
+              }}>
+              {active && (
+                <div style={{ position: "absolute" as const, top: 9, right: 9, width: 16, height: 16, borderRadius: "50%", background: N.gold, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#0a0d14" }} />
+                </div>
+              )}
+              <Icon size={20} color={active ? N.gold : phil.color} />
+              <div style={{ fontSize: 13, color: active ? N.gold : N.cream, fontWeight: 600, lineHeight: 1.3 }}>{t(`niti_${key}`)}</div>
+              <div style={{ fontSize: 11, color: N.steel, lineHeight: 1.4 }}>{t(`niti_${key}_sub`)}</div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* What's on your mind — textarea + voice (Reform 3) */}
+      <div>
+        <div style={{ fontSize: 11, letterSpacing: "0.1em", color: N.steel, textTransform: "uppercase" as const, marginBottom: 10 }}>
+          What's on your mind? <span style={{ opacity: 0.5, fontSize: 10, letterSpacing: 0 }}>(optional)</span>
+        </div>
+        <div style={{ position: "relative" as const }}>
+          <textarea
+            value={sessionMindText}
+            onChange={e => setSessionMindText(e.target.value)}
+            rows={4}
+            placeholder="The decision I'm wrestling with, the problem I keep returning to…"
+            data-testid="niti-mind-input"
+            style={{
+              width: "100%", background: N.surface2, border: `1px solid ${isVoiceMind ? N.gold : N.border2}`,
+              borderRadius: 12, padding: "12px 52px 12px 14px", color: N.cream,
+              fontSize: 13, fontFamily: "Inter, sans-serif", resize: "none", outline: "none",
+              lineHeight: 1.65, boxSizing: "border-box" as const, transition: "border-color 0.2s",
+            }} />
+          <button
+            onClick={startVoiceMind}
+            disabled={isVoiceMind}
+            data-testid="niti-voice-mind-btn"
+            title="Speak your thought"
+            style={{
+              position: "absolute" as const, bottom: 10, right: 10,
+              width: 34, height: 34, borderRadius: "50%",
+              border: `1px solid ${isVoiceMind ? N.gold : N.border2}`,
+              background: isVoiceMind ? N.goldFaint : "transparent",
+              color: isVoiceMind ? N.gold : N.muted,
+              cursor: isVoiceMind ? "not-allowed" : "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              transition: "all 0.2s",
+            }}>
+            <Mic size={14} />
+          </button>
+        </div>
+        {isVoiceMind && (
+          <div style={{ fontSize: 11, color: N.gold, marginTop: 6, display: "flex", alignItems: "center", gap: 6 }}>
+            <div style={{ width: 6, height: 6, borderRadius: "50%", background: N.gold, animation: "pulse 0.8s ease-in-out infinite" }} />
+            Listening… speak now
+          </div>
+        )}
+      </div>
+
+      {/* Navigation */}
+      <div style={{ display: "flex", gap: 10 }}>
+        <BackBtn onClick={() => setScreen("home")} />
+        <div style={{ flex: 1 }}>
+          <GoldBtn
+            label={isLoading ? "Opening…" : "Begin session →"}
+            loading={isLoading}
+            onClick={() => selectedSessionKey && startSession(selectedSessionKey, sessionMindText)}
+            disabled={!selectedSessionKey || isLoading}
+          />
+        </div>
+      </div>
     </motion.div>
   );
 
@@ -710,9 +906,12 @@ export default function NitiPage() {
         {SESSION_TYPES.map(({ key, Icon, philKey }) => {
           const phil = PHILOSOPHER_META[philKey];
           return (
-            <button key={key} onClick={() => !isLoading && startSession(key)} disabled={isLoading}
+            <button key={key}
+              onClick={() => { setSelectedSessionKey(key); setSessionMindText(""); setScreen("session_setup"); }}
               data-testid={`session-type-${key}`}
-              style={{ background: N.surface2, border: `1px solid ${N.border}`, borderTop: `3px solid ${phil.color}`, borderRadius: 14, padding: 16, textAlign: "left" as const, cursor: isLoading ? "not-allowed" : "pointer", transition: "all 0.2s", display: "flex", flexDirection: "column", gap: 8, opacity: isLoading ? 0.6 : 1 }}>
+              style={{ background: N.surface2, border: `1px solid ${N.border}`, borderTop: `3px solid ${phil.color}`, borderRadius: 14, padding: 16, textAlign: "left" as const, cursor: "pointer", transition: "all 0.2s", display: "flex", flexDirection: "column", gap: 8 }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = N.gold; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = N.border; }}>
               <Icon size={20} color={phil.color} />
               <div style={{ fontSize: 13, color: N.cream, fontWeight: 600, lineHeight: 1.3 }}>{t(`niti_${key}`)}</div>
               <div style={{ fontSize: 11, color: N.steel, lineHeight: 1.4 }}>{t(`niti_${key}_sub`)}</div>
@@ -772,24 +971,78 @@ export default function NitiPage() {
     </div>
   );
 
+  // ── Journal Content (Reform 4) ───────────────────────────
+  const journalSessions = sessions.filter(s => s.decisionRecord);
+  const JournalContent = (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div>
+        <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 19, color: N.cream, fontWeight: 700, marginBottom: 4 }}>Thinking Journal</div>
+        <div style={{ fontSize: 13, color: N.steel, lineHeight: 1.5 }}>
+          After each session, ARYA writes a record of what you wrestled with and what emerged.
+        </div>
+      </div>
+      {journalSessions.length === 0 ? (
+        <div style={{ background: N.surface2, border: `1px dashed ${N.border}`, borderRadius: 14, padding: "32px 24px", textAlign: "center" as const }}>
+          <div style={{ fontSize: 32, marginBottom: 10 }}>📋</div>
+          <div style={{ fontSize: 14, color: N.cream, marginBottom: 6, fontWeight: 500 }}>Your first record will appear here</div>
+          <div style={{ fontSize: 12, color: N.steel, lineHeight: 1.65, maxWidth: 280, margin: "0 auto" }}>
+            Start a Decisions session. When you leave, ARYA writes a honest summary of what happened in your thinking.
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {journalSessions.map(s => {
+            const ts = new Date(s.createdAt);
+            const dateStr = ts.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+            const sType = SESSION_TYPES.find(st => st.key === s.sessionType);
+            return (
+              <div key={s.id} style={{ background: N.surface2, border: `1px solid ${N.border}`, borderLeft: `3px solid ${N.gold}`, borderRadius: "0 14px 14px 0", padding: "18px 20px", display: "flex", flexDirection: "column" as const, gap: 14 }}>
+                <div>
+                  <div style={{ fontSize: 10, color: N.gold, letterSpacing: "0.12em", textTransform: "uppercase" as const, marginBottom: 3 }}>{dateStr}</div>
+                  <div style={{ fontSize: 14, color: N.cream, fontWeight: 600 }}>{sType ? t(`niti_${sType.key}`) : s.sessionType}</div>
+                </div>
+                <div style={{ fontSize: 13, color: N.text, lineHeight: 1.85, whiteSpace: "pre-line" as const, borderTop: `1px solid ${N.border}`, paddingTop: 12 }}>
+                  {s.decisionRecord}
+                </div>
+                <div>
+                  <div style={{ fontSize: 10, color: N.muted, letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 6 }}>What I decided</div>
+                  <textarea
+                    value={s.userDecision || ""}
+                    onChange={e => updateUserDecision(s.id, e.target.value)}
+                    placeholder="Write your decision here…"
+                    rows={2}
+                    data-testid={`decision-textarea-${s.id}`}
+                    style={{ width: "100%", background: N.surface, border: `1px solid ${N.border2}`, borderRadius: 8, padding: "10px 12px", color: N.cream, fontSize: 13, fontFamily: "Inter, sans-serif", resize: "none", outline: "none", lineHeight: 1.6, boxSizing: "border-box" as const }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+
   const HomeScreen = (
     <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       style={{ padding: "0 20px 36px", display: "flex", flexDirection: "column", gap: 20 }}>
 
-      {/* Tab bar */}
+      {/* Tab bar — 3 tabs */}
       <div style={{ display: "flex", background: N.surface2, borderRadius: 10, padding: 3, border: `1px solid ${N.border}` }}>
         {[
           { key: "decisions", label: "⚖️  Decisions" },
-          { key: "market",    label: "📈  Market Lens" },
+          { key: "market",    label: "📈  Markets" },
+          { key: "journal",   label: "📋  Journal" },
         ].map(tab => (
-          <button key={tab.key} onClick={() => setActiveTab(tab.key as "decisions" | "market")} data-testid={`tab-${tab.key}`}
-            style={{ flex: 1, padding: "9px 12px", borderRadius: 8, border: "none", background: activeTab === tab.key ? N.gold : "transparent", color: activeTab === tab.key ? "#0a0d14" : N.steel, fontSize: 13, fontWeight: activeTab === tab.key ? 700 : 400, cursor: "pointer", transition: "all 0.2s", fontFamily: "Inter, sans-serif" }}>
+          <button key={tab.key} onClick={() => setActiveTab(tab.key as "decisions" | "market" | "journal")} data-testid={`tab-${tab.key}`}
+            style={{ flex: 1, padding: "9px 6px", borderRadius: 8, border: "none", background: activeTab === tab.key ? N.gold : "transparent", color: activeTab === tab.key ? "#0a0d14" : N.steel, fontSize: 12, fontWeight: activeTab === tab.key ? 700 : 400, cursor: "pointer", transition: "all 0.2s", fontFamily: "Inter, sans-serif" }}>
             {tab.label}
           </button>
         ))}
       </div>
 
-      {activeTab === "decisions" ? DecisionsContent : MarketLensContent}
+      {activeTab === "decisions" && DecisionsContent}
+      {activeTab === "market"    && MarketLensContent}
+      {activeTab === "journal"   && JournalContent}
     </motion.div>
   );
 
@@ -870,6 +1123,7 @@ export default function NitiPage() {
       <style>{`
         @keyframes spin   { to { transform: rotate(360deg); } }
         @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-5px); } }
+        @keyframes pulse  { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.85); } }
         * { -webkit-font-smoothing: antialiased; box-sizing: border-box; }
         ::-webkit-scrollbar { display: none; }
       `}</style>
@@ -893,12 +1147,13 @@ export default function NitiPage() {
       {/* Screens */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflowY: screen === "session" ? "hidden" : "auto", paddingBottom: screen !== "session" ? "calc(80px + env(safe-area-inset-bottom, 0px))" : 0 }}>
         <AnimatePresence mode="wait">
-          {screen === "intro"   && IntroScreen}
-          {screen === "context" && ContextScreen}
-          {screen === "focus"   && FocusScreen}
-          {screen === "ready"   && ReadyScreen}
-          {screen === "home"    && HomeScreen}
-          {screen === "session" && SessionScreen}
+          {screen === "intro"         && IntroScreen}
+          {screen === "context"       && ContextScreen}
+          {screen === "focus"         && FocusScreen}
+          {screen === "ready"         && ReadyScreen}
+          {screen === "session_setup" && SessionSetupScreen}
+          {screen === "home"          && HomeScreen}
+          {screen === "session"       && SessionScreen}
         </AnimatePresence>
       </div>
 
