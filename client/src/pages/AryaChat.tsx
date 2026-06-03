@@ -5029,7 +5029,7 @@ export default function AryaChat() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.2 }}
-              className="text-[13px] font-medium text-gray-500 dark:text-gray-400 tracking-wide mb-1 md:mb-2"
+              className="text-[13px] font-medium text-emerald-600 dark:text-emerald-400 tracking-wide mb-1 md:mb-2"
             >
               {t("your_pa")}
             </motion.p>
