@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import { db } from "../db";
 import { aryaKnowledge } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
+import { buildLightContext } from "./context-builder";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -66,18 +67,36 @@ async function getDrishyaKnowledge(): Promise<string> {
 export async function* generateDrishyaStory(
   world: DrishyaWorld,
   userRequest: string,
-  language = "en"
+  language = "en",
+  userId?: string
 ): AsyncGenerator<string> {
   const knowledgeContext = await getDrishyaKnowledge();
   const systemPrompt = DRISHYA_SYSTEM_PROMPT.replace("{knowledgeContext}", knowledgeContext);
   const worldLabel =
     world === "night" ? "NIGHT WORLD" : world === "film" ? "FILM WORLD" : "EVERYDAY WORLD";
 
+  // Inject user's emotional state so rasa selection is personalised
+  let stateHint = "";
+  if (userId) {
+    try {
+      const ctx = await buildLightContext(userId);
+      const parts: string[] = [];
+      if (ctx.moodScore) {
+        const moodWords: Record<number, string> = { 1: "struggling", 2: "low", 3: "neutral", 4: "calm", 5: "joyful" };
+        parts.push(`User's mood right now: ${moodWords[ctx.moodScore] || "present"}`);
+      }
+      if (ctx.topGoals.length > 0) parts.push(`What they are working on: ${ctx.topGoals.slice(0, 2).join(", ")}`);
+      if (parts.length > 0) {
+        stateHint = `\n\n[CONTEXT FOR RASA SELECTION — do not mention this in the story: ${parts.join(". ")}]`;
+      }
+    } catch {}
+  }
+
   const stream = await openai.chat.completions.create({
     model: "gpt-4o",
     messages: [
       { role: "system", content: systemPrompt },
-      { role: "user", content: `[${worldLabel}]\n\n${userRequest}` },
+      { role: "user", content: `[${worldLabel}]\n\n${userRequest}${stateHint}` },
     ],
     max_tokens: world === "film" ? 1400 : 700,
     temperature: 0.9,

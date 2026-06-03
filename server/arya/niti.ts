@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { buildLightContext } from "./context-builder";
 import { db } from "../db";
 import { aryaUsers, aryaNitiSessions, aryaNitiMessages } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
@@ -113,8 +114,8 @@ export async function generateNitiResponse(
   sessionType: string,
   isOpening: boolean = false,
 ): Promise<NitiResponse> {
-  const [user] = await db
-    .select({
+  const [[user], liveCtx] = await Promise.all([
+    db.select({
       name: aryaUsers.name,
       businessType: aryaUsers.businessType,
       businessStage: aryaUsers.businessStage,
@@ -124,7 +125,9 @@ export async function generateNitiResponse(
     })
     .from(aryaUsers)
     .where(eq(aryaUsers.id, userId))
-    .limit(1);
+    .limit(1),
+    buildLightContext(userId).catch(() => null),
+  ]);
 
   const focusAreas = user?.businessFocusAreas || [];
   const philosopher = selectPhilosopher(sessionType, userMessage || user?.businessChallenge || "", focusAreas);
@@ -163,6 +166,8 @@ User context:
 - Challenge on their mind: ${user?.businessChallenge || "not specified"}
 - Focus areas: ${focusAreas.join(", ") || "not specified"}
 - Session type: ${sessionTypeLabel[sessionType] || sessionType}
+${liveCtx?.topGoals.length ? `- Active goals right now: ${liveCtx.topGoals.join(", ")}` : ""}
+${liveCtx?.moodScore ? `- Mood today: ${["","awful","low","okay","good","great"][liveCtx.moodScore] || "unknown"} (${liveCtx.moodScore}/5)` : ""}
 
 ${historyContext ? `Conversation so far:\n${historyContext}\n` : ""}
 
@@ -202,6 +207,7 @@ Return ONLY valid JSON (no markdown):
       content: parsed.content || "Let me think about this with you.",
       pushQuestion: parsed.pushQuestion || "What are you not saying yet?",
       followUps: Array.isArray(parsed.followUps) ? parsed.followUps.slice(0, 3) : [],
+      source,
       philosopher,
     };
   } catch (err) {

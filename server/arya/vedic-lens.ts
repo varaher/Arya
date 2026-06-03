@@ -240,7 +240,7 @@ export async function generateVedicBriefing(userId: string): Promise<VedicBriefi
       nakshatra: aryaUsers.nakshatra,
       dashaLord: aryaUsers.dashaLord,
       dashaYearsLeft: aryaUsers.dashaYearsLeft,
-      vedicLensEnabled: aryaUsers.vedicLensEnabled,
+      vedicLensEnabled: (aryaUsers as any).vedicLensEnabled,
       uiLanguage: aryaUsers.uiLanguage,
     }).from(aryaUsers).where(eq(aryaUsers.id, userId)).limit(1);
     user = rows[0] || null;
@@ -265,12 +265,22 @@ export async function generateVedicBriefing(userId: string): Promise<VedicBriefi
   }
 
   let goalsTitles = "none specified";
+  let moodLine = "";
   try {
-    const activeGoals = await db.select({ title: aryaGoals.title }).from(aryaGoals)
-      .where(and(eq(aryaGoals.userId, userId), eq(aryaGoals.status, "active"))).limit(3);
-    goalsTitles = activeGoals.map(g => g.title).join("; ") || "none specified";
+    const { buildLightContext } = await import("./context-builder");
+    const ctx = await buildLightContext(userId);
+    goalsTitles = ctx.topGoals.join("; ") || "none specified";
+    if (ctx.moodScore) {
+      const moodLabels: Record<number, string> = { 1: "struggling", 2: "low", 3: "neutral", 4: "calm and focused", 5: "energised" };
+      moodLine = `- Mood today: ${moodLabels[ctx.moodScore] || "present"}`;
+    }
   } catch (err: any) {
-    console.error("[VedicBriefing] Goals query failed:", err?.message);
+    console.error("[VedicBriefing] Context query failed:", err?.message);
+    try {
+      const activeGoals = await db.select({ title: aryaGoals.title }).from(aryaGoals)
+        .where(and(eq(aryaGoals.userId, userId), eq(aryaGoals.status, "active"))).limit(3);
+      goalsTitles = activeGoals.map(g => g.title).join("; ") || "none specified";
+    } catch {}
   }
 
   const today = new Date();
@@ -298,6 +308,7 @@ User context:
 - Today: ${dayName}, ${dateStr}
 - Day ruler: ${dayRuler}
 - Active goals: ${goalsTitles}
+${moodLine}
 
 CRITICAL RULES:
 1. Never be fatalistic, scary, or use technical Jyotish terms in the output text

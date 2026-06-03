@@ -9,6 +9,7 @@ import type { Domain } from "@shared/schema";
 import { db } from "../db";
 import { aryaNotifications, aryaUsers, aryaReminders } from "@shared/schema";
 import { detectAndCreateGoals } from "./goal-detector";
+import { buildLightContext } from "./context-builder";
 import { eq } from "drizzle-orm";
 import { fetchLatestNews, fetchMarketNews, formatNewsForChat } from "./news-service";
 import { detectLanguage, buildLanguageInstruction, autoUpdateLanguagePreference, sarvamLangToShort } from "./language-detector";
@@ -802,6 +803,29 @@ export async function generateAryaResponse(
 
   const userPrefs = await getUserPreferenceContext(userId);
 
+  // ── Live context from context-builder (goals + mood + kaal) ──────────────
+  let liveContext = "";
+  try {
+    if (userId) {
+      const ctx = await buildLightContext(userId);
+      const parts: string[] = [];
+      if (ctx.topGoals.length > 0) {
+        parts.push(`WHAT THEY ARE WORKING ON: ${ctx.topGoals.join(" · ")}`);
+      }
+      if (ctx.moodScore) {
+        const labels: Record<number, string> = { 1: "awful", 2: "low", 3: "okay", 4: "good", 5: "great" };
+        parts.push(`MOOD TODAY: ${labels[ctx.moodScore] || "unknown"} (${ctx.moodScore}/5)${ctx.energy ? `, energy ${ctx.energy}/5` : ""}`);
+      }
+      if (ctx.rashi) {
+        parts.push(`VEDIC PROFILE: ${ctx.rashi}${ctx.nakshatra ? ` · ${ctx.nakshatra}` : ""}`);
+      }
+      if (parts.length > 0) {
+        liveContext = `\n\nLIVE CONTEXT — weave naturally into response, never announce it:\n${parts.join("\n")}`;
+      }
+    }
+  } catch {}
+  // ─────────────────────────────────────────────────────────────────────────
+
   // ── Language detection ────────────────────────────────────────────────────
   // For voice input: Sarvam STT already detected the language accurately —
   // use it directly. For typed text: run script detection on the message.
@@ -860,7 +884,7 @@ export async function generateAryaResponse(
     : "";
 
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-    { role: "system", content: ARYA_SYSTEM_PROMPT + userPrefs + (langInstruction ? `\n\n${langInstruction}` : "") + sectionToneAddition + knowledgeContext + newsContext + memoryContext + uncertaintyGuidance + voiceInstruction + longFormInstruction },
+    { role: "system", content: ARYA_SYSTEM_PROMPT + userPrefs + (langInstruction ? `\n\n${langInstruction}` : "") + sectionToneAddition + knowledgeContext + newsContext + memoryContext + liveContext + uncertaintyGuidance + voiceInstruction + longFormInstruction },
     ...conversationHistory.slice(-20).map(m => ({
       role: m.role as "user" | "assistant",
       content: m.content,

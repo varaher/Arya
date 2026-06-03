@@ -4714,7 +4714,7 @@ Be honest. Be brief. No padding. Write like someone who was present in the room.
     res.flushHeaders();
 
     try {
-      for await (const token of generateDrishyaStory(storyWorld, userRequest, language || "en")) {
+      for await (const token of generateDrishyaStory(storyWorld, userRequest, language || "en", userId || undefined)) {
         res.write(`data: ${JSON.stringify({ token })}\n\n`);
       }
       res.write("data: [DONE]\n\n");
