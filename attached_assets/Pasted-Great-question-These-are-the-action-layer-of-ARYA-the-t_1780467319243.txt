@@ -1,0 +1,362 @@
+Great question. These are the **action layer** of ARYA — the things that actually change behaviour, not just reflect it.
+
+Let me map every connection:
+
+---
+
+## The Full Interconnection Map
+
+```
+GOALS ←→ REMINDERS ←→ CALENDAR ←→ NOTES ←→ VOICE NOTES
+   ↕           ↕            ↕          ↕          ↕
+              CENTRAL CONTEXT
+              (buildUserContext)
+                    ↕
+         CHAT · KAAL · PRANA · NITI · DRISHYA · REVIEW
+```
+
+---
+
+## Goals — 6 Connections Missing
+
+### 1. Goals → KAAL
+```
+Right now:
+Goal exists. KAAL doesn't know about it.
+
+Should be:
+KAAL says:
+"Your POCUS speech goal is due tomorrow.
+ Your peak window is 10:30 AM.
+ That's when you prepare."
+```
+
+### 2. Goals → Morning Briefing
+```
+Right now:
+Morning briefing is generic.
+
+Should be:
+"Good morning Varah.
+ Three things matter today:
+ → POCUS introduction speech
+ → WhatsApp to delegates by 8:15
+ → Message Maria
+
+ Your clearest hour: 10:30 AM."
+```
+
+### 3. Goals → Chat
+```
+Right now:
+User asks ARYA something.
+ARYA answers without knowing their goals.
+
+Should be:
+User: "I'm feeling overwhelmed"
+ARYA: "You have 15 open goals.
+       Three of them are due this week.
+       Which one actually matters today?"
+```
+
+### 4. Goals → Sunday Review
+```
+Already partially connected.
+But needs:
+- Which goals moved vs stayed stuck
+- Pattern: same goals missed 3 weeks running
+- ARYA names it honestly
+```
+
+### 5. Goals → Reminders (Auto-link)
+```
+When a goal has a deadline:
+ARYA auto-creates a reminder
+3 days before
+1 day before
+Morning of
+
+User never has to set it manually.
+```
+
+### 6. Goals → Google Calendar (Auto-sync)
+```
+Already exists but needs:
+- When goal is created → calendar event created
+- When goal deadline changes → event updates
+- When goal is completed → event marked done
+- Calendar events ARYA can't explain → ask user
+  "I see you have a block at 2 PM.
+   Want me to protect that time?"
+```
+
+---
+
+## Reminders — 4 Connections Missing
+
+### 1. Reminders → KAAL
+```
+Right now:
+Reminder fires at set time regardless.
+
+Should be:
+If reminder fires during user's
+low-energy KAAL window:
+"Take Medicine 💊
+ Also — this is a rest window today.
+ Don't schedule anything heavy after this."
+
+If reminder fires during peak window:
+"Drink Water 💧
+ You're in your best window right now.
+ Use it."
+```
+
+### 2. Reminders → Prana
+```
+Medicine reminder fires:
+ARYA logs it as a health event.
+Prana knows medication was taken.
+
+Drink Water fires + was dismissed 3 times:
+Prana health coach notices:
+"You've been dismissing your water
+ reminders. Your HR has been elevated.
+ These two things are connected."
+```
+
+### 3. Reminders → Chat
+```
+User opens chat after dismissing
+a reminder 3 times:
+
+ARYA doesn't wait to be asked.
+"You've skipped the workout reminder
+ three days running.
+ What's actually going on?"
+```
+
+### 4. Reminders → Goals
+```
+Goal: "Prepare POCUS speech"
+Deadline: Tomorrow
+
+ARYA auto-creates:
+→ Reminder today at 10:30 AM
+  (their KAAL peak window)
+  "POCUS speech — your best hour starts now"
+
+→ Reminder tonight at 9 PM
+  "How did the preparation go today?"
+```
+
+---
+
+## Notes / Voice Notes — 5 Connections
+
+### 1. Voice Notes → Memory
+```
+Already working (summary generated).
+But summary should also:
+→ Auto-extract any goals mentioned
+→ Auto-extract any decisions made
+→ Auto-extract any people mentioned
+→ Store all as memory items
+
+User says in voice note:
+"Need to call Rajesh about the equipment"
+
+ARYA creates:
+→ Memory: "User needs to call Rajesh about equipment"
+→ Goal suggestion: "Call Rajesh about equipment"
+→ Reminder offer: "Want me to remind you tomorrow?"
+```
+
+### 2. Voice Notes → Sunday Review
+
+```
+Already building voice flashback.
+Also add:
+→ This week's voice notes summarised
+→ Theme across all notes this week
+→ "You recorded 3 notes this week.
+   All three were about the conference.
+   That's where your mind has been."
+```
+
+### 3. Notes → Chat Context
+```
+User wrote a note 3 days ago:
+"Feeling uncertain about the extension decision"
+
+User opens chat today.
+ARYA: "Three days ago you were uncertain
+       about the extension.
+       Have you decided?"
+
+Not because user asked.
+Because ARYA remembered.
+```
+
+### 4. Voice Notes → Niti
+```
+User records voice note:
+"I keep going back and forth on
+ whether to extend or not"
+
+ARYA detects decision language.
+Offers: "This sounds like something
+         worth thinking through properly.
+         Want to take it to Niti?"
+```
+
+### 5. Notes → KAAL
+
+```
+User has a note about a big decision.
+KAAL knows their peak window is tomorrow.
+
+Morning briefing says:
+"Tomorrow is a peak clarity day.
+ You have an unresolved decision
+ about the extension.
+ Tomorrow is the day to decide."
+```
+
+---
+
+## Google Calendar — 4 Connections
+
+### 1. Calendar → Morning Briefing
+```
+Already partially working.
+Needs to be smarter:
+
+"You have 3 meetings today.
+ Your peak window is 10:30–12:15.
+ You have a meeting at 11.
+ That's cutting into your best hour.
+ Worth moving?"
+```
+
+### 2. Calendar → Goals
+```
+User has goal: "Prepare POCUS speech"
+Calendar shows: Conference is tomorrow
+
+ARYA connects them:
+"The conference is tomorrow.
+ Your speech goal shows 0% progress.
+ You have 4 hours free today.
+ Use them."
+```
+
+### 3. Calendar → Reminders
+```
+Calendar event detected:
+"POCUS Conference — tomorrow 9 AM"
+
+ARYA auto-creates reminders:
+→ Tonight 9 PM: "Conference tomorrow. Ready?"
+→ Tomorrow 7 AM: "Conference in 2 hours. 
+                   Eat. Breathe. You know this."
+→ Tomorrow 8 AM: "Leave now if driving."
+```
+
+### 4. Calendar → KAAL
+```
+User has important meeting at 3 PM.
+KAAL shows 3 PM is a low-energy window.
+
+ARYA says in morning briefing:
+"Your 3 PM meeting falls in a
+ lower clarity window today.
+ Prepare your key points before 12.
+ Walk in with the thinking already done."
+```
+
+---
+
+## The Complete Connection Table
+
+| From | To | What ARYA does |
+|------|----|----------------|
+| Goals | KAAL | Mentions goal in timing window |
+| Goals | Reminders | Auto-creates deadline reminders |
+| Goals | Calendar | Creates/syncs calendar events |
+| Goals | Morning Briefing | Top 3 goals in daily brief |
+| Goals | Chat | References open goals in responses |
+| Goals | Sunday Review | Tracks movement vs stuck |
+| Reminders | KAAL | Adds timing context to notification |
+| Reminders | Prana | Logs health reminders as events |
+| Reminders | Goals | Links reminder to parent goal |
+| Voice Notes | Memory | Extracts goals, decisions, people |
+| Voice Notes | Niti | Offers Niti when decision detected |
+| Voice Notes | Sunday Review | Flashback + weekly theme |
+| Voice Notes | Goals | Suggests goal from content |
+| Calendar | Goals | Detects deadline from event |
+| Calendar | KAAL | Warns about low-energy meetings |
+| Calendar | Reminders | Auto-creates event reminders |
+| Calendar | Morning Briefing | Today's schedule in brief |
+| Notes | Chat | References recent notes |
+| Notes | Niti | Offers Niti for decisions |
+
+---
+
+## Build Order
+
+**Week 1 — Foundation:**
+```
+Build context-builder.ts
+All sections read from it
+```
+
+**Week 2 — Goals layer:**
+```
+Goals → Reminders (auto-create)
+Goals → Calendar (auto-sync)
+Goals → Morning Briefing (top 3)
+Goals → KAAL (mention in window)
+```
+
+**Week 3 — Voice + Notes layer:**
+```
+Voice Notes → Memory (extract goals/decisions)
+Voice Notes → Niti (detect decisions)
+Notes → Chat (reference recent notes)
+```
+
+**Week 4 — Calendar layer:**
+```
+Calendar → KAAL (timing conflicts)
+Calendar → Reminders (auto-create)
+Calendar → Goals (detect deadlines)
+```
+
+---
+
+## The One File That Makes All Of This Work
+
+```typescript
+// server/arya/context-builder.ts
+
+// This single function assembles:
+// - Active goals + deadlines
+// - Today's reminders
+// - Calendar events today + tomorrow
+// - Recent notes + voice notes
+// - Health readings
+// - KAAL window
+// - Mood today
+// - Open decisions
+// - Recent memories
+// - Patterns
+
+// Every section calls this.
+// ARYA always knows everything.
+// The user just feels understood.
+```
+
+---
+
+Shall I write the complete `context-builder.ts` now — the one file that connects everything?

@@ -1,0 +1,341 @@
+This is the most important architecture question you've asked.
+
+Right now each section probably knows about itself. What you want is **every section knowing about every other section.**
+
+---
+
+## The Vision — One Brain, Many Faces
+
+```
+ARYA is one intelligence.
+Home, Prana, Niti, KAAL, Drishya, 
+Sunday Review — these are just 
+different windows into the same mind.
+
+The mind knows everything.
+Each window shows what's relevant.
+```
+
+---
+
+## How Interconnection Works — The Data Flow
+
+```
+Everything the user does
+flows into one central layer:
+
+User speaks → Memory Engine stores it
+User logs vitals → Prana stores it  
+User sets goal → Goals stores it
+User opens at 11 PM → Behavior stored
+User's mood → Mood stored
+User's KAAL profile → Timing stored
+User's Niti session → Decision stored
+
+↓
+
+ONE UNIFIED CONTEXT
+assembled fresh for every response
+
+↓
+
+Every section reads from this context
+and speaks accordingly
+```
+
+---
+
+## The 6 Connection Points To Build
+
+### 1. Central Context Builder
+
+This is the most important function in ARYA. Build it once, use everywhere:
+
+```typescript
+// server/arya/context-builder.ts
+
+export async function buildUserContext(userId: number) {
+  
+  // Run all queries in parallel — fast
+  const [
+    profile,
+    recentMemories,
+    activeGoals,
+    todayMood,
+    healthReadings,
+    kaalProfile,
+    recentNiti,
+    voiceNotes,
+    patterns,
+    upcomingReminders
+  ] = await Promise.all([
+    getUserProfile(userId),
+    getRecentMemories(userId, 10),
+    getActiveGoals(userId),
+    getTodayMood(userId),
+    getRecentHealthReadings(userId, 7),
+    getKaalProfile(userId),
+    getRecentNitiSessions(userId, 3),
+    getRecentVoiceNotes(userId, 5),
+    getUserPatterns(userId),
+    getUpcomingReminders(userId, 24)
+  ]);
+
+  return {
+    // Who they are
+    name: profile.name,
+    language: profile.language,
+    profession: profile.profession,
+    
+    // How they are right now
+    todayMood: todayMood?.emoji,
+    energyLevel: todayMood?.energy,
+    
+    // What they're working on
+    topGoals: activeGoals.slice(0, 3).map(g => g.title),
+    urgentGoals: activeGoals.filter(g => g.priority === 'HIGH'),
+    
+    // Their body
+    lastSleep: healthReadings.find(r => r.metric === 'sleep')?.value,
+    lastHeartRate: healthReadings.find(r => r.metric === 'heart_rate')?.value,
+    
+    // Their time
+    kaalCycle: kaalProfile?.currentCycle,
+    kaalWindow: kaalProfile?.todayWindow,
+    moonSign: kaalProfile?.moonSign,
+    
+    // Their thinking
+    recentDecisions: recentNiti.map(s => s.title),
+    openDecisions: recentNiti.filter(s => !s.userDecision),
+    
+    // Their patterns
+    patterns: patterns.map(p => p.description),
+    
+    // What they said
+    recentMemories: recentMemories.map(m => m.content),
+    recentVoiceNotes: voiceNotes.map(v => v.summary),
+    
+    // What's coming
+    nextReminder: upcomingReminders[0]?.title,
+    
+    // Time context
+    hourOfDay: new Date().getHours(),
+    dayOfWeek: new Date().getDay(),
+    isWeekend: [0,6].includes(new Date().getDay())
+  };
+}
+```
+
+---
+
+### 2. Chat Knows Everything
+
+```typescript
+// server/arya/chat-engine.ts
+// Every chat message now gets full context
+
+const context = await buildUserContext(userId);
+
+const systemPrompt = `
+You are ARYA speaking to ${context.name}.
+
+RIGHT NOW:
+- Time: ${context.hourOfDay}:00
+- Mood today: ${context.todayMood || 'not checked in'}
+- Energy: ${context.energyLevel || 'unknown'}/5
+- Sleep last night: ${context.lastSleep || 'not logged'}h
+
+WHAT THEY ARE WORKING ON:
+${context.topGoals.map(g => `- ${g}`).join('\n')}
+
+WHAT ARYA REMEMBERS:
+${context.recentMemories.map(m => `- ${m}`).join('\n')}
+
+THEIR TIMING TODAY (KAAL):
+- Cycle: ${context.kaalCycle}
+- Best window: ${context.kaalWindow}
+
+OPEN DECISIONS (from Niti):
+${context.openDecisions.map(d => `- ${d.title}`).join('\n')}
+
+PATTERNS NOTICED:
+${context.patterns.map(p => `- ${p}`).join('\n')}
+
+Use this to speak personally.
+Never mention that you have this data.
+Just use it — the way a friend would.
+`;
+```
+
+---
+
+### 3. KAAL Knows Their Goals + Mood
+
+```typescript
+// KAAL briefing now includes goal context
+
+const context = await buildUserContext(userId);
+
+// KAAL prompt addition:
+`
+USER CONTEXT FOR PERSONALISATION:
+Goals this week: ${context.topGoals.join(', ')}
+Mood today: ${context.todayMood}
+Sleep last night: ${context.lastSleep}h
+Open decision: ${context.openDecisions[0]?.title}
+
+When suggesting the best window —
+connect it to their actual goals.
+Don't say "good for intellectual work."
+Say "good for the POCUS speech preparation."
+`
+```
+
+This is exactly what's already happening in KAAL for Varah — it mentioned POCUS specifically. This formalises it for every user.
+
+---
+
+### 4. Prana Knows Their KAAL + Goals
+
+```typescript
+// Health coach in Prana gets timing context
+
+const context = await buildUserContext(userId);
+
+// Prana coach prompt:
+`
+${context.name}'s health context:
+Sleep: ${context.lastSleep}h (last night)
+Heart rate: ${context.lastHeartRate} bpm
+KAAL window today: ${context.kaalWindow}
+Active goals: ${context.topGoals.join(', ')}
+
+Connect health to their life.
+Don't just comment on numbers.
+"You slept 5 hours and have a conference tomorrow.
+ Your window is 10:30. Rest before then."
+`
+```
+
+---
+
+### 5. Drishya Knows Their Emotional State
+
+```typescript
+// Story selection uses full context
+
+const context = await buildUserContext(userId);
+
+// Story moment detection:
+const storyContext = {
+  mood: context.todayMood,
+  recentPattern: context.patterns[0],
+  openDecision: context.openDecisions[0]?.title,
+  hourOfDay: context.hourOfDay,
+  goalStress: context.urgentGoals.length > 3
+};
+
+// ARYA selects rasa based on context:
+// Low mood + open decision → Karuna
+// Late night + goal stress → Shanta
+// Achievement + good mood → Shringara
+// Stuck pattern → Veera
+```
+
+---
+
+### 6. Sunday Review Knows Everything
+
+```typescript
+// Already partially done — now complete it
+
+const context = await buildUserContext(userId);
+
+// The opening line now has full context:
+`
+Write an opening line for ${context.name}'s Sunday Review.
+
+Their week:
+- Goals: ${weeklyGoals}
+- Mood pattern: ${moodPattern}
+- Sleep average: ${avgSleep}h
+- Open KAAL cycle: ${context.kaalCycle}
+- Unresolved Niti decision: ${context.openDecisions[0]?.title}
+- Voice note from 6 weeks ago: ${flashback?.summary}
+
+Make it specific. Make it true.
+`
+```
+
+---
+
+## The Interconnection Map
+
+```
+         MEMORY ENGINE
+              ↑↓
+    ┌─────────────────────┐
+    │   CENTRAL CONTEXT   │
+    │   buildUserContext  │
+    └─────────────────────┘
+         ↓    ↓    ↓    ↓    ↓    ↓
+       CHAT  KAAL PRANA NITI DRISHYA REVIEW
+
+Each section reads from central context.
+Each section writes back to memory.
+The loop tightens over time.
+```
+
+---
+
+## The Practical Build Plan
+
+**Week 1 — Foundation:**
+Build `context-builder.ts` as one file. One function. Returns everything. Used by every section.
+
+**Week 2 — Wire Chat:**
+Chat engine uses full context. Every response becomes personal.
+
+**Week 3 — Wire KAAL + Prana:**
+Both sections pull from central context. KAAL mentions real goals. Prana connects health to life.
+
+**Week 4 — Wire Drishya + Sunday Review:**
+Stories know emotional state. Review knows everything from the week.
+
+---
+
+## The Rule For All Of It
+
+```typescript
+// Every section follows this pattern:
+
+// 1. Get context
+const context = await buildUserContext(userId);
+
+// 2. Use it invisibly
+// Never say "I see that your sleep was 5 hours"
+// Say "You have a big day tomorrow. 
+//      Rest before your window opens."
+
+// 3. Write back to memory
+await updateMemory(userId, newInsight);
+
+// The context grows.
+// ARYA gets more personal over time.
+// Not because of more features.
+// Because of more knowing.
+```
+
+---
+
+## What To Build First
+
+**`server/arya/context-builder.ts`**
+
+One file. One function. 30 minutes to build.
+
+Everything else connects to it.
+
+That single function is the difference between **an app with features** and **a companion that knows you.**
+
+Shall I write the complete `context-builder.ts` file now?
