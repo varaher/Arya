@@ -9,6 +9,7 @@ import { checkSilentUsers } from "./silence-detection";
 import { sendYourPatterns } from "./patterns-engine";
 import { generateWeeklyReflectionShares } from "./reflection-share";
 import { sweepGoalReminders } from "./auto-reminder";
+import { sweepCalendarForReminders } from "./calendar-auto-reminders";
 
 let vapidPublicKey: string | null = null;
 let isInitialized = false;
@@ -356,7 +357,11 @@ export function startReminderScheduler(): void {
   })();
   setTimeout(() => {
     sweepGoalReminders().catch(() => {});
-    setInterval(() => sweepGoalReminders().catch(() => {}), 24 * 60 * 60 * 1000);
+    sweepCalendarForReminders().catch(() => {});
+    setInterval(() => {
+      sweepGoalReminders().catch(() => {});
+      sweepCalendarForReminders().catch(() => {});
+    }, 24 * 60 * 60 * 1000);
   }, msUntilNightly);
 
   // Sarvam speaker health check — daily at midnight

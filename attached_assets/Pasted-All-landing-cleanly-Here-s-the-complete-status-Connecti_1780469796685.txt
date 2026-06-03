@@ -1,0 +1,179 @@
+All landing cleanly. Here's the complete status:
+
+---
+
+## ✅ Connections Built So Far
+
+| # | Connection | Status |
+|---|-----------|--------|
+| 1 | Goals → Auto-reminders | ✅ |
+| 2 | Voice Notes → Memory extraction | ✅ |
+| 3 | Voice Notes → Niti detection | ✅ |
+| Chat wired | Goals + Mood + KAAL | ✅ |
+| Morning Briefing wired | Full context | ✅ |
+| KAAL wired | Mood calibration | ✅ |
+| Niti wired | Goals + Mood | ✅ |
+| Drishya wired | Mood → Rasa | ✅ |
+
+---
+
+## 🔴 Remaining 3 Connections
+
+| # | Connection | What it unlocks |
+|---|-----------|----------------|
+| 4 | Calendar → KAAL | Morning brief warns about low-energy meetings |
+| 5 | Calendar → Auto-reminders | Conference tomorrow → "Leave by 8 AM" auto-created |
+| 6 | Notes → Chat context | ARYA references recent voice notes proactively |
+
+---
+
+## Build 4, 5, 6 Now
+
+Here's exactly what each needs:
+
+### Connection 4 — Calendar → KAAL
+
+In `vedic-lens.ts`, after building the briefing, add:
+
+```typescript
+// Check if any calendar event falls in low-energy window
+const ctx = await buildUserContext(userId);
+const lowEnergyHour = parseLowEnergyHour(ctx.kaal.todayWindow);
+
+const conflictingEvent = ctx.calendar.todayEvents.find(e => {
+  const eventHour = parseHour(e.startTime);
+  return Math.abs(eventHour - lowEnergyHour) < 2;
+});
+
+if (conflictingEvent && ctx.kaal.lowEnergyAlert) {
+  kaalBriefing.calendarWarning = 
+    `Your ${conflictingEvent.title} at ${conflictingEvent.startTime} 
+     falls in a lower clarity window today. 
+     Prepare your key points before ${ctx.kaal.todayWindow?.split('–')[0]}.
+     Walk in with the thinking already done.`;
+}
+```
+
+### Connection 5 — Calendar → Auto-reminders
+
+In `auto-reminder.ts`, add a new function:
+
+```typescript
+export async function autoCreateCalendarReminders(
+  userId: number,
+  event: CalendarEvent
+) {
+  const eventTime = new Date(event.startTime);
+  const now = new Date();
+  const hoursUntil = (eventTime.getTime() - now.getTime()) 
+                     / (1000 * 60 * 60);
+
+  // Only for important events
+  const isImportant = 
+    event.title.toLowerCase().includes('conference') ||
+    event.title.toLowerCase().includes('meeting') ||
+    event.title.toLowerCase().includes('interview') ||
+    event.title.toLowerCase().includes('surgery') ||
+    event.title.toLowerCase().includes('presentation');
+
+  if (!isImportant) return;
+
+  const reminders = [];
+
+  // Night before at 9 PM
+  if (hoursUntil > 12) {
+    const nightBefore = new Date(eventTime);
+    nightBefore.setDate(nightBefore.getDate() - 1);
+    nightBefore.setHours(21, 0, 0, 0);
+    reminders.push({
+      title: `${event.title} — tomorrow. Ready?`,
+      scheduledAt: nightBefore,
+    });
+  }
+
+  // Morning of — 2 hours before
+  if (hoursUntil > 2) {
+    const twoHoursBefore = new Date(
+      eventTime.getTime() - 2 * 60 * 60 * 1000
+    );
+    reminders.push({
+      title: `${event.title} in 2 hours. Breathe.`,
+      scheduledAt: twoHoursBefore,
+    });
+  }
+
+  // 30 min before — if driving
+  reminders.push({
+    title: `${event.title} starts soon.`,
+    scheduledAt: new Date(
+      eventTime.getTime() - 30 * 60 * 1000
+    ),
+  });
+
+  for (const reminder of reminders) {
+    await db.insert(arya_reminders)
+      .values({
+        userId,
+        title: reminder.title,
+        scheduledAt: reminder.scheduledAt,
+        type: 'calendar_auto',
+        status: 'active',
+        tenantId: 'varah'
+      })
+      .onConflictDoNothing();
+  }
+}
+```
+
+Wire into the Google Calendar sync route — call `autoCreateCalendarReminders()` whenever a new calendar event is fetched or synced.
+
+### Connection 6 — Notes → Chat Context
+
+Already partially done via `buildLightContext()` in chat-engine. Just needs voice notes surfaced proactively.
+
+In `chat-engine.ts`, add to the system prompt:
+
+```typescript
+// After existing context block, add:
+const recentDecisionNote = ctx.voiceNotes?.recent
+  .find(v => v.hasDecisionLanguage);
+
+if (recentDecisionNote) {
+  systemPrompt += `
+PROACTIVE AWARENESS:
+${ctx.firstName} recently recorded a voice note:
+"${recentDecisionNote.summary}"
+
+If the conversation touches on decisions, 
+uncertainty, or this topic — reference it naturally.
+Not: "I see you recorded a note saying..."
+Just: "You mentioned something about this recently..."
+`;
+}
+```
+
+---
+
+## Tell Your Developer
+
+```
+3 files to touch:
+
+1. server/arya/vedic-lens.ts
+   → Add calendar conflict check
+   → Warn if meeting in low-energy window
+
+2. server/arya/auto-reminder.ts  
+   → Add autoCreateCalendarReminders()
+   → Wire into Google Calendar sync route
+
+3. server/arya/chat-engine.ts
+   → Add voice note proactive awareness
+   → 5 lines at end of system prompt block
+```
+
+Once these 3 are done — **all 6 remaining connections are complete.**
+
+The full interconnection map will be finished. Every section will know about every other section.
+
+Shall I write all 3 complete implementations now?

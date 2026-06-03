@@ -1,0 +1,558 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// FILE 1: server/arya/calendar-kaal-bridge.ts
+// Calendar → KAAL conflict detection
+// Call this from vedic-lens.ts after building the daily briefing
+// ═══════════════════════════════════════════════════════════════════════════
+
+import { buildUserContext } from './context-builder';
+
+interface CalendarKaalWarning {
+  hasConflict: boolean;
+  warningText: string | null;
+  conflictingEvent: string | null;
+  conflictTime: string | null;
+  adviceText: string | null;
+}
+
+/**
+ * Checks if any calendar event falls in a low-energy KAAL window.
+ * Returns a warning to inject into the morning briefing / KAAL dashboard.
+ *
+ * Usage in vedic-lens.ts:
+ *   const warning = await checkCalendarKaalConflict(userId);
+ *   if (warning.hasConflict) briefing.calendarWarning = warning.warningText;
+ */
+export async function checkCalendarKaalConflict(
+  userId: number
+): Promise<CalendarKaalWarning> {
+  const ctx = await buildUserContext(userId);
+
+  const empty: CalendarKaalWarning = {
+    hasConflict: false,
+    warningText: null,
+    conflictingEvent: null,
+    conflictTime: null,
+    adviceText: null,
+  };
+
+  // Need both KAAL energy data and calendar events
+  if (!ctx.kaal.todayEnergy || ctx.calendar.todayEvents.length === 0) {
+    return empty;
+  }
+
+  // Parse the peak window start time to find the LOW energy periods
+  // Low energy = outside the peak window
+  const peakWindowRaw = ctx.kaal.todayWindow; // "10:30 AM – 12:15 PM"
+  let peakStartHour = 10; // default
+  let peakEndHour = 12;   // default
+
+  if (peakWindowRaw) {
+    const parts = peakWindowRaw.split('–').map(s => s.trim());
+    if (parts.length === 2) {
+      peakStartHour = parseHourFromString(parts[0]);
+      peakEndHour = parseHourFromString(parts[1]);
+    }
+  }
+
+  // Low energy windows: before peak and after 4 PM
+  function isLowEnergyHour(hour: number): boolean {
+    const beforePeak = hour < peakStartHour - 1;
+    const afterAfternoon = hour >= 15; // after 3 PM energy typically dips
+    return beforePeak || afterAfternoon;
+  }
+
+  // Find important events in low-energy windows
+  const importantKeywords = [
+    'conference', 'presentation', 'interview',
+    'review', 'meeting', 'surgery', 'procedure',
+    'seminar', 'talk', 'speech', 'pitch', 'demo'
+  ];
+
+  const conflictingEvent = ctx.calendar.todayEvents.find(event => {
+    const eventHour = parseHourFromString(event.startTime);
+    const isImportant = importantKeywords.some(kw =>
+      event.title.toLowerCase().includes(kw)
+    );
+    return isImportant && isLowEnergyHour(eventHour);
+  });
+
+  if (!conflictingEvent) return empty;
+
+  // Build the warning text — personal, not clinical
+  const peakWindowDisplay = peakWindowRaw || `${peakStartHour}:00 AM`;
+  const firstName = ctx.firstName;
+
+  const warningText =
+    `Your ${conflictingEvent.title} at ${conflictingEvent.startTime} ` +
+    `falls outside your clearest window today. ` +
+    `Prepare before ${peakWindowDisplay} — ` +
+    `walk in with the thinking already done.`;
+
+  const adviceText = buildAdviceForConflict(
+    conflictingEvent.title,
+    conflictingEvent.startTime,
+    peakWindowDisplay,
+    firstName,
+    ctx.kaal.todayTheme || ''
+  );
+
+  return {
+    hasConflict: true,
+    warningText,
+    conflictingEvent: conflictingEvent.title,
+    conflictTime: conflictingEvent.startTime,
+    adviceText,
+  };
+}
+
+function parseHourFromString(timeStr: string): number {
+  // Handles "10:30 AM", "2:15 PM", "14:30"
+  if (!timeStr) return 12;
+  const cleaned = timeStr.trim().toUpperCase();
+  const isPM = cleaned.includes('PM');
+  const isAM = cleaned.includes('AM');
+  const numbers = cleaned.replace(/[^0-9:]/g, '');
+  const parts = numbers.split(':');
+  let hour = parseInt(parts[0], 10);
+  if (isNaN(hour)) return 12;
+  if (isPM && hour !== 12) hour += 12;
+  if (isAM && hour === 12) hour = 0;
+  return hour;
+}
+
+function buildAdviceForConflict(
+  eventTitle: string,
+  eventTime: string,
+  peakWindow: string,
+  firstName: string,
+  theme: string
+): string {
+  const titleLower = eventTitle.toLowerCase();
+
+  if (titleLower.includes('speech') || titleLower.includes('talk') || titleLower.includes('presentation')) {
+    return `Your words will carry more weight if you prepare them in your peak window. Use ${peakWindow} to rehearse — not just before you walk in.`;
+  }
+
+  if (titleLower.includes('meeting') || titleLower.includes('review')) {
+    return `Before the meeting, write down the three things that actually matter. Peak clarity is at ${peakWindow} — use it to think, not to react.`;
+  }
+
+  if (titleLower.includes('conference')) {
+    return `The conference takes energy. Your clearest thinking happens at ${peakWindow}. Use that window for your most important contributions today.`;
+  }
+
+  if (titleLower.includes('interview')) {
+    return `Interviews reward presence, not preparation in the moment. ${peakWindow} is when your mind is sharpest — settle your thoughts then.`;
+  }
+
+  return `${eventTitle} at ${eventTime} comes outside your peak. Do your heaviest thinking before ${peakWindow.split('–')[0]} — arrive prepared.`;
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FILE 2: server/arya/calendar-auto-reminders.ts
+// Calendar → Auto-reminders
+// Wire into Google Calendar sync — call after each event is fetched
+// ═══════════════════════════════════════════════════════════════════════════
+
+import { db } from '../db';
+import { arya_reminders, arya_users } from '../../shared/schema';
+import { and, eq, gte, lte } from 'drizzle-orm';
+
+interface CalendarEvent {
+  id?: string;
+  googleEventId?: string;
+  title: string;
+  startTime: Date | string;
+  endTime?: Date | string;
+  location?: string;
+}
+
+const IMPORTANT_KEYWORDS = [
+  'conference', 'presentation', 'interview',
+  'meeting', 'surgery', 'procedure', 'seminar',
+  'talk', 'speech', 'pitch', 'demo', 'inauguration',
+  'ceremony', 'review', 'exam', 'test', 'pocus',
+  'workshop', 'webinar', 'panel', 'lecture'
+];
+
+const CRITICAL_KEYWORDS = [
+  'surgery', 'procedure', 'conference', 'interview',
+  'exam', 'presentation', 'inauguration', 'pitch'
+];
+
+function isImportantEvent(title: string): boolean {
+  const lower = title.toLowerCase();
+  return IMPORTANT_KEYWORDS.some(kw => lower.includes(kw));
+}
+
+function isCriticalEvent(title: string): boolean {
+  const lower = title.toLowerCase();
+  return CRITICAL_KEYWORDS.some(kw => lower.includes(kw));
+}
+
+function subHours(date: Date, hours: number): Date {
+  return new Date(date.getTime() - hours * 60 * 60 * 1000);
+}
+
+function subDays(date: Date, days: number): Date {
+  return new Date(date.getTime() - days * 24 * 60 * 60 * 1000);
+}
+
+function setTime(date: Date, hour: number, minute = 0): Date {
+  const d = new Date(date);
+  d.setHours(hour, minute, 0, 0);
+  return d;
+}
+
+async function reminderAlreadyExists(
+  userId: number,
+  title: string,
+  scheduledAt: Date,
+  toleranceMinutes = 120
+): Promise<boolean> {
+  const windowStart = new Date(scheduledAt.getTime() - toleranceMinutes * 60000);
+  const windowEnd   = new Date(scheduledAt.getTime() + toleranceMinutes * 60000);
+
+  const existing = await db
+    .select({ id: arya_reminders.id })
+    .from(arya_reminders)
+    .where(
+      and(
+        eq(arya_reminders.userId, userId),
+        eq(arya_reminders.title, title),
+        gte(arya_reminders.scheduledAt, windowStart),
+        lte(arya_reminders.scheduledAt, windowEnd)
+      )
+    )
+    .limit(1);
+
+  return existing.length > 0;
+}
+
+async function getTenantId(userId: number): Promise<string> {
+  const rows = await db
+    .select({ tenantId: arya_users.tenantId })
+    .from(arya_users)
+    .where(eq(arya_users.id, userId))
+    .limit(1);
+  return rows[0]?.tenantId || 'default';
+}
+
+/**
+ * Auto-creates smart reminders for important calendar events.
+ *
+ * For critical events (conference, surgery, interview):
+ *   - Night before at 9 PM
+ *   - Morning of at 7 AM
+ *   - 2 hours before
+ *   - 30 minutes before
+ *
+ * For important events (meeting, presentation):
+ *   - Morning of at 8 AM
+ *   - 1 hour before
+ *
+ * Usage in routes.ts (Google Calendar sync):
+ *   for (const event of calendarEvents) {
+ *     await autoCreateCalendarReminders(userId, event);
+ *   }
+ */
+export async function autoCreateCalendarReminders(
+  userId: number,
+  event: CalendarEvent
+): Promise<void> {
+  const title = event.title || '';
+
+  if (!isImportantEvent(title)) return;
+
+  const eventTime = new Date(event.startTime);
+  const now = new Date();
+  const hoursUntil = (eventTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+  // Don't create reminders for past events
+  if (hoursUntil < 0) return;
+
+  const tenantId = await getTenantId(userId);
+  const isCritical = isCriticalEvent(title);
+  const remindersToCreate: Array<{ title: string; scheduledAt: Date; message?: string }> = [];
+
+  if (isCritical) {
+    // Night before at 9 PM
+    if (hoursUntil > 14) {
+      const nightBefore = setTime(subDays(eventTime, 1), 21, 0);
+      if (nightBefore > now) {
+        remindersToCreate.push({
+          title: `${title} — tomorrow`,
+          scheduledAt: nightBefore,
+          message: `You have ${title} tomorrow. Are you ready? Rest well tonight.`,
+        });
+      }
+    }
+
+    // Morning of at 7 AM
+    if (hoursUntil > 2) {
+      const morningOf = setTime(eventTime, 7, 0);
+      if (morningOf > now && morningOf < eventTime) {
+        remindersToCreate.push({
+          title: `${title} — today`,
+          scheduledAt: morningOf,
+          message: `${title} is today. You've prepared for this. Trust what you know.`,
+        });
+      }
+    }
+
+    // 2 hours before
+    if (hoursUntil > 2.5) {
+      const twoHoursBefore = subHours(eventTime, 2);
+      if (twoHoursBefore > now) {
+        remindersToCreate.push({
+          title: `${title} in 2 hours`,
+          scheduledAt: twoHoursBefore,
+          message: `2 hours until ${title}. Eat something. Breathe. You're ready.`,
+        });
+      }
+    }
+
+    // 30 minutes before
+    if (hoursUntil > 0.75) {
+      const thirtyMinBefore = subHours(eventTime, 0.5);
+      if (thirtyMinBefore > now) {
+        remindersToCreate.push({
+          title: `${title} — starting soon`,
+          scheduledAt: thirtyMinBefore,
+          message: `${title} starts in 30 minutes. Calm. Present. Ready.`,
+        });
+      }
+    }
+
+  } else {
+    // Important but not critical — morning + 1 hour before
+
+    // Morning of at 8 AM
+    if (hoursUntil > 1) {
+      const morningOf = setTime(eventTime, 8, 0);
+      if (morningOf > now && morningOf < eventTime) {
+        remindersToCreate.push({
+          title: `${title} today`,
+          scheduledAt: morningOf,
+          message: `You have ${title} today. Know what you want from it.`,
+        });
+      }
+    }
+
+    // 1 hour before
+    if (hoursUntil > 1.5) {
+      const oneHourBefore = subHours(eventTime, 1);
+      if (oneHourBefore > now) {
+        remindersToCreate.push({
+          title: `${title} in 1 hour`,
+          scheduledAt: oneHourBefore,
+          message: `${title} in one hour. What's the one thing you want to say or get done?`,
+        });
+      }
+    }
+  }
+
+  // Insert all — skip duplicates
+  for (const reminder of remindersToCreate) {
+    const exists = await reminderAlreadyExists(
+      userId,
+      reminder.title,
+      reminder.scheduledAt
+    );
+    if (!exists) {
+      await db.insert(arya_reminders).values({
+        userId,
+        title: reminder.title,
+        scheduledAt: reminder.scheduledAt,
+        message: reminder.message || reminder.title,
+        type: 'calendar_auto',
+        status: 'active',
+        recurrence: 'once',
+        tenantId,
+        createdAt: new Date(),
+      });
+    }
+  }
+}
+
+/**
+ * Sweep upcoming calendar events and auto-create reminders.
+ * Run this nightly from the scheduler.
+ *
+ * Usage in reminder-scheduler.ts:
+ *   await sweepCalendarForReminders();
+ */
+export async function sweepCalendarForReminders(): Promise<void> {
+  // Import here to avoid circular deps
+  const { arya_calendar_events } = await import('../../shared/schema');
+  const { gte: drizzleGte, lte: drizzleLte } = await import('drizzle-orm');
+
+  const now = new Date();
+  const sevenDaysAhead = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+  const upcomingEvents = await db
+    .select()
+    .from(arya_calendar_events)
+    .where(
+      and(
+        drizzleGte(arya_calendar_events.startTime, now),
+        drizzleLte(arya_calendar_events.startTime, sevenDaysAhead)
+      )
+    );
+
+  for (const event of upcomingEvents) {
+    if (event.userId && isImportantEvent(event.title)) {
+      await autoCreateCalendarReminders(event.userId, {
+        title: event.title,
+        startTime: event.startTime,
+        endTime: event.endTime,
+        googleEventId: event.googleEventId,
+      });
+    }
+  }
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FILE 3: Patch for server/arya/chat-engine.ts
+// Notes → Chat context (proactive voice note awareness)
+//
+// ADD THIS BLOCK to the existing system prompt assembly in chat-engine.ts
+// Place it after the existing memory/context injection
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Builds the proactive voice note awareness block.
+ * Inject into chat-engine.ts system prompt.
+ *
+ * Usage:
+ *   const voiceBlock = buildVoiceNoteAwarenessBlock(ctx);
+ *   if (voiceBlock) systemPrompt += '\n\n' + voiceBlock;
+ */
+export function buildVoiceNoteAwarenessBlock(ctx: {
+  firstName: string;
+  voiceNotes?: {
+    recent: Array<{
+      summary: string;
+      hasDecisionLanguage: boolean;
+      mentionedPeople: string[];
+      mentionedGoals: string[];
+      createdAt: Date;
+    }>;
+  };
+}): string | null {
+  if (!ctx.voiceNotes?.recent?.length) return null;
+
+  const lines: string[] = [];
+
+  // Decision language note
+  const decisionNote = ctx.voiceNotes.recent.find(v => v.hasDecisionLanguage);
+  if (decisionNote) {
+    const daysAgo = Math.round(
+      (Date.now() - decisionNote.createdAt.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    const when = daysAgo === 0 ? 'today'
+               : daysAgo === 1 ? 'yesterday'
+               : `${daysAgo} days ago`;
+
+    lines.push(
+      `VOICE NOTE (${when}): "${decisionNote.summary}"`,
+      `This sounds like an open decision. If the conversation touches on`,
+      `uncertainty, choices, or this topic — acknowledge it naturally.`,
+      `Say "you mentioned this recently" — never "I see you recorded a note".`
+    );
+  }
+
+  // People mentioned
+  const allPeople = ctx.voiceNotes.recent
+    .flatMap(v => v.mentionedPeople)
+    .filter((p, i, arr) => arr.indexOf(p) === i)
+    .slice(0, 3);
+
+  if (allPeople.length > 0 && !decisionNote) {
+    lines.push(
+      `RECENTLY MENTIONED PEOPLE: ${allPeople.join(', ')}`,
+      `If these names come up — ARYA already knows the context.`
+    );
+  }
+
+  // Goals extracted from voice notes
+  const extractedGoals = ctx.voiceNotes.recent
+    .flatMap(v => v.mentionedGoals)
+    .filter((g, i, arr) => arr.indexOf(g) === i)
+    .slice(0, 2);
+
+  if (extractedGoals.length > 0) {
+    lines.push(
+      `FROM RECENT VOICE NOTES — things they said they need to do:`,
+      extractedGoals.map(g => `  • ${g}`).join('\n')
+    );
+  }
+
+  if (lines.length === 0) return null;
+
+  return [
+    'PROACTIVE VOICE NOTE AWARENESS:',
+    ...lines,
+    '',
+    'Use this to speak with continuity — like a friend who pays attention.',
+    'Never announce that you have this data. Just use it.',
+  ].join('\n');
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// WIRING INSTRUCTIONS — copy these into the correct files
+// ═══════════════════════════════════════════════════════════════════════════
+
+/*
+─────────────────────────────────────────────────
+WIRE 1: server/arya/vedic-lens.ts
+Add after the briefing object is assembled:
+
+  import { checkCalendarKaalConflict } from './calendar-kaal-bridge';
+
+  // After building kaalBriefing object:
+  const calendarWarning = await checkCalendarKaalConflict(userId);
+  if (calendarWarning.hasConflict) {
+    kaalBriefing.calendarWarning = calendarWarning.warningText;
+    kaalBriefing.calendarAdvice = calendarWarning.adviceText;
+  }
+
+─────────────────────────────────────────────────
+WIRE 2: server/routes.ts — Google Calendar sync route
+Find: POST /api/user/calendar/sync or GET /api/user/calendar/events
+
+  import { autoCreateCalendarReminders } from '../arya/calendar-auto-reminders';
+
+  // After saving/fetching calendar events:
+  for (const event of events) {
+    await autoCreateCalendarReminders(userId, event).catch(console.error);
+  }
+
+─────────────────────────────────────────────────
+WIRE 3: server/arya/reminder-scheduler.ts
+Add to the nightly sweep (around midnight):
+
+  import { sweepCalendarForReminders } from './calendar-auto-reminders';
+
+  // In the midnight job:
+  await sweepCalendarForReminders().catch(console.error);
+
+─────────────────────────────────────────────────
+WIRE 4: server/arya/chat-engine.ts
+Find where systemPrompt is assembled (after memory/context blocks):
+
+  import { buildVoiceNoteAwarenessBlock } from './calendar-kaal-bridge';
+
+  // ctx already available from buildLightContext() call:
+  const voiceBlock = buildVoiceNoteAwarenessBlock(ctx);
+  if (voiceBlock) {
+    systemPrompt += '\n\n' + voiceBlock;
+  }
+
+─────────────────────────────────────────────────
+That's it. All 4 wires. Zero new DB tables needed.
+─────────────────────────────────────────────────
+*/

@@ -819,6 +819,29 @@ export async function generateAryaResponse(
       if (ctx.rashi) {
         parts.push(`VEDIC PROFILE: ${ctx.rashi}${ctx.nakshatra ? ` · ${ctx.nakshatra}` : ""}`);
       }
+
+      // Connection 6 — recent voice note awareness
+      try {
+        const { aryaVoiceNotes } = await import("@shared/schema");
+        const { desc } = await import("drizzle-orm");
+        const recentNotes = await db
+          .select({ summary: aryaVoiceNotes.summary, extractedPeople: aryaVoiceNotes.extractedPeople, extractedTasks: aryaVoiceNotes.extractedTasks })
+          .from(aryaVoiceNotes)
+          .where(eq(aryaVoiceNotes.userId, userId))
+          .orderBy(desc(aryaVoiceNotes.createdAt))
+          .limit(3);
+
+        const noteWithContent = recentNotes.find(n => n.summary && n.summary.trim().length > 20);
+        if (noteWithContent?.summary) {
+          parts.push(`RECENT VOICE NOTE: ${noteWithContent.summary.replace(/^•\s*/gm, "").split("\n").slice(0, 2).join(" | ")}`);
+        }
+        const allPeople = recentNotes.flatMap(n => (n.extractedPeople as string[]) || []).filter(Boolean);
+        const uniquePeople = [...new Set(allPeople)].slice(0, 3);
+        if (uniquePeople.length > 0) {
+          parts.push(`PEOPLE THEY'VE MENTIONED: ${uniquePeople.join(", ")}`);
+        }
+      } catch {}
+
       if (parts.length > 0) {
         liveContext = `\n\nLIVE CONTEXT — weave naturally into response, never announce it:\n${parts.join("\n")}`;
       }

@@ -3,6 +3,7 @@ import { db } from "../db";
 import { aryaUsers, aryaGoals } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
 import { getLanguageInstruction } from "./language-instruction";
+import { checkCalendarKaalConflict } from "./calendar-kaal-bridge";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -83,6 +84,8 @@ export interface VedicBriefing {
   dasha: { lord: string; yearsLeft: number; chapterText: string };
   weekDays: WeekDay[];
   venusPhase: string;
+  calendarWarning?: string | null;
+  calendarAdvice?: string | null;
 }
 
 // ── Week forecast: deterministic, seeded by dasha lord + rashi ──────────────
@@ -370,7 +373,7 @@ Return ONLY valid JSON matching this exact structure:
     const validTone = (t: unknown): "good" | "caution" | "watch" =>
       (t === "good" || t === "caution" || t === "watch") ? t : "caution";
 
-    return {
+    const briefingResult: VedicBriefing = {
       userName: user.name,
       planetaryPills: (parsed.planetaryPills || []).map((p: any) => ({
         emoji: p.emoji || "✦",
@@ -389,7 +392,20 @@ Return ONLY valid JSON matching this exact structure:
       dasha: parsed.dasha || { lord: dashaLord, yearsLeft: dashaYearsLeft, chapterText: "" },
       weekDays,
       venusPhase,
+      calendarWarning: null,
+      calendarAdvice: null,
     };
+
+    // Connection 4 — inject calendar vs KAAL conflict warning
+    try {
+      const calWarn = await checkCalendarKaalConflict(userId);
+      if (calWarn.hasConflict) {
+        briefingResult.calendarWarning = calWarn.warningText;
+        briefingResult.calendarAdvice = calWarn.adviceText;
+      }
+    } catch {}
+
+    return briefingResult;
   } catch {
     return { ...sampleBriefing(user.name, rashi), weekDays, venusPhase };
   }

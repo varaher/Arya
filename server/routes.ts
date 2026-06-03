@@ -95,6 +95,7 @@ import { streamRehearsalResponse, generateRehearsalFeedback } from "./arya/rehea
 import { getDataSummary, forgetSelective, forgetPeriod, forgetAll } from "./arya/forget-me-service";
 import { scheduleGoalReminders } from "./arya/auto-reminder";
 import { extractFromVoiceNote } from "./arya/voice-extractor";
+import { autoCreateCalendarReminders } from "./arya/calendar-auto-reminders";
 import { computeKundliProfile, generateVedicBriefing } from "./arya/vedic-lens";
 import { createNitiSession, addNitiMessage } from "./arya/niti";
 
@@ -3743,6 +3744,16 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
       const { getTodayEvents, getUpcomingEvents } = await import("./arya/google-calendar");
       const events = days <= 1 ? await getTodayEvents(userId) : await getUpcomingEvents(userId, days);
       res.json({ events });
+
+      // Connection 5 — auto-create reminders for important upcoming events
+      if (events && events.length > 0) {
+        for (const ev of events) {
+          autoCreateCalendarReminders(userId, {
+            summary: (ev as any).summary ?? "",
+            start: (ev as any).start ?? "",
+          }).catch(() => {});
+        }
+      }
     } catch (error: any) {
       res.status(500).json({ error: "Failed to fetch calendar events" });
     }
