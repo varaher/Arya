@@ -2465,7 +2465,7 @@ export async function registerRoutes(
       const readings = await db.select().from(aryaHealthReadings)
         .where(and(eq(aryaHealthReadings.userId, userId), sql`${aryaHealthReadings.loggedAt} >= ${since}`))
         .orderBy(desc(aryaHealthReadings.loggedAt)).limit(200);
-      if (readings.length < 3) return res.json({ insights: [], insufficient: true });
+      if (readings.length < 1) return res.json({ insights: [], insufficient: true });
 
       const summary: Record<string, number[]> = {};
       readings.forEach(r => {
@@ -2515,13 +2515,14 @@ export async function registerRoutes(
   app.put("/api/user/health/profile", requireUser, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).userId;
-      const { heightCm, weightKg, sex, activityLevel, age } = req.body;
+      const { heightCm, weightKg, sex, activityLevel, age, healthGoals } = req.body;
       const updates: Record<string, any> = {};
       if (heightCm != null) updates.heightCm = parseInt(String(heightCm));
       if (weightKg != null) updates.weightKg = String(weightKg);
       if (sex) updates.sex = sex;
       if (activityLevel) updates.activityLevel = activityLevel;
       if (age != null) updates.age = parseInt(String(age));
+      if (healthGoals != null) updates.healthGoals = Array.isArray(healthGoals) ? healthGoals.join(",") : String(healthGoals);
       await db.update(aryaUsers).set(updates).where(eq(aryaUsers.id, userId));
       res.json({ ok: true });
     } catch (err: any) {

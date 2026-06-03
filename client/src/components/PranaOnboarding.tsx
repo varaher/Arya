@@ -126,7 +126,7 @@ export default function PranaOnboarding({ userName, token, onComplete }: Props) 
   const [weight, setWeight]   = useState("");
   const [sex, setSex]         = useState("");
   const [activity, setActivity] = useState("");
-  const [goal, setGoal]       = useState("");
+  const [goals, setGoals]     = useState<string[]>([]);
   const [saving, setSaving]   = useState(false);
 
   const firstName = userName?.split(" ")[0] || "you";
@@ -146,6 +146,7 @@ export default function PranaOnboarding({ userName, token, onComplete }: Props) 
           weightKg:      parseFloat(weight),
           sex,
           activityLevel: activity || "moderate",
+          healthGoals:   goals,
         }),
       });
       onComplete({
@@ -160,6 +161,11 @@ export default function PranaOnboarding({ userName, token, onComplete }: Props) 
 
   const canMetrics  = height.trim() !== "" && weight.trim() !== "" && sex !== "";
   const canActivity = activity !== "";
+  const canGoals    = goals.length > 0;
+
+  function toggleGoal(key: string) {
+    setGoals(prev => prev.includes(key) ? prev.filter(g => g !== key) : [...prev, key]);
+  }
 
   return (
     <>
@@ -336,31 +342,43 @@ export default function PranaOnboarding({ userName, token, onComplete }: Props) 
               </Screen>
             )}
 
-            {/* ── Screen 4: Health goal ─────────────────────────────── */}
+            {/* ── Screen 4: Health goals (multi-select) ────────────── */}
             {screen === 4 && (
               <Screen key="s4">
                 <div style={{ paddingTop: 36, paddingBottom: 24 }}>
                   <div style={{ fontSize: 30, fontFamily: serif, fontWeight: 600, color: G.text, lineHeight: 1.3, marginBottom: 8 }}>
-                    What matters<br />most to you?
+                    What matters<br />to you?
                   </div>
-                  <div style={{ fontSize: 13, color: G.textDim, marginBottom: 28, lineHeight: 1.6 }}>
-                    ARYA tailors its coaching from this.
+                  <div style={{ fontSize: 13, color: G.textDim, marginBottom: 6, lineHeight: 1.6 }}>
+                    Pick all that apply.
+                  </div>
+                  <div style={{ fontSize: 12, color: canGoals ? G.green : G.textMuted, marginBottom: 24, fontWeight: canGoals ? 600 : 400, minHeight: 18, transition: "color 0.2s" }}>
+                    {canGoals ? `${goals.length} selected` : "Be honest with yourself."}
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                    {GOALS.map(g => (
-                      <button key={g.key} onClick={() => setGoal(g.key)}
-                        data-testid={`prana-onboard-goal-${g.key}`}
-                        style={{
-                          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                          gap: 8, padding: "20px 12px",
-                          background: goal === g.key ? G.greenDim : G.surface,
-                          border: `1.5px solid ${goal === g.key ? G.greenBorder : G.border2}`,
-                          borderRadius: 16, cursor: "pointer", transition: "all 0.2s",
-                        }}>
-                        <span style={{ fontSize: 28 }}>{g.emoji}</span>
-                        <div style={{ fontSize: 12, fontWeight: goal === g.key ? 700 : 400, color: goal === g.key ? G.green : G.textDim, fontFamily: sans, textAlign: "center" }}>{g.label}</div>
-                      </button>
-                    ))}
+                    {GOALS.map(g => {
+                      const sel = goals.includes(g.key);
+                      return (
+                        <button key={g.key} onClick={() => toggleGoal(g.key)}
+                          data-testid={`prana-onboard-goal-${g.key}`}
+                          style={{
+                            position: "relative",
+                            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                            gap: 8, padding: "20px 12px",
+                            background: sel ? G.greenDim : G.surface,
+                            border: `1.5px solid ${sel ? G.greenBorder : G.border2}`,
+                            borderRadius: 16, cursor: "pointer", transition: "all 0.2s",
+                          }}>
+                          {sel && (
+                            <div style={{ position: "absolute", top: 8, right: 8, width: 16, height: 16, borderRadius: "50%", background: G.green, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                              <span style={{ fontSize: 9, color: "#06100a", fontWeight: 900, lineHeight: 1 }}>✓</span>
+                            </div>
+                          )}
+                          <span style={{ fontSize: 28 }}>{g.emoji}</span>
+                          <div style={{ fontSize: 12, fontWeight: sel ? 700 : 400, color: sel ? G.green : G.textDim, fontFamily: sans, textAlign: "center" }}>{g.label}</div>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </Screen>
@@ -401,8 +419,8 @@ export default function PranaOnboarding({ userName, token, onComplete }: Props) 
           {screen === 3 && <PrimaryBtn label="Continue →" onClick={() => setScreen(4)} disabled={!canActivity} />}
           {screen === 4 && (
             <>
-              <PrimaryBtn label="Continue →" onClick={() => setScreen(5)} disabled={!goal} />
-              {!goal && (
+              <PrimaryBtn label="Continue →" onClick={() => setScreen(5)} disabled={!canGoals} />
+              {!canGoals && (
                 <button onClick={() => setScreen(5)}
                   style={{ width: "100%", padding: "12px", border: "none", background: "none", color: G.textMuted, fontSize: 12, cursor: "pointer", fontFamily: sans, marginTop: 4 }}>
                   Skip this step

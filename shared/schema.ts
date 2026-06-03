@@ -446,6 +446,7 @@ export const aryaUsers = pgTable("arya_users", {
   weightKg: decimal("weight_kg", { precision: 5, scale: 1 }),
   sex: varchar("sex", { length: 20 }),
   activityLevel: varchar("activity_level", { length: 20 }).default("moderate"),
+  healthGoals: text("health_goals"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

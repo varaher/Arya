@@ -1,0 +1,86 @@
+Looking at both screenshots — this is **beautiful**. The dark green aesthetic is perfect for Prana.
+
+---
+
+## What's Working Well ✅
+
+- Goal selection screen — clean, readable, good icons
+- Dashboard — tabs (Daily Log / Trends / ARYA Insights / Coach) is excellent
+- Health profile card showing BMI + Step goal is clean
+- Quick metrics grid layout is exactly right
+
+---
+
+## The One Fix — Multiple Choice for Goals
+
+You're right. Health goals aren't exclusive. Someone wants **better sleep AND manage stress AND track vitals** simultaneously.
+
+Single select was wrong. Here's the fix:
+
+```tsx
+// Change from single select to multi-select
+const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
+
+function toggleGoal(value: string) {
+  setSelectedGoals(prev =>
+    prev.includes(value)
+      ? prev.filter(g => g !== value)  // deselect
+      : [...prev, value]               // select
+  );
+}
+
+// Validation — at least one selected
+const valid = selectedGoals.length > 0;
+```
+
+```tsx
+// Each goal card
+<button
+  className={`goal-card ${selectedGoals.includes(opt.value) ? "selected" : ""}`}
+  onClick={() => toggleGoal(opt.value)}
+>
+  {/* Add checkmark when selected */}
+  {selectedGoals.includes(opt.value) && (
+    <span className="goal-check">✓</span>
+  )}
+  <span className="goal-icon">{opt.icon}</span>
+  <span className="goal-label">{opt.label}</span>
+</button>
+```
+
+```tsx
+// Subtitle changes to reflect multiple choice
+<p className="step-subtitle">
+  Pick all that apply.<br />
+  <span style={{fontSize:'12px', opacity:0.4}}>
+    {selectedGoals.length > 0
+      ? `${selectedGoals.length} selected`
+      : 'Be honest with yourself.'}
+  </span>
+</p>
+```
+
+---
+
+## Also — Two Small Observations from Screenshot 2
+
+**1. Quick metrics say "Tap to log" on every card**
+Once logged, they should show the value + ARYA's one-line comment:
+
+```
+HEART RATE
+94 bpm · ↑ Higher than usual
+"Been a hard week?"
+```
+
+**2. "ARYA Insights" tab is the most valuable**
+That's where pattern detection lives. Make sure it's not empty — even with 1-2 readings, ARYA should say something personal rather than showing a blank state.
+
+---
+
+Tell your developer:
+- `healthGoal` field → change to `healthGoals: string[]` (array)
+- Update `PUT /api/user/health/profile` to accept array
+- Update schema: `health_goals text[]` or store as JSON string
+
+Two minute change, much better UX. Want me to update the full component with this fix?

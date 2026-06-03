@@ -779,25 +779,34 @@ function InsightsTab({ token }: { token?: string | null }) {
   );
 
   if (insufficient) return (
-    <div style={{ padding: "40px 24px", textAlign: "center" as const }}>
-      <div style={{ fontSize: 40, marginBottom: 16 }}>📊</div>
-      <div style={{ fontFamily: serif, fontSize: 20, color: C.text, marginBottom: 10 }}>Keep logging to unlock insights</div>
-      <div style={{ fontSize: 14, color: C.textDim, lineHeight: 1.7, maxWidth: 300, margin: "0 auto 24px" }}>
-        ARYA needs at least 3 readings across a few days to start noticing patterns.
+    <div style={{ padding: "32px 24px", textAlign: "center" as const }}>
+      <div style={{ fontSize: 40, marginBottom: 14, animation: "prana-pulse 2.5s ease-in-out infinite" }}>🫀</div>
+      <div style={{ fontFamily: serif, fontSize: 22, color: C.text, marginBottom: 8, lineHeight: 1.3 }}>ARYA is watching.</div>
+      <div style={{ fontSize: 14, color: C.textDim, lineHeight: 1.7, maxWidth: 290, margin: "0 auto 28px" }}>
+        Log your first reading — heart rate, sleep, steps, anything — and ARYA will start making sense of it immediately.
       </div>
-      <div style={{ display: "flex", flexDirection: "column" as const, gap: 10, maxWidth: 300, margin: "0 auto" }}>
+      {/* Preview cards — shown as "coming soon" with opacity */}
+      <div style={{ textAlign: "left" as const, maxWidth: 340, margin: "0 auto" }}>
+        <div style={{ fontSize: 10, color: C.textMuted, letterSpacing: "0.12em", textTransform: "uppercase" as const, marginBottom: 12 }}>
+          What ARYA will tell you
+        </div>
         {[
-          { icon: "❤️", text: "Heart rate elevated 4 days → connected to your mood" },
-          { icon: "🌙", text: "Under 5.5hrs sleep = lower decision quality the next day" },
-          { icon: "👟", text: "8,000 steps = measurably better mood score" },
-          { icon: "🔗", text: "Your peak days require all three: sleep + HR + movement" },
+          { icon: "❤️", title: "Heart rate trend",    body: "Your resting HR elevated 4 days in a row — often linked to stress or under-recovery." },
+          { icon: "🌙", title: "Sleep quality link",  body: "Under 5.5hrs sleep → lower focus and decision quality the next day." },
+          { icon: "👟", title: "Movement & mood",     body: "8,000+ steps correlates with measurably better reported mood." },
+          { icon: "🔗", title: "Your peak-day formula", body: "What combination of sleep + activity makes your best days? ARYA will find it." },
         ].map((ex, i) => (
-          <div key={i} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "12px 14px", display: "flex", gap: 10, alignItems: "flex-start", textAlign: "left" as const, opacity: 0.5 }}>
-            <span style={{ fontSize: 16, flexShrink: 0 }}>{ex.icon}</span>
-            <span style={{ fontSize: 12, color: C.textDim, lineHeight: 1.6 }}>{ex.text}</span>
+          <div key={i} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px", display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 10, opacity: 0.42, filter: "blur(0.3px)" }}>
+            <span style={{ fontSize: 18, flexShrink: 0, marginTop: 2 }}>{ex.icon}</span>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 4 }}>{ex.title}</div>
+              <div style={{ fontSize: 12, color: C.textDim, lineHeight: 1.65 }}>{ex.body}</div>
+            </div>
           </div>
         ))}
-        <div style={{ fontSize: 11, color: C.textMuted, marginTop: 4 }}>These are examples of what ARYA will show once you start logging</div>
+        <div style={{ fontSize: 11, color: C.textMuted, textAlign: "center" as const, marginTop: 6, lineHeight: 1.6 }}>
+          These unlock as you log. Every reading teaches ARYA something new.
+        </div>
       </div>
     </div>
   );
