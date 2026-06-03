@@ -60,9 +60,125 @@ const PLANET_EMOJIS: Record<string, string> = {
   Sun: "☀️", Moon: "🌙", Mars: "♂", Mercury: "☿", Jupiter: "♃", Venus: "♀", Saturn: "♄", Rahu: "☊", Ketu: "☋",
 };
 
+export interface WeekDay {
+  date: string;
+  dayName: string;
+  dayFullName: string;
+  dayDate: number;
+  isToday: boolean;
+  energy: "Peak" | "High" | "Mid" | "Rest";
+  theme: string;
+  bestWindow: string;
+  quality: string;
+  avoid: string;
+}
+
+export interface VedicBriefing {
+  userName: string;
+  planetaryPills: Array<{ emoji: string; text: string; tone: "good" | "caution" | "watch" }>;
+  aryaInsight: string;
+  muhurat: { startTime: string; endTime: string; purpose: string };
+  cosmicCards: Array<{ tone: "good" | "caution" | "watch"; label: string; text: string; source: string }>;
+  guidance: { money: string; relationships: string; body: string };
+  dasha: { lord: string; yearsLeft: number; chapterText: string };
+  weekDays: WeekDay[];
+  venusPhase: string;
+}
+
+// ── Week forecast: deterministic, seeded by dasha lord + rashi ──────────────
+const WEEK_THEMES = [
+  "Clarity & decisions",
+  "Communication & connection",
+  "Strategy & focus",
+  "Rest & reflection",
+  "Momentum & action",
+  "Relationships & trust",
+  "Completion & review",
+];
+
+const BEST_WINDOWS = [
+  "9:00 AM – 11:00 AM",
+  "10:30 AM – 12:30 PM",
+  "7:00 AM – 9:00 AM",
+  "11:00 AM – 1:00 PM",
+  "8:00 AM – 10:00 AM",
+  "2:00 PM – 4:00 PM",
+  "6:00 PM – 8:00 PM",
+];
+
+const AVOID_PHRASES = [
+  "Major financial commitments",
+  "Confrontational conversations",
+  "Starting too many things at once",
+  "Rushing important decisions",
+  "Overcommitting your time",
+  "Arguments and reactive debates",
+  "Strenuous physical activity",
+];
+
+// Energy compatibility: dasha lord × day of week → energy level
+const ENERGY_MAP: Record<string, ("Peak" | "High" | "Mid" | "Rest")[]> = {
+  Jupiter: ["Mid", "High", "Mid", "High", "Peak", "High", "Rest"],
+  Venus:   ["Mid", "High", "Rest", "High", "Mid",  "Peak", "Mid"],
+  Sun:     ["Peak","Mid", "High", "Rest", "Mid",  "High", "Mid"],
+  Moon:    ["High","Peak","Mid",  "High", "Rest", "Mid",  "High"],
+  Mars:    ["Mid", "Rest","Peak", "Mid",  "High", "Rest", "High"],
+  Rahu:    ["High","Mid", "High", "Peak", "Mid",  "Rest", "High"],
+  Saturn:  ["Rest","High","Mid",  "High", "Rest", "Mid",  "Peak"],
+  Mercury: ["Mid", "High","Rest", "Peak", "High", "Mid",  "High"],
+  Ketu:    ["High","Rest","Mid",  "High", "Peak", "High", "Rest"],
+};
+
+function generateWeekForecast(dashaLord: string, rashi: string): WeekDay[] {
+  const today = new Date();
+  const todayDate = today.getDate();
+  const energyRow = ENERGY_MAP[dashaLord] || ENERGY_MAP.Jupiter;
+  const rashiSeed = rashi ? (rashi.charCodeAt(0) % 7) : 0;
+
+  return Array.from({ length: 7 }, (_, i) => {
+    const date = new Date(today);
+    date.setDate(todayDate + i);
+    const dayOfWeek = date.getDay();
+    const themeIdx = (dayOfWeek + rashiSeed) % 7;
+    const energy = energyRow[dayOfWeek];
+    const quality = energy === "Peak" ? "Strong momentum — use it" :
+                   energy === "High"  ? "Good energy — move forward" :
+                   energy === "Mid"   ? "Steady pace — maintain focus" :
+                   "Recovery day — rest is productive";
+
+    return {
+      date: date.toISOString().split("T")[0],
+      dayName: date.toLocaleDateString("en-IN", { weekday: "short" }),
+      dayFullName: date.toLocaleDateString("en-IN", { weekday: "long" }),
+      dayDate: date.getDate(),
+      isToday: i === 0,
+      energy,
+      theme: WEEK_THEMES[themeIdx],
+      bestWindow: BEST_WINDOWS[themeIdx],
+      quality,
+      avoid: AVOID_PHRASES[themeIdx],
+    };
+  });
+}
+
+// ── Venus cycle: synodic period ≈ 584 days ────────────────────────────────────
+function getVenusPhase(): string {
+  const today = new Date();
+  const reference = new Date("2023-08-13"); // Venus inferior conjunction reference
+  const days = Math.floor((today.getTime() - reference.getTime()) / 86400000);
+  const pos = ((days % 584) + 584) % 584;
+
+  if (pos < 146) return "Morning Star — rising energy, the best time to start something that matters";
+  if (pos < 263) return "Superior conjunction — deep inner work, what you build quietly now is solid";
+  if (pos < 438) return "Evening Star — harvest, completion, and deepening relationships";
+  return "Retrograde phase — reflection and revisiting, not retreat — course correction";
+}
+
 function sampleBriefing(name: string, rashi?: string, lang = "en"): VedicBriefing {
   const today = new Date();
   const dayRuler = DAY_RULERS[today.getDay()];
+  const weekDays = generateWeekForecast("Jupiter", rashi || "Mesh");
+  const venusPhase = getVenusPhase();
 
   if (lang === "hi") {
     return {
@@ -76,27 +192,17 @@ function sampleBriefing(name: string, rashi?: string, lang = "en"): VedicBriefin
       aryaInsight: `आप हाल ही में सामान्य से अधिक केंद्रित रहे हैं। आज की ऊर्जा उस स्पष्टता को सहारा देती है। जो आप पहले से जानते हैं उस पर भरोसा करें — आपकी अंतर्दृष्टि अभी बहुत सटीक है।`,
       muhurat: { startTime: "10:15 AM", endTime: "11:45 AM", purpose: "कुछ नया शुरू करने के लिए" },
       cosmicCards: [
-        {
-          tone: "good", label: "आज की शक्ति",
-          text: `"आज आपकी सोच असाधारण रूप से स्पष्ट है। अगर आप किसी निर्णय पर अटके हैं — यह उसे लेने का अच्छा दिन है।"`,
-          source: `${dayRuler} प्रभाव${rashi ? ` · ${rashi} राशि` : ""} · बृहत् पाराशर होरा शास्त्र`,
-        },
-        {
-          tone: "caution", label: "सावधानी से संभालें",
-          text: `"आज अपने आसपास के लोगों के साथ थोड़ा अधिक धैर्य रखें। छोटी गलतफहमियाँ जरूरत से बड़ी लग सकती हैं।"`,
-          source: "शनि गोचर · फलदीपिका संदर्भ",
-        },
+        { tone: "good", label: "आज की शक्ति", text: `"आज आपकी सोच असाधारण रूप से स्पष्ट है। अगर आप किसी निर्णय पर अटके हैं — यह उसे लेने का अच्छा दिन है।"`, source: `${dayRuler} प्रभाव${rashi ? ` · ${rashi}` : ""}` },
+        { tone: "caution", label: "सावधानी से संभालें", text: `"आज अपने आसपास के लोगों के साथ थोड़ा अधिक धैर्य रखें।"`, source: "शनि गोचर" },
       ],
       guidance: {
-        money: "नियमित खर्च के लिए ठीक है। बड़े वित्तीय निर्णय कुछ दिन टालें — जब ऊर्जा स्थिर हो जाए।",
-        relationships: "आज कुछ ऐसा कहने का अच्छा दिन है जो आप कहना चाहते थे। छोटे इशारे आज अच्छे से उतरते हैं।",
-        body: "ऊर्जा मध्यम है। शारीरिक रूप से बहुत अधिक जोर न दें। अगर आराम की जरूरत लगे तो करें।",
+        money: "नियमित खर्च के लिए ठीक है। बड़े वित्तीय निर्णय कुछ दिन टालें।",
+        relationships: "आज कुछ ऐसा कहने का अच्छा दिन है जो आप कहना चाहते थे।",
+        body: "ऊर्जा मध्यम है। शारीरिक रूप से बहुत अधिक जोर न दें।",
       },
-      dasha: {
-        lord: "Jupiter",
-        yearsLeft: 4.2,
-        chapterText: "आप बृहस्पति काल में हैं — एक ऐसा समय जब आपकी अंतर्दृष्टि तेज होती है और अवसर खुद चले आते हैं। अभी सामान्य से अधिक खुद पर भरोसा करें। यह विस्तार का समय है, पीछे हटने का नहीं।",
-      },
+      dasha: { lord: "Jupiter", yearsLeft: 4.2, chapterText: "आप बृहस्पति काल में हैं — एक ऐसा समय जब आपकी अंतर्दृष्टि तेज होती है और अवसर खुद चले आते हैं। अभी सामान्य से अधिक खुद पर भरोसा करें।" },
+      weekDays,
+      venusPhase,
     };
   }
 
@@ -108,41 +214,21 @@ function sampleBriefing(name: string, rashi?: string, lang = "en"): VedicBriefin
       { emoji: "♃", text: "Decisions feel clearer", tone: "good" },
       { emoji: "♂", text: "Avoid arguments after 6pm", tone: "watch" },
     ],
-    aryaInsight: `You've been more focused than usual lately. Today's cosmic energy supports that clarity. Trust what you already know — your instincts are well-calibrated right now.`,
+    aryaInsight: `You've been more focused than usual lately. Today's energy supports that clarity. Trust what you already know — your instincts are well-calibrated right now.`,
     muhurat: { startTime: "10:15 AM", endTime: "11:45 AM", purpose: "starting something new" },
     cosmicCards: [
-      {
-        tone: "good", label: "Strength today",
-        text: `"Your thinking is unusually clear today. If you've been sitting on a decision — this is a good day to make it."`,
-        source: `${dayRuler} influence${rashi ? ` · ${rashi} Rashi` : ""} · Brihat Parashara Hora Shastra`,
-      },
-      {
-        tone: "caution", label: "Handle with care",
-        text: `"Be a little more patient than usual with people around you today. Small misunderstandings can feel bigger than they are."`,
-        source: "Saturn transit · Phaladeepika reference",
-      },
+      { tone: "good", label: "Strength today", text: `"Your thinking is unusually clear today. If you've been sitting on a decision — this is a good day to make it."`, source: `${dayRuler} influence${rashi ? ` · ${rashi} Rashi` : ""}` },
+      { tone: "caution", label: "Handle with care", text: `"Be a little more patient than usual with people around you today. Small misunderstandings can feel bigger than they are."`, source: "Saturn transit" },
     ],
     guidance: {
       money: "Fine for routine expenses. Avoid big financial commitments — wait a few days when the energy settles.",
       relationships: "A good day to say something kind you've been meaning to say. Small gestures land well today.",
       body: "Energy is moderate. Don't push too hard physically. Rest if you feel it — your body is asking for it.",
     },
-    dasha: {
-      lord: "Jupiter",
-      yearsLeft: 4.2,
-      chapterText: "You're in a Jupiter chapter — a time when your instincts are sharper and opportunities tend to find you. Trust yourself more than usual right now. This is a period for expansion, not retreat.",
-    },
+    dasha: { lord: "Jupiter", yearsLeft: 4.2, chapterText: "You're in a Jupiter chapter — a time when your instincts are sharper and opportunities tend to find you. Trust yourself more than usual right now. This is a period for expansion, not retreat." },
+    weekDays,
+    venusPhase,
   };
-}
-
-export interface VedicBriefing {
-  userName: string;
-  planetaryPills: Array<{ emoji: string; text: string; tone: "good" | "caution" | "watch" }>;
-  aryaInsight: string;
-  muhurat: { startTime: string; endTime: string; purpose: string };
-  cosmicCards: Array<{ tone: "good" | "caution" | "watch"; label: string; text: string; source: string }>;
-  guidance: { money: string; relationships: string; body: string };
-  dasha: { lord: string; yearsLeft: number; chapterText: string };
 }
 
 export async function generateVedicBriefing(userId: string): Promise<VedicBriefing> {
@@ -171,8 +257,11 @@ export async function generateVedicBriefing(userId: string): Promise<VedicBriefi
   const dashaLord = user.dashaLord || "Jupiter";
   const dashaYearsLeft = parseFloat(user.dashaYearsLeft || "4.0");
 
+  const weekDays = generateWeekForecast(dashaLord, rashi || "Mesh");
+  const venusPhase = getVenusPhase();
+
   if (!user.vedicLensEnabled || !rashi) {
-    return sampleBriefing(user.name, rashi || undefined, lang);
+    return { ...sampleBriefing(user.name, rashi || undefined, lang), weekDays, venusPhase };
   }
 
   let goalsTitles = "none specified";
@@ -191,7 +280,13 @@ export async function generateVedicBriefing(userId: string): Promise<VedicBriefi
 
   const langInstruction = getLanguageInstruction(lang, firstName);
 
-  const prompt = `You are a Vedic astrology scholar steeped in Brihat Parashara Hora Shastra, Phaladeepika, and Saravali. Generate a practical daily cosmic briefing.
+  const prompt = `You are a Vedic astrology scholar grounded in four classical texts:
+1. Brihat Parashara Hora Shastra — the mathematics of time: nakshatras, dasha cycles, planetary periods
+2. Phaladeepika — the practical art of timing: muhurta, when to act, transit effects
+3. Saravali — the human dimension: how dasha periods feel from inside, nakshatra psychology
+4. Thirukkural — the language of wisdom: precise, actionable, never vague
+
+You generate practical daily cosmic briefings. The user feels wisdom — they never see technical terms or source names.
 
 ${langInstruction}
 
@@ -208,9 +303,9 @@ CRITICAL RULES:
 1. Never be fatalistic, scary, or use technical Jyotish terms in the output text
 2. Every insight must end with something the user can DO — an action, not just a prediction
 3. Plain language only — "your thinking is clearer today" not "Mercury is exalted"
-4. Cite classical source only in the source field, never in the main text
-5. Be warm, like a wise elder speaking — not a fortune teller
-6. The dasha chapter text should feel like life wisdom for this planetary period
+4. Be warm, like a wise elder speaking — not a fortune teller
+5. The dasha chapter text should feel like life wisdom for this planetary period — 2-3 sentences
+6. Think like Thirukkural: concise, precise, actionable — no padding
 
 Return ONLY valid JSON matching this exact structure:
 {
@@ -220,7 +315,7 @@ Return ONLY valid JSON matching this exact structure:
     {"emoji": "♃", "text": "Instincts are sharp today", "tone": "good"},
     {"emoji": "♂", "text": "Avoid confrontations after 6pm", "tone": "watch"}
   ],
-  "aryaInsight": "Personal blended insight connecting cosmic energy with the user's specific life and goals (2-3 sentences, warm, specific)",
+  "aryaInsight": "Personal blended insight connecting cosmic energy with the user's specific life and goals (2-3 sentences, warm, specific to their goals and dasha)",
   "muhurat": {
     "startTime": "HH:MM AM/PM",
     "endTime": "HH:MM AM/PM",
@@ -248,7 +343,7 @@ Return ONLY valid JSON matching this exact structure:
   "dasha": {
     "lord": "${dashaLord}",
     "yearsLeft": ${dashaYearsLeft},
-    "chapterText": "2-3 sentences explaining this dasha period as a life chapter — what it means for growth, decisions, energy — ending with an empowering note"
+    "chapterText": "2-3 sentences on this dasha period as a life chapter — growth, decisions, energy — ending with empowerment. Speak to this person's actual goals."
   }
 }`;
 
@@ -281,8 +376,10 @@ Return ONLY valid JSON matching this exact structure:
       })),
       guidance: parsed.guidance || { money: "", relationships: "", body: "" },
       dasha: parsed.dasha || { lord: dashaLord, yearsLeft: dashaYearsLeft, chapterText: "" },
+      weekDays,
+      venusPhase,
     };
   } catch {
-    return sampleBriefing(user.name, rashi);
+    return { ...sampleBriefing(user.name, rashi), weekDays, venusPhase };
   }
 }

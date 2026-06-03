@@ -1,0 +1,144 @@
+Two questions — let me answer the second one first because it shapes everything:
+
+---
+
+## The Astrological Foundation
+
+My recommendation — **three texts, layered:**
+
+### Layer 1 — The Core
+**Brihat Parashara Hora Shastra**
+by Maharishi Parashara
+
+```
+The foundation of all Vedic astrology.
+Written 3,000+ years ago.
+Every Jyotishi in India learns from this.
+
+What it gives KAAL:
+- The 27 Nakshatras and their qualities
+- Dasha system (planetary periods)
+- House meanings
+- Planetary relationships
+```
+
+This is the **Mahabharata of astrology.** Everything else descends from it.
+
+### Layer 2 — The Practical
+**Phaladeepika**
+by Mantreswara (14th century)
+
+```
+More accessible than Parashara.
+Focused on real-life predictions.
+Strong on timing — muhurta, transits.
+
+What it gives KAAL:
+- Daily timing windows
+- Auspicious moments for actions
+- Transit effects on the individual
+```
+
+### Layer 3 — The Human
+**Saravali**
+by Kalyanvarma
+
+```
+Deeply focused on personality
+and life patterns — not just events.
+
+What it gives KAAL:
+- How each nakshatra shapes thinking
+- How dasha periods feel from inside
+- The psychological dimension of timing
+```
+
+---
+
+## Why These Three Together
+
+```
+Parashara  →  The mathematics of time
+Phaladeepika →  When to act
+Saravali    →  How it feels
+
+KAAL uses all three.
+User feels none of the complexity.
+They just feel: "ARYA knows my time."
+```
+
+---
+
+## One More — For The Language
+
+**Thirukkural** (Tiruvalluvar, 3rd century BCE)
+
+```
+Not strictly astrology.
+But the most precise wisdom text 
+ever written in any Indian language.
+
+133 chapters. 1,330 couplets.
+Each one a complete thought.
+
+On timing specifically:
+Kural 484:
+"Whoever waits for the right moment
+ and acts with full force —
+ the world bends toward them."
+
+ARYA never quotes this.
+But ARYA thinks like this.
+```
+
+---
+
+Now let me build the ticker fix and weekly view:
+
+Here's what was built:
+
+---
+
+## What's In This Component
+
+### Ticker — Fully Fixed
+- Seamless infinite scroll — never cuts off
+- Pauses on hover so user can read
+- Fade gradients on both edges — professional touch
+- Gold italic text on dark background
+
+### Three Tabs
+
+**Today** — everything you already have, refined:
+- ARYA Blended Insight card
+- Best window with time
+- Strength Today / Handle With Care
+- Money · Relationships · Body guidance
+
+**This Week** — the new addition:
+- 7 day cards in horizontal scroll
+- Energy bar per day (Peak/High/Mid/Rest)
+- Tap any day → detail panel slides in
+- Shows: theme, best window, quality, what to avoid
+- Today highlighted in gold border
+
+**Your Chapter** — Venus cycle + profile:
+- Personal hook added: *"You are building ARYA during this period. That is not coincidence."*
+- Profile strip: Moon · Star · Cycle
+
+---
+
+## The Astrological Foundation
+
+The three books power the invisible engine:
+
+```
+Brihat Parashara  →  The mathematics
+Phaladeepika      →  When to act  
+Saravali          →  How it feels
+Thirukkural       →  The language of wisdom
+```
+
+User feels none of it. They just feel ARYA knows their time.
+
+Save to `client/src/components/KaalDashboard.tsx` and wire into `KaalPage.tsx`. What's next?

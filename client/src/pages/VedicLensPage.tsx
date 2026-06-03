@@ -35,9 +35,14 @@ interface VedicBriefing {
   planetaryPills: Array<{ emoji: string; text: string; tone: "good" | "caution" | "watch" }>;
   aryaInsight: string;
   muhurat: { startTime: string; endTime: string; purpose: string };
-  cosmicCards: Array<{ tone: "good" | "caution" | "watch"; label: string; text: string }>;
+  cosmicCards: Array<{ tone: "good" | "caution" | "watch"; label: string; text: string; source?: string }>;
   guidance: { money: string; relationships: string; body: string };
   dasha: { lord: string; yearsLeft: number; chapterText: string };
+  weekDays: Array<{
+    date: string; dayName: string; dayFullName: string; dayDate: number; isToday: boolean;
+    energy: "Peak" | "High" | "Mid" | "Rest"; theme: string; bestWindow: string; quality: string; avoid: string;
+  }>;
+  venusPhase: string;
 }
 interface LensProfile { rashi: string; nakshatra: string; dashaLord: string; dashaYearsLeft: string }
 
@@ -492,9 +497,197 @@ function ReadyScreen({ path, profile, westernSign, selectedRashi, onBack, onCont
   );
 }
 
-// ── Screen 5: Briefing (path-aware) ──────────────────────────────────────────
-function BriefingScreen({ briefing, loading, error, onHome, onRetry, path }: {
-  briefing: VedicBriefing | null; loading: boolean; error: "login" | "error" | null; onHome: () => void; onRetry: () => void; path: VedicPath;
+// ── CosmicTicker — seamless infinite scroll ────────────────────────────────────
+function CosmicTicker({ pills, path }: { pills: Array<{ emoji: string; text: string; tone: "good" | "caution" | "watch" }>; path: VedicPath }) {
+  const [paused, setPaused] = useState(false);
+  if (!pills?.length) return null;
+  // Doubled content + -50% translateX = seamless infinite loop
+  const items = [...pills, ...pills];
+  return (
+    <div
+      style={{ position: "relative", overflow: "hidden", height: 34, margin: "12px -24px 0" }}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+    >
+      <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 56, background: `linear-gradient(90deg, ${C.bg}, transparent)`, zIndex: 2, pointerEvents: "none" }} />
+      <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 56, background: `linear-gradient(270deg, ${C.bg}, transparent)`, zIndex: 2, pointerEvents: "none" }} />
+      <div style={{
+        display: "inline-flex", gap: 44, whiteSpace: "nowrap" as const,
+        position: "absolute", top: "50%", left: 0,
+        animation: paused ? "none" : "ticker-scroll 26s linear infinite",
+      }}>
+        {items.map((p, i) => (
+          <span key={i} style={{
+            fontFamily: serif, fontStyle: "italic", fontSize: 13, flexShrink: 0,
+            color: p.tone === "good" ? C.teal : p.tone === "caution" ? C.saffron : C.rose,
+          }}>
+            {p.emoji} {p.text}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── WeekView — 7-day energy cards ─────────────────────────────────────────────
+function WeekView({ weekDays, path }: { weekDays: VedicBriefing["weekDays"]; path: VedicPath }) {
+  const [selected, setSelected] = useState<number | null>(null);
+  const a = ACCENT[path];
+
+  if (!weekDays?.length) return (
+    <div style={{ padding: "40px 24px", textAlign: "center" as const, color: C.textDim, fontSize: 14 }}>
+      Weekly forecast not available yet.
+    </div>
+  );
+
+  const ENERGY_COLORS: Record<string, string> = {
+    Peak: C.teal, High: C.saffron, Mid: C.indigo, Rest: C.textMuted,
+  };
+  const ENERGY_HEIGHTS: Record<string, string> = {
+    Peak: "100%", High: "70%", Mid: "42%", Rest: "16%",
+  };
+
+  const sel = selected !== null ? weekDays[selected] : null;
+
+  return (
+    <div>
+      {/* Horizontal day scroll */}
+      <div style={{ display: "flex", gap: 8, overflowX: "auto", margin: "0 -24px", padding: "0 24px 8px", scrollbarWidth: "none" as any }}>
+        {weekDays.map((day, i) => {
+          const color = ENERGY_COLORS[day.energy] || C.textDim;
+          const isSel = selected === i;
+          return (
+            <div key={i} onClick={() => setSelected(isSel ? null : i)} data-testid={`week-day-${i}`}
+              style={{
+                flexShrink: 0, width: 74, padding: "14px 8px 12px", borderRadius: 14,
+                cursor: "pointer", transition: "all 0.22s", textAlign: "center" as const,
+                background: isSel ? a.dim : C.surface,
+                border: `1.5px solid ${isSel ? a.main : day.isToday ? `${a.main}88` : C.border}`,
+              }}>
+              <div style={{ fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase" as const, marginBottom: 4, fontWeight: day.isToday ? 700 : 400, color: day.isToday ? a.main : C.textDim }}>
+                {day.isToday ? "TODAY" : day.dayName}
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: isSel ? a.main : C.text, marginBottom: 10 }}>{day.dayDate}</div>
+              <div style={{ width: 20, height: 40, background: C.surface2, borderRadius: 4, overflow: "hidden" as const, display: "flex", flexDirection: "column", justifyContent: "flex-end", margin: "0 auto 8px" }}>
+                <div style={{ width: "100%", height: ENERGY_HEIGHTS[day.energy], background: color, borderRadius: 4, transition: "height 0.5s ease", opacity: isSel ? 1 : 0.7 }} />
+              </div>
+              <div style={{ fontSize: 8, color, letterSpacing: "0.06em", textTransform: "uppercase" as const }}>{day.energy}</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Detail panel */}
+      <AnimatePresence>
+        {sel && (
+          <motion.div key={String(selected)} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} transition={{ duration: 0.22 }}
+            style={{ background: C.surface, border: `1px solid ${a.border}`, borderRadius: 14, padding: 18, marginTop: 10 }}>
+            <div style={{ fontSize: 13, color: a.main, fontWeight: 600, marginBottom: 14, letterSpacing: "0.04em" }}>
+              {sel.dayFullName} · {sel.theme}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {[
+                { icon: "⏰", label: "Best window", text: sel.bestWindow, color: C.text },
+                { icon: "✦",  label: "Quality",     text: sel.quality,    color: C.text },
+                { icon: "◈",  label: "Handle with care", text: sel.avoid,  color: C.textDim },
+              ].map(row => (
+                <div key={row.label} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                  <span style={{ fontSize: 16, flexShrink: 0, marginTop: 2 }}>{row.icon}</span>
+                  <div>
+                    <div style={{ fontSize: 10, color: C.textDim, textTransform: "uppercase" as const, letterSpacing: "0.1em", marginBottom: 3 }}>{row.label}</div>
+                    <div style={{ fontSize: 13, color: row.color, lineHeight: 1.65 }}>{row.text}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {!sel && (
+        <p style={{ fontSize: 12, color: C.textMuted, textAlign: "center" as const, marginTop: 14 }}>Tap any day to see details</p>
+      )}
+    </div>
+  );
+}
+
+// ── ChapterView — Venus cycle + dasha + profile strip ─────────────────────────
+function ChapterView({ briefing, profile, path }: { briefing: VedicBriefing; profile: LensProfile | null; path: VedicPath }) {
+  const a = ACCENT[path];
+  const b = briefing;
+  const venusParts = (b.venusPhase || "").split(" — ");
+  const venusLabel = venusParts[0] || "";
+  const venusDesc  = venusParts[1] || "";
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      {/* Current life chapter */}
+      {b.dasha?.chapterText && (
+        <div style={{ background: `linear-gradient(135deg, rgba(124,106,255,0.08), rgba(245,166,35,0.05))`, border: `1px solid rgba(124,106,255,0.2)`, borderRadius: 14, padding: 18 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            <span style={{ fontSize: 18 }}>🌊</span>
+            <div style={{ fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase" as const, color: C.textDim, fontWeight: 600 }}>Your Current Chapter</div>
+          </div>
+          <div style={{ fontSize: 14, color: C.text, lineHeight: 1.85, fontFamily: serif, fontStyle: "italic" }}>
+            "{b.dasha.chapterText}"
+          </div>
+          <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" as const }}>
+            <div style={{ padding: "5px 12px", borderRadius: 20, background: "rgba(124,106,255,0.1)", border: `1px solid rgba(124,106,255,0.22)`, fontSize: 11, color: C.indigo }}>
+              {b.dasha.lord} cycle
+            </div>
+            <div style={{ padding: "5px 12px", borderRadius: 20, background: C.surface2, border: `1px solid ${C.border}`, fontSize: 11, color: C.textDim }}>
+              {b.dasha.yearsLeft} yrs remaining
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Venus phase */}
+      {b.venusPhase && (
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+            <span style={{ fontSize: 20 }}>♀</span>
+            <div style={{ fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase" as const, color: C.textDim, fontWeight: 600 }}>Venus Cycle</div>
+          </div>
+          <div style={{ fontSize: 14, color: a.main, fontWeight: 500, marginBottom: venusDesc ? 6 : 0 }}>{venusLabel}</div>
+          {venusDesc && <div style={{ fontSize: 12, color: C.textDim, lineHeight: 1.7 }}>{venusDesc}</div>}
+        </div>
+      )}
+
+      {/* Profile strip — Moon · Star · Cycle */}
+      {(profile?.rashi || profile?.nakshatra || b.dasha?.lord) && (
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16 }}>
+          <div style={{ fontSize: 11, color: C.textDim, letterSpacing: "0.15em", textTransform: "uppercase" as const, marginBottom: 14 }}>Your Cosmic Profile</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {profile?.rashi && (
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: 13, color: C.textDim }}>🌕 Moon sign</span>
+                <span style={{ fontSize: 13, color: C.text, fontWeight: 500 }}>{profile.rashi}</span>
+              </div>
+            )}
+            {profile?.nakshatra && (
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: 13, color: C.textDim }}>⭐ Birth star</span>
+                <span style={{ fontSize: 13, color: C.text, fontWeight: 500 }}>{profile.nakshatra}</span>
+              </div>
+            )}
+            {b.dasha?.lord && (
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: 13, color: C.textDim }}>🌊 Current cycle</span>
+                <span style={{ fontSize: 13, color: a.main, fontWeight: 500 }}>{b.dasha.lord} · {b.dasha.yearsLeft} yrs left</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Screen 5: Briefing — 3-tab dashboard ─────────────────────────────────────
+function BriefingScreen({ briefing, loading, error, onHome, onRetry, path, profile }: {
+  briefing: VedicBriefing | null; loading: boolean; error: "login" | "error" | null;
+  onHome: () => void; onRetry: () => void; path: VedicPath; profile: LensProfile | null;
 }) {
   const { t, language } = useLanguage();
   const { data: goalsData } = useQuery<any[]>({
@@ -502,20 +695,14 @@ function BriefingScreen({ briefing, loading, error, onHome, onRetry, path }: {
     queryFn: async () => { const r = await fetch("/api/arya/goals"); return r.ok ? r.json() : []; },
   });
   const [doneGoals, setDoneGoals] = useState<Set<number>>(new Set());
+  const [tab, setTab] = useState<"today" | "week" | "chapter">("today");
   const a = ACCENT[path];
 
   const toneColors = {
-    good:    { bg: "rgba(94,207,176,0.06)",   border: "rgba(94,207,176,0.15)",   bar: C.teal,    label: C.teal },
-    caution: { bg: "rgba(245,166,35,0.06)",   border: "rgba(245,166,35,0.15)",   bar: C.saffron, label: C.saffron },
-    watch:   { bg: "rgba(232,112,112,0.06)",  border: "rgba(232,112,112,0.15)",  bar: C.rose,    label: C.rose },
+    good:    { bg: "rgba(94,207,176,0.06)",  border: "rgba(94,207,176,0.15)",  bar: C.teal,    label: C.teal },
+    caution: { bg: "rgba(245,166,35,0.06)",  border: "rgba(245,166,35,0.15)",  bar: C.saffron, label: C.saffron },
+    watch:   { bg: "rgba(232,112,112,0.06)", border: "rgba(232,112,112,0.15)", bar: C.rose,    label: C.rose },
   };
-  const pillStyle = (tone: "good" | "caution" | "watch") => ({
-    display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20,
-    whiteSpace: "nowrap" as const, fontSize: 12, flexShrink: 0,
-    ...{ good: { border: `1px solid rgba(94,207,176,0.3)`, color: C.teal, background: "rgba(94,207,176,0.06)" },
-         caution: { border: `1px solid rgba(245,166,35,0.3)`, color: C.saffron, background: "rgba(245,166,35,0.06)" },
-         watch: { border: `1px solid rgba(232,112,112,0.3)`, color: C.rose, background: "rgba(232,112,112,0.06)" } }[tone],
-  });
 
   if (loading) return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
@@ -557,169 +744,203 @@ function BriefingScreen({ briefing, loading, error, onHome, onRetry, path }: {
   const goalsArr = Array.isArray(goalsData) ? goalsData : (goalsData as any)?.goals || [];
   const activeGoals = goalsArr.filter((g: any) => g.isActive).slice(0, 4);
 
+  const TABS: Array<{ key: "today" | "week" | "chapter"; label: string; icon: string }> = [
+    { key: "today",   label: "Today",       icon: "☀️" },
+    { key: "week",    label: "This Week",   icon: "📅" },
+    { key: "chapter", label: "Your Chapter", icon: "🌊" },
+  ];
+
   return (
     <div>
-      {/* Header */}
-      <div style={{ background: `linear-gradient(180deg, ${a.dim} 0%, transparent 100%)`, borderBottom: `1px solid ${C.border}`, padding: "24px 24px 20px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      <div style={{ background: `linear-gradient(180deg, ${a.dim} 0%, transparent 100%)`, borderBottom: `1px solid ${C.border}`, padding: "24px 24px 16px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
           <div style={{ fontSize: 12, color: C.textDim, letterSpacing: "0.06em" }}>{todayStr()}</div>
           <PathBadge path={path} />
         </div>
-        <div style={{ fontFamily: serif, fontSize: 22, color: C.text, marginBottom: 4 }}>
+        <div style={{ fontFamily: serif, fontSize: 22, color: C.text, marginBottom: 3 }}>
           {greetingTime(language)}, <em style={{ color: a.main }}>{b.userName}.</em>
         </div>
-        <div style={{ fontSize: 13, color: C.textDim, marginBottom: path !== "neutral" ? 16 : 8 }}>{t("kaal_today_looks")}</div>
-        {path !== "neutral" && (
-          <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" as any }}>
-            {(b.planetaryPills || []).map((p, i) => (
-              <div key={i} style={pillStyle(p.tone)}><span>{p.emoji}</span><span>{p.text}</span></div>
-            ))}
-          </div>
+        <div style={{ fontSize: 13, color: C.textDim }}>{t("kaal_today_looks")}</div>
+
+        {/* Ticker — all paths */}
+        {(b.planetaryPills || []).length > 0 && path !== "neutral" && (
+          <CosmicTicker pills={b.planetaryPills} path={path} />
         )}
         {path === "neutral" && (
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" as const }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" as const, marginTop: 12 }}>
             <div style={{ padding: "6px 12px", borderRadius: 20, border: `1px solid ${a.border}`, color: a.main, background: a.dim, fontSize: 12 }}>{t("kaal_best_window_chip")}</div>
             <div style={{ padding: "6px 12px", borderRadius: 20, border: `1px solid ${C.border}`, color: C.textDim, background: C.surface2, fontSize: 12 }}>{t("kaal_energy_rising")}</div>
           </div>
         )}
       </div>
 
-      {/* Body */}
-      <div style={{ padding: "0 24px 80px", maxWidth: 460, margin: "0 auto", width: "100%" }}>
-        <div style={{ height: 20 }} />
+      {/* ── Tab bar ────────────────────────────────────────────────────────── */}
+      <div style={{ display: "flex", borderBottom: `1px solid ${C.border}`, background: C.surface, position: "sticky" as const, top: 0, zIndex: 10 }}>
+        {TABS.map(tp => (
+          <button key={tp.key} onClick={() => setTab(tp.key)} data-testid={`tab-${tp.key}`}
+            style={{
+              flex: 1, padding: "12px 4px", border: "none", background: "transparent", cursor: "pointer",
+              fontFamily: sans, fontSize: 12, fontWeight: tab === tp.key ? 700 : 400,
+              color: tab === tp.key ? a.main : C.textDim,
+              borderBottom: `2px solid ${tab === tp.key ? a.main : "transparent"}`,
+              transition: "all 0.2s", display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+            }}>
+            <span style={{ fontSize: 15 }}>{tp.icon}</span>
+            <span>{tp.label}</span>
+          </button>
+        ))}
+      </div>
 
-        {/* ARYA insight */}
-        <div style={{ background: a.dim, border: `1px solid ${a.border}`, borderRadius: 14, padding: 16, marginBottom: 14 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-            <div style={{ width: 28, height: 28, borderRadius: "50%", background: `linear-gradient(135deg, ${a.main}, ${a.main}88)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: "#0d0b0f", fontWeight: 700 }}>A</div>
-            <div style={{ fontSize: 11, color: a.main, letterSpacing: "0.08em" }}>ARYA · {path === "neutral" ? t("kaal_personal_insight") : t("kaal_blended_insight")}</div>
-          </div>
-          <div style={{ fontSize: 14, color: C.text, lineHeight: 1.75 }}
-            dangerouslySetInnerHTML={{ __html: (b.aryaInsight || "").replace(/\*\*(.*?)\*\*/g, `<strong style="color:${a.main}">$1</strong>`) }} />
-        </div>
+      {/* ── Tab content ────────────────────────────────────────────────────── */}
+      <div style={{ padding: "20px 24px 90px", maxWidth: 460, margin: "0 auto", width: "100%" }}>
 
-        {/* Timing window */}
-        <div style={{ background: `linear-gradient(135deg, ${a.dim}, rgba(124,106,255,0.06))`, border: `1px solid ${a.border}`, borderRadius: 12, padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontSize: 22 }}>⏰</span>
-            <div>
-              <div style={{ fontSize: 11, color: C.textDim, marginBottom: 2 }}>{t("kaal_best_window")}</div>
-              <div style={{ fontSize: 16, color: a.main, fontWeight: 600, letterSpacing: "0.05em" }}>{b.muhurat?.startTime ?? "—"} – {b.muhurat?.endTime ?? "—"}</div>
-            </div>
-          </div>
-          <div style={{ fontSize: 11, color: C.textDim, textAlign: "right" as const }}>{t("kaal_window_for")} {b.muhurat?.purpose ?? "important tasks"}</div>
-        </div>
-
-        {/* Cosmic cards — Western + Vedic only */}
-        {path !== "neutral" && (
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden", marginBottom: 14 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 16px", borderBottom: `1px solid ${C.border}` }}>
-              <span style={{ fontSize: 18 }}>{path === "western" ? "⭐" : "🪐"}</span>
-              <div style={{ fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase" as const, color: C.textDim, fontWeight: 600 }}>
-                {path === "western" ? t("kaal_week_energy") : t("kaal_todays_guidance")}
+        {/* TODAY TAB */}
+        {tab === "today" && (
+          <>
+            {/* ARYA insight */}
+            <div style={{ background: a.dim, border: `1px solid ${a.border}`, borderRadius: 14, padding: 16, marginBottom: 14 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                <div style={{ width: 28, height: 28, borderRadius: "50%", background: `linear-gradient(135deg, ${a.main}, ${a.main}88)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: "#0d0b0f", fontWeight: 700 }}>A</div>
+                <div style={{ fontSize: 11, color: a.main, letterSpacing: "0.08em" }}>ARYA · {path === "neutral" ? t("kaal_personal_insight") : t("kaal_blended_insight")}</div>
               </div>
-              <div style={{ marginLeft: "auto", fontSize: 9, padding: "3px 8px", borderRadius: 10, color: a.main, background: a.dim, border: `1px solid ${a.border}`, letterSpacing: "0.08em", textTransform: "uppercase" as const }}>{t("kaal_arya_lens")}</div>
+              <div style={{ fontSize: 14, color: C.text, lineHeight: 1.75 }}
+                dangerouslySetInnerHTML={{ __html: (b.aryaInsight || "").replace(/\*\*(.*?)\*\*/g, `<strong style="color:${a.main}">$1</strong>`) }} />
             </div>
-            <div style={{ padding: 16 }}>
-              {(b.cosmicCards || []).map((card, i) => {
-                const tc = toneColors[card.tone] || toneColors.caution;
-                return (
-                  <div key={i} style={{ borderRadius: 12, padding: 14, marginBottom: 10, position: "relative" as const, overflow: "hidden", background: tc.bg, border: `1px solid ${tc.border}` }}>
-                    <div style={{ position: "absolute" as const, left: 0, top: 0, bottom: 0, width: 3, background: tc.bar }} />
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                      <span style={{ fontSize: 13 }}>{card.tone === "good" ? "✦" : "◈"}</span>
-                      <div style={{ fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: tc.label }}>{card.label}</div>
-                    </div>
-                    <div style={{ fontSize: 13, color: C.text, lineHeight: 1.7, fontStyle: "italic", fontFamily: serif }}>{card.text}</div>
-                  </div>
-                );
-              })}
-              {[
-                { emoji: "💰", label: t("kaal_money"),         text: b.guidance?.money ?? "" },
-                { emoji: "❤️", label: t("kaal_relationships"), text: b.guidance?.relationships ?? "" },
-                { emoji: "🏃", label: t("kaal_body_energy"),   text: b.guidance?.body ?? "" },
-              ].map((row, i, arr) => (
-                <div key={row.label} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 0", borderBottom: i < arr.length - 1 ? `1px solid ${C.border}` : "none" }}>
-                  <span style={{ fontSize: 20, flexShrink: 0, marginTop: 2 }}>{row.emoji}</span>
-                  <div>
-                    <div style={{ fontSize: 11, color: C.textDim, marginBottom: 3 }}>{row.label}</div>
-                    <div style={{ fontSize: 13, color: C.text, lineHeight: 1.6 }}>{row.text}</div>
-                  </div>
+
+            {/* Timing window */}
+            <div style={{ background: `linear-gradient(135deg, ${a.dim}, rgba(124,106,255,0.06))`, border: `1px solid ${a.border}`, borderRadius: 12, padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 22 }}>⏰</span>
+                <div>
+                  <div style={{ fontSize: 11, color: C.textDim, marginBottom: 2 }}>{t("kaal_best_window")}</div>
+                  <div style={{ fontSize: 16, color: a.main, fontWeight: 600, letterSpacing: "0.05em" }}>{b.muhurat?.startTime ?? "—"} – {b.muhurat?.endTime ?? "—"}</div>
                 </div>
-              ))}
+              </div>
+              <div style={{ fontSize: 11, color: C.textDim, textAlign: "right" as const, maxWidth: 110 }}>{t("kaal_window_for")} {b.muhurat?.purpose ?? "important tasks"}</div>
             </div>
-          </div>
-        )}
 
-        {/* Neutral: personal pattern card (no cosmic language) */}
-        {path === "neutral" && (
-          <div style={{ background: C.surface, border: `1px solid ${a.border}`, borderRadius: 16, overflow: "hidden", marginBottom: 14 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 16px", borderBottom: `1px solid ${C.border}` }}>
-              <span style={{ fontSize: 18 }}>📊</span>
-              <div style={{ fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase" as const, color: C.textDim, fontWeight: 600 }}>{t("kaal_pattern_today")}</div>
-              <div style={{ marginLeft: "auto", fontSize: 9, padding: "3px 8px", borderRadius: 10, color: a.main, background: a.dim, border: `1px solid ${a.border}`, letterSpacing: "0.08em", textTransform: "uppercase" as const }}>{t("kaal_data_backed")}</div>
-            </div>
-            <div style={{ padding: 16 }}>
-              {[
-                { emoji: "💰", label: t("kaal_money"),         text: b.guidance?.money ?? "" },
-                { emoji: "❤️", label: t("kaal_relationships"), text: b.guidance?.relationships ?? "" },
-                { emoji: "🏃", label: t("kaal_energy_focus"),  text: b.guidance?.body ?? "" },
-              ].map((row, i, arr) => (
-                <div key={row.label} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 0", borderBottom: i < arr.length - 1 ? `1px solid ${C.border}` : "none" }}>
-                  <span style={{ fontSize: 20, flexShrink: 0, marginTop: 2 }}>{row.emoji}</span>
-                  <div>
-                    <div style={{ fontSize: 11, color: C.textDim, marginBottom: 3 }}>{row.label}</div>
-                    <div style={{ fontSize: 13, color: C.text, lineHeight: 1.6 }}>{row.text}</div>
+            {/* Cosmic cards — Western + Vedic */}
+            {path !== "neutral" && (
+              <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden", marginBottom: 14 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 16px", borderBottom: `1px solid ${C.border}` }}>
+                  <span style={{ fontSize: 18 }}>{path === "western" ? "⭐" : "🪐"}</span>
+                  <div style={{ fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase" as const, color: C.textDim, fontWeight: 600 }}>
+                    {path === "western" ? t("kaal_week_energy") : t("kaal_todays_guidance")}
                   </div>
+                  <div style={{ marginLeft: "auto", fontSize: 9, padding: "3px 8px", borderRadius: 10, color: a.main, background: a.dim, border: `1px solid ${a.border}`, letterSpacing: "0.08em", textTransform: "uppercase" as const }}>{t("kaal_arya_lens")}</div>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Goals */}
-        {activeGoals.length > 0 && (
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden", marginBottom: 14 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 16px", borderBottom: `1px solid ${C.border}` }}>
-              <span style={{ fontSize: 18 }}>🎯</span>
-              <div style={{ fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase" as const, color: C.textDim, fontWeight: 600 }}>{t("kaal_focus_today")}</div>
-            </div>
-            <div style={{ padding: "0 16px" }}>
-              {activeGoals.map((g: any) => {
-                const done = doneGoals.has(g.id);
-                return (
-                  <div key={g.id} onClick={() => setDoneGoals(prev => { const s = new Set(prev); done ? s.delete(g.id) : s.add(g.id); return s; })}
-                    style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 0", borderBottom: `1px solid ${C.border}`, cursor: "pointer" }}>
-                    <div style={{ width: 20, height: 20, borderRadius: 6, border: `1.5px solid ${done ? C.teal : C.border2}`, flexShrink: 0, background: done ? C.teal : "transparent", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s", fontSize: 11, color: "white" }}>
-                      {done ? "✓" : ""}
+                <div style={{ padding: 16 }}>
+                  {(b.cosmicCards || []).map((card, i) => {
+                    const tc = toneColors[card.tone] || toneColors.caution;
+                    return (
+                      <div key={i} style={{ borderRadius: 12, padding: 14, marginBottom: 10, position: "relative" as const, overflow: "hidden", background: tc.bg, border: `1px solid ${tc.border}` }}>
+                        <div style={{ position: "absolute" as const, left: 0, top: 0, bottom: 0, width: 3, background: tc.bar }} />
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                          <span style={{ fontSize: 13 }}>{card.tone === "good" ? "✦" : "◈"}</span>
+                          <div style={{ fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: tc.label }}>{card.label}</div>
+                        </div>
+                        <div style={{ fontSize: 13, color: C.text, lineHeight: 1.7, fontStyle: "italic", fontFamily: serif }}>{card.text}</div>
+                      </div>
+                    );
+                  })}
+                  {[
+                    { emoji: "💰", label: t("kaal_money"),         text: b.guidance?.money ?? "" },
+                    { emoji: "❤️", label: t("kaal_relationships"), text: b.guidance?.relationships ?? "" },
+                    { emoji: "🏃", label: t("kaal_body_energy"),   text: b.guidance?.body ?? "" },
+                  ].map((row, i, arr) => (
+                    <div key={row.label} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 0", borderBottom: i < arr.length - 1 ? `1px solid ${C.border}` : "none" }}>
+                      <span style={{ fontSize: 20, flexShrink: 0, marginTop: 2 }}>{row.emoji}</span>
+                      <div>
+                        <div style={{ fontSize: 11, color: C.textDim, marginBottom: 3 }}>{row.label}</div>
+                        <div style={{ fontSize: 13, color: C.text, lineHeight: 1.6 }}>{row.text}</div>
+                      </div>
                     </div>
-                    <div style={{ fontSize: 13, color: done ? C.textDim : C.text, flex: 1, textDecoration: done ? "line-through" : "none" }}>{g.title}</div>
-                    {g.streak > 0 && <div style={{ fontSize: 11, color: C.saffron }}>🔥 {g.streak}</div>}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Neutral: pattern card */}
+            {path === "neutral" && (
+              <div style={{ background: C.surface, border: `1px solid ${a.border}`, borderRadius: 16, overflow: "hidden", marginBottom: 14 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 16px", borderBottom: `1px solid ${C.border}` }}>
+                  <span style={{ fontSize: 18 }}>📊</span>
+                  <div style={{ fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase" as const, color: C.textDim, fontWeight: 600 }}>{t("kaal_pattern_today")}</div>
+                  <div style={{ marginLeft: "auto", fontSize: 9, padding: "3px 8px", borderRadius: 10, color: a.main, background: a.dim, border: `1px solid ${a.border}`, letterSpacing: "0.08em", textTransform: "uppercase" as const }}>{t("kaal_data_backed")}</div>
+                </div>
+                <div style={{ padding: 16 }}>
+                  {[
+                    { emoji: "💰", label: t("kaal_money"),         text: b.guidance?.money ?? "" },
+                    { emoji: "❤️", label: t("kaal_relationships"), text: b.guidance?.relationships ?? "" },
+                    { emoji: "🏃", label: t("kaal_energy_focus"),  text: b.guidance?.body ?? "" },
+                  ].map((row, i, arr) => (
+                    <div key={row.label} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 0", borderBottom: i < arr.length - 1 ? `1px solid ${C.border}` : "none" }}>
+                      <span style={{ fontSize: 20, flexShrink: 0, marginTop: 2 }}>{row.emoji}</span>
+                      <div>
+                        <div style={{ fontSize: 11, color: C.textDim, marginBottom: 3 }}>{row.label}</div>
+                        <div style={{ fontSize: 13, color: C.text, lineHeight: 1.6 }}>{row.text}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Goals */}
+            {activeGoals.length > 0 && (
+              <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden", marginBottom: 14 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 16px", borderBottom: `1px solid ${C.border}` }}>
+                  <span style={{ fontSize: 18 }}>🎯</span>
+                  <div style={{ fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase" as const, color: C.textDim, fontWeight: 600 }}>{t("kaal_focus_today")}</div>
+                </div>
+                <div style={{ padding: "0 16px" }}>
+                  {activeGoals.map((g: any) => {
+                    const done = doneGoals.has(g.id);
+                    return (
+                      <div key={g.id} onClick={() => setDoneGoals(prev => { const s = new Set(prev); done ? s.delete(g.id) : s.add(g.id); return s; })}
+                        style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 0", borderBottom: `1px solid ${C.border}`, cursor: "pointer" }}>
+                        <div style={{ width: 20, height: 20, borderRadius: 6, border: `1.5px solid ${done ? C.teal : C.border2}`, flexShrink: 0, background: done ? C.teal : "transparent", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s", fontSize: 11, color: "white" }}>
+                          {done ? "✓" : ""}
+                        </div>
+                        <div style={{ fontSize: 13, color: done ? C.textDim : C.text, flex: 1, textDecoration: done ? "line-through" : "none" }}>{g.title}</div>
+                        {g.streak > 0 && <div style={{ fontSize: 11, color: C.saffron }}>🔥 {g.streak}</div>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div style={{ height: 8 }} />
+            <button onClick={onHome} style={{ width: "100%", padding: "14px 16px", borderRadius: 14, background: "transparent", border: `1px solid ${C.border}`, color: C.textDim, fontFamily: sans, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+              <Home size={16} /> {t("kaal_back_home")}
+            </button>
+          </>
         )}
 
-        {/* Vedic only: current life chapter */}
-        {path === "vedic" && b.dasha && (
-          <div style={{ background: "rgba(124,106,255,0.04)", border: `1px solid rgba(124,106,255,0.12)`, borderRadius: 14, padding: 16, marginBottom: 14 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-              <span style={{ fontSize: 18 }}>🌊</span>
-              <div style={{ fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase" as const, color: C.textDim, fontWeight: 600 }}>{t("kaal_current_chapter")}</div>
-            </div>
-            <div style={{ fontSize: 13, color: C.textDim, marginBottom: 6 }}>
-              <span style={{ color: C.indigo, fontWeight: 600 }}>{b.dasha.lord} cycle</span> · {b.dasha.yearsLeft} {t("kaal_years_remaining")}
-            </div>
-            <div style={{ fontSize: 14, color: C.text, lineHeight: 1.75 }}>{b.dasha.chapterText}</div>
-          </div>
+        {/* THIS WEEK TAB */}
+        {tab === "week" && (
+          <>
+            <WeekView weekDays={b.weekDays || []} path={path} />
+            <div style={{ height: 20 }} />
+            <button onClick={onHome} style={{ width: "100%", padding: "14px 16px", borderRadius: 14, background: "transparent", border: `1px solid ${C.border}`, color: C.textDim, fontFamily: sans, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+              <Home size={16} /> {t("kaal_back_home")}
+            </button>
+          </>
         )}
 
-        <div style={{ height: 8 }} />
-        <button onClick={onHome} style={{ width: "100%", padding: "14px 16px", borderRadius: 14, background: "transparent", border: `1px solid ${C.border}`, color: C.textDim, fontFamily: sans, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-          <Home size={16} /> {t("kaal_back_home")}
-        </button>
+        {/* YOUR CHAPTER TAB */}
+        {tab === "chapter" && (
+          <>
+            <ChapterView briefing={b} profile={profile} path={path} />
+            <div style={{ height: 20 }} />
+            <button onClick={onHome} style={{ width: "100%", padding: "14px 16px", borderRadius: 14, background: "transparent", border: `1px solid ${C.border}`, color: C.textDim, fontFamily: sans, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+              <Home size={16} /> {t("kaal_back_home")}
+            </button>
+          </>
+        )}
+
       </div>
     </div>
   );
@@ -751,7 +972,7 @@ export default function VedicLensPage() {
     link.href = "https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Nunito:wght@300;400;500;600&display=swap";
     document.head.appendChild(link);
     const style = document.createElement("style");
-    style.textContent = `@keyframes vl-pulse{0%,100%{opacity:0.7}50%{opacity:1}}@keyframes vl-twinkle{0%,100%{opacity:var(--min-op,0.1)}50%{opacity:var(--max-op,0.5)}}`;
+    style.textContent = `@keyframes vl-pulse{0%,100%{opacity:0.7}50%{opacity:1}}@keyframes vl-twinkle{0%,100%{opacity:var(--min-op,0.1)}50%{opacity:var(--max-op,0.5)}}@keyframes ticker-scroll{0%{transform:translateY(-50%) translateX(0)}100%{transform:translateY(-50%) translateX(-50%)}}`;
     document.head.appendChild(style);
     return () => { try { document.head.removeChild(link); document.head.removeChild(style); } catch {} };
   }, []);
@@ -877,7 +1098,7 @@ export default function VedicLensPage() {
         {screen === "briefing" && (
           <BriefingScreen
             briefing={briefing} loading={briefingLoading} error={briefingError}
-            onHome={() => setLocation("/")} onRetry={fetchBriefing} path={path} />
+            onHome={() => setLocation("/")} onRetry={fetchBriefing} path={path} profile={profile} />
         )}
 
       </div>
