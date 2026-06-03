@@ -2504,6 +2504,7 @@ function FirstLoginFeatureTour({ userId, onDone }: { userId: string; onDone: () 
 }
 
 function DailyQuoteCard({ token }: { token: string | null }) {
+  const { t } = useLanguage();
   const lang = getStoredUiLanguage();
   const today = new Date().toDateString();
   const cacheKey = `arya_quote_v3_${today}_${lang}`;
@@ -2531,7 +2532,7 @@ function DailyQuoteCard({ token }: { token: string | null }) {
 
   const [staticQuoteIdx] = useState(() => Math.floor(Math.random() * STATIC_HOME_QUOTES.length));
   const quoteText = token ? data?.quote : STATIC_HOME_QUOTES[staticQuoteIdx];
-  const quoteSource = token ? "ARYA · today's reflection" : "ARYA · daily wisdom";
+  const quoteSource = token ? `ARYA · ${t("home_today_reflection")}` : `ARYA · ${t("home_daily_wisdom")}`;
 
   if (!token) {
     return (

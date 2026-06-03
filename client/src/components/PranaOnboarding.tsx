@@ -128,6 +128,7 @@ export default function PranaOnboarding({ userName, token, onComplete }: Props) 
   const [activity, setActivity] = useState("");
   const [goals, setGoals]     = useState<string[]>([]);
   const [saving, setSaving]   = useState(false);
+  const { t } = useLanguage();
 
   const firstName = userName?.split(" ")[0] || "you";
   const initial   = (firstName[0] || "A").toUpperCase();
@@ -203,14 +204,14 @@ export default function PranaOnboarding({ userName, token, onComplete }: Props) 
                       🫀
                     </div>
                   </div>
-                  <div style={{ fontSize: 36, fontFamily: serif, fontWeight: 600, color: G.text, lineHeight: 1.25, marginBottom: 18 }}>
-                    Your body tells<br />a story.
+                  <div style={{ fontSize: 36, fontFamily: serif, fontWeight: 600, color: G.text, lineHeight: 1.25, marginBottom: 18, whiteSpace: "pre-line" as const }}>
+                    {t("prana_ob_body_title")}
                   </div>
                   <div style={{ fontSize: 18, fontFamily: serif, fontStyle: "italic", color: G.green, lineHeight: 1.5, marginBottom: 8 }}>
-                    ARYA listens to it.
+                    {t("prana_ob_body_sub")}
                   </div>
                   <div style={{ fontSize: 13, color: G.textDim, lineHeight: 1.7, maxWidth: 280, marginTop: 16 }}>
-                    A health companion that reads your vitals, notices your patterns, and coaches you — personally.
+                    {t("prana_ob_body_desc")}
                   </div>
                 </div>
               </Screen>
@@ -395,14 +396,14 @@ export default function PranaOnboarding({ userName, token, onComplete }: Props) 
                       <span style={{ fontSize: 48, display: "inline-block", animation: "prana-leaf 3.5s ease-in-out infinite" }}>🌿</span>
                     </div>
                   </div>
-                  <div style={{ fontSize: 34, fontFamily: serif, fontWeight: 600, color: G.text, lineHeight: 1.25, marginBottom: 14 }}>
-                    ARYA is ready to<br />look after you,
+                  <div style={{ fontSize: 34, fontFamily: serif, fontWeight: 600, color: G.text, lineHeight: 1.25, marginBottom: 14, whiteSpace: "pre-line" as const }}>
+                    {t("prana_ob_ready_title")}
                   </div>
                   <div style={{ fontSize: 42, fontFamily: serif, fontWeight: 700, color: G.green, marginBottom: 20 }}>
                     {firstName}.
                   </div>
                   <div style={{ fontSize: 13, color: G.textDim, lineHeight: 1.75, maxWidth: 280 }}>
-                    Log your vitals. Track patterns. Ask anything about your health — ARYA remembers what matters.
+                    {t("prana_ob_ready_desc")}
                   </div>
                 </div>
               </Screen>
@@ -413,7 +414,7 @@ export default function PranaOnboarding({ userName, token, onComplete }: Props) 
 
         {/* CTA footer */}
         <div style={{ padding: "0 24px 8px" }}>
-          {screen === 0 && <PrimaryBtn label="Begin →" onClick={() => setScreen(1)} />}
+          {screen === 0 && <PrimaryBtn label={t("prana_ob_begin")} onClick={() => setScreen(1)} />}
           {screen === 1 && <PrimaryBtn label="That's me →" onClick={() => setScreen(2)} />}
           {screen === 2 && <PrimaryBtn label="Continue →" onClick={() => setScreen(3)} disabled={!canMetrics} />}
           {screen === 3 && <PrimaryBtn label="Continue →" onClick={() => setScreen(4)} disabled={!canActivity} />}
@@ -428,7 +429,7 @@ export default function PranaOnboarding({ userName, token, onComplete }: Props) 
               )}
             </>
           )}
-          {screen === 5 && <PrimaryBtn label={saving ? "Setting up…" : "Open Prana →"} onClick={finish} disabled={saving} />}
+          {screen === 5 && <PrimaryBtn label={saving ? "Setting up…" : t("prana_ob_open")} onClick={finish} disabled={saving} />}
         </div>
       </div>
     </>

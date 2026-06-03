@@ -22,26 +22,6 @@ const WORLDS: { id: DrishyaWorld; emoji: string; label: string; sub: string; col
   { id: "everyday",  emoji: "✨", label: "Everyday", sub: "Today · Close · True",         color: "#fbbf24", bg: "rgba(251,191,36,0.12)",  glow: "rgba(251,191,36,0.25)" },
 ];
 
-const SUGGESTIONS: Record<DrishyaWorld, string[]> = {
-  night: [
-    "A story for someone who feels lost tonight",
-    "Tell me a story about waiting",
-    "A story that helps me rest with courage",
-    "Something small that holds a large truth",
-  ],
-  film: [
-    "A scene about betrayal between old friends",
-    "A character who must choose between duty and love",
-    "Opening scene: a village the morning after something changed",
-    "A father and son who can't say the thing they mean",
-  ],
-  everyday: [
-    "A story about small courage",
-    "Something true about ordinary love",
-    "A story for someone starting something new",
-    "Tell me what longing looks like in a busy street",
-  ],
-};
 
 const BG_GRADIENTS: Record<DrishyaWorld, string> = {
   night:    "radial-gradient(ellipse at 20% 0%, rgba(99,102,241,0.18) 0%, transparent 60%), radial-gradient(ellipse at 80% 100%, rgba(49,46,129,0.25) 0%, transparent 60%)",
@@ -449,11 +429,11 @@ export default function DrishyaPage() {
                   {t("drishya_ask_label").toUpperCase()}
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  {SUGGESTIONS[world].map((s) => (
+                  {[t(`drishya_${world}_p0`), t(`drishya_${world}_p1`), t(`drishya_${world}_p2`), t(`drishya_${world}_p3`)].map((s, idx) => (
                     <button
-                      key={s}
+                      key={idx}
                       onClick={() => setRequest(s)}
-                      data-testid={`button-drishya-suggestion-${s.slice(0, 20).toLowerCase().replace(/\s/g, "-")}`}
+                      data-testid={`button-drishya-suggestion-${idx}`}
                       style={{
                         padding: "8px 14px",
                         borderRadius: 20,

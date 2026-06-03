@@ -134,6 +134,7 @@ const SLEEP_METRIC = { key: "sleep_hours", label: "Sleep", unit: "hours", emoji:
 
 // ── MetricCard ────────────────────────────────────────────────────────────────
 function MetricCard({ metric, reading, onTap }: { metric: typeof METRICS[0]; reading?: HealthReading; onTap: () => void }) {
+  const { t } = useLanguage();
   const val = reading ? parseFloat(reading.value) : null;
   const warn = val !== null && metric.isHigh(val);
   return (
@@ -143,7 +144,7 @@ function MetricCard({ metric, reading, onTap }: { metric: typeof METRICS[0]; rea
         <span style={{ fontSize: 22 }}>{metric.emoji}</span>
         {warn && <span style={{ fontSize: 9, color: metric.color, background: metric.bg, border: `1px solid ${metric.border}`, borderRadius: 6, padding: "2px 6px", letterSpacing: "0.08em" }}>NOTE</span>}
       </div>
-      <div style={{ fontSize: 11, color: C.textDim, letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 3 }}>{metric.label}</div>
+      <div style={{ fontSize: 11, color: C.textDim, letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 3 }}>{t("prana_" + metric.key) || metric.label}</div>
       {reading ? (
         <div>
           <div style={{ fontSize: 22, fontWeight: 700, color: metric.color, lineHeight: 1 }}>
@@ -151,7 +152,7 @@ function MetricCard({ metric, reading, onTap }: { metric: typeof METRICS[0]; rea
           </div>
           <div style={{ fontSize: 10, color: C.textMuted, marginTop: 4 }}>{timeAgo(reading.loggedAt)}</div>
         </div>
-      ) : <div style={{ fontSize: 12, color: C.textMuted }}>Tap to log</div>}
+      ) : <div style={{ fontSize: 12, color: C.textMuted }}>{t("health_tap_to_log")}</div>}
     </button>
   );
 }
@@ -182,7 +183,8 @@ function SleepChart({ readings }: { readings: HealthReading[] }) {
 
 // ── GlucoseBar ────────────────────────────────────────────────────────────────
 function GlucoseBar({ value }: { value: number | null }) {
-  const zones = [{ label: "Low", w: 23, color: C.violet }, { label: "Normal", w: 23, color: C.teal }, { label: "Pre-D", w: 10, color: C.amber }, { label: "High", w: 44, color: C.rose }];
+  const { t } = useLanguage();
+  const zones = [{ label: t("prana_low"), w: 23, color: C.violet }, { label: t("prana_normal"), w: 23, color: C.teal }, { label: t("prana_pre_d"), w: 10, color: C.amber }, { label: t("prana_high"), w: 44, color: C.rose }];
   const pos = value ? Math.min(100, Math.max(0, ((value - 40) / 260) * 100)) : null;
   return (
     <div style={{ marginTop: 12 }}>
@@ -193,7 +195,7 @@ function GlucoseBar({ value }: { value: number | null }) {
       <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
         {zones.map((z, i) => <span key={i} style={{ fontSize: 8, color: C.textMuted }}>{z.label}</span>)}
       </div>
-      {value && <div style={{ marginTop: 6, fontSize: 12, color: C.textDim, textAlign: "center" as const }}>{value} mg/dL — {value < 70 ? "Low" : value <= 99 ? "Normal" : value <= 125 ? "Pre-diabetic range" : "Elevated"}</div>}
+      {value && <div style={{ marginTop: 6, fontSize: 12, color: C.textDim, textAlign: "center" as const }}>{value} mg/dL — {value < 70 ? t("prana_low") : value <= 99 ? t("prana_normal") : value <= 125 ? t("prana_pre_d") : t("prana_high")}</div>}
     </div>
   );
 }
@@ -415,6 +417,8 @@ function ProfileSetupModal({ onSave, onSkip, token }: { onSave: (p: HealthProfil
 
 // ── PersonalizedStatsCard ─────────────────────────────────────────────────────
 function PersonalizedStatsCard({ profile, onEdit }: { profile: HealthProfile; onEdit: () => void }) {
+  const { t } = useLanguage();
+  const bmiSubMap: Record<string, string> = { "Normal": t("prana_normal"), "Underweight": t("prana_underweight"), "Overweight": t("prana_overweight"), "High BMI": t("prana_high_bmi") };
   if (!profile.heightCm || !profile.weightKg) return null;
   const bmi = calcBMI(profile.heightCm, parseFloat(String(profile.weightKg)));
   const bmiCat = bmiCategory(bmi);
@@ -425,16 +429,16 @@ function PersonalizedStatsCard({ profile, onEdit }: { profile: HealthProfile; on
   const steps = stepGoal(profile.activityLevel);
 
   const stats = [
-    { label: "BMI", value: bmi.toFixed(1), sub: bmiCat.label, color: bmiCat.color },
+    { label: t("prana_bmi_label"), value: bmi.toFixed(1), sub: bmiSubMap[bmiCat.label] || bmiCat.label, color: bmiCat.color },
     tdee ? { label: "Cal / day", value: tdee.toLocaleString(), sub: "your goal", color: "#f5c842" } : null,
-    { label: "Step goal", value: steps.toLocaleString(), sub: "daily target", color: C.teal },
+    { label: t("prana_step_goal"), value: steps.toLocaleString(), sub: t("prana_daily_target"), color: C.teal },
   ].filter(Boolean) as { label: string; value: string; sub: string; color: string }[];
 
   return (
     <div style={{ background: `linear-gradient(135deg, rgba(61,217,192,0.07), rgba(124,106,255,0.07))`, border: `1px solid ${C.tealBorder}`, borderRadius: 18, padding: "16px", marginBottom: 20 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: C.teal, letterSpacing: "0.1em", textTransform: "uppercase" as const }}>Your Health Profile</div>
-        <button onClick={onEdit} style={{ background: "none", border: `1px solid ${C.border}`, fontSize: 11, color: C.textDim, cursor: "pointer", fontFamily: sans, padding: "4px 8px", borderRadius: 6 }}>Edit</button>
+        <div style={{ fontSize: 12, fontWeight: 700, color: C.teal, letterSpacing: "0.1em", textTransform: "uppercase" as const }}>{t("prana_profile_heading")}</div>
+        <button onClick={onEdit} style={{ background: "none", border: `1px solid ${C.border}`, fontSize: 11, color: C.textDim, cursor: "pointer", fontFamily: sans, padding: "4px 8px", borderRadius: 6 }}>{t("prana_edit")}</button>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: `repeat(${stats.length}, 1fr)`, gap: 10 }}>
         {stats.map((s, i) => (
@@ -642,12 +646,12 @@ function DailyLogTab({ readings, onLog, onDelete, token, profile, onEditProfile 
         ))}
       </div>
 
-      <div style={{ fontSize: 11, color: C.textDim, letterSpacing: "0.14em", textTransform: "uppercase" as const, marginBottom: 14 }}>Sleep</div>
+      <div style={{ fontSize: 11, color: C.textDim, letterSpacing: "0.14em", textTransform: "uppercase" as const, marginBottom: 14 }}>{t("health_sleep")}</div>
       <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: "16px", marginBottom: 24 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ fontSize: 20 }}>🌙</span>
-            <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>Sleep Duration</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{t("health_sleep_dur")}</div>
           </div>
           <button onClick={() => setActive(SLEEP_METRIC as any)}
             style={{ fontSize: 11, color: C.teal, background: C.tealDim, border: `1px solid ${C.tealBorder}`, borderRadius: 8, padding: "4px 12px", cursor: "pointer" }}>
@@ -655,7 +659,7 @@ function DailyLogTab({ readings, onLog, onDelete, token, profile, onEditProfile 
           </button>
         </div>
         {sleepReadings.length > 0 ? <SleepChart readings={sleepReadings} /> : (
-          <div style={{ textAlign: "center" as const, padding: "20px 0", color: C.textMuted, fontSize: 13 }}>Log sleep to see your 7-day chart</div>
+          <div style={{ textAlign: "center" as const, padding: "20px 0", color: C.textMuted, fontSize: 13 }}>{t("health_sleep_empty")}</div>
         )}
       </div>
 
@@ -669,7 +673,7 @@ function DailyLogTab({ readings, onLog, onDelete, token, profile, onEditProfile 
                 <div style={{ fontSize: 20, fontWeight: 700, color: C.violet }}>{parseFloat(bpReading.value).toFixed(0)}{bpReading.value2 ? `/${parseFloat(bpReading.value2).toFixed(0)}` : ""}</div>
                 <div style={{ fontSize: 11, color: C.textMuted }}>mmHg · {timeAgo(bpReading.loggedAt)}</div>
               </div>
-            ) : <div style={{ fontSize: 13, color: C.textMuted }}>No readings yet</div>}
+            ) : <div style={{ fontSize: 13, color: C.textMuted }}>{t("health_no_readings")}</div>}
           </div>
           <button onClick={() => setActive(BP_METRIC as any)}
             style={{ fontSize: 11, color: C.violet, background: C.violetDim, border: "1px solid rgba(124,106,255,0.22)", borderRadius: 8, padding: "4px 12px", cursor: "pointer" }}>
@@ -685,7 +689,7 @@ function DailyLogTab({ readings, onLog, onDelete, token, profile, onEditProfile 
             <span style={{ fontSize: 20 }}>🩸</span>
             {glucoseVal ? (
               <div style={{ fontSize: 20, fontWeight: 700, color: "#f5c842" }}>{glucoseVal} <span style={{ fontSize: 12, fontWeight: 400 }}>mg/dL</span></div>
-            ) : <div style={{ fontSize: 13, color: C.textMuted }}>No readings yet</div>}
+            ) : <div style={{ fontSize: 13, color: C.textMuted }}>{t("health_no_readings")}</div>}
           </div>
           <button onClick={() => setActive(GLUCOSE_METRIC as any)}
             style={{ fontSize: 11, color: "#f5c842", background: "rgba(245,200,66,0.10)", border: "1px solid rgba(245,200,66,0.22)", borderRadius: 8, padding: "4px 12px", cursor: "pointer" }}>
@@ -699,7 +703,7 @@ function DailyLogTab({ readings, onLog, onDelete, token, profile, onEditProfile 
         <Wifi size={20} color={C.teal} style={{ flexShrink: 0 }} />
         <div>
           <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 3 }}>{t("health_wearable_t")}</div>
-          <div style={{ fontSize: 12, color: C.textDim }}>Apple Health, Google Fit, boAt & Noise integration will auto-fill your daily readings.</div>
+          <div style={{ fontSize: 12, color: C.textDim }}>{t("health_wearable_s")}</div>
         </div>
       </div>
 

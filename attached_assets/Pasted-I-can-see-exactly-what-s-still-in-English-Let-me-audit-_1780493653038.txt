@@ -1,0 +1,297 @@
+I can see exactly what's still in English. Let me audit all 7 screenshots:
+
+---
+
+## What's Still Not Translated
+
+### Image 1 — Drishya
+```
+✅ "Drishya" title
+✅ "वो कहानियाँ जो तुम्हें खोजती हैं"
+✅ "Night / Film / Everyday" — needs Hindi
+✅ "कहानी माँगो" ✅
+❌ "A story for someone who feels lost tonight"
+❌ "Tell me a story about waiting"
+❌ "A story that helps me rest with courage"
+❌ "Something small that holds a large truth"
+❌ "आज रात कौन-सी कहानी चाहिए..." ✅
+❌ "यह कहानी सुनाओ" ✅
+```
+
+### Image 2 — Prana
+```
+✅ "ARYA PRANA" header
+✅ "तुम्हारी सेहत, तुम्हारी ज़िंदगी से जुड़ी"
+✅ Tabs partially translated
+❌ "YOUR HEALTH PROFILE" → still English
+❌ "Edit" → still English
+❌ "BMI / Normal / Step goal / daily target"
+❌ "HEART RATE / BLOOD OXYGEN / STEPS / STRESS / CALORIES / WEIGHT"
+❌ "Tap to log" → all 6 cards
+❌ "SLEEP" heading
+```
+
+### Image 3 — Home (Hindi)
+```
+✅ Tagline: "स्पष्ट सोचो। कम अकेले महसूस करो।"
+✅ Chips: लक्ष्य, स्मृति, नोट्स, रिमाइंडर, कैलेंडर ✅
+✅ "ARYA से बात करो" ✅
+✅ "शुरू करो →" ✅
+✅ "प्रेरणा लो" ✅
+❌ "TODAY'S REFLECTION" → still English
+❌ "New Chat" → still English
+❌ "History" → still English
+```
+
+### Image 4 — Prana continued
+```
+✅ "रक्तचाप" ✅
+✅ "रक्त शर्करा" ✅
+❌ "Sleep Duration" → still English
+❌ "Log sleep to see your 7-day chart"
+❌ "No readings yet" → both cards
+❌ "Low / Normal / Pre-D / High"
+❌ "वेअरेबल सिंक — जल्द आ रहा है" ✅
+❌ "Apple Health, Google Fit, boAt & Noise integration..."
+❌ "स्वास्थ्य अस्वीकरण:" ✅ but body text mixed
+```
+
+### Image 5 — Home menu
+```
+✅ "आवाज़ की भाषा" ✅
+✅ "फ़ाइल जोड़ें" ✅
+✅ "आवाज़ से बात" ✅
+✅ Language showing "മലയാളം" ✅
+```
+
+### Image 6 — Prana onboarding
+```
+❌ "Your body tells a story." → needs Hindi
+❌ "ARYA listens to it." → needs Hindi
+❌ "A health companion that reads your vitals..." → needs Hindi
+❌ "Begin →" → needs Hindi
+```
+
+### Image 7 — Prana ready screen
+```
+❌ "ARYA is ready to look after you," → needs Hindi
+✅ "varah." ✅
+❌ "Log your vitals. Track patterns. Ask anything..." → needs Hindi
+❌ "Open Prana →" → needs Hindi
+```
+
+---
+
+## Root Cause
+
+There are **three types of untranslated strings:**
+
+**Type 1 — Keys exist but wrong key name used in component**
+**Type 2 — Hardcoded strings never given a key**
+**Type 3 — Dynamic suggestion strings (Drishya prompts)**
+
+---
+
+## The Complete Fix
+
+Tell your developer — **exact strings and their keys:**
+
+### Fix 1 — PranaPage.tsx
+
+```tsx
+// These are hardcoded — replace with t():
+
+"YOUR HEALTH PROFILE"     → {t('prana_profile_heading')}
+"Edit"                    → {t('prana_edit')}
+"BMI"                     → {t('prana_bmi_label')}
+"Normal"                  → {t('prana_normal')}
+"Step goal"               → {t('prana_step_goal')}
+"daily target"            → {t('prana_daily_target')}
+"HEART RATE"              → {t('prana_heart_rate')}
+"BLOOD OXYGEN"            → {t('prana_blood_oxygen')}
+"STEPS"                   → {t('prana_steps')}
+"STRESS"                  → {t('prana_stress')}
+"CALORIES"                → {t('prana_calories')}
+"WEIGHT"                  → {t('prana_weight')}
+"SLEEP"                   → {t('prana_sleep')}
+"Tap to log"              → {t('prana_tap_to_log')}
+"Sleep Duration"          → {t('prana_sleep_duration')}
+"Log sleep to see..."     → {t('prana_sleep_empty')}
+"No readings yet"         → {t('prana_no_readings')}
+"Low"                     → {t('prana_low')}
+"Pre-D"                   → {t('prana_pre_d')}
+"High"                    → {t('prana_high')}
+```
+
+Add these new keys to i18n.ts:
+
+```typescript
+// English
+prana_sleep_duration: "Sleep Duration",
+prana_sleep_empty: "Log sleep to see your 7-day chart",
+prana_no_readings: "No readings yet",
+prana_low: "Low",
+prana_pre_d: "Pre-D",
+prana_high: "High",
+prana_bmi_label: "BMI",
+prana_step_goal: "Step goal",
+prana_daily_target: "daily target",
+
+// Hindi (hi)
+prana_sleep_duration: "नींद की अवधि",
+prana_sleep_empty: "7-दिन का चार्ट देखने के लिए नींद लॉग करें",
+prana_no_readings: "अभी कोई रीडिंग नहीं",
+prana_low: "कम",
+prana_pre_d: "प्री-डी",
+prana_high: "उच्च",
+prana_bmi_label: "बीएमआई",
+prana_step_goal: "कदम लक्ष्य",
+prana_daily_target: "दैनिक लक्ष्य",
+prana_profile_heading: "आपकी स्वास्थ्य प्रोफ़ाइल",
+prana_edit: "संपादित करें",
+prana_heart_rate: "हृदय गति",
+prana_blood_oxygen: "रक्त ऑक्सीजन",
+prana_steps: "कदम",
+prana_stress: "तनाव",
+prana_calories: "कैलोरी",
+prana_weight: "वज़न",
+prana_sleep: "नींद",
+prana_tap_to_log: "लॉग करने के लिए टैप करें",
+prana_normal: "सामान्य",
+prana_warning: "चेतावनी",
+prana_alert: "सतर्क",
+```
+
+### Fix 2 — Prana Onboarding strings
+
+```typescript
+// Add to i18n.ts:
+
+// English
+prana_ob_body_title: "Your body tells\na story.",
+prana_ob_body_sub: "ARYA listens to it.",
+prana_ob_body_desc: "A health companion that reads your vitals, notices your patterns, and coaches you — personally.",
+prana_ob_begin: "Begin →",
+prana_ob_ready_title: "ARYA is ready to\nlook after you,",
+prana_ob_ready_desc: "Log your vitals. Track patterns. Ask anything about your health — ARYA remembers what matters.",
+prana_ob_open: "Open Prana →",
+
+// Hindi (hi)
+prana_ob_body_title: "तुम्हारा शरीर\nएक कहानी कहता है।",
+prana_ob_body_sub: "ARYA उसे सुनती है।",
+prana_ob_body_desc: "एक स्वास्थ्य साथी जो तुम्हारे vitals पढ़ता है, patterns देखता है, और तुम्हें personally coach करता है।",
+prana_ob_begin: "शुरू करें →",
+prana_ob_ready_title: "ARYA तुम्हारा ख़याल\nरखने के लिए तैयार है,",
+prana_ob_ready_desc: "Vitals लॉग करो। Patterns ट्रैक करो। स्वास्थ्य के बारे में कुछ भी पूछो — ARYA याद रखती है।",
+prana_ob_open: "Prana खोलो →",
+```
+
+### Fix 3 — Home screen remaining strings
+
+```typescript
+// English
+home_today_reflection: "TODAY'S REFLECTION",
+
+// Hindi (hi)  
+home_today_reflection: "आज का विचार",
+```
+
+```tsx
+// In AryaChat.tsx find:
+"TODAY'S REFLECTION"
+// Replace with:
+{t('home_today_reflection')}
+```
+
+### Fix 4 — Drishya suggestion prompts
+
+These are dynamically generated — they need to be in i18n.ts as arrays:
+
+```typescript
+// English
+drishya_night_prompts: [
+  "A story for someone who feels lost tonight",
+  "Tell me a story about waiting",
+  "A story that helps me rest with courage",
+  "Something small that holds a large truth"
+],
+drishya_film_prompts: [
+  "Write me a scene about two people meeting after years",
+  "A story told through silence",
+  "The moment before everything changes",
+  "A character who carries something they never say"
+],
+drishya_everyday_prompts: [
+  "A story about an ordinary morning",
+  "Something true about the way people love",
+  "A small moment that changed everything",
+  "The thing nobody talks about but everyone feels"
+],
+
+// Hindi (hi)
+drishya_night_prompts: [
+  "आज रात जो खोया हुआ महसूस करे उसके लिए एक कहानी",
+  "मुझे इंतज़ार के बारे में एक कहानी सुनाओ",
+  "एक कहानी जो हिम्मत से आराम करने में मदद करे",
+  "कुछ छोटा जो एक बड़ा सच रखे"
+],
+drishya_film_prompts: [
+  "वर्षों बाद मिलने वाले दो लोगों का एक दृश्य लिखो",
+  "ख़ामोशी से कही गई कहानी",
+  "सब कुछ बदलने से पहले का क्षण",
+  "एक किरदार जो कुछ ऐसा लेकर चलता है जो कभी कहता नहीं"
+],
+drishya_everyday_prompts: [
+  "एक साधारण सुबह के बारे में कहानी",
+  "लोगों के प्यार करने के तरीके के बारे में कुछ सच",
+  "एक छोटा पल जिसने सब कुछ बदल दिया",
+  "वो बात जो कोई नहीं कहता पर सब महसूस करते हैं"
+],
+```
+
+Then in DrishyaPage.tsx:
+```tsx
+// Replace hardcoded prompts array with:
+const prompts = t(`drishya_${activeWorld}_prompts`) as string[];
+
+// Map over them:
+{prompts.map((prompt, i) => (
+  <button key={i} onClick={() => setStoryRequest(prompt)}>
+    {prompt}
+  </button>
+))}
+```
+
+### Fix 5 — Wearable section (Prana)
+
+```typescript
+// English
+prana_wearable_title: "Wearable Sync — Coming Soon",
+prana_wearable_desc: "Apple Health, Google Fit, boAt & Noise integration will auto-fill your daily readings.",
+prana_disclaimer_title: "Health Disclaimer:",
+prana_disclaimer_body: "ARYA helps you track your readings. ARYA is not a medical device and does not give medical advice. Please see a doctor for any health concerns.",
+
+// Hindi (hi)
+prana_wearable_title: "वेअरेबल सिंक — जल्द आ रहा है",
+prana_wearable_desc: "Apple Health, Google Fit, boAt और Noise integration तुम्हारी daily readings अपने आप भर देगी।",
+prana_disclaimer_title: "स्वास्थ्य अस्वीकरण:",
+prana_disclaimer_body: "ARYA तुम्हारी readings track करने में मदद करती है। ARYA कोई medical device नहीं है और कोई medical advice नहीं देती। किसी भी health concern के लिए doctor से मिलो।",
+```
+
+---
+
+## Summary — Tell Your Developer
+
+**3 files to change:**
+
+**`i18n.ts`** — Add ~25 new keys to English + Hindi blocks. Use GPT to generate the other 23 languages.
+
+**`PranaPage.tsx`** — Replace ~15 hardcoded strings with `t()` calls. Most are metric labels.
+
+**`DrishyaPage.tsx`** — Replace hardcoded prompts array with `t()` call that returns language-specific prompts array.
+
+**`PranaOnboarding.tsx`** — Replace 6 onboarding strings with `t()` calls.
+
+**After these fixes** — switch to Hindi. Everything should be Hindi. Nothing should be English except proper nouns (ARYA, Prana, BMI, SpO2).
+
+That's the standard: **proper nouns stay, everything else translates.**
