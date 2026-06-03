@@ -1,0 +1,725 @@
+Since I can't access your Replit files directly, here are the **complete, exact fixes** to hand to your developer — copy-paste ready.
+
+---
+
+## Fix 1 — Remove Raw Key (2 min)
+
+Search entire codebase for `review_mood_start` and delete every reference.
+
+Replace the mood empty state with:
+
+```tsx
+// In SundayReview.tsx or WeeklyReview.tsx
+// Find the mood empty state and replace with:
+
+<div className="empty-mood-card">
+  <p className="empty-mood-text">
+    You didn't check in on your mood this week.
+  </p>
+  <p className="empty-mood-sub">
+    Takes 5 seconds tomorrow. Just one emoji.
+    ARYA learns from it over time.
+  </p>
+</div>
+```
+
+---
+
+## Fix 2 — Complete Sunday Review GPT Prompt Rewrite
+
+This is the most important fix. Find the weekly review generation in `server/routes.ts` or wherever the GPT call lives.
+
+Replace the entire system prompt with this:
+
+```typescript
+const sundayReviewPrompt = `
+You are ARYA writing a personal Sunday letter 
+to ${userName}.
+
+You write like a trusted friend who paid close 
+attention all week. Not a report. Not bullet points.
+A letter. Warm. Honest. Simple words.
+
+RULES — never break these:
+- Write like you're talking to a friend
+- No corporate words (leverage, synergy, optimise)
+- No generic lines ("great week", "keep going")
+- Every sentence must be specific to THIS person
+- If they missed goals — say it with care, not judgment
+- If they did something well — name it specifically
+- Short sentences. Plain language. Real feeling.
+- Maximum reading time: 3 minutes
+
+DATA YOU HAVE ABOUT ${userName} THIS WEEK:
+
+Goals this week: ${JSON.stringify(goalsData)}
+Mood check-ins: ${JSON.stringify(moodData)}
+Voice notes recorded: ${JSON.stringify(voiceNotes)}
+Conversations with ARYA: ${conversationCount}
+Memories stored: ${JSON.stringify(recentMemories)}
+Niti sessions: ${JSON.stringify(nitiSessions)}
+KAAL cycle: ${kaalData?.currentCycle || 'Venus'}
+Patterns noticed: ${JSON.stringify(patterns)}
+
+VOICE FLASHBACK (from 4-8 weeks ago):
+${flashbackNote ? `"${flashbackNote.summary}"` : null}
+
+---
+
+WRITE THE REVIEW IN THIS EXACT STRUCTURE:
+
+1. OPENING LINE (1 sentence, specific to their week)
+   Not: "A week of potential awaits"
+   Yes: "The conference is two days away 
+        and the speeches aren't written yet."
+
+2. WHAT ARYA NOTICED (2-3 sentences)
+   The most honest observation of the week.
+   What the data shows. What the pattern suggests.
+   Say it gently but clearly.
+   
+   Example:
+   "You set 15 goals this week. 
+    None of them moved.
+    That's not laziness — 
+    something is holding you back.
+    What is it?"
+
+3. ONE THING THAT MATTERS (1-2 sentences)
+   The single most important thing from this week.
+   Could be a goal, a conversation, a mood pattern.
+   
+4. ARYA'S QUESTION (1 question only)
+   The question they need to sit with.
+   Not easy. Not obvious.
+   The question behind the question.
+   
+   Example:
+   "What would you do this week 
+    if you knew you couldn't fail?"
+
+5. VOICE FLASHBACK (only if flashback exists)
+   "Six weeks ago you said: 
+    [flashback quote]
+    Does that feel different now?"
+
+6. INTENTION FOR NEXT WEEK
+   Pre-fill 6 options based on their actual situation.
+   Not generic options — specific to their goals/patterns.
+   
+   Example options based on POCUS conference:
+   - "Finish the introduction speech"
+   - "Send WhatsApp to delegates"
+   - "Get one full night of sleep"
+   - "Have one honest conversation"
+   - "Be present at the conference"
+   - "Rest after it's done"
+
+FORMAT:
+Return as JSON:
+{
+  "openingLine": "...",
+  "whatAryaNoticed": "...",
+  "oneThatMatters": "...",
+  "aryasQuestion": "...",
+  "voiceFlashback": "..." or null,
+  "intentionOptions": ["...", "...", "...", "...", "...", "..."],
+  "weekSummaryTitle": "..." (3-4 words, like a chapter name)
+}
+`;
+```
+
+---
+
+## Fix 3 — Updated Sunday Review Component
+
+Replace the entire review render with this structure:
+
+```tsx
+// SundayReview.tsx — complete render
+
+function SundayReviewContent({ review, userName, weekData }) {
+  const [userResponse, setUserResponse] = useState('');
+  const [selectedIntention, setSelectedIntention] = useState('');
+  const [customIntention, setCustomIntention] = useState('');
+
+  return (
+    <div className="review-container">
+
+      {/* ── HEADER ── */}
+      <div className="review-header">
+        <span className="review-leaf">🌿</span>
+        <p className="review-label">ARYA'S SUNDAY LETTER</p>
+        <h1 className="review-to">to {userName.toLowerCase()}</h1>
+        <p className="review-dates">{weekStart} — {weekEnd}</p>
+        <div className="review-divider" />
+      </div>
+
+      {/* ── OPENING LINE ── */}
+      <p className="review-opening">
+        "{review.openingLine}"
+      </p>
+
+      <div className="review-section-divider" />
+
+      {/* ── MOOD THIS WEEK ── */}
+      <section className="review-section">
+        <p className="review-section-label">YOUR WEEK IN MOOD</p>
+        {weekData.moodCheckIns.length > 0 ? (
+          <div className="mood-display">
+            {weekData.moodCheckIns.map((mood, i) => (
+              <div key={i} className="mood-day">
+                <span className="mood-emoji">{mood.emoji}</span>
+                <span className="mood-day-label">{mood.day}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="empty-mood-card">
+            <p>You didn't check in on your mood this week.</p>
+            <p className="empty-sub">
+              Takes 5 seconds tomorrow. Just one emoji.
+            </p>
+          </div>
+        )}
+      </section>
+
+      <div className="review-section-divider" />
+
+      {/* ── GOALS THIS WEEK ── */}
+      <section className="review-section">
+        <p className="review-section-label">GOALS THIS WEEK</p>
+        
+        <div className="goals-stats">
+          <div className="stat">
+            <span className="stat-num">{weekData.activeGoals}</span>
+            <span className="stat-label">ACTIVE</span>
+          </div>
+          <div className="stat">
+            <span className="stat-num">{weekData.checkIns}</span>
+            <span className="stat-label">CHECK-INS</span>
+          </div>
+          <div className="stat">
+            <span className="stat-num">{weekData.untouched}</span>
+            <span className="stat-label">UNTOUCHED</span>
+          </div>
+        </div>
+
+        {weekData.untouched > 10 && (
+          <p className="goals-context">
+            Many of these were picked up from your 
+            conversations. Which ones actually matter 
+            to you right now?
+          </p>
+        )}
+
+        {/* Show top 5 goals only */}
+        <div className="goals-list">
+          {weekData.goals.slice(0, 5).map(goal => (
+            <div key={goal.id} className="goal-review-row">
+              <div className={`goal-circle ${
+                goal.progress > 0 ? 'has-progress' : ''
+              }`} />
+              <div>
+                <p className="goal-title">{goal.title}</p>
+                <p className="goal-progress-text">
+                  {goal.progress > 0 
+                    ? `${goal.progress}% done` 
+                    : 'Not started'}
+                </p>
+              </div>
+            </div>
+          ))}
+          {weekData.goals.length > 5 && (
+            <p className="goals-more">
+              +{weekData.goals.length - 5} more goals
+            </p>
+          )}
+        </div>
+      </section>
+
+      <div className="review-section-divider" />
+
+      {/* ── SOMETHING ARYA NOTICED ── */}
+      <section className="review-section">
+        <div className="arya-noticed-card">
+          <p className="noticed-label">◆ SOMETHING ARYA NOTICED</p>
+          <p className="noticed-text">{review.whatAryaNoticed}</p>
+          {weekData.patternConfirmed && (
+            <p className="noticed-pattern">
+              • Pattern seen across multiple weeks
+            </p>
+          )}
+        </div>
+      </section>
+
+      <div className="review-section-divider" />
+
+      {/* ── BUSINESS MIND ── */}
+      <section className="review-section">
+        <p className="review-section-label">BUSINESS MIND THIS WEEK</p>
+        {weekData.nitiSessions.length > 0 ? (
+          weekData.nitiSessions.map(session => (
+            <div key={session.id} className="niti-review-card">
+              <p className="niti-session-title">{session.title}</p>
+              <p className="niti-session-meta">
+                {session.messageCount} exchanges · 
+                {timeAgo(session.createdAt)}
+              </p>
+            </div>
+          ))
+        ) : (
+          <p className="empty-niti">
+            {weekData.recentMemory 
+              ? `You had real things to think through this week — 
+                 ${weekData.recentMemory}. 
+                 Bring it to Niti next week.`
+              : "You didn't open Niti this week. Big decisions think better out loud."
+            }
+          </p>
+        )}
+      </section>
+
+      <div className="review-section-divider" />
+
+      {/* ── COSMIC WEEK ── */}
+      {weekData.kaal && (
+        <section className="review-section">
+          <div className="cosmic-header">
+            <p className="review-section-label">
+              YOUR COSMIC WEEK — {weekData.kaal.planet}
+            </p>
+            <div className="star-rating">
+              {[1,2,3,4,5].map(i => (
+                <span key={i} className={
+                  i <= weekData.kaal.rating ? 'star filled' : 'star'
+                }>★</span>
+              ))}
+            </div>
+          </div>
+          <p className="cosmic-text">{weekData.kaal.weekSummary}</p>
+          <p className="cosmic-tip">{weekData.kaal.tip}</p>
+        </section>
+      )}
+
+      <div className="review-section-divider" />
+
+      {/* ── VOICE FLASHBACK ── */}
+      {review.voiceFlashback && (
+        <section className="review-section">
+          <p className="review-section-label">FROM YOUR PAST</p>
+          <div className="flashback-card">
+            <p className="flashback-weeks">
+              {weekData.flashback.weeksAgo} weeks ago
+            </p>
+            <p className="flashback-quote">
+              "{weekData.flashback.summary}"
+            </p>
+            <p className="flashback-prompt">
+              {review.voiceFlashback}
+            </p>
+          </div>
+        </section>
+      )}
+
+      <div className="review-section-divider" />
+
+      {/* ── ARYA'S QUESTION ── */}
+      <section className="review-section">
+        <p className="review-section-label">ARYA'S QUESTION FOR YOU</p>
+        <p className="arya-question">
+          "{review.aryasQuestion}"
+        </p>
+        <textarea
+          className="question-response"
+          placeholder="Sit with this. Write what comes..."
+          value={userResponse}
+          onChange={e => setUserResponse(e.target.value)}
+        />
+      </section>
+
+      <div className="review-section-divider" />
+
+      {/* ── INTENTION NEXT WEEK ── */}
+      <section className="review-section">
+        <p className="review-section-label">
+          YOUR INTENTION NEXT WEEK
+        </p>
+        <div className="intention-grid">
+          {review.intentionOptions.map((option, i) => (
+            <button
+              key={i}
+              className={`intention-chip ${
+                selectedIntention === option ? 'selected' : ''
+              }`}
+              onClick={() => setSelectedIntention(option)}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+        <input
+          className="intention-custom"
+          placeholder="Or write your own..."
+          value={customIntention}
+          onChange={e => setCustomIntention(e.target.value)}
+        />
+        <button
+          className="intention-set-btn"
+          onClick={() => saveIntention(
+            selectedIntention || customIntention
+          )}
+          disabled={!selectedIntention && !customIntention}
+        >
+          Set my intention for next week
+        </button>
+      </section>
+
+      {/* ── FOOTER ── */}
+      <p className="review-footer">
+        ARYA · Your personal thinking partner
+      </p>
+
+    </div>
+  );
+}
+```
+
+---
+
+## Fix 4 — The Styles
+
+```css
+/* Sunday Review styles */
+.review-container {
+  background: #f5f0e8;
+  min-height: 100vh;
+  padding: 0 0 80px;
+  font-family: 'Crimson Pro', Georgia, serif;
+}
+
+.review-header {
+  text-align: center;
+  padding: 40px 24px 24px;
+  background: #f5f0e8;
+}
+
+.review-leaf { font-size: 40px; display: block; margin-bottom: 12px; }
+
+.review-label {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: rgba(0,0,0,0.35);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.review-to {
+  font-size: 36px;
+  font-weight: 400;
+  color: #1a1a1a;
+  margin-bottom: 6px;
+}
+
+.review-dates {
+  font-size: 14px;
+  color: rgba(0,0,0,0.4);
+  margin-bottom: 20px;
+}
+
+.review-divider {
+  width: 48px;
+  height: 1.5px;
+  background: #b5a06a;
+  margin: 0 auto;
+}
+
+.review-opening {
+  font-size: 22px;
+  font-style: italic;
+  line-height: 1.55;
+  text-align: center;
+  color: #2a2a2a;
+  padding: 28px 28px 0;
+}
+
+.review-section { padding: 24px 24px 0; }
+
+.review-section-label {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  letter-spacing: 2.5px;
+  color: rgba(0,0,0,0.35);
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.review-section-divider {
+  height: 1px;
+  background: rgba(0,0,0,0.07);
+  margin: 28px 24px 0;
+}
+
+/* Goals */
+.goals-stats {
+  display: flex;
+  gap: 0;
+  margin-bottom: 16px;
+}
+
+.stat {
+  flex: 1;
+  text-align: center;
+}
+
+.stat-num {
+  display: block;
+  font-size: 32px;
+  font-weight: 600;
+  color: #1a1a1a;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-family: 'Cinzel', serif;
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  color: rgba(0,0,0,0.35);
+}
+
+.goals-context {
+  font-size: 13px;
+  color: rgba(0,0,0,0.45);
+  font-style: italic;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.goal-review-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+
+.goal-circle {
+  width: 18px; height: 18px;
+  border: 1.5px solid rgba(0,0,0,0.2);
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.goal-circle.has-progress {
+  border-color: #4a7c59;
+  background: rgba(74,124,89,0.1);
+}
+
+.goal-title { font-size: 15px; color: #2a2a2a; margin-bottom: 2px; }
+.goal-progress-text { font-size: 12px; color: rgba(0,0,0,0.35); }
+
+/* ARYA Noticed */
+.arya-noticed-card {
+  background: #1a1a1a;
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.noticed-label {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: #b5a06a;
+  margin-bottom: 12px;
+}
+
+.noticed-text {
+  font-size: 16px;
+  font-style: italic;
+  line-height: 1.7;
+  color: #f5f0e8;
+}
+
+.noticed-pattern {
+  font-size: 12px;
+  color: #b5a06a;
+  margin-top: 12px;
+}
+
+/* Flashback */
+.flashback-card {
+  background: rgba(0,0,0,0.04);
+  border-left: 3px solid #b5a06a;
+  border-radius: 0 12px 12px 0;
+  padding: 16px 18px;
+}
+
+.flashback-weeks {
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: rgba(0,0,0,0.3);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.flashback-quote {
+  font-size: 16px;
+  font-style: italic;
+  line-height: 1.65;
+  color: rgba(0,0,0,0.7);
+  margin-bottom: 10px;
+}
+
+.flashback-prompt {
+  font-size: 13px;
+  color: #b5a06a;
+  font-style: italic;
+}
+
+/* ARYA's Question */
+.arya-question {
+  font-size: 22px;
+  font-style: italic;
+  line-height: 1.5;
+  color: #1a1a1a;
+  margin-bottom: 16px;
+}
+
+.question-response {
+  width: 100%;
+  min-height: 100px;
+  background: rgba(0,0,0,0.04);
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-family: 'Crimson Pro', serif;
+  font-size: 15px;
+  color: #1a1a1a;
+  resize: none;
+  outline: none;
+}
+
+/* Intentions */
+.intention-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.intention-chip {
+  padding: 14px 12px;
+  background: rgba(0,0,0,0.04);
+  border: 1.5px solid rgba(0,0,0,0.1);
+  border-radius: 12px;
+  font-family: 'Crimson Pro', serif;
+  font-size: 14px;
+  color: #2a2a2a;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s;
+  line-height: 1.3;
+}
+
+.intention-chip.selected {
+  background: rgba(74,124,89,0.08);
+  border-color: rgba(74,124,89,0.4);
+  color: #2d5a3d;
+}
+
+.intention-custom {
+  width: 100%;
+  padding: 14px 16px;
+  background: transparent;
+  border: 1.5px solid rgba(0,0,0,0.1);
+  border-radius: 12px;
+  font-family: 'Crimson Pro', serif;
+  font-size: 15px;
+  color: #1a1a1a;
+  outline: none;
+  margin-bottom: 14px;
+}
+
+.intention-set-btn {
+  width: 100%;
+  padding: 16px;
+  background: #b5a06a;
+  border: none;
+  border-radius: 14px;
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: #1a1a1a;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.intention-set-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.review-footer {
+  text-align: center;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: rgba(0,0,0,0.25);
+  padding: 40px 0 20px;
+}
+
+/* Empty states */
+.empty-mood-card {
+  background: rgba(0,0,0,0.04);
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+}
+
+.empty-mood-card p { font-size: 15px; color: rgba(0,0,0,0.5); }
+.empty-sub { font-size: 13px; margin-top: 6px; font-style: italic; }
+
+.empty-niti {
+  font-size: 15px;
+  color: rgba(0,0,0,0.45);
+  font-style: italic;
+  line-height: 1.6;
+  background: rgba(0,0,0,0.04);
+  border-radius: 12px;
+  padding: 16px;
+}
+```
+
+---
+
+## Summary For Developer
+
+**4 files:**
+
+```
+server/routes.ts
+  → Replace weekly review GPT prompt
+    with the personalised version above
+
+client/src/pages/SundayReview.tsx
+  → Replace entire render with new component
+  → Add voice flashback query
+
+client/src/styles/sundayReview.css
+  → Add all new styles above
+
+client/src/lib/i18n.ts
+  → Delete every reference to review_mood_start
+```
+
+**Test by checking:**
+1. No raw keys visible anywhere
+2. Opening line mentions something specific from the week
+3. Goals show "UNTOUCHED" not "MISSED"
+4. Voice flashback appears if note exists 4-8 weeks ago
+5. Intention options are specific to user's actual goals
+
+The Sunday Review should feel like a letter from someone who was watching over your week with care. Not a dashboard. Not a report. A letter.

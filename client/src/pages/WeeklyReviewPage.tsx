@@ -1,30 +1,29 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
-import { ArrowLeft, Check, Loader2, Share2, Download } from "lucide-react";
+import { ArrowLeft, Check, Loader2, Download } from "lucide-react";
 import { useUserAuth } from "@/lib/user-auth";
 import { useLanguage } from "@/lib/language-context";
 
-
 const P = {
-  bg: "#fdf6ec",
-  surface: "#fffaf3",
-  surface2: "#f5e8d0",
-  border: "#e4cfa8",
-  borderLight: "#eedfbf",
-  gold: "#8a6820",
-  goldLight: "#b8902e",
-  text: "#261808",
-  body: "#3d2810",
-  muted: "#7a6048",
-  steel: "#9a8060",
-  green: "#266040",
-  greenBg: "rgba(38,96,64,0.08)",
-  darkCard: "#140e04",
-  darkBorder: "#2e2010",
-  darkGold: "#d4a853",
-  darkCream: "#f0e8d5",
-  darkMuted: "#b09870",
+  bg: "#f5f0e8",
+  surface: "rgba(0,0,0,0.04)",
+  border: "rgba(0,0,0,0.1)",
+  gold: "#b5a06a",
+  goldDark: "#8a7248",
+  text: "#1a1a1a",
+  body: "#2a2a2a",
+  muted: "rgba(0,0,0,0.35)",
+  steel: "rgba(0,0,0,0.45)",
+  green: "#4a7c59",
+  greenBg: "rgba(74,124,89,0.08)",
+  greenBorder: "rgba(74,124,89,0.4)",
+  greenText: "#2d5a3d",
+  darkCard: "#1a1a1a",
+  darkText: "#f5f0e8",
+  darkMuted: "rgba(245,240,232,0.5)",
+  darkGold: "#b5a06a",
+  divider: "rgba(0,0,0,0.07)",
 };
 
 interface DayMood {
@@ -39,10 +38,10 @@ interface DayMood {
 interface WeeklyLetterData {
   weekLabel: string;
   userName: string;
-  headline: string;
+  openingLine: string;
+  weekSummaryTitle: string;
   moodArc: {
     days: DayMood[];
-    aryaRead: string;
     avgMood: number;
     checkInCount: number;
   };
@@ -50,17 +49,25 @@ interface WeeklyLetterData {
     total: number;
     active: number;
     activeThisWeek: number;
+    untouched: number;
     bestStreak: { title: string; count: number } | null;
     items: { id: string; title: string; progress: number; streak: number; activeThisWeek: boolean }[];
   };
-  aryaNoticed: { insight: string; confidence: string };
+  whatAryaNoticed: string;
+  oneThatMatters: string;
+  patternConfirmed: boolean;
   businessRecap: {
     sessions: { id: number; sessionType: string; philosopher: string | null; title: string | null; createdAt: string }[];
     hasData: boolean;
   };
   cosmicWeek: { name: string; summary: string; nextHint: string; stars: number };
-  aryaQuestion: string;
-  intentionChips: string[];
+  voiceFlashback: {
+    summary: string;
+    weeksAgo: number;
+    aryaText: string;
+  } | null;
+  aryasQuestion: string;
+  intentionOptions: string[];
   savedIntention?: string;
 }
 
@@ -86,35 +93,25 @@ function MoodArcSVG({ days }: { days: DayMood[] }) {
   const W = 300, H = 54;
   const dayW = W / 7;
   const getY = (mood: number) => H - ((mood - 1) / 4) * (H - 12) - 6;
-
   const curvePoints: [number, number][] = days
     .map((d, i) => d.hasData ? [i * dayW + dayW / 2, getY(d.mood)] as [number, number] : null)
     .filter(Boolean) as [number, number][];
-
   const curvePath = buildSmoothPath(curvePoints);
   const first = curvePoints[0];
   const last = curvePoints[curvePoints.length - 1];
 
   return (
-    <svg
-      width="100%"
-      height={H + 22}
-      viewBox={`-2 -8 ${W + 4} ${H + 30}`}
-      style={{ display: "block", overflow: "visible" }}
-    >
+    <svg width="100%" height={H + 22} viewBox={`-2 -8 ${W + 4} ${H + 30}`} style={{ display: "block", overflow: "visible" }}>
       <defs>
-        <linearGradient id="wrmf" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={P.goldLight} stopOpacity="0.22" />
-          <stop offset="100%" stopColor={P.goldLight} stopOpacity="0" />
+        <linearGradient id="wrmf2" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={P.gold} stopOpacity="0.2" />
+          <stop offset="100%" stopColor={P.gold} stopOpacity="0" />
         </linearGradient>
       </defs>
       {curvePath && first && last && (
         <>
-          <path
-            d={`${curvePath} L ${last[0].toFixed(1)} ${H} L ${first[0].toFixed(1)} ${H} Z`}
-            fill="url(#wrmf)"
-          />
-          <path d={curvePath} fill="none" stroke={P.goldLight} strokeWidth={2} strokeLinecap="round" />
+          <path d={`${curvePath} L ${last[0].toFixed(1)} ${H} L ${first[0].toFixed(1)} ${H} Z`} fill="url(#wrmf2)" />
+          <path d={curvePath} fill="none" stroke={P.gold} strokeWidth={2} strokeLinecap="round" />
         </>
       )}
       {days.map((day, i) => {
@@ -125,16 +122,16 @@ function MoodArcSVG({ days }: { days: DayMood[] }) {
             {day.hasData ? (
               <>
                 {day.emoji && (
-                  <text x={x} y={y - 9} textAnchor="middle" fontSize={15} style={{ userSelect: "none" }}>
+                  <text x={x} y={y - 9} textAnchor="middle" fontSize={14} style={{ userSelect: "none" }}>
                     {day.emoji}
                   </text>
                 )}
-                <circle cx={x} cy={y} r={4} fill={P.goldLight} stroke={P.bg} strokeWidth={1.5} />
+                <circle cx={x} cy={y} r={4} fill={P.gold} stroke={P.bg} strokeWidth={1.5} />
               </>
             ) : (
-              <circle cx={x} cy={y} r={3} fill={P.borderLight} />
+              <circle cx={x} cy={y} r={3} fill="rgba(0,0,0,0.12)" />
             )}
-            <text x={x} y={H + 18} textAnchor="middle" fontSize={10} fill={P.steel} fontFamily="Inter, sans-serif">
+            <text x={x} y={H + 18} textAnchor="middle" fontSize={10} fill={P.muted} fontFamily="Inter, sans-serif">
               {day.dayShort[0]}
             </text>
           </g>
@@ -146,14 +143,14 @@ function MoodArcSVG({ days }: { days: DayMood[] }) {
 
 function SLabel({ text }: { text: string }) {
   return (
-    <div style={{ fontSize: 10, letterSpacing: "0.14em", color: P.steel, textTransform: "uppercase", marginBottom: 14, fontWeight: 600 }}>
+    <div style={{ fontFamily: "'Cinzel', serif", fontSize: 9, letterSpacing: "0.25em", color: P.muted, textTransform: "uppercase", marginBottom: 14 }}>
       {text}
     </div>
   );
 }
 
-function Divider() {
-  return <div style={{ height: 1, background: P.borderLight, margin: "28px 0" }} />;
+function SDivider() {
+  return <div style={{ height: 1, background: P.divider, margin: "28px 0" }} />;
 }
 
 const SESSION_LABELS: Record<string, string> = {
@@ -163,11 +160,10 @@ const SESSION_LABELS: Record<string, string> = {
   think_out_loud: "Thinking out loud",
 };
 
-
 export default function WeeklyReviewPage() {
   const [, setLocation] = useLocation();
   const { token } = useUserAuth();
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
 
   const [data, setData] = useState<WeeklyLetterData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -184,7 +180,7 @@ export default function WeeklyReviewPage() {
 
   useEffect(() => {
     const link = document.createElement("link");
-    link.href = "https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap";
+    link.href = "https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&family=Cinzel:wght@400;600&display=swap";
     link.rel = "stylesheet";
     document.head.appendChild(link);
     return () => { try { document.head.removeChild(link); } catch {} };
@@ -208,7 +204,7 @@ export default function WeeklyReviewPage() {
     await fetch("/api/review/answer", {
       method: "POST",
       headers: { "x-user-token": token, "Content-Type": "application/json" },
-      body: JSON.stringify({ question: data.aryaQuestion, answer: questionAnswer }),
+      body: JSON.stringify({ question: data.aryasQuestion, answer: questionAnswer }),
     }).catch(() => {});
     setAnswerSaved(true);
     setSavingAnswer(false);
@@ -227,55 +223,34 @@ export default function WeeklyReviewPage() {
     setSavingIntention(false);
   };
 
-  const handleShare = () => {
-    if (!data) return;
-    const text = `"${data.headline}"\n\n— My week with ARYA\n${data.weekLabel}`;
-    if (navigator.share) {
-      navigator.share({ title: "My Sunday Review", text }).catch(() => {});
-    } else {
-      navigator.clipboard.writeText(text).catch(() => {});
-    }
-  };
-
   const handleDownload = () => {
     if (!data) return;
-    const lines: string[] = [];
-    lines.push(`ARYA WEEKLY REVIEW — ${data.weekLabel}`);
-    lines.push(`To: ${data.userName}`);
-    lines.push("─".repeat(48));
-    lines.push("");
-    lines.push(`"${data.headline}"`);
-    lines.push("");
-    lines.push("── MOOD ─────────────────────────────────────────");
-    if (data.moodArc.checkInCount > 0) {
-      lines.push(`Check-ins: ${data.moodArc.checkInCount}/7 days  ·  Avg mood: ${data.moodArc.avgMood.toFixed(1)}/5`);
-      lines.push(data.moodArc.aryaRead);
-    } else {
-      lines.push("No mood check-ins this week.");
-    }
-    lines.push("");
-    lines.push("── GOALS ────────────────────────────────────────");
-    lines.push(`Active: ${data.goals.active}  ·  Checked in: ${data.goals.activeThisWeek}`);
-    if (data.goals.bestStreak && data.goals.bestStreak.count >= 3) {
-      lines.push(`Best streak: "${data.goals.bestStreak.title}" — ${data.goals.bestStreak.count} days 🔥`);
-    }
-    data.goals.items.forEach(g => {
-      lines.push(`  ${g.activeThisWeek ? "✓" : "○"} ${g.title} — ${g.progress}%${g.streak > 0 ? `  (🔥 ${g.streak}-day streak)` : ""}`);
-    });
-    lines.push("");
-    lines.push("── ARYA NOTICED ─────────────────────────────────");
-    lines.push(data.aryaNoticed.insight);
-    lines.push("");
-    lines.push("── ARYA'S QUESTION ──────────────────────────────");
-    lines.push(`"${data.aryaQuestion}"`);
-    lines.push("");
-    lines.push("─".repeat(48));
-    lines.push("Generated by ARYA · varah.in");
+    const lines: string[] = [
+      `ARYA'S SUNDAY LETTER — ${data.weekLabel}`,
+      `To: ${data.userName}`,
+      "─".repeat(48),
+      "",
+      `"${data.openingLine}"`,
+      "",
+      `── ${data.weekSummaryTitle} ──`,
+      "",
+      "WHAT ARYA NOTICED",
+      data.whatAryaNoticed,
+      "",
+      "ONE THING THAT MATTERS",
+      data.oneThatMatters,
+      "",
+      "ARYA'S QUESTION",
+      `"${data.aryasQuestion}"`,
+      "",
+      "─".repeat(48),
+      "Generated by ARYA · varah.in",
+    ];
     const blob = new Blob([lines.join("\n")], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `ARYA-Review-${data.weekLabel.replace(/[\s,]+/g, "-")}.txt`;
+    a.download = `ARYA-Review-${data.weekLabel.replace(/[\s,—]+/g, "-")}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -285,277 +260,331 @@ export default function WeeklyReviewPage() {
   const intentionValue = customIntention.trim() || selectedChip;
 
   return (
-    <div style={{ minHeight: "100dvh", background: P.bg, color: P.body, fontFamily: "Inter, sans-serif", paddingBottom: "calc(88px + env(safe-area-inset-bottom, 0px))" }}>
+    <div style={{ minHeight: "100dvh", background: P.bg, color: P.body, fontFamily: "'Crimson Pro', Georgia, serif", paddingBottom: "calc(88px + env(safe-area-inset-bottom, 0px))" }}>
       <style>{`
         @keyframes wr-spin { to { transform: rotate(360deg); } }
         .wr-spin { animation: wr-spin 0.8s linear infinite; }
         * { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
         textarea:focus, input:focus { outline: none; }
-        button { font-family: Inter, sans-serif; }
+        .wr-btn-intention { transition: all 0.18s; }
+        .wr-btn-intention:hover { opacity: 0.88; }
+        .wr-chip:hover { border-color: rgba(181,160,106,0.5) !important; }
       `}</style>
 
-      {/* ── Sticky Nav ─────────────────────────────────────── */}
-      <div style={{ position: "sticky", top: 0, background: P.bg, borderBottom: `1px solid ${P.borderLight}`, padding: "13px 16px", display: "flex", alignItems: "center", gap: 12, zIndex: 10 }}>
+      {/* ── Sticky Nav ── */}
+      <div style={{ position: "sticky", top: 0, background: P.bg, borderBottom: `1px solid rgba(0,0,0,0.08)`, padding: "13px 16px", display: "flex", alignItems: "center", gap: 12, zIndex: 10 }}>
         <button
           data-testid="button-review-back"
           onClick={() => setLocation("/")}
-          style={{ width: 36, height: 36, borderRadius: "50%", border: `1px solid ${P.border}`, background: "transparent", color: P.muted, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+          style={{ width: 36, height: 36, borderRadius: "50%", border: `1px solid rgba(0,0,0,0.12)`, background: "transparent", color: P.steel, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
         >
           <ArrowLeft size={15} />
         </button>
         <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 14, color: P.gold, fontWeight: 700, lineHeight: 1.2 }}>
+          <div style={{ fontFamily: "'Cinzel', serif", fontSize: 12, color: P.gold, letterSpacing: "0.12em" }}>
             {t("review_title")}
           </div>
           {data && (
-            <div style={{ fontSize: 10, color: P.steel, letterSpacing: "0.1em", textTransform: "uppercase" }}>
-              {data.weekLabel}
+            <div style={{ fontSize: 11, color: P.muted, marginTop: 1 }}>
+              {data.weekSummaryTitle}
             </div>
           )}
         </div>
         {data && (
-          <div style={{ display: "flex", gap: 8 }}>
-            <button
-              data-testid="button-review-download"
-              onClick={handleDownload}
-              style={{ display: "flex", alignItems: "center", gap: 5, padding: "7px 12px", borderRadius: 8, border: `1px solid ${P.border}`, background: "transparent", color: P.muted, fontSize: 12, cursor: "pointer", fontWeight: 600 }}
-            >
-              <Download size={12} /> Download
-            </button>
-            <button
-              data-testid="button-review-share"
-              onClick={handleShare}
-              style={{ display: "flex", alignItems: "center", gap: 5, padding: "7px 12px", borderRadius: 8, border: `1px solid ${P.gold}`, background: "transparent", color: P.gold, fontSize: 12, cursor: "pointer", fontWeight: 600 }}
-            >
-              <Share2 size={12} /> Share
-            </button>
-          </div>
+          <button
+            data-testid="button-review-download"
+            onClick={handleDownload}
+            style={{ display: "flex", alignItems: "center", gap: 5, padding: "7px 12px", borderRadius: 8, border: `1px solid rgba(0,0,0,0.12)`, background: "transparent", color: P.steel, fontSize: 12, cursor: "pointer", fontFamily: "Inter, sans-serif" }}
+          >
+            <Download size={12} /> Save
+          </button>
         )}
       </div>
 
-      {/* ── Loading ─────────────────────────────────────────── */}
+      {/* ── Loading ── */}
       {loading && (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "72vh", gap: 14 }}>
           <div style={{ fontSize: 36 }}>🌿</div>
-          <div style={{ fontSize: 14, color: P.muted }}>{t("review_loading")}</div>
+          <div style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: "0.15em", color: P.muted }}>
+            {t("review_loading")}
+          </div>
           <Loader2 size={18} color={P.gold} className="wr-spin" />
         </div>
       )}
 
-      {/* ── Not authenticated ───────────────────────────────── */}
+      {/* ── Not authenticated ── */}
       {!loading && error === "not_authed" && (
         <div style={{ padding: "60px 28px", textAlign: "center" }}>
           <div style={{ fontSize: 36, marginBottom: 16 }}>🔒</div>
-          <div style={{ fontSize: 15, color: P.text, marginBottom: 8, fontWeight: 600 }}>{t("review_auth_h")}</div>
-          <div style={{ fontSize: 13, color: P.muted }}>Your personal weekly letter from ARYA lives here.</div>
+          <div style={{ fontSize: 16, color: P.text, marginBottom: 8, fontWeight: 600 }}>{t("review_auth_h")}</div>
+          <div style={{ fontSize: 14, color: P.muted }}>Your personal Sunday letter from ARYA lives here.</div>
         </div>
       )}
 
-      {/* ── Error ───────────────────────────────────────────── */}
+      {/* ── Error ── */}
       {!loading && error === "load_failed" && (
         <div style={{ padding: "60px 28px", textAlign: "center" }}>
           <div style={{ fontSize: 36, marginBottom: 16 }}>📭</div>
           <div style={{ fontSize: 15, color: P.text, marginBottom: 18, fontWeight: 600 }}>Couldn't load your review</div>
           <button
             onClick={() => { setError(""); setLoading(true); window.location.reload(); }}
-            style={{ padding: "9px 18px", borderRadius: 8, border: `1px solid ${P.gold}`, background: "transparent", color: P.gold, fontSize: 13, cursor: "pointer" }}
+            style={{ padding: "9px 18px", borderRadius: 8, border: `1px solid ${P.gold}`, background: "transparent", color: P.gold, fontSize: 13, cursor: "pointer", fontFamily: "Inter, sans-serif" }}
           >
             Try again
           </button>
         </div>
       )}
 
-      {/* ── The Letter ──────────────────────────────────────── */}
+      {/* ── Letter ── */}
       {!loading && data && (
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          style={{ padding: "0 20px 80px", maxWidth: 520, margin: "0 auto" }}
+          style={{ padding: "0 24px 80px", maxWidth: 520, margin: "0 auto" }}
         >
 
-          {/* Header */}
-          <div style={{ padding: "28px 0 24px", textAlign: "center" }}>
-            <div style={{ fontSize: 30, marginBottom: 10 }}>🌿</div>
-            <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 11, color: P.muted, letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 4 }}>
-              {t("review_letter")}
+          {/* ── 1. HEADER ── */}
+          <div style={{ textAlign: "center", padding: "40px 0 28px" }}>
+            <span style={{ fontSize: 36, display: "block", marginBottom: 14 }}>🌿</span>
+            <div style={{ fontFamily: "'Cinzel', serif", fontSize: 9, letterSpacing: "0.3em", color: P.muted, textTransform: "uppercase", marginBottom: 10 }}>
+              ARYA's Sunday Letter
             </div>
-            <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 27, color: P.text, fontWeight: 700, marginBottom: 4 }}>
-              {language === "en" || !language ? `to ${data.userName}` : `${data.userName}${t("review_letter_to")}`}
+            <div style={{ fontFamily: "'Crimson Pro', serif", fontSize: 34, fontWeight: 400, color: P.text, marginBottom: 6, lineHeight: 1.1 }}>
+              to {data.userName.toLowerCase()}
             </div>
-            <div style={{ fontSize: 11, color: P.steel, letterSpacing: "0.06em", marginBottom: 22 }}>
+            <div style={{ fontSize: 13, color: P.muted, marginBottom: 22, fontFamily: "Inter, sans-serif" }}>
               {data.weekLabel}
             </div>
-            <div style={{ width: 52, height: 1.5, background: `linear-gradient(90deg, transparent, ${P.gold}, transparent)`, margin: "0 auto 22px" }} />
-            <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 16, color: P.body, lineHeight: 1.74, fontStyle: "italic", maxWidth: 340, margin: "0 auto" }}>
-              "{data.headline}"
-            </div>
+            <div style={{ width: 48, height: 1.5, background: P.gold, margin: "0 auto" }} />
           </div>
 
-          <Divider />
+          {/* ── 2. OPENING LINE ── */}
+          <div style={{ fontFamily: "'Crimson Pro', serif", fontSize: 22, fontStyle: "italic", lineHeight: 1.55, textAlign: "center", color: P.body, padding: "0 4px 28px" }}>
+            "{data.openingLine}"
+          </div>
 
-          {/* ── Mood Arc ───────────────────────────────────── */}
-          <div>
-            <SLabel text={t("review_mood_section")} />
+          <SDivider />
+
+          {/* ── 3. MOOD THIS WEEK ── */}
+          <section>
+            <SLabel text="Your week in mood" />
             {data.moodArc.checkInCount === 0 ? (
-              <div style={{ background: P.surface2, borderRadius: 10, padding: "16px 18px", textAlign: "center", fontSize: 13, color: P.steel, lineHeight: 1.6 }}>
-                {t("review_no_mood")}<br />{t("review_mood_start")}
+              <div style={{ background: P.surface, borderRadius: 12, padding: "18px 16px", textAlign: "center" }}>
+                <p style={{ fontSize: 15, color: P.steel, margin: "0 0 6px" }}>
+                  You didn't check in on your mood this week.
+                </p>
+                <p style={{ fontSize: 13, color: P.muted, fontStyle: "italic", margin: 0 }}>
+                  Takes 5 seconds tomorrow. Just one emoji. ARYA learns from it over time.
+                </p>
               </div>
             ) : (
               <>
                 <MoodArcSVG days={data.moodArc.days} />
-                <div style={{ marginTop: 12, fontSize: 13, color: P.muted, lineHeight: 1.65, fontStyle: "italic", borderLeft: `2px solid ${P.borderLight}`, paddingLeft: 12 }}>
-                  {data.moodArc.aryaRead}
-                </div>
-                <div style={{ marginTop: 8, fontSize: 11, color: P.steel }}>
-                  {data.moodArc.checkInCount} {t("review_of_days")} · {t("review_avg_mood")} {data.moodArc.avgMood.toFixed(1)}/5
+                <div style={{ marginTop: 8, fontSize: 12, color: P.muted, fontFamily: "Inter, sans-serif" }}>
+                  {data.moodArc.checkInCount} of 7 days · avg mood {data.moodArc.avgMood.toFixed(1)}/5
                 </div>
               </>
             )}
-          </div>
+          </section>
 
-          <Divider />
+          <SDivider />
 
-          {/* ── Goals ──────────────────────────────────────── */}
-          <div>
-            <SLabel text={t("review_goals_section")} />
+          {/* ── 4. GOALS THIS WEEK ── */}
+          <section>
+            <SLabel text="Goals this week" />
+
             {data.goals.active === 0 ? (
-              <div style={{ background: P.surface2, borderRadius: 10, padding: "16px 18px", textAlign: "center", fontSize: 13, color: P.steel, lineHeight: 1.6 }}>
-                {t("review_no_goals")}
+              <div style={{ background: P.surface, borderRadius: 12, padding: "16px", textAlign: "center", fontSize: 14, color: P.steel, fontStyle: "italic" }}>
+                No active goals yet. Tell ARYA what you're working on.
               </div>
             ) : (
               <>
-                <div style={{ display: "flex", gap: 24, marginBottom: 18 }}>
+                {/* Stats row */}
+                <div style={{ display: "flex", marginBottom: 20 }}>
                   {[
-                    { label: t("review_goals_active"), value: data.goals.active },
-                    { label: t("review_goals_checkins"), value: data.goals.activeThisWeek },
-                    { label: t("review_goals_missed"), value: Math.max(0, data.goals.active - data.goals.activeThisWeek) },
+                    { label: "ACTIVE", value: data.goals.active },
+                    { label: "CHECK-INS", value: data.goals.activeThisWeek },
+                    { label: "UNTOUCHED", value: data.goals.untouched },
                   ].map(({ label, value }) => (
-                    <div key={label} style={{ textAlign: "center" }}>
-                      <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 24, color: P.text, fontWeight: 700, lineHeight: 1.1 }}>{value}</div>
-                      <div style={{ fontSize: 10, color: P.steel, letterSpacing: "0.08em", textTransform: "uppercase", marginTop: 3 }}>{label}</div>
+                    <div key={label} style={{ flex: 1, textAlign: "center" }}>
+                      <div style={{ fontFamily: "'Crimson Pro', serif", fontSize: 32, fontWeight: 600, color: P.text, lineHeight: 1 }}>
+                        {value}
+                      </div>
+                      <div style={{ fontFamily: "'Cinzel', serif", fontSize: 8, letterSpacing: "0.15em", color: P.muted, marginTop: 4 }}>
+                        {label}
+                      </div>
                     </div>
                   ))}
                 </div>
 
+                {data.goals.untouched > 10 && (
+                  <p style={{ fontSize: 13, color: P.steel, fontStyle: "italic", marginBottom: 16, lineHeight: 1.6 }}>
+                    Many of these were picked up from your conversations. Which ones actually matter to you right now?
+                  </p>
+                )}
+
                 {data.goals.bestStreak && data.goals.bestStreak.count >= 3 && (
-                  <div style={{ background: P.greenBg, border: `1px solid rgba(38,96,64,0.18)`, borderRadius: 10, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-                    <span style={{ fontSize: 20, lineHeight: 1 }}>🔥</span>
+                  <div style={{ background: P.greenBg, border: `1px solid ${P.greenBorder}`, borderRadius: 10, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                    <span style={{ fontSize: 18, lineHeight: 1 }}>🔥</span>
                     <div>
-                      <div style={{ fontSize: 13, color: P.green, fontWeight: 600 }}>{data.goals.bestStreak.count}-day streak</div>
-                      <div style={{ fontSize: 12, color: P.muted, marginTop: 1 }}>"{data.goals.bestStreak.title}"</div>
+                      <div style={{ fontSize: 14, color: P.green, fontWeight: 600 }}>{data.goals.bestStreak.count}-day streak</div>
+                      <div style={{ fontSize: 13, color: P.steel, marginTop: 1 }}>"{data.goals.bestStreak.title}"</div>
                     </div>
                   </div>
                 )}
 
-                {data.goals.items.map((g, i) => (
-                  <div
-                    key={g.id}
-                    style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: i < data.goals.items.length - 1 ? `1px solid ${P.borderLight}` : "none" }}
-                  >
-                    <div style={{ width: 22, height: 22, borderRadius: "50%", border: `2px solid ${g.activeThisWeek ? P.green : P.borderLight}`, background: g.activeThisWeek ? P.greenBg : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      {g.activeThisWeek && <Check size={11} color={P.green} strokeWidth={2.5} />}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, color: g.activeThisWeek ? P.body : P.muted, fontWeight: g.activeThisWeek ? 500 : 400 }}>
-                        {g.title}
+                <div>
+                  {data.goals.items.map((g, i) => (
+                    <div
+                      key={g.id}
+                      style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 0", borderBottom: i < data.goals.items.length - 1 ? `1px solid ${P.divider}` : "none" }}
+                    >
+                      <div style={{
+                        width: 18, height: 18, borderRadius: "50%",
+                        border: `1.5px solid ${g.activeThisWeek ? P.green : "rgba(0,0,0,0.2)"}`,
+                        background: g.activeThisWeek ? P.greenBg : "transparent",
+                        display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2,
+                      }}>
+                        {g.activeThisWeek && <Check size={9} color={P.green} strokeWidth={2.5} />}
                       </div>
-                      <div style={{ fontSize: 11, color: P.steel, marginTop: 2 }}>
-                        {g.progress}% progress{g.streak > 0 ? ` · 🔥 ${g.streak}-day streak` : ""}
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 15, color: P.body }}>{g.title}</div>
+                        <div style={{ fontSize: 12, color: P.muted, marginTop: 2, fontFamily: "Inter, sans-serif" }}>
+                          {g.progress > 0 ? `${g.progress}% done` : "Not started"}
+                          {g.streak > 0 ? ` · 🔥 ${g.streak}-day streak` : ""}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                  {data.goals.active > 5 && (
+                    <div style={{ fontSize: 12, color: P.muted, paddingTop: 8, fontStyle: "italic" }}>
+                      +{data.goals.active - 5} more goals
+                    </div>
+                  )}
+                </div>
               </>
             )}
-          </div>
+          </section>
 
-          {/* ── ARYA Noticed (dark card) ────────────────────── */}
-          <div style={{ margin: "28px -2px 0", background: P.darkCard, border: `1px solid ${P.darkBorder}`, borderRadius: 16, padding: "20px 18px" }}>
-            <div style={{ fontSize: 10, letterSpacing: "0.15em", color: P.darkMuted, textTransform: "uppercase", marginBottom: 14, display: "flex", alignItems: "center", gap: 7 }}>
-              <span style={{ color: P.darkGold, fontSize: 11 }}>◆</span> {t("review_arya_noticed")}
-            </div>
-            <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 14, color: P.darkCream, lineHeight: 1.78, fontStyle: "italic" }}>
-              {data.aryaNoticed.insight}
-            </div>
-            <div style={{ marginTop: 14, fontSize: 11, color: P.darkMuted, display: "flex", alignItems: "center", gap: 6 }}>
-              <div style={{ width: 5, height: 5, borderRadius: "50%", background: data.aryaNoticed.confidence === "forming" ? P.darkMuted : P.darkGold, flexShrink: 0 }} />
-              {data.aryaNoticed.confidence === "forming" ? t("review_pattern_forming") : t("review_pattern_conf")}
-            </div>
-          </div>
+          <SDivider />
 
-          <Divider />
+          {/* ── 5. SOMETHING ARYA NOTICED (dark card) ── */}
+          <section>
+            <div style={{ background: P.darkCard, borderRadius: 16, padding: "20px" }}>
+              <div style={{ fontFamily: "'Cinzel', serif", fontSize: 9, letterSpacing: "0.2em", color: P.darkGold, marginBottom: 14, display: "flex", alignItems: "center", gap: 6 }}>
+                <span>◆</span> SOMETHING ARYA NOTICED
+              </div>
+              <div style={{ fontFamily: "'Crimson Pro', serif", fontSize: 16, fontStyle: "italic", lineHeight: 1.7, color: P.darkText }}>
+                {data.whatAryaNoticed}
+              </div>
+              {data.oneThatMatters && (
+                <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: 14, color: P.darkMuted, fontStyle: "italic", lineHeight: 1.6 }}>
+                  {data.oneThatMatters}
+                </div>
+              )}
+              {data.patternConfirmed && (
+                <div style={{ marginTop: 12, fontSize: 12, color: P.darkGold, display: "flex", alignItems: "center", gap: 5 }}>
+                  <div style={{ width: 5, height: 5, borderRadius: "50%", background: P.darkGold, flexShrink: 0 }} />
+                  Pattern confirmed across multiple weeks
+                </div>
+              )}
+            </div>
+          </section>
 
-          {/* ── Business Mind ───────────────────────────────── */}
-          <div>
-            <SLabel text={t("review_biz_section")} />
+          <SDivider />
+
+          {/* ── 6. BUSINESS MIND THIS WEEK ── */}
+          <section>
+            <SLabel text="Business Mind this week" />
             {!data.businessRecap.hasData ? (
-              <div style={{ background: P.surface2, borderRadius: 10, padding: "16px 18px", textAlign: "center", fontSize: 13, color: P.steel }}>
-                {t("review_no_niti")}
+              <div style={{ background: P.surface, borderRadius: 12, padding: "16px", fontSize: 14, color: P.steel, fontStyle: "italic", lineHeight: 1.6 }}>
+                You didn't open Niti this week. Big decisions think better out loud.
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {data.businessRecap.sessions.map(s => (
                   <div
                     key={s.id}
-                    style={{ background: P.surface2, border: `1px solid ${P.borderLight}`, borderRadius: 10, padding: "12px 14px", display: "flex", alignItems: "center", gap: 12 }}
+                    style={{ background: P.surface, border: `1px solid ${P.border}`, borderRadius: 10, padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}
                   >
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, color: P.body, fontWeight: 500 }}>
-                        {SESSION_LABELS[s.sessionType] || s.sessionType.replace(/_/g, " ")}
-                      </div>
+                    <div style={{ fontSize: 14, color: P.body }}>
+                      {SESSION_LABELS[s.sessionType] || s.sessionType.replace(/_/g, " ")}
                     </div>
-                    <div style={{ fontSize: 11, color: P.steel, flexShrink: 0 }}>
+                    <div style={{ fontSize: 12, color: P.muted, flexShrink: 0, fontFamily: "Inter, sans-serif" }}>
                       {new Date(s.createdAt).toLocaleDateString("en-IN", { weekday: "short", day: "numeric" })}
                     </div>
                   </div>
                 ))}
               </div>
             )}
-          </div>
+          </section>
 
-          <Divider />
+          <SDivider />
 
-          {/* ── Cosmic Week ─────────────────────────────────── */}
-          <div>
+          {/* ── 7. COSMIC WEEK ── */}
+          <section>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-              <div style={{ fontSize: 10, letterSpacing: "0.14em", color: P.steel, textTransform: "uppercase", fontWeight: 600 }}>
-                {t("review_cosmic_week")} — {data.cosmicWeek.name}
-              </div>
-              <div style={{ display: "flex", gap: 2 }}>
+              <SLabel text={`Your Cosmic Week — ${data.cosmicWeek.name}`} />
+              <div style={{ display: "flex", gap: 2, marginTop: -14 }}>
                 {[1, 2, 3, 4, 5].map(i => (
-                  <span key={i} style={{ fontSize: 14, color: i <= data.cosmicWeek.stars ? P.goldLight : P.borderLight }}>
-                    ★
-                  </span>
+                  <span key={i} style={{ fontSize: 13, color: i <= data.cosmicWeek.stars ? P.gold : "rgba(0,0,0,0.12)" }}>★</span>
                 ))}
               </div>
             </div>
-            <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 14, color: P.body, lineHeight: 1.74, fontStyle: "italic", marginBottom: 14 }}>
+            <div style={{ fontFamily: "'Crimson Pro', serif", fontSize: 15, fontStyle: "italic", lineHeight: 1.74, color: P.body, marginBottom: 12 }}>
               {data.cosmicWeek.summary}
             </div>
-            <div style={{ fontSize: 12, color: P.muted, borderLeft: `2px solid ${P.borderLight}`, paddingLeft: 12, lineHeight: 1.65 }}>
+            <div style={{ fontSize: 13, color: P.steel, borderLeft: `2px solid rgba(0,0,0,0.1)`, paddingLeft: 12, lineHeight: 1.65, fontStyle: "italic" }}>
               {data.cosmicWeek.nextHint}
             </div>
-          </div>
+          </section>
 
-          <Divider />
+          {/* ── 8. VOICE FLASHBACK (conditional) ── */}
+          {data.voiceFlashback && (
+            <>
+              <SDivider />
+              <section>
+                <SLabel text="From your past" />
+                <div style={{ background: P.surface, borderLeft: `3px solid ${P.gold}`, borderRadius: "0 12px 12px 0", padding: "16px 18px" }}>
+                  <div style={{ fontFamily: "Inter, sans-serif", fontSize: 11, letterSpacing: "0.08em", color: P.muted, textTransform: "uppercase", marginBottom: 8 }}>
+                    {data.voiceFlashback.weeksAgo} weeks ago
+                  </div>
+                  <div style={{ fontFamily: "'Crimson Pro', serif", fontSize: 16, fontStyle: "italic", lineHeight: 1.65, color: P.body, marginBottom: data.voiceFlashback.aryaText ? 10 : 0 }}>
+                    "{data.voiceFlashback.summary}"
+                  </div>
+                  {data.voiceFlashback.aryaText && (
+                    <div style={{ fontSize: 13, color: P.gold, fontStyle: "italic" }}>
+                      {data.voiceFlashback.aryaText}
+                    </div>
+                  )}
+                </div>
+              </section>
+            </>
+          )}
 
-          {/* ── ARYA's Question ──────────────────────────────── */}
-          <div>
-            <SLabel text={t("review_arya_q")} />
-            <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 17, color: P.text, lineHeight: 1.7, fontStyle: "italic", marginBottom: 18 }}>
-              "{data.aryaQuestion}"
+          <SDivider />
+
+          {/* ── 9. ARYA'S QUESTION ── */}
+          <section>
+            <SLabel text="ARYA's question for you" />
+            <div style={{ fontFamily: "'Crimson Pro', serif", fontSize: 22, fontStyle: "italic", lineHeight: 1.5, color: P.text, marginBottom: 18 }}>
+              "{data.aryasQuestion}"
             </div>
             <textarea
               data-testid="input-review-answer"
               value={questionAnswer}
               onChange={e => { setQuestionAnswer(e.target.value); setAnswerSaved(false); }}
               rows={3}
-              placeholder={t("review_answer_ph")}
-              style={{ width: "100%", background: P.surface2, border: `1px solid ${P.border}`, borderRadius: 10, padding: "12px 14px", color: P.body, fontSize: 13, fontFamily: "Inter, sans-serif", resize: "none", lineHeight: 1.62 }}
+              placeholder="Sit with this. Write what comes…"
+              style={{
+                width: "100%", background: P.surface, border: `1px solid ${P.border}`, borderRadius: 12,
+                padding: "14px 16px", color: P.body, fontSize: 15, fontFamily: "'Crimson Pro', serif",
+                resize: "none", lineHeight: 1.6,
+              }}
             />
             {answerSaved ? (
-              <div style={{ marginTop: 10, fontSize: 12, color: P.green, display: "flex", alignItems: "center", gap: 5 }}>
+              <div style={{ marginTop: 10, fontSize: 13, color: P.green, display: "flex", alignItems: "center", gap: 5, fontFamily: "Inter, sans-serif" }}>
                 <Check size={12} /> {t("review_saved_journal")}
               </div>
             ) : questionAnswer.trim() ? (
@@ -563,36 +592,38 @@ export default function WeeklyReviewPage() {
                 data-testid="button-review-save-answer"
                 onClick={saveAnswer}
                 disabled={savingAnswer}
-                style={{ marginTop: 10, padding: "9px 16px", borderRadius: 8, border: `1px solid ${P.gold}`, background: "transparent", color: P.gold, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+                style={{ marginTop: 10, padding: "9px 16px", borderRadius: 8, border: `1px solid ${P.gold}`, background: "transparent", color: P.goldDark, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontFamily: "Inter, sans-serif" }}
               >
                 {savingAnswer && <Loader2 size={12} className="wr-spin" />}
                 {t("review_save_journal")}
               </button>
             ) : null}
-          </div>
+          </section>
 
-          <Divider />
+          <SDivider />
 
-          {/* ── Next Week Intention ─────────────────────────── */}
-          <div>
-            <SLabel text={t("review_intention")} />
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
-              {data.intentionChips.map(chip => (
+          {/* ── 10. INTENTION NEXT WEEK ── */}
+          <section>
+            <SLabel text="Your intention next week" />
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+              {data.intentionOptions.map((chip, i) => (
                 <button
-                  key={chip}
-                  data-testid={`button-intention-${chip.replace(/\s+/g, "-").toLowerCase()}`}
+                  key={i}
+                  className="wr-chip"
+                  data-testid={`button-intention-${i}`}
                   onClick={() => { setSelectedChip(c => c === chip ? "" : chip); setCustomIntention(""); setIntentionSaved(false); }}
                   style={{
-                    padding: "10px 12px",
-                    borderRadius: 8,
-                    border: `1px solid ${selectedChip === chip ? P.gold : P.border}`,
-                    background: selectedChip === chip ? "rgba(138,104,32,0.07)" : P.surface2,
-                    color: selectedChip === chip ? P.gold : P.muted,
-                    fontSize: 12,
+                    padding: "14px 12px",
+                    borderRadius: 12,
+                    border: `1.5px solid ${selectedChip === chip ? "rgba(74,124,89,0.4)" : P.border}`,
+                    background: selectedChip === chip ? P.greenBg : P.surface,
+                    color: selectedChip === chip ? P.greenText : P.body,
+                    fontFamily: "'Crimson Pro', serif",
+                    fontSize: 14,
                     cursor: "pointer",
                     textAlign: "left",
-                    lineHeight: 1.45,
-                    transition: "all 0.14s",
+                    lineHeight: 1.3,
+                    transition: "all 0.18s",
                   }}
                 >
                   {chip}
@@ -603,44 +634,43 @@ export default function WeeklyReviewPage() {
               data-testid="input-custom-intention"
               value={customIntention}
               onChange={e => { setCustomIntention(e.target.value); setSelectedChip(""); setIntentionSaved(false); }}
-              placeholder={t("review_intention_ph")}
-              style={{ width: "100%", background: P.surface2, border: `1px solid ${P.border}`, borderRadius: 8, padding: "10px 12px", color: P.body, fontSize: 13, marginBottom: 10 }}
+              placeholder="Or write your own…"
+              style={{
+                width: "100%", background: "transparent", border: `1.5px solid ${P.border}`,
+                borderRadius: 12, padding: "14px 16px", fontFamily: "'Crimson Pro', serif",
+                fontSize: 15, color: P.text, marginBottom: 14,
+              }}
             />
             {intentionSaved ? (
-              <div style={{ padding: "13px 16px", borderRadius: 10, background: P.greenBg, border: `1px solid rgba(38,96,64,0.18)`, fontSize: 13, color: P.green, textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
+              <div style={{ padding: "14px 16px", borderRadius: 12, background: P.greenBg, border: `1px solid ${P.greenBorder}`, fontSize: 14, color: P.green, textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, fontFamily: "Inter, sans-serif" }}>
                 <Check size={13} /> {t("review_intention_done")}
               </div>
             ) : (
               <button
                 data-testid="button-set-intention"
+                className="wr-btn-intention"
                 onClick={saveIntention}
                 disabled={savingIntention || !intentionValue}
                 style={{
-                  width: "100%",
-                  padding: "13px 16px",
-                  borderRadius: 10,
-                  border: "none",
-                  background: intentionValue ? `linear-gradient(135deg, ${P.goldLight}, ${P.gold})` : P.borderLight,
-                  color: intentionValue ? "white" : P.steel,
-                  fontSize: 13,
-                  fontWeight: 700,
+                  width: "100%", padding: "16px",
+                  borderRadius: 14, border: "none",
+                  background: intentionValue ? P.gold : "rgba(0,0,0,0.08)",
+                  color: intentionValue ? P.text : P.muted,
+                  fontFamily: "'Cinzel', serif",
+                  fontSize: 11, letterSpacing: "0.08em",
                   cursor: intentionValue ? "pointer" : "not-allowed",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 7,
-                  transition: "all 0.18s",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
                 }}
               >
                 {savingIntention && <Loader2 size={14} className="wr-spin" />}
-                {t("review_set_intention")}
+                Set my intention for next week
               </button>
             )}
-          </div>
+          </section>
 
-          {/* Footer */}
-          <div style={{ marginTop: 44, paddingTop: 24, borderTop: `1px solid ${P.borderLight}`, textAlign: "center" }}>
-            <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 12, color: P.steel, letterSpacing: "0.1em" }}>
+          {/* ── Footer ── */}
+          <div style={{ marginTop: 44, paddingTop: 20, borderTop: `1px solid ${P.divider}`, textAlign: "center" }}>
+            <div style={{ fontFamily: "'Cinzel', serif", fontSize: 10, color: "rgba(0,0,0,0.25)", letterSpacing: "0.2em" }}>
               {t("review_footer")}
             </div>
           </div>
