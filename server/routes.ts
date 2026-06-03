@@ -93,6 +93,8 @@ import { getVapidPublicKey } from "./arya/reminder-scheduler";
 import { conversations } from "@shared/models/chat";
 import { streamRehearsalResponse, generateRehearsalFeedback } from "./arya/rehearsal";
 import { getDataSummary, forgetSelective, forgetPeriod, forgetAll } from "./arya/forget-me-service";
+import { scheduleGoalReminders } from "./arya/auto-reminder";
+import { extractFromVoiceNote } from "./arya/voice-extractor";
 import { computeKundliProfile, generateVedicBriefing } from "./arya/vedic-lens";
 import { createNitiSession, addNitiMessage } from "./arya/niti";
 
@@ -871,6 +873,16 @@ export async function registerRoutes(
       }
 
       res.json({ ...goal, steps: createdSteps });
+
+      // Auto-create deadline reminders (3 days / 1 day / morning of) — fire & forget
+      if (goal.dueDate || goal.reminderAt) {
+        scheduleGoalReminders(userId, {
+          id: goal.id,
+          title: goal.title,
+          dueDate: goal.dueDate ? new Date(goal.dueDate) : null,
+          reminderAt: goal.reminderAt ? new Date(goal.reminderAt) : null,
+        }).catch(() => {});
+      }
     } catch (error: any) {
       console.error("[CREATE GOAL ERROR]", error.message || "Unknown error");
       res.status(500).json({ error: "Failed to create goal" });
@@ -2682,6 +2694,9 @@ Note: """${(transcript as string).trim()}"""`,
             title: "🎙️ Voice note saved",
             message: notifBody,
           }).catch(() => {});
+
+          // Memory extraction — goals, decisions, people → aryaMemory + Niti offer
+          extractFromVoiceNote(userId, note.id, transcript as string).catch(() => {});
         } catch (err: any) {
           console.error("[VOICE NOTE] Summarization failed:", err.message);
         }

@@ -8,6 +8,7 @@ import { sendWeeklyReviews } from "./weekly-review";
 import { checkSilentUsers } from "./silence-detection";
 import { sendYourPatterns } from "./patterns-engine";
 import { generateWeeklyReflectionShares } from "./reflection-share";
+import { sweepGoalReminders } from "./auto-reminder";
 
 let vapidPublicKey: string | null = null;
 let isInitialized = false;
@@ -345,6 +346,18 @@ export function startReminderScheduler(): void {
   silenceDetectionInterval = setInterval(checkSilenceDetection, 30 * 60 * 1000); // check every 30 min
   patternsInterval = setInterval(checkPatterns, 60 * 60 * 1000); // check every hour
   goalReminderInterval = setInterval(checkGoalReminders, 5 * 60 * 1000); // check every 5 min
+
+  // Nightly sweep — auto-create reminders for goals due within 7 days
+  const msUntilNightly = (() => {
+    const t = new Date();
+    t.setHours(23, 0, 0, 0);
+    if (t <= new Date()) t.setDate(t.getDate() + 1);
+    return t.getTime() - Date.now();
+  })();
+  setTimeout(() => {
+    sweepGoalReminders().catch(() => {});
+    setInterval(() => sweepGoalReminders().catch(() => {}), 24 * 60 * 60 * 1000);
+  }, msUntilNightly);
 
   // Sarvam speaker health check — daily at midnight
   scheduleMidnightSarvamCheck();

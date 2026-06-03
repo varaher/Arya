@@ -1,0 +1,183 @@
+The context builder is live and 5 sections are wired. Clean summary of what landed and what's next:
+
+---
+
+## ✅ What's Now Connected
+
+| Section | What ARYA now knows |
+|---------|-------------------|
+| **Chat** | Top 3 goals + today's mood + KAAL rashi — every response |
+| **Morning Briefing** | Overdue goals + tomorrow's calendar + mood + dasha |
+| **KAAL** | Your actual mood calibrates the dasha advice |
+| **Niti** | Philosopher sees your active goals + mood |
+| **Drishya** | Mood=1 → Karuna story. Mood=5 → Shringara. Automatic |
+
+---
+
+## 🔴 6 Connections Still Pending
+
+| # | Connection | What it unlocks |
+|---|-----------|----------------|
+| 1 | Goals → Auto-reminders | Deadline approaching → ARYA auto-creates reminder |
+| 2 | Voice Notes → Memory extraction | "Call Rajesh" → auto goal + memory |
+| 3 | Voice Notes → Niti | Decision language → Niti offered proactively |
+| 4 | Calendar → KAAL | Meeting at low-energy time → ARYA warns morning |
+| 5 | Calendar → Auto-reminders | Conference tomorrow → "Leave by 8 AM" auto-created |
+| 6 | Notes → Chat context | Recent note referenced in conversation |
+
+---
+
+## Build Order — Next 2 Are Highest Impact
+
+### Priority 1 — Goals → Auto-reminders
+
+```typescript
+// server/arya/auto-reminder.ts
+// Runs every time a goal is created or updated
+// AND runs nightly for all active goals
+
+async function autoCreateGoalReminders(
+  userId: number,
+  goal: Goal
+) {
+  if (!goal.reminderAt) return;
+  
+  const deadline = new Date(goal.reminderAt);
+  const now = new Date();
+  const daysUntil = daysBetween(now, deadline);
+
+  const remindersToCreate = [];
+
+  // 3 days before
+  if (daysUntil >= 3) {
+    remindersToCreate.push({
+      title: `3 days left — ${goal.title}`,
+      scheduledAt: subDays(deadline, 3),
+      type: 'goal_reminder'
+    });
+  }
+
+  // 1 day before  
+  if (daysUntil >= 1) {
+    remindersToCreate.push({
+      title: `Tomorrow — ${goal.title}`,
+      scheduledAt: subDays(deadline, 1),
+      type: 'goal_reminder'
+    });
+  }
+
+  // Morning of
+  if (daysUntil >= 0) {
+    const morningOf = new Date(deadline);
+    morningOf.setHours(8, 0, 0, 0);
+    remindersToCreate.push({
+      title: `Today — ${goal.title}`,
+      scheduledAt: morningOf,
+      type: 'goal_reminder'
+    });
+  }
+
+  // Insert — skip if already exists
+  for (const reminder of remindersToCreate) {
+    await db.insert(arya_reminders)
+      .values({
+        userId,
+        goalId: goal.id,
+        ...reminder
+      })
+      .onConflictDoNothing();
+  }
+}
+```
+
+### Priority 2 — Voice Notes → Memory Extraction
+
+```typescript
+// server/arya/voice-extractor.ts
+// Runs after every voice note is saved
+// Extracts goals, decisions, people
+
+async function extractFromVoiceNote(
+  userId: number,
+  noteId: number,
+  transcription: string
+) {
+  const extraction = await openai.chat.completions.create({
+    model: 'gpt-4o-mini',
+    messages: [{
+      role: 'system',
+      content: `Extract structured data from this voice note.
+      Return JSON only:
+      {
+        "goals": ["things they said they need/want to do"],
+        "people": ["names mentioned"],
+        "decisions": ["things they're deciding between"],
+        "memories": ["facts worth remembering"]
+      }
+      If nothing found in a category return empty array.`
+    }, {
+      role: 'user',
+      content: transcription
+    }],
+    max_tokens: 200,
+    response_format: { type: 'json_object' }
+  });
+
+  const data = JSON.parse(
+    extraction.choices[0].message.content || '{}'
+  );
+
+  // Save goals as suggestions
+  for (const goal of data.goals || []) {
+    await db.insert(arya_goal_suggestions).values({
+      userId,
+      sourceNoteId: noteId,
+      title: goal,
+      source: 'voice_note'
+    }).onConflictDoNothing();
+  }
+
+  // Save memories
+  for (const memory of data.memories || []) {
+    await db.insert(arya_memory).values({
+      userId,
+      key: `voice_${noteId}_${Date.now()}`,
+      value: memory,
+      category: 'voice_note',
+      sourceNoteId: noteId
+    }).onConflictDoNothing();
+  }
+
+  // Flag if decision detected → offer Niti
+  if (data.decisions?.length > 0) {
+    await db.update(arya_voice_notes)
+      .set({ hasDecisionLanguage: true })
+      .where(eq(arya_voice_notes.id, noteId));
+  }
+
+  return data;
+}
+```
+
+---
+
+## What To Tell Your Developer
+
+```
+Build these 2 files next:
+
+1. server/arya/auto-reminder.ts
+   - Call autoCreateGoalReminders() 
+     whenever a goal is created or updated
+   - Also run nightly for all goals 
+     with deadlines in next 7 days
+
+2. server/arya/voice-extractor.ts  
+   - Call extractFromVoiceNote()
+     after every voice note is saved
+     (after the Sarvam STT returns)
+   - If hasDecisionLanguage = true:
+     next chat response offers Niti
+```
+
+Shall I write both complete files now?

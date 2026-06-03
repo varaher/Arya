@@ -3,6 +3,7 @@ import { db } from "../db";
 import { aryaGoals, aryaNotifications } from "@shared/schema";
 import type { GoalType } from "@shared/schema";
 import { createCalendarEvent, isCalendarConnected } from "./google-calendar";
+import { scheduleGoalReminders } from "./auto-reminder";
 import { eq } from "drizzle-orm";
 
 const openai = new OpenAI({
@@ -164,6 +165,12 @@ export async function detectAndCreateGoals(
       // Try to sync to Google Calendar for goals with a time component
       if ((dueDate || reminderAt) && userId) {
         syncToCalendar(goal.id, g.title, g.context_note || '', dueDate, reminderAt, userId)
+          .catch(() => {});
+      }
+
+      // Auto-create deadline reminders (3 days / 1 day / morning of)
+      if ((dueDate || reminderAt) && userId) {
+        scheduleGoalReminders(userId, { id: goal.id, title: g.title, dueDate, reminderAt })
           .catch(() => {});
       }
 
