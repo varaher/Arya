@@ -940,6 +940,63 @@ export async function registerRoutes(
     }
   });
 
+  // Abandoned goals — active, 0% progress, 21+ days old
+  app.get("/api/user/goals/abandoned", requireUser, async (req: Request, res: Response) => {
+    const userId = (req as any).userId;
+    try {
+      const { getAbandonedGoals } = await import("./arya/goal-checkin");
+      const goals = await getAbandonedGoals(userId);
+      res.json(goals);
+    } catch {
+      res.json([]);
+    }
+  });
+
+  // Goal hygiene — keep / pause / release
+  app.post("/api/user/goals/:goalId/hygiene", requireUser, async (req: Request, res: Response) => {
+    const userId = (req as any).userId;
+    const { goalId } = req.params;
+    const { action } = req.body; // 'keep' | 'pause' | 'release'
+    try {
+      if (action === 'keep') {
+        await db.execute(sql`UPDATE arya_goals SET hygiene_at = NOW() WHERE id = ${goalId} AND user_id = ${userId}`);
+      } else if (action === 'pause') {
+        await db.execute(sql`UPDATE arya_goals SET status = 'paused', hygiene_at = NOW() WHERE id = ${goalId} AND user_id = ${userId}`);
+      } else if (action === 'release') {
+        await db.execute(sql`DELETE FROM arya_goals WHERE id = ${goalId} AND user_id = ${userId}`);
+      } else {
+        return res.status(400).json({ error: "action must be keep | pause | release" });
+      }
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to apply hygiene action" });
+    }
+  });
+
+  // Goal evening check-in — records yes / skip result from notification action
+  app.post("/api/user/goals/:goalId/checkin", requireUser, async (req: Request, res: Response) => {
+    const userId = (req as any).userId;
+    const { goalId } = req.params;
+    const { completed, skipped } = req.body;
+    try {
+      const result = completed ? 'completed' : skipped ? 'skipped' : 'noted';
+      await db.execute(
+        sql`INSERT INTO arya_goal_checkins (user_id, goal_id, result) VALUES (${userId}, ${goalId}, ${result})`
+      );
+      await db.execute(
+        sql`UPDATE arya_goals SET last_checked_at = NOW() WHERE id = ${goalId} AND user_id = ${userId}`
+      );
+      if (completed) {
+        await db.execute(
+          sql`UPDATE arya_goals SET streak_count = streak_count + 1, last_activity_at = NOW() WHERE id = ${goalId} AND user_id = ${userId}`
+        );
+      }
+      res.json({ success: true });
+    } catch {
+      res.status(500).json({ error: "Failed to record check-in" });
+    }
+  });
+
   app.patch("/api/user/goals/:goalId", requireUser, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).userId;

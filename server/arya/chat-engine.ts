@@ -787,6 +787,16 @@ export async function generateAryaResponse(
     console.error("[MEMORY RECALL ERROR]", err?.message || "Unknown error");
   }
 
+  // ── Goal check-in context — weave stalled/abandoned/completed goals naturally ──
+  let goalCheckInCtx: import("./goal-checkin").CheckInContext = { primaryCheckIn: null, systemPromptBlock: "" };
+  try {
+    if (userId) {
+      const { buildGoalCheckInContext } = await import("./goal-checkin");
+      goalCheckInCtx = await buildGoalCheckInContext(userId, ctx?.firstName || "", conversationId);
+    }
+  } catch {}
+  // ─────────────────────────────────────────────────────────────────────────
+
   const confidence = contextPieces.length > 0 ? 0.85 : 0.3;
   learningEngine.ingestQuery({
     tenantId,
@@ -907,7 +917,7 @@ export async function generateAryaResponse(
     : "";
 
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-    { role: "system", content: ARYA_SYSTEM_PROMPT + userPrefs + (langInstruction ? `\n\n${langInstruction}` : "") + sectionToneAddition + knowledgeContext + newsContext + memoryContext + liveContext + uncertaintyGuidance + voiceInstruction + longFormInstruction },
+    { role: "system", content: ARYA_SYSTEM_PROMPT + userPrefs + (langInstruction ? `\n\n${langInstruction}` : "") + sectionToneAddition + knowledgeContext + newsContext + memoryContext + liveContext + uncertaintyGuidance + voiceInstruction + longFormInstruction + goalCheckInCtx.systemPromptBlock },
     ...conversationHistory.slice(-20).map(m => ({
       role: m.role as "user" | "assistant",
       content: m.content,
@@ -956,6 +966,13 @@ export async function generateAryaResponse(
       if (userId && fullResponse.length > 20) {
         detectAndCreateGoals(userMessage, fullResponse, userId, tenantId, conversationId)
           .catch(err => console.error("[GOALS DETECT ERROR]", err.message || "Unknown error"));
+
+        // Mark the goal as checked-in so ARYA doesn't ask again within 20 h
+        if (goalCheckInCtx.primaryCheckIn) {
+          import("./goal-checkin").then(({ markGoalCheckedIn }) =>
+            markGoalCheckedIn(goalCheckInCtx.primaryCheckIn!.goalId, userId)
+          ).catch(() => {});
+        }
         detectAndCreateReminder(userMessage, fullResponse, userId)
           .catch(err => console.error("[REMINDER DETECT ERROR]", err.message || "Unknown error"));
       }

@@ -1,0 +1,128 @@
+Let me read the exact files before writing anything:
+
+Complete system. Here's exactly what was built:
+
+---
+
+## What This Does
+
+### The 8 Check-in Types
+
+Every goal gets classified automatically:
+
+| Type | When | What ARYA asks |
+|------|------|----------------|
+| `just_created` | 1 day, 0% | "What's the first small step?" |
+| `stalled_early` | 3-6 days, 0% | "Have you had a chance to start?" |
+| `stalled_week` | 7-13 days, 0% | "A week ago you said... How's that going?" |
+| `stalled_long` | 14+ days, 0% | "What's getting in the way?" |
+| `abandoned` | 21+ days, 0% | "Is this still something you want?" |
+| `near_deadline` | Due in 3 days | "Where are you with it?" |
+| `overdue` | Past due | "What happened — want to revisit?" |
+| `completed_recent` | Just done | "How does that feel?" |
+
+---
+
+### How ARYA Asks — The Rules
+
+Built into the system prompt:
+
+```
+Ask it ONCE. Don't repeat.
+If they haven't started → ask what got in the way.
+If they forgot → offer to adjust the reminder.
+Never judge. Always curious.
+Feel like a friend noticing.
+Not an app reporting.
+```
+
+---
+
+### Goal Specificity Push
+
+Detects vague goals automatically:
+
+```
+"get fit"     → vague → ARYA asks for specificity
+"run 5km"     → specific → no push needed
+"read more"   → vague
+"1 book/month" → specific
+```
+
+Uses regex patterns — no extra API call needed.
+
+---
+
+### Goal Hygiene UI
+
+Below the completed section in GoalsPanel:
+
+```
+💤 Sitting untouched
+
+"Learn guitar" — 28 days ago · no progress
+
+[ ✓ Keep it ]  [ ⏸ Pause ]  [ ✕ Let go ]
+```
+
+Green · Yellow · Red. One tap. Honest.
+
+---
+
+## Wiring Checklist — Tell Your Developer
+
+```
+□ Save goal-checkin.ts to server/arya/
+
+□ DB migration (2 new columns):
+  ALTER TABLE arya_goals
+  ADD COLUMN last_checked_at TIMESTAMP,
+  ADD COLUMN hygiene_at TIMESTAMP;
+
+□ chat-engine.ts
+  → Import + call buildGoalCheckInContext()
+  → Append systemPromptBlock
+  → Call markGoalCheckedIn() after response
+
+□ routes.ts
+  → Add isVagueGoal() check after goal detection
+  → Add /api/user/goals/:id/hygiene
+  → Add /api/user/goals/abandoned
+
+□ GoalsPanel.tsx
+  → Fetch abandoned goals
+  → Show hygiene section
+  → Wire 3 buttons
+
+Total: 4-5 hours
+```
+
+---
+
+## What ARYA Becomes After This
+
+```
+Day 1 — User says "I want to run more"
+ARYA: "What would that look like when done?
+       A distance? A frequency?"
+User: "5km without stopping"
+ARYA creates: specific goal ✓
+
+Day 4 — User opens ARYA for something else
+ARYA weaves in: "How's the running going?
+                 Did you get a chance to start?"
+
+Day 8 — If still 0%
+ARYA: "A week in and nothing moved.
+       What's actually in the way?"
+
+Day 25 — Hygiene section appears
+ARYA shows: "Run 5km — 25 days, no progress.
+             Keep it · Pause · Let go"
+
+Day 42 — User runs 5km
+ARYA: "You said you would. You did.
+       That's not small."
+```
+
+**That's a friend. Not an app.**

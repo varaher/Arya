@@ -1629,6 +1629,31 @@ function GoalsPanel({ onClose }: { onClose: () => void }) {
   const goalsList = goals || [];
   const activeGoals = goalsList.filter(g => g.status !== 'completed');
   const completedGoals = goalsList.filter(g => g.status === 'completed');
+
+  const { data: abandonedGoals } = useQuery<any[]>({
+    queryKey: ["/api/user/goals/abandoned"],
+    enabled: !!token,
+    queryFn: async () => {
+      const res = await fetch("/api/user/goals/abandoned", { headers: { "x-user-token": token! } });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const hygieneActionMutation = useMutation({
+    mutationFn: async ({ goalId, action }: { goalId: string; action: 'keep' | 'pause' | 'release' }) => {
+      await fetch(`/api/user/goals/${goalId}/hygiene`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-user-token": token! },
+        body: JSON.stringify({ action }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/user/goals/abandoned"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/goals"] });
+    },
+  });
   const priorityColors: Record<string, string> = {
     low: "text-gray-400", medium: "text-blue-400", high: "text-amber-600 dark:text-amber-400", critical: "text-red-500 dark:text-red-400"
   };
@@ -1869,6 +1894,54 @@ function GoalsPanel({ onClose }: { onClose: () => void }) {
                 </motion.div>
               )}
             </AnimatePresence>
+          </div>
+        )}
+        {/* ── Goal Hygiene — sleeping goals ── */}
+        {!isLoading && abandonedGoals && abandonedGoals.length > 0 && (
+          <div className="pt-1">
+            <div className="flex items-center gap-1.5 px-1 py-1.5">
+              <span className="text-base leading-none">💤</span>
+              <span className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Sitting untouched</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400 font-medium">{abandonedGoals.length}</span>
+            </div>
+            <div className="space-y-2 mt-0.5">
+              {abandonedGoals.map((goal: any) => {
+                const daysAgo = Math.floor((Date.now() - new Date(goal.created_at).getTime()) / (1000 * 60 * 60 * 24));
+                return (
+                  <div
+                    key={goal.id}
+                    className="rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2.5"
+                    data-testid={`card-hygiene-${goal.id}`}
+                  >
+                    <p className="text-xs font-medium text-gray-700 dark:text-gray-200 mb-0.5">"{goal.title}"</p>
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-2">{daysAgo} days ago · no progress</p>
+                    <div className="flex gap-1.5">
+                      <button
+                        data-testid={`button-hygiene-keep-${goal.id}`}
+                        onClick={() => hygieneActionMutation.mutate({ goalId: goal.id, action: 'keep' })}
+                        className="flex-1 text-[10px] font-semibold py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
+                      >
+                        ✓ Keep it
+                      </button>
+                      <button
+                        data-testid={`button-hygiene-pause-${goal.id}`}
+                        onClick={() => hygieneActionMutation.mutate({ goalId: goal.id, action: 'pause' })}
+                        className="flex-1 text-[10px] font-semibold py-1.5 rounded-lg border border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
+                      >
+                        ⏸ Pause
+                      </button>
+                      <button
+                        data-testid={`button-hygiene-release-${goal.id}`}
+                        onClick={() => hygieneActionMutation.mutate({ goalId: goal.id, action: 'release' })}
+                        className="flex-1 text-[10px] font-semibold py-1.5 rounded-lg border border-red-200 dark:border-red-800 text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
+                      >
+                        ✕ Let go
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>

@@ -1,0 +1,287 @@
+Great question. Let me think through this properly — not just what's built, but what the **experience should feel like.**
+
+---
+
+## What Goals Should Feel Like in ARYA
+
+```
+Not a to-do list.
+Not a task manager.
+Not a habit tracker.
+
+A conversation about what matters to you
+— that actually follows through.
+```
+
+---
+
+## The Full Journey — How ARYA Should Help
+
+### Stage 1 — Discovery (ARYA finds the goal)
+
+Most people don't sit down and write goals. They mention them in conversation.
+
+```
+User says to ARYA:
+"I've been meaning to call my mother
+ more often. I just keep forgetting."
+
+ARYA doesn't just respond.
+ARYA notices.
+
+"That sounds like something that matters
+ to you. Should I help you make it real?"
+
+User says yes.
+
+ARYA creates:
+Goal: "Call Amma regularly"
+Reminder: Every Sunday 6 PM
+Priority: HIGH (because user said it with feeling)
+```
+
+**This is already built** — goal detection in chat. But it needs to feel more natural, less mechanical.
+
+---
+
+### Stage 2 — Clarification (ARYA makes it concrete)
+
+Vague goals fail. ARYA should push gently toward specificity.
+
+```
+User: "I want to get fit."
+
+ARYA doesn't just create "Get fit."
+
+ARYA asks:
+"What does fit mean for you right now?
+ More energy? A specific weight?
+ Being able to run without stopping?"
+
+User: "I want to run 5km without stopping."
+
+Now ARYA creates a real goal:
+Goal: "Run 5km without stopping"
+Steps:
+  Week 1: Walk 20 min daily
+  Week 2: Walk/run intervals
+  Week 3: Run 2km continuous
+  Week 4: Run 3km
+  Week 5: Run 5km
+
+Reminder: Daily 6 AM
+KAAL window: Check if morning is their peak
+```
+
+---
+
+### Stage 3 — Check-ins (ARYA follows up)
+
+This is the most important stage — and the most missing in most apps.
+
+```
+3 days after goal created.
+User opens ARYA.
+
+ARYA doesn't wait:
+"You said you'd start running 3 days ago.
+ How's that going?"
+
+If user says "I haven't started yet":
+ARYA: "What got in the way?"
+— Not judgment. Curiosity.
+
+If user says "I did it twice":
+ARYA: "Two days out of three.
+       That's a real start.
+       What made the third day hard?"
+
+If user says "I forgot":
+ARYA: "Should I remind you differently?
+       What time actually works for you?"
+```
+
+This is **proactive memory** — already built in context-builder but not yet wired into proactive check-ins.
+
+---
+
+### Stage 4 — Pattern Recognition (ARYA sees what the user can't)
+
+After 2-3 weeks:
+
+```
+ARYA notices:
+- User has 15 goals
+- 12 of them untouched
+- 3 of them health-related
+- All 3 health goals missed
+
+ARYA says in Sunday Review:
+"You've set 3 health goals this month.
+ None of them have moved.
+ Not because you don't want them —
+ something keeps getting in the way.
+ What is it?"
+
+Or in morning briefing:
+"You have 15 goals open.
+ Most of them are untouched.
+ Which ONE matters most this week?"
+```
+
+---
+
+### Stage 5 — Completion (ARYA celebrates)
+
+Most apps do nothing when you complete a goal. ARYA should mark the moment.
+
+```
+User marks goal complete:
+"Run 5km without stopping" ✓
+
+Sitar rise plays 🎵
+
+ARYA says:
+"You said you would.
+ You did.
+ 
+ That's not small.
+ 
+ What's next?"
+```
+
+And in Sunday Review:
+```
+"This week you completed something
+ you set for yourself 6 weeks ago.
+ 
+ You wanted to run 5km.
+ You ran 5km.
+ 
+ The gap between wanting and doing —
+ you closed it.
+ That's worth acknowledging."
+```
+
+---
+
+### Stage 6 — Abandoned Goals (ARYA is honest)
+
+When a goal sits untouched for 3+ weeks:
+
+```
+ARYA doesn't silently keep it.
+ARYA names it.
+
+"You added 'Learn Python' 4 weeks ago.
+ Nothing has moved.
+ 
+ Is this still something you want?
+ Or did life change what matters?"
+
+Options:
+→ "Still want it — remind me differently"
+→ "Delete it — things changed"
+→ "Pause it — not now but someday"
+```
+
+This is **goal hygiene** — keeping the list honest.
+
+---
+
+## The Current State vs The Vision
+
+| Stage | Built? | Quality |
+|-------|--------|---------|
+| Auto-detect goal in chat | ✅ | Good |
+| Create manually | ✅ | Good |
+| Steps / sub-tasks | ✅ | Good |
+| Reminder linking | ✅ | Good |
+| Calendar sync | ✅ | Good |
+| **Proactive check-ins** | ❌ | Missing |
+| **ARYA asks what got in the way** | ❌ | Missing |
+| **Pattern recognition across goals** | ⚠️ | Partial |
+| **Goal hygiene (abandoned goals)** | ❌ | Missing |
+| **Completion moment / celebration** | ⚠️ | Sound plays, no ARYA message |
+| **Specificity push** | ❌ | Missing |
+
+---
+
+## The 3 Things To Build Next
+
+### 1. Proactive Check-in (Most Important)
+
+```typescript
+// In context-builder or scheduler:
+// If goal is 3+ days old and 0% progress:
+
+const stalledGoals = activeGoals.filter(g =>
+  g.progress === 0 &&
+  daysBetween(g.createdAt, now) >= 3
+);
+
+// Add to ARYA's morning prompt:
+if (stalledGoals.length > 0) {
+  systemPrompt += `
+  PROACTIVE CHECK-IN NEEDED:
+  ${stalledGoals[0].title} was set 
+  ${daysBetween(stalledGoals[0].createdAt, now)} days ago.
+  Progress: 0%.
+  
+  Early in the conversation — ask naturally:
+  "How's [goal] going?"
+  
+  If they say they haven't started:
+  Ask what got in the way.
+  Not judgment. Curiosity.
+  `;
+}
+```
+
+### 2. Goal Specificity Push
+
+```typescript
+// After goal is auto-detected, ARYA follows up:
+
+// In goal detection response:
+`After confirming the goal, ask ONE clarifying question:
+"What would [goal] look like when it's done?
+ Is there a specific measure that would tell you
+ you've achieved it?"
+
+This turns "get fit" into "run 5km"
+This turns "read more" into "1 book per month"
+Specific goals get done. Vague ones don't.`
+```
+
+### 3. Goal Hygiene — Weekly Cleanup
+
+```typescript
+// Every Sunday in weekly review:
+const abandonedGoals = activeGoals.filter(g =>
+  g.progress === 0 &&
+  daysBetween(g.createdAt, now) >= 21
+);
+
+if (abandonedGoals.length > 0) {
+  // Show in Sunday Review:
+  // "These goals haven't moved in 3+ weeks.
+  //  Keep, pause, or release them?"
+}
+```
+
+---
+
+## What ARYA Goals Should Feel Like — In One Sentence
+
+```
+A friend who remembers what you said
+you wanted to do — and cares enough
+to ask why you haven't done it yet.
+```
+
+Not a task manager. A thinking partner for your intentions.
+
+---
+
+Shall I write the **proactive check-in system** — the code that makes ARYA ask about stalled goals naturally in conversation?

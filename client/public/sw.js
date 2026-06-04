@@ -168,6 +168,41 @@ self.addEventListener('notificationclick', (event) => {
     return;
   }
 
+  // Goal check-in — evening notification actions (yes / no / skip)
+  if (notifData.type === 'goal_checkin') {
+    const goalId = notifData.goalId;
+    if (action === 'yes') {
+      event.waitUntil(
+        fetch(`/api/user/goals/${goalId}/checkin`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ completed: true }),
+        }).catch(() => {})
+      );
+      return;
+    }
+    if (action === 'skip') {
+      event.waitUntil(
+        fetch(`/api/user/goals/${goalId}/checkin`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ skipped: true }),
+        }).catch(() => {})
+      );
+      return;
+    }
+    // 'no' or default tap — open ARYA with goal context
+    event.waitUntil(
+      clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+        for (const client of clientList) {
+          if (client.url.includes(self.location.origin) && 'focus' in client) return client.focus();
+        }
+        if (clients.openWindow) return clients.openWindow(`/?goalId=${goalId}&context=missed`);
+      })
+    );
+    return;
+  }
+
   // Dismiss action
   if (action === 'dismiss') {
     if (reminderId) {

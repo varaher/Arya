@@ -286,6 +286,9 @@ export const aryaGoals = pgTable("arya_goals", {
   isCompleted: boolean("is_completed").default(false).notNull(),
   peopleInvolved: text("people_involved").array(),
   contextNote: text("context_note"),
+  // ── Goal intelligence ─────────────────────────────────────────────────────
+  lastCheckedAt: timestamp("last_checked_at"),
+  hygieneAt: timestamp("hygiene_at"),
   // ─────────────────────────────────────────────────────────────────────────
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

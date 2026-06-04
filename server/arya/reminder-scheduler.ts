@@ -316,7 +316,51 @@ async function checkGoalReminders(): Promise<void> {
 }
 
 let goalReminderInterval: ReturnType<typeof setInterval> | null = null;
+let eveningGoalCheckinInterval: ReturnType<typeof setInterval> | null = null;
 let sarvamHealthInterval: ReturnType<typeof setInterval> | null = null;
+
+async function checkEveningGoalCheckins(): Promise<void> {
+  const now = new Date();
+  // IST offset is +5:30. We target 8 PM IST = 14:30 UTC. Allow ±15 min window.
+  const utcHour   = now.getUTCHours();
+  const utcMinute = now.getUTCMinutes();
+  const totalMin  = utcHour * 60 + utcMinute;
+  if (totalMin < 870 || totalMin > 900) return; // 14:30–15:00 UTC = 20:00–20:30 IST
+
+  try {
+    const result = await db.execute(
+      sql`SELECT g.user_id, g.id, g.title, g.last_checked_at
+          FROM arya_goals g
+          WHERE g.status = 'active'
+            AND g.progress = 0
+            AND g.is_completed = false
+            AND g.user_id IS NOT NULL
+            AND (
+              g.last_checked_at IS NULL
+              OR g.last_checked_at < NOW() - INTERVAL '20 hours'
+            )
+          ORDER BY g.created_at ASC`
+    ) as any;
+
+    const rows = result.rows || [];
+    const seen = new Set<string>(); // one notification per user
+
+    for (const goal of rows) {
+      if (!goal.user_id || seen.has(goal.user_id)) continue;
+      seen.add(goal.user_id);
+      await sendPushToUser(
+        goal.user_id,
+        `🎯 ${goal.title}`,
+        "Did you work on this today?",
+        "/icons/icon-192.png",
+        { type: "goal_checkin", goalId: goal.id }
+      );
+      console.log(`[EveningCheckin] Sent to user ${goal.user_id} for goal "${goal.title}"`);
+    }
+  } catch (err: any) {
+    console.error("[EVENING GOAL CHECKIN]", err.message);
+  }
+}
 
 function scheduleMidnightSarvamCheck(): void {
   const now = new Date();
@@ -353,6 +397,7 @@ export function startReminderScheduler(): void {
   silenceDetectionInterval = setInterval(checkSilenceDetection, 30 * 60 * 1000); // check every 30 min
   patternsInterval = setInterval(checkPatterns, 60 * 60 * 1000); // check every hour
   goalReminderInterval = setInterval(checkGoalReminders, 5 * 60 * 1000); // check every 5 min
+  eveningGoalCheckinInterval = setInterval(checkEveningGoalCheckins, 10 * 60 * 1000); // check every 10 min
 
   // Nightly sweep — auto-create reminders for goals due within 7 days
   const msUntilNightly = (() => {
@@ -388,5 +433,6 @@ export function stopReminderScheduler(): void {
   if (silenceDetectionInterval) { clearInterval(silenceDetectionInterval); silenceDetectionInterval = null; }
   if (patternsInterval) { clearInterval(patternsInterval); patternsInterval = null; }
   if (goalReminderInterval) { clearInterval(goalReminderInterval); goalReminderInterval = null; }
+  if (eveningGoalCheckinInterval) { clearInterval(eveningGoalCheckinInterval); eveningGoalCheckinInterval = null; }
   if (sarvamHealthInterval) { clearInterval(sarvamHealthInterval); sarvamHealthInterval = null; }
 }

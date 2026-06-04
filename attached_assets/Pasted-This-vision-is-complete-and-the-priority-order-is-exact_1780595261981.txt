@@ -1,0 +1,276 @@
+This vision is complete and the priority order is exactly right.
+
+Let me check what's already built before writing anything:
+
+---
+
+## Status Check From Earlier Audit
+
+From the codebase review we did:
+
+```
+✅ Goals DB schema — complete
+✅ Goal detection in chat — working
+✅ Complete button — EXISTS (moves to completed section)
+✅ Delete button — EXISTS (in edit mode)
+✅ Completed section — collapsible, animated
+✅ Reminder linking — working
+✅ Calendar sync — working
+✅ goal-checkin.ts — just built (this session)
+✅ Specificity push logic — just built
+✅ Goal hygiene UI — just built
+
+❌ Proactive check-in wired into chat-engine — NOT YET
+❌ Specificity push wired into routes — NOT YET  
+❌ Goal hygiene wired into GoalsPanel — NOT YET
+❌ Evening check-in notification — NOT YET
+❌ "Did you [goal] today?" notification — NOT YET
+```
+
+---
+
+## Build 1 — Already Done
+
+Complete + Delete buttons already exist from earlier session. The vision document confirms this.
+
+What's missing is the **notification flow:**
+
+```
+Evening notification: "Did you [goal] today?"
+[Yes] [Not yet] [Skip today]
+```
+
+---
+
+## Build 2 + 3 + 4 — Wire Everything
+
+The code exists in `goal-checkin.ts`. Now wire it.
+
+**Tell your developer — exact steps:**
+
+### Step 1 — Wire chat-engine.ts (Build 2)
+
+Find `chat-engine.ts` where system prompt is assembled. Add:
+
+```typescript
+import { 
+  buildGoalCheckInContext,
+  markGoalCheckedIn 
+} from './goal-checkin';
+
+// After existing ctx block:
+const checkInCtx = await buildGoalCheckInContext(
+  userId,
+  ctx.firstName,
+  conversationId
+);
+
+if (checkInCtx.systemPromptBlock) {
+  systemPrompt += checkInCtx.systemPromptBlock;
+}
+
+// After response generated:
+if (checkInCtx.primaryCheckIn) {
+  await markGoalCheckedIn(
+    checkInCtx.primaryCheckIn.goalId,
+    userId
+  ).catch(() => {});
+}
+```
+
+**That's Build 2 done.** ARYA now asks about stalled goals naturally.
+
+---
+
+### Step 2 — Wire routes.ts (Build 3)
+
+Find where goals are auto-detected and saved. Add after saving:
+
+```typescript
+import { buildSpecificityPrompt } from './arya/goal-checkin';
+
+// After goal saved — check if vague:
+function isVagueGoal(title: string): boolean {
+  const vagueWords = /^(get|be|become|stay|feel|have|do|make|learn|improve|start|stop|try)\s/i;
+  const specificMarkers = /\d|by\s|every\s|per\s|times?\s|km|kg|min|hour|book|page/i;
+  return vagueWords.test(title) && !specificMarkers.test(title);
+}
+
+if (isVagueGoal(goal.title)) {
+  // Store flag — ARYA asks specificity question next message
+  await db.update(arya_conversations)
+    .set({ pendingSpecificityGoalId: goal.id })
+    .where(eq(arya_conversations.id, conversationId));
+}
+```
+
+**That's Build 3 wired.**
+
+---
+
+### Step 3 — Evening Check-in Notification (Notification Flow)
+
+In `reminder-scheduler.ts`, add an evening sweep at 8 PM:
+
+```typescript
+// Runs daily at 8 PM
+async function sendEveningGoalCheckins() {
+  const users = await getUsersWithActiveGoals();
+
+  for (const user of users) {
+    const topGoal = user.goals
+      .filter(g => g.progress === 0)
+      .sort((a, b) => 
+        new Date(a.createdAt).getTime() - 
+        new Date(b.createdAt).getTime()
+      )[0];
+
+    if (!topGoal) continue;
+
+    // Don't send if already checked in today
+    if (topGoal.lastCheckedAt) {
+      const hoursAgo = (Date.now() - new Date(topGoal.lastCheckedAt).getTime()) 
+                       / (1000 * 60 * 60);
+      if (hoursAgo < 20) continue;
+    }
+
+    await sendPushNotification(user.id, {
+      title: `🎯 ${topGoal.title}`,
+      body: `Did you work on this today?`,
+      type: 'goal_checkin',
+      goalId: topGoal.id,
+      actions: [
+        { action: 'yes',  title: '✅ Yes' },
+        { action: 'no',   title: '❌ Not yet' },
+        { action: 'skip', title: '↩ Skip today' }
+      ]
+    });
+  }
+}
+```
+
+Handle the action in service worker:
+
+```javascript
+// sw.js — add to notificationclick handler:
+case 'yes':
+  fetch(`/api/user/goals/${goalId}/checkin`, {
+    method: 'POST',
+    body: JSON.stringify({ completed: true })
+  });
+  // Streak +1, celebration in next ARYA session
+  break;
+
+case 'no':
+  // Opens ARYA with goal context
+  clients.openWindow(`/?goalId=${goalId}&context=missed`);
+  break;
+
+case 'skip':
+  fetch(`/api/user/goals/${goalId}/checkin`, {
+    method: 'POST',
+    body: JSON.stringify({ skipped: true })
+  });
+  break;
+```
+
+---
+
+### Step 4 — Wire GoalsPanel Hygiene (Build 4)
+
+Already in `goal-checkin.ts`. Just needs the fetch + UI wired:
+
+```typescript
+// In GoalsPanel.tsx — add fetch:
+const { data: abandonedGoals } = useQuery({
+  queryKey: ['goals-abandoned'],
+  queryFn: () => 
+    fetch('/api/user/goals/abandoned')
+    .then(r => r.json()),
+});
+
+// Hygiene action function:
+async function applyHygiene(
+  goalId: number, 
+  action: 'keep' | 'pause' | 'release'
+) {
+  await fetch(`/api/user/goals/${goalId}/hygiene`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action })
+  });
+  queryClient.invalidateQueries(['goals-abandoned']);
+  queryClient.invalidateQueries(['goals']);
+}
+```
+
+---
+
+## DB Migration — Run This First
+
+```sql
+ALTER TABLE arya_goals
+  ADD COLUMN IF NOT EXISTS last_checked_at TIMESTAMP,
+  ADD COLUMN IF NOT EXISTS hygiene_at TIMESTAMP,
+  ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active';
+
+-- Add checkin tracking table
+CREATE TABLE IF NOT EXISTS arya_goal_checkins (
+  id          SERIAL PRIMARY KEY,
+  user_id     INTEGER NOT NULL,
+  goal_id     INTEGER NOT NULL,
+  checked_at  TIMESTAMP DEFAULT NOW(),
+  result      TEXT,  -- 'completed' | 'skipped' | 'missed' | 'noted'
+  note        TEXT
+);
+```
+
+---
+
+## Complete Priority Order — This Week
+
+| Day | Task | Time |
+|-----|------|------|
+| Today | DB migration | 10 min |
+| Today | Wire chat-engine.ts (Build 2) | 1 hour |
+| Tomorrow | Wire routes.ts specificity (Build 3) | 1 hour |
+| Day 3 | Evening check-in notification | 2 hours |
+| Day 4 | GoalsPanel hygiene UI | 2 hours |
+| Day 5 | Test + fix edge cases | 1 hour |
+
+**Total: ~7 hours. Transforms goals completely.**
+
+---
+
+## What Users Feel After This
+
+```
+Monday: "I want to wake up at 6 AM every day"
+ARYA: "What's the reason — energy? Morning time?
+       That'll help me support you better."
+
+Thursday: User opens ARYA to chat about work
+ARYA: "By the way — how's the 6 AM wake-up going?
+       You set that 4 days ago."
+
+User: "I've done it twice"
+ARYA: "Two out of four. That's a start.
+       What made the other two days hard?"
+
+Sunday evening: Notification
+"🎯 6 AM wake-up — did you manage today?"
+[✅ Yes] [❌ Not yet] [↩ Skip]
+
+Sunday Review:
+"You attempted the 6 AM goal 5 times this week.
+ Hit it 3 times.
+ That's a 60% week.
+ Better than last week's 40%."
+
+Week 4: First week of 7/7
+ARYA: "Seven days straight.
+       You said you would.
+       You did."
+```
+
+**That's the product.**
