@@ -75,9 +75,9 @@ function getNextScheduledAt(reminder: typeof aryaReminders.$inferSelect): Date |
   }
 }
 
-async function sendPushToUser(userId: string, title: string, body: string, icon: string): Promise<void> {
+async function sendPushToUser(userId: string, title: string, body: string, icon: string, extra?: Record<string, unknown>): Promise<void> {
   const subs = await db.select().from(aryaPushSubscriptions).where(eq(aryaPushSubscriptions.userId, userId));
-  const payload = JSON.stringify({ title, body, icon, url: "/" });
+  const payload = JSON.stringify({ title, body, icon, url: "/", ...extra });
 
   for (const sub of subs) {
     try {
@@ -125,7 +125,13 @@ async function checkAndFireReminders(): Promise<void> {
 
     for (const reminder of dueReminders) {
       const icon = getReminderIcon(reminder.type);
-      await sendPushToUser(reminder.userId, `${icon} ${reminder.title}`, reminder.message, "/icons/icon-192.png");
+      await sendPushToUser(
+        reminder.userId,
+        `${icon} ${reminder.title}`,
+        reminder.message,
+        "/icons/icon-192.png",
+        { type: reminder.type, reminderId: reminder.id, scheduledAt: reminder.scheduledAt.toISOString() }
+      );
 
       const nextAt = getNextScheduledAt(reminder);
       if (nextAt) {

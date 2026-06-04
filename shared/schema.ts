@@ -718,6 +718,8 @@ export const aryaReminders = pgTable("arya_reminders", {
   isActive: boolean("is_active").default(true).notNull(),
   soundEnabled: boolean("sound_enabled").default(true).notNull(),
   lastTriggeredAt: timestamp("last_triggered_at"),
+  snoozeCount: integer("snooze_count").default(0).notNull(),
+  snoozedAt: timestamp("snoozed_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -725,6 +727,8 @@ export const insertAryaReminderSchema = createInsertSchema(aryaReminders).omit({
   id: true,
   createdAt: true,
   lastTriggeredAt: true,
+  snoozeCount: true,
+  snoozedAt: true,
 });
 export type InsertAryaReminder = z.infer<typeof insertAryaReminderSchema>;
 export type AryaReminder = typeof aryaReminders.$inferSelect;

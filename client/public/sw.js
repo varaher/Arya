@@ -73,31 +73,110 @@ self.addEventListener('fetch', (event) => {
 });
 
 // =============================================
-// PUSH NOTIFICATION HANDLER
+// PUSH NOTIFICATION HANDLER — Alarm & Reminder
 // =============================================
 
+const ALARM_TAG    = 'arya-alarm';
+const REMINDER_TAG = 'arya-reminder';
+
 self.addEventListener('push', (event) => {
-  let data = { title: 'ARYA Reminder', body: 'Time for your scheduled reminder!', icon: '/icons/icon-192.png', url: '/' };
+  let data = { title: 'ARYA', body: '', type: 'reminder', icon: '/icons/icon-192.png', url: '/' };
   try {
     if (event.data) data = { ...data, ...JSON.parse(event.data.text()) };
   } catch (e) {}
 
+  const isAlarm = data.type === 'alarm';
+
+  const notifOptions = isAlarm
+    ? {
+        body: data.body || data.message || '',
+        icon: '/icons/icon-192.png',
+        badge: '/icons/icon-192.png',
+        vibrate: [500, 200, 500, 200, 500, 400, 200, 400, 500, 200, 500],
+        requireInteraction: true,
+        silent: false,
+        renotify: true,
+        tag: ALARM_TAG,
+        actions: [
+          { action: 'dismiss',  title: '✓ Dismiss' },
+          { action: 'snooze_5', title: '⏰ Snooze 5 min' },
+          { action: 'snooze_10', title: '⏰ Snooze 10 min' },
+        ],
+        data: { reminderId: data.reminderId, type: 'alarm', url: data.url || '/' },
+      }
+    : {
+        body: data.body || data.message || '',
+        icon: '/icons/icon-192.png',
+        badge: '/icons/icon-192.png',
+        vibrate: [200, 100, 200],
+        requireInteraction: false,
+        silent: false,
+        renotify: true,
+        tag: `${REMINDER_TAG}-${data.reminderId || Date.now()}`,
+        actions: [
+          { action: 'dismiss',  title: '✓ Done' },
+          { action: 'snooze_5', title: '⏰ Snooze 5 min' },
+        ],
+        data: { reminderId: data.reminderId, type: data.type, url: data.url || '/' },
+      };
+
   event.waitUntil(
-    self.registration.showNotification(data.title, {
-      body: data.body,
-      icon: data.icon || '/icons/icon-192.png',
-      badge: '/icons/icon-192.png',
-      vibrate: [200, 100, 200],
-      requireInteraction: false,
-      data: { url: data.url || '/' },
-      actions: [{ action: 'open', title: 'Open ARYA' }],
+    // Notify any open app windows so they can show the in-app overlay
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        client.postMessage({
+          type: 'ALARM_FIRING',
+          reminderType: data.type,
+          reminderId: data.reminderId,
+          title: data.title,
+          body: data.body || data.message || '',
+        });
+      }
+      return self.registration.showNotification(data.title, notifOptions);
     })
   );
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const url = event.notification.data?.url || '/';
+
+  const action      = event.action;
+  const notifData   = event.notification.data || {};
+  const reminderId  = notifData.reminderId;
+  const url         = notifData.url || '/';
+
+  // Snooze actions
+  if (action === 'snooze_5' || action === 'snooze_10') {
+    const minutes   = action === 'snooze_5' ? 5 : 10;
+    const snoozeAt  = new Date(Date.now() + minutes * 60 * 1000).toISOString();
+    event.waitUntil(
+      fetch('/api/reminders/snooze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reminderId, snoozeUntil: snoozeAt, minutes }),
+      }).then(() =>
+        self.registration.showNotification(`Snoozed ${minutes} min`, {
+          body: `ARYA will remind you again at ${new Date(snoozeAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`,
+          icon: '/icons/icon-192.png',
+          vibrate: [100],
+          requireInteraction: false,
+          silent: true,
+          tag: 'arya-snooze-confirm',
+        })
+      ).catch(() => {})
+    );
+    return;
+  }
+
+  // Dismiss action
+  if (action === 'dismiss') {
+    if (reminderId) {
+      fetch(`/api/reminders/${reminderId}/dismiss`, { method: 'POST' }).catch(() => {});
+    }
+    return;
+  }
+
+  // Default tap — focus or open the app
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
@@ -108,4 +187,21 @@ self.addEventListener('notificationclick', (event) => {
       if (clients.openWindow) return clients.openWindow(url);
     })
   );
+});
+
+// Track notification close (lightweight — used for analytics/seen status)
+self.addEventListener('notificationclose', (event) => {
+  const reminderId = event.notification.data?.reminderId;
+  if (reminderId) {
+    fetch(`/api/reminders/${reminderId}/seen`, { method: 'POST' }).catch(() => {});
+  }
+});
+
+// Background sync — for offline snooze replay
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'sync-reminders') {
+    event.waitUntil(
+      fetch('/api/reminders/sync', { method: 'POST' }).catch(() => {})
+    );
+  }
 });

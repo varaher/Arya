@@ -84,7 +84,7 @@ import { useTheme } from "@/lib/theme";
 import RemindersPanel from "@/components/RemindersPanel";
 import PricingModal from "@/components/PricingModal";
 import { requestNotificationPermission } from "@/lib/push-notifications";
-import { playARYASound } from "@/utils/reminderSound";
+import { playARYASound, playAlarmSound, stopAlarmSound } from "@/utils/reminderSound";
 
 function CodeBlock({ children, language }: { children: string; language?: string }) {
   const [copied, setCopied] = useState(false);
@@ -3147,6 +3147,7 @@ export default function AryaChat() {
   };
 
   const [showReminders, setShowReminders] = useState(false);
+  const [alarmData, setAlarmData] = useState<{ reminderId: string; title: string; body: string } | null>(null);
   const [showNotes, setShowNotes] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [showConfidence, setShowConfidence] = useState(true);
@@ -3171,6 +3172,20 @@ export default function AryaChat() {
       if (full) { setSelectedLanguage(full); try { localStorage.setItem("arya_lang", full); } catch {} }
     }
   }, [user?.uiLanguage]);
+
+  // Listen for alarm messages from the service worker — shows in-app overlay
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+    const handler = (event: MessageEvent) => {
+      const msg = event.data;
+      if (msg?.type === 'ALARM_FIRING' && msg.reminderType === 'alarm') {
+        setAlarmData({ reminderId: msg.reminderId ?? '', title: msg.title ?? 'Alarm', body: msg.body ?? '' });
+        try { playAlarmSound(); } catch {}
+      }
+    };
+    navigator.serviceWorker.addEventListener('message', handler);
+    return () => navigator.serviceWorker.removeEventListener('message', handler);
+  }, []);
 
   const [moodCheckedInToday, setMoodCheckedInToday] = useState(() => {
     try { return localStorage.getItem("arya_mood_date") === new Date().toDateString(); } catch { return false; }
@@ -4959,6 +4974,71 @@ export default function AryaChat() {
             >
               <div className="absolute inset-0 bg-black/40" onClick={() => setShowReminders(false)} />
               <RemindersPanel onClose={() => setShowReminders(false)} />
+            </motion.div>
+          )}
+          {alarmData && (
+            <motion.div
+              key="alarm-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] flex items-center justify-center"
+              style={{ background: "rgba(0,0,0,0.90)" }}
+            >
+              <motion.div
+                initial={{ scale: 0.85, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: "spring", damping: 18, stiffness: 220 }}
+                className="w-80 rounded-3xl bg-[#0d1326] border border-amber-500/30 p-8 flex flex-col items-center gap-5 shadow-2xl"
+              >
+                <motion.div
+                  animate={{ scale: [1, 1.18, 1], rotate: [-10, 10, -10, 0] }}
+                  transition={{ repeat: Infinity, duration: 0.55, ease: "easeInOut" }}
+                  className="text-5xl select-none"
+                >
+                  🔔
+                </motion.div>
+                <div className="text-center">
+                  <p className="text-xs text-amber-400 uppercase tracking-widest font-medium mb-1">Alarm</p>
+                  <p className="text-xl font-semibold text-white">{alarmData.title}</p>
+                  {alarmData.body && <p className="text-sm text-muted-foreground mt-1">{alarmData.body}</p>}
+                  <p className="text-3xl font-mono text-white/50 mt-3 tabular-nums">
+                    {new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                  </p>
+                </div>
+                <div className="flex gap-3 w-full">
+                  <button
+                    onClick={() => {
+                      stopAlarmSound();
+                      const id = alarmData.reminderId;
+                      setAlarmData(null);
+                      const snoozeUntil = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+                      fetch("/api/reminders/snooze", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+                        body: JSON.stringify({ reminderId: id, snoozeUntil }),
+                      }).catch(() => {});
+                    }}
+                    className="flex-1 rounded-xl border border-white/10 bg-white/5 text-white text-sm py-3 hover:bg-white/10 transition-colors"
+                  >
+                    ⏰ Snooze 5 min
+                  </button>
+                  <button
+                    onClick={() => {
+                      stopAlarmSound();
+                      const id = alarmData.reminderId;
+                      setAlarmData(null);
+                      fetch(`/api/reminders/${id}/dismiss`, {
+                        method: "POST",
+                        headers: token ? { Authorization: `Bearer ${token}` } : {},
+                      }).catch(() => {});
+                    }}
+                    className="flex-1 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-semibold text-sm py-3 transition-colors"
+                  >
+                    ✓ Dismiss
+                  </button>
+                </div>
+              </motion.div>
             </motion.div>
           )}
           {showNotes && isLoggedIn && token && (

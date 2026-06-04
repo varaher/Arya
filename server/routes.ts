@@ -449,6 +449,56 @@ export async function registerRoutes(
     }
   });
 
+  // Snooze a reminder — reschedule to snoozeUntil (called from SW or in-app overlay)
+  app.post("/api/reminders/snooze", async (req: Request, res: Response) => {
+    const user = await requireUserAuth(req, res);
+    if (!user) return;
+    try {
+      const { reminderId, snoozeUntil } = req.body;
+      if (!reminderId || !snoozeUntil) return res.status(400).json({ error: "reminderId and snoozeUntil are required" });
+      const [updated] = await db.update(aryaReminders)
+        .set({
+          scheduledAt: new Date(snoozeUntil),
+          snoozedAt: new Date(),
+          snoozeCount: sql`snooze_count + 1`,
+          isActive: true,
+        })
+        .where(and(eq(aryaReminders.id, reminderId), eq(aryaReminders.userId, user.id)))
+        .returning();
+      if (!updated) return res.status(404).json({ error: "Reminder not found" });
+      res.json({ success: true, reminder: updated });
+    } catch (err: any) {
+      console.error("[REMINDER SNOOZE]", err.message);
+      res.status(500).json({ error: "Failed to snooze reminder" });
+    }
+  });
+
+  // Dismiss a reminder — deactivates once-only; recurring stays active for next cycle
+  app.post("/api/reminders/:id/dismiss", async (req: Request, res: Response) => {
+    const user = await requireUserAuth(req, res);
+    if (!user) return;
+    try {
+      const [reminder] = await db.select().from(aryaReminders)
+        .where(and(eq(aryaReminders.id, req.params.id), eq(aryaReminders.userId, user.id)))
+        .limit(1);
+      if (!reminder) return res.status(404).json({ error: "Not found" });
+      await db.update(aryaReminders)
+        .set({
+          isActive: reminder.recurrence === "once" ? false : reminder.isActive,
+          lastTriggeredAt: new Date(),
+        })
+        .where(eq(aryaReminders.id, req.params.id));
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to dismiss reminder" });
+    }
+  });
+
+  // Seen — lightweight notification-close tracking (no-op, just returns 200)
+  app.post("/api/reminders/:id/seen", (_req: Request, res: Response) => {
+    res.json({ success: true });
+  });
+
   // =============================================
   // ONBOARDING ROUTES
   // =============================================

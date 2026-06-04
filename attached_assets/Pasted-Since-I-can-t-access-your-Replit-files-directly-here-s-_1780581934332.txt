@@ -1,0 +1,101 @@
+Since I can't access your Replit files directly, here's the complete service worker update — copy-paste ready for your developer.
+
+---
+
+Both files delivered. Here's the complete picture:
+
+---
+
+## What Was Built
+
+### File 1 — `sw-alarm-update.js`
+Complete service worker with:
+
+**For Alarms:**
+```
+requireInteraction: true  → stays on screen
+vibrate: [500,200,500...]  → long heavy pattern
+3 action buttons:
+  ✓ Dismiss
+  ⏰ Snooze 5 min
+  ⏰ Snooze 10 min
+```
+
+**For Reminders:**
+```
+requireInteraction: false  → auto-dismisses
+vibrate: [200,100,200]     → gentle pulse
+2 action buttons:
+  ✓ Done
+  ⏰ Snooze 5 min
+```
+
+---
+
+### File 2 — `alarm-system-wiring.ts`
+5 complete code blocks:
+
+| # | What | Where |
+|---|------|-------|
+| 1 | Snooze + dismiss routes | `routes.ts` |
+| 2 | Alarm payload in scheduler | `reminder-scheduler.ts` |
+| 3 | Alarm toggle in form | `RemindersPanel.tsx` |
+| 4 | In-app alarm overlay | `AryaChat.tsx` |
+| 5 | `playAlarmSound()` function | `reminderSound.ts` |
+
+---
+
+## The User Experience After This
+
+**Reminder fires (app closed):**
+```
+Phone buzzes once gently
+Notification appears
+Auto-dismisses after 30 seconds
+```
+
+**Alarm fires (app closed):**
+```
+Phone buzzes — long heavy pattern
+Notification stays on screen
+User sees: ✓ Dismiss | ⏰ Snooze 5 | ⏰ Snooze 10
+Cannot miss it
+```
+
+**Alarm fires (app open):**
+```
+Loud repeating beep plays
+Full-screen overlay appears
+🔔 bell animation
+Shows time
+Snooze / Dismiss buttons
+```
+
+---
+
+## Database Change Needed
+
+```sql
+ALTER TABLE arya_reminders 
+ADD COLUMN IF NOT EXISTS type text DEFAULT 'reminder',
+ADD COLUMN IF NOT EXISTS snooze_count integer DEFAULT 0,
+ADD COLUMN IF NOT EXISTS snoozed_at timestamp;
+```
+
+---
+
+## Tell Your Developer
+
+```
+6 steps. 3-4 hours total.
+
+1. Merge sw-alarm-update.js into public/sw.js
+2. Add 3 routes to routes.ts (snooze/dismiss/seen)
+3. Update reminder-scheduler.ts payload
+4. Add alarm toggle to RemindersPanel.tsx
+5. Add alarm overlay to AryaChat.tsx
+6. Add playAlarmSound() to reminderSound.ts
++ Run the DB migration above
+```
+
+After this — **reminders feel like reminders, alarms feel like alarms.** Exactly as you described.

@@ -7,6 +7,7 @@ export type SoundType =
   | 'morning'
   | 'success'
   | 'gentle'
+  | 'alarm'
 
 let audioCtx: AudioContext | null = null;
 
@@ -137,6 +138,33 @@ export function playAryaWake() {
   playTone(ctx, 1046.5, now + 0.6, 1.5, 0.06, 'sine', 'bell');
 }
 
+// ── SOUND 7: Alarm — urgent repeating burst ───────────────────────────────────
+let alarmIntervalId: ReturnType<typeof setInterval> | null = null;
+
+function playAlarmBurst() {
+  try {
+    const ctx = getAudioContext();
+    const now = ctx.currentTime;
+    [0, 0.20, 0.40].forEach((d) => {
+      playTone(ctx, 1318.5, now + d,        0.15, 0.5, 'square', 'pluck');
+      playTone(ctx, 987.77, now + d + 0.01, 0.13, 0.2, 'sine',   'pluck');
+    });
+  } catch {}
+}
+
+export function playAlarmSound() {
+  stopAlarmSound();
+  playAlarmBurst();
+  alarmIntervalId = setInterval(playAlarmBurst, 1200);
+}
+
+export function stopAlarmSound() {
+  if (alarmIntervalId !== null) {
+    clearInterval(alarmIntervalId);
+    alarmIntervalId = null;
+  }
+}
+
 // ── Main dispatcher ───────────────────────────────────────────────────────────
 export function playARYASound(type: SoundType = 'reminder') {
   try {
@@ -146,6 +174,7 @@ export function playARYASound(type: SoundType = 'reminder') {
       case 'morning':  playMorningRaga();  break;
       case 'success':  playSuccessChime(); break;
       case 'gentle':   playGentlePing();   break;
+      case 'alarm':    playAlarmSound();   break;
       default:         playTempleBell();
     }
   } catch (err) {

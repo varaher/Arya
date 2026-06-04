@@ -1,0 +1,225 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// ARYA Service Worker — Alarm & Reminder Notifications
+// Save as: client/public/sw.js (or merge into existing sw.js)
+//
+// This handles:
+// 1. Push notifications from server (reminders + alarms)
+// 2. Alarm vs reminder differentiation
+// 3. Snooze action
+// 4. Click to open app
+// ═══════════════════════════════════════════════════════════════════════════
+
+const CACHE_NAME = 'arya-v1';
+const ALARM_TAG = 'arya-alarm';
+const REMINDER_TAG = 'arya-reminder';
+
+// ── Install & Activate ────────────────────────────────────────────────────────
+self.addEventListener('install', event => {
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', event => {
+  event.waitUntil(clients.claim());
+});
+
+// ── Push Notification Handler ─────────────────────────────────────────────────
+self.addEventListener('push', event => {
+  if (!event.data) return;
+
+  let data;
+  try {
+    data = event.data.json();
+  } catch {
+    data = {
+      title: 'ARYA',
+      body: event.data.text(),
+      type: 'reminder'
+    };
+  }
+
+  const isAlarm = data.type === 'alarm';
+
+  // ── Alarm notification — urgent, stays on screen ──
+  const alarmOptions = {
+    body: data.body || data.message || '',
+    icon: '/icon-192.png',
+    badge: '/badge-96.png',
+
+    // Long repeating vibration — like a real alarm
+    vibrate: [
+      500, 200, 500, 200, 500,   // bzzz bzzz bzzz
+      400, 200, 400,              // bzzz bzzz
+      500, 200, 500, 200, 500    // bzzz bzzz bzzz
+    ],
+
+    // Stays on screen until user acts
+    requireInteraction: true,
+
+    // Use phone's notification sound
+    silent: false,
+
+    // Renotify even if same tag (for repeating alarms)
+    renotify: true,
+    tag: ALARM_TAG,
+
+    // Action buttons
+    actions: [
+      { action: 'dismiss', title: '✓ Dismiss' },
+      { action: 'snooze_5', title: '⏰ Snooze 5 min' },
+      { action: 'snooze_10', title: '⏰ Snooze 10 min' }
+    ],
+
+    // Extra data to pass to click handler
+    data: {
+      reminderId: data.reminderId,
+      type: 'alarm',
+      url: data.url || '/',
+      scheduledAt: data.scheduledAt
+    }
+  };
+
+  // ── Reminder notification — gentle, auto-dismisses ──
+  const reminderOptions = {
+    body: data.body || data.message || '',
+    icon: '/icon-192.png',
+    badge: '/badge-96.png',
+
+    // Gentle single pulse
+    vibrate: [200, 100, 200],
+
+    // Does NOT require interaction — dismisses on its own
+    requireInteraction: false,
+
+    silent: false,
+    renotify: true,
+    tag: `${REMINDER_TAG}-${data.reminderId || Date.now()}`,
+
+    actions: [
+      { action: 'dismiss', title: '✓ Done' },
+      { action: 'snooze_5', title: '⏰ Snooze 5 min' }
+    ],
+
+    data: {
+      reminderId: data.reminderId,
+      type: 'reminder',
+      url: data.url || '/',
+      scheduledAt: data.scheduledAt
+    }
+  };
+
+  const options = isAlarm ? alarmOptions : reminderOptions;
+  const title = data.title || 'ARYA';
+
+  event.waitUntil(
+    self.registration.showNotification(title, options)
+  );
+});
+
+// ── Notification Click Handler ────────────────────────────────────────────────
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+
+  const action = event.action;
+  const notifData = event.notification.data || {};
+  const reminderId = notifData.reminderId;
+  const url = notifData.url || '/';
+
+  // Handle snooze actions
+  if (action === 'snooze_5' || action === 'snooze_10') {
+    const minutes = action === 'snooze_5' ? 5 : 10;
+    const snoozeTime = Date.now() + minutes * 60 * 1000;
+
+    event.waitUntil(
+      // Notify the server to reschedule
+      fetch('/api/reminders/snooze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reminderId,
+          snoozeUntil: new Date(snoozeTime).toISOString(),
+          minutes
+        })
+      }).then(() => {
+        // Show a confirmation notification
+        return self.registration.showNotification(
+          `Snoozed for ${minutes} minutes`,
+          {
+            body: `ARYA will remind you again at ${
+              new Date(snoozeTime).toLocaleTimeString('en-IN', {
+                hour: '2-digit',
+                minute: '2-digit'
+              })
+            }`,
+            icon: '/icon-192.png',
+            badge: '/badge-96.png',
+            vibrate: [100],
+            requireInteraction: false,
+            silent: true,
+            tag: 'arya-snooze-confirm'
+          }
+        );
+      }).catch(() => {
+        // If server fails, still show confirmation
+        return self.registration.showNotification(
+          `Snoozed ${minutes} min`,
+          {
+            icon: '/icon-192.png',
+            vibrate: [100],
+            silent: true,
+            tag: 'arya-snooze-confirm'
+          }
+        );
+      })
+    );
+    return;
+  }
+
+  // Handle dismiss action
+  if (action === 'dismiss') {
+    // Optionally mark as completed on server
+    if (reminderId) {
+      fetch(`/api/reminders/${reminderId}/dismiss`, {
+        method: 'POST'
+      }).catch(() => {});
+    }
+    return;
+  }
+
+  // Default click (no action button) — open app
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then(clientList => {
+        // If app already open — focus it
+        for (const client of clientList) {
+          if (client.url.includes(self.location.origin) && 'focus' in client) {
+            return client.focus();
+          }
+        }
+        // Otherwise open app
+        if (clients.openWindow) {
+          return clients.openWindow(url);
+        }
+      })
+  );
+});
+
+// ── Notification Close Handler ────────────────────────────────────────────────
+self.addEventListener('notificationclose', event => {
+  // Track dismissed notifications if needed
+  const notifData = event.notification.data || {};
+  if (notifData.reminderId) {
+    fetch(`/api/reminders/${notifData.reminderId}/seen`, {
+      method: 'POST'
+    }).catch(() => {});
+  }
+});
+
+// ── Background Sync (optional — for offline snooze) ──────────────────────────
+self.addEventListener('sync', event => {
+  if (event.tag === 'sync-reminders') {
+    event.waitUntil(
+      fetch('/api/reminders/sync', { method: 'POST' })
+        .catch(() => {})
+    );
+  }
+});
