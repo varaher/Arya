@@ -1962,12 +1962,15 @@ function NoteCard({ note, token, deleteNote, formatDate, formatDur, isEditMode, 
   const qc = useQueryClient();
   const [tasksSaved, setTasksSaved] = useState(!!note.tasksSavedToGoals);
   const [savingTasks, setSavingTasks] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const tasks: Array<{ task: string; deadline?: string | null }> =
     Array.isArray(note.extractedTasks) ? note.extractedTasks : [];
 
   const summaryLines: string[] = note.summary
-    ? note.summary.split(/\n/).filter(Boolean).slice(0, 5)
+    ? note.summary.split(/\n/).filter(Boolean).slice(0, 6)
     : [];
 
   async function handleSaveTasks() {
@@ -1985,6 +1988,61 @@ function NoteCard({ note, token, deleteNote, formatDate, formatDur, isEditMode, 
     }
   }
 
+  async function handlePlayAudio(e: React.MouseEvent) {
+    e.stopPropagation();
+    // Stop if already playing
+    if (isPlaying) {
+      audioRef.current?.pause();
+      setIsPlaying(false);
+      return;
+    }
+    try {
+      // Try server audio first
+      const res = await fetch(`/api/user/voice-notes/${note.id}/audio`, {
+        headers: { "x-user-token": token! },
+      });
+      if (res.ok && res.status !== 204) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        audioRef.current = audio;
+        audio.onended = () => { setIsPlaying(false); URL.revokeObjectURL(url); };
+        audio.onerror = () => setIsPlaying(false);
+        setIsPlaying(true);
+        audio.play().catch(() => setIsPlaying(false));
+        return;
+      }
+    } catch { /* fall through to TTS */ }
+    // Fallback — Web Speech synthesis reads the summary aloud
+    if ('speechSynthesis' in window && (summaryLines.length > 0 || note.transcript)) {
+      const text = summaryLines.length > 0
+        ? summaryLines.map(l => l.replace(/^•\s*/, "")).join(". ")
+        : note.transcript?.slice(0, 300) || "";
+      const utt = new SpeechSynthesisUtterance(text);
+      utt.onend = () => setIsPlaying(false);
+      utt.onerror = () => setIsPlaying(false);
+      setIsPlaying(true);
+      window.speechSynthesis.speak(utt);
+    }
+  }
+
+  function handleCopy(e: React.MouseEvent) {
+    e.stopPropagation();
+    const text = note.transcript || summaryLines.join("\n");
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    }).catch(() => {});
+  }
+
+  // Clean up audio when component unmounts
+  useEffect(() => {
+    return () => {
+      audioRef.current?.pause();
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    };
+  }, []);
+
   return (
     <div
       data-testid={`card-voice-note-${note.id}`}
@@ -1995,93 +2053,122 @@ function NoteCard({ note, token, deleteNote, formatDate, formatDur, isEditMode, 
           : "bg-white dark:bg-slate-800 border-gray-100 dark:border-slate-700 hover:border-violet-200 dark:hover:border-violet-800 hover:shadow-sm"
       } ${isEditMode ? "cursor-pointer" : ""}`}
     >
-      {/* Card header row */}
-      <div className="flex items-start gap-2 px-3 pt-2.5 pb-1">
-        <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${
+      {/* Card header — timestamp · duration · language */}
+      <div className="flex items-center gap-2 px-3 pt-2.5 pb-1">
+        <div className={`w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 ${
           isEditMode && isSelected ? "bg-violet-500" : "bg-violet-100 dark:bg-violet-900/30"
         }`}>
           {isEditMode ? (
-            <Check className={`w-3.5 h-3.5 ${isSelected ? "text-white" : "text-transparent"}`} />
+            <Check className={`w-3 h-3 ${isSelected ? "text-white" : "text-transparent"}`} />
           ) : (
-            <Mic className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" />
+            <Mic className="w-3 h-3 text-violet-600 dark:text-violet-400" />
           )}
         </div>
-
-        <div className="flex-1 min-w-0">
-          <div className="text-xs font-semibold text-gray-800 dark:text-gray-100 truncate">
-            {note.title || note.transcript?.slice(0, 50)}
-          </div>
-          <div className="flex items-center gap-1.5 mt-0.5">
-            <span className="text-[10px] text-gray-400 dark:text-gray-500">🕐 {formatDate(note.createdAt)}</span>
-            {note.durationSeconds > 0 && (
-              <span className="text-[10px] text-gray-400 dark:text-gray-500">· {formatDur(note.durationSeconds)}</span>
-            )}
-          </div>
+        <div className="flex-1 min-w-0 flex items-center gap-1.5 flex-wrap">
+          <span className="text-[11px] font-semibold text-gray-700 dark:text-gray-200">{formatDate(note.createdAt)}</span>
+          {note.durationSeconds > 0 && (
+            <span className="text-[10px] text-gray-400 dark:text-gray-500">· {formatDur(note.durationSeconds)}</span>
+          )}
+          {note.language && note.language !== "en" && (
+            <span className="text-[10px] text-violet-400 dark:text-violet-500">· {note.language}</span>
+          )}
         </div>
-
         {!isEditMode && (
           <button
             onClick={e => { e.stopPropagation(); deleteNote.mutate(note.id); }}
             data-testid={`button-delete-note-${note.id}`}
-            className="p-1.5 rounded-lg text-gray-300 dark:text-gray-600 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 dark:hover:text-red-400 transition-all flex-shrink-0"
+            className="p-1 rounded-md text-gray-300 dark:text-gray-600 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 dark:hover:text-red-400 transition-all flex-shrink-0"
           >
-            <Trash2 className="w-3.5 h-3.5" />
+            <Trash2 className="w-3 h-3" />
           </button>
         )}
       </div>
 
-      {/* Content: summary bullets + collapsible raw transcript */}
-      <div className="px-3 pb-2.5">
+      {/* Summary — always shown first, prominent */}
+      <div className="px-3 pb-1">
         {summaryLines.length > 0 ? (
           <>
-            <div className="flex items-center gap-1 mt-1 mb-1">
-              <span className="text-[9px] font-semibold uppercase tracking-widest text-violet-400 dark:text-violet-500">✨ Summary</span>
-            </div>
-            <ul className="space-y-0.5 border-l-2 border-violet-200 dark:border-violet-800 pl-2">
+            <p className="text-[9px] font-bold uppercase tracking-widest text-violet-500 dark:text-violet-400 mb-1">✨ Summary</p>
+            <ul className="space-y-0.5 mb-1.5">
               {summaryLines.map((line: string, i: number) => (
-                <li key={i} className="text-[11px] text-gray-600 dark:text-gray-300 leading-relaxed">
-                  {line}
+                <li key={i} className="text-[11px] text-gray-700 dark:text-gray-200 leading-relaxed flex gap-1.5">
+                  <span className="text-violet-400 flex-shrink-0 mt-px">•</span>
+                  <span>{line.replace(/^[•\-]\s*/, "")}</span>
                 </li>
               ))}
             </ul>
             {note.transcript && (
-              <details className="mt-1.5">
-                <summary className="text-[10px] text-gray-400 dark:text-gray-500 cursor-pointer select-none hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-                  View full transcript
+              <details className="mb-1">
+                <summary className="text-[10px] text-gray-400 dark:text-gray-500 cursor-pointer select-none hover:text-violet-500 transition-colors">
+                  Show full transcript ▾
                 </summary>
-                <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed mt-1 italic">
-                  "{note.transcript}"
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed mt-1 italic border-l-2 border-violet-200 dark:border-violet-800 pl-2">
+                  {note.transcript}
                 </p>
               </details>
             )}
           </>
         ) : note.transcript ? (
-          <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-3 mt-1 italic">
-            "{note.transcript}"
+          <p className="text-[11px] text-gray-600 dark:text-gray-300 leading-relaxed line-clamp-4 mt-0.5">
+            {note.transcript}
           </p>
         ) : null}
+      </div>
 
-        {/* Tasks saved badge */}
-        {tasks.length > 0 && (
+      {/* Extracted tasks row */}
+      {tasks.length > 0 && (
+        <div className="px-3 pb-1">
+          <p className="text-[9px] font-bold uppercase tracking-widest text-amber-500 dark:text-amber-400 mb-1">
+            📋 {tasks.length} action item{tasks.length > 1 ? "s" : ""} found
+          </p>
+          <ul className="space-y-0.5 mb-1.5">
+            {tasks.slice(0, 3).map((t: any, i: number) => (
+              <li key={i} className="text-[11px] text-gray-600 dark:text-gray-300 flex gap-1.5">
+                <span className="text-amber-400 flex-shrink-0 mt-px">·</span>
+                <span>{t.task || t}</span>
+              </li>
+            ))}
+          </ul>
           <button
             onClick={e => { e.stopPropagation(); handleSaveTasks(); }}
             disabled={tasksSaved || savingTasks}
             data-testid={`button-save-tasks-${note.id}`}
-            className={`mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold transition-all ${
+            className={`w-full text-[10px] font-semibold py-1 rounded-lg border transition-all ${
               tasksSaved
-                ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 cursor-default"
-                : "bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 border border-violet-200 dark:border-violet-800 hover:bg-violet-100 dark:hover:bg-violet-900/30"
+                ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 cursor-default"
+                : "bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/40"
             }`}
           >
-            <Check className="w-2.5 h-2.5 flex-shrink-0" />
-            {tasksSaved
-              ? `✅ ${tasks.length} task${tasks.length > 1 ? "s" : ""} saved to Goals`
-              : savingTasks
-              ? "Saving…"
-              : `Save ${tasks.length} task${tasks.length > 1 ? "s" : ""} to Goals`}
+            {tasksSaved ? `✅ ${tasks.length} task${tasks.length > 1 ? "s" : ""} saved to Goals`
+              : savingTasks ? "Saving…"
+              : `✅ Save as goals`}
           </button>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Action bar — Play · Copy */}
+      {!isEditMode && (
+        <div className="flex gap-1.5 px-3 pb-2.5">
+          <button
+            onClick={handlePlayAudio}
+            data-testid={`button-play-note-${note.id}`}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium border transition-all ${
+              isPlaying
+                ? "bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 border-violet-300 dark:border-violet-700"
+                : "bg-gray-50 dark:bg-slate-700 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 hover:text-violet-600 dark:hover:text-violet-400"
+            }`}
+          >
+            {isPlaying ? "⏹ Stop" : "🔊 Play"}
+          </button>
+          <button
+            onClick={handleCopy}
+            data-testid={`button-copy-note-${note.id}`}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium border bg-gray-50 dark:bg-slate-700 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600 transition-all"
+          >
+            {copied ? "✓ Copied" : "📋 Copy"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -2170,7 +2257,12 @@ function VoiceNotesPanel({ onClose, token, uiLang = "en", voiceLang = "en-IN" }:
             await fetch("/api/user/voice-notes", {
               method: "POST",
               headers: { "Content-Type": "application/json", "x-user-token": token },
-              body: JSON.stringify({ transcript: text, durationSeconds: duration }),
+              body: JSON.stringify({
+                transcript: text,
+                durationSeconds: duration,
+                audioData: base64,
+                mimeType: blob.type || "audio/wav",
+              }),
             });
             queryClient.invalidateQueries({ queryKey: ["/api/user/voice-notes"] });
             // Refetch after 6 s so background GPT summary has time to land

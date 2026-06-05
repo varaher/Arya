@@ -286,6 +286,7 @@ export const aryaGoals = pgTable("arya_goals", {
   isCompleted: boolean("is_completed").default(false).notNull(),
   peopleInvolved: text("people_involved").array(),
   contextNote: text("context_note"),
+  sourceNoteId: varchar("source_note_id", { length: 255 }),
   // ── Goal intelligence ─────────────────────────────────────────────────────
   lastCheckedAt: timestamp("last_checked_at"),
   hygieneAt: timestamp("hygiene_at"),
@@ -812,9 +813,12 @@ export const aryaVoiceNotes = pgTable("arya_voice_notes", {
   extractedPeople: text("extracted_people").array().default(sql`ARRAY[]::text[]`),
   extractedDeadlines: jsonb("extracted_deadlines").default([]),
   tasksSavedToGoals: boolean("tasks_saved_to_goals").default(false),
+  tasksSavedAt: timestamp("tasks_saved_at"),
   tags: text("tags").array().default(sql`ARRAY[]::text[]`),
   durationSeconds: integer("duration_seconds").default(0),
   language: varchar("language", { length: 10 }).default("en"),
+  audioData: text("audio_data"),
+  mimeType: varchar("mime_type", { length: 50 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

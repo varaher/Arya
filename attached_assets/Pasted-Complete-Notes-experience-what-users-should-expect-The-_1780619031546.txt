@@ -1,0 +1,366 @@
+Complete Notes experience — what users should expect.
+
+---
+
+## The Simple Version First
+
+```
+Notes = your memory on the go.
+
+Speak it → ARYA captures it.
+Find it anytime → ARYA remembers it.
+Act on it → ARYA connects it to your life.
+```
+
+---
+
+## The Complete User Journey
+
+---
+
+### Moment 1 — The Thought Appears
+
+```
+You're driving. An idea comes.
+You're between patients. A task surfaces.
+You're lying in bed. Something you 
+don't want to forget tomorrow.
+
+Old way:
+  Try to remember → forget
+  Type on phone → dangerous/inconvenient
+  WhatsApp yourself → lost in chat
+
+ARYA way:
+  Tap Notes chip
+  Tap Record
+  Speak naturally
+  Done in 10 seconds
+```
+
+---
+
+### Moment 2 — ARYA Captures Everything
+
+```
+You speak for 30 seconds in Malayalam:
+"ഡോ. എഡ്വിന വരുന്നു നാളെ.
+ Extension decision എടുക്കണം.
+ NABH documents Friday deadline.
+ Bed 7 cultures follow up."
+
+ARYA does three things automatically:
+
+1. TRANSCRIBES:
+   Full text in Malayalam ✅
+   Exactly what you said ✅
+
+2. SUMMARISES:
+   • Dr. Edwina joining tomorrow
+   • Extension decision needed
+   • NABH documents due Friday
+   • Bed 7 cultures — follow up
+   
+   In your language ✅
+   Bullet points ✅
+   Under 10 words each ✅
+
+3. EXTRACTS:
+   Tasks: Extension decision, NABH docs
+   People: Dr. Edwina
+   Deadlines: Friday (NABH), tomorrow (Edwina)
+```
+
+---
+
+### Moment 3 — ARYA Offers To Act
+
+```
+After saving, ARYA shows:
+
+"📝 Note saved — 3 action items found.
+
+ • Extension decision — no deadline set
+ • NABH documents — Friday
+ • Bed 7 follow up — no deadline set
+
+ Save these as tasks in Goals?"
+ 
+ [Yes, save all] [Pick which ones] [Not now]
+
+User taps Yes →
+All three added to Goals automatically
+With deadlines where found ✅
+```
+
+---
+
+### Moment 4 — Finding Notes Later
+
+```
+Search works instantly:
+
+Type "NABH" →
+  finds all notes mentioning NABH
+  even if written in Malayalam
+
+Type "Edwina" →
+  finds the note about her joining
+
+Type "Friday" →
+  finds deadline notes
+
+Type "bed 7" →
+  finds clinical reminder
+
+Search across:
+  All languages ✅
+  Any keyword ✅
+  Any date ✅
+  Any person mentioned ✅
+```
+
+---
+
+### Moment 5 — ARYA References Notes In Chat
+
+```
+Two days later you open ARYA.
+
+ARYA: "You have 3 items from your
+       voice notes not yet actioned:
+       • NABH documents — due Friday
+         (2 days away)
+       • Bed 7 cultures — no update
+       • Extension decision — pending
+       
+       Want to work through any of these?"
+
+You didn't ask.
+ARYA remembered.
+ARYA connected.
+```
+
+---
+
+### Moment 6 — Sunday Review Includes Notes
+
+```
+Sunday Review shows:
+
+🎙️ YOUR WEEK IN NOTES
+7 notes this week
+
+What you were thinking about:
+• Clinical work — bed 7, cultures
+• Administrative — NABH, extension
+• Personal — none this week
+
+ARYA noticed:
+"All your notes this week were work.
+ You captured clinical reminders
+ between patients — that discipline
+ shows how much you carry.
+ 
+ When did you last capture something
+ just for yourself?"
+```
+
+---
+
+## What Notes Is For — By User Type
+
+### Doctor / Professional
+```
+Between consultations:
+  "Patient in bed 4 — repeat CBC tomorrow"
+  "Call cardiology about the referral"
+  "Article idea — POCUS in rural setting"
+
+On rounds:
+  "Ward 3 discharge needs family counseling"
+  
+After a hard case:
+  "Today's case — need to process this"
+  ARYA keeps it for Sunday Review
+```
+
+### Student
+```
+In class:
+  "Remember to ask prof about
+   chapter 7 — wasn't clear"
+  
+Studying:
+  "This concept confuses me —
+   come back to it"
+  
+Before exam:
+  "Topics I'm weak on"
+```
+
+### Homemaker
+```
+At market:
+  "Need to buy — atta, dal, coconut oil"
+  
+During day:
+  "School fee due this Friday"
+  "Amma's medicine running out"
+  
+Random thought:
+  "I want to learn something new —
+   think about what"
+```
+
+### Business Person
+```
+After meeting:
+  "Client wants proposal by Thursday"
+  "Follow up with Rahul about payment"
+  
+During commute:
+  "New product idea — voice first,
+   regional languages, B2B"
+  
+After call:
+  "Key points from today's investor call"
+```
+
+### Anyone
+```
+Before sleep:
+  "Things I don't want to forget tomorrow"
+  
+Morning:
+  "Today's priorities — speak them out"
+  
+Anytime:
+  "Idea I don't want to lose"
+```
+
+---
+
+## What Notes Is NOT
+
+```
+Not a journal (Goals/Review is for that)
+Not a long document (Chat is for that)
+Not a to-do list (Goals is for that)
+
+Notes is the space between thought and action.
+The 10 seconds that saves the idea.
+The voice that becomes the task.
+```
+
+---
+
+## Current State vs Complete Vision
+
+```
+BUILT ✅:
+  Record voice note
+  Transcribe in any language
+  Save with timestamp
+  Search notes
+  AI summary (just built)
+  Extract tasks
+  Save to Goals button
+  Sunday Review integration
+  Notification after saving
+
+NEEDS POLISH:
+  Show summary prominently ← not visible yet
+  Play back audio ← missing
+  Edit note ← missing
+  Note cards need redesign ← basic currently
+  
+NEEDS BUILDING:
+  ARYA references notes in chat ← partial
+  Proactive "you have unactioned items" ← missing
+  Note patterns in Sunday Review ← basic
+  Share a note ← missing
+```
+
+---
+
+## What A Note Card Should Look Like
+
+```
+─────────────────────────────────
+🎙️  Today, 1:03 PM  •  Malayalam
+
+SUMMARY:
+• Dr. Edwina joining tomorrow
+• Extension decision needed
+• NABH documents due Friday
+• Bed 7 cultures — follow up
+
+[Show full transcript ▾]
+
+[🔊 Play]  [📋 Copy]  [🗑️ Delete]
+[✅ Save as tasks]
+─────────────────────────────────
+```
+
+---
+
+## The One Thing That Makes Notes Magical
+
+```
+Most notes apps: capture → forget
+
+ARYA Notes: capture → remember → act
+
+The difference:
+  You speak it
+  ARYA writes it
+  ARYA summarises it
+  ARYA connects it to your goals
+  ARYA reminds you about it
+  ARYA mentions it in Sunday Review
+  ARYA references it in conversation
+
+Your note from Monday
+shows up in Sunday's reflection.
+
+Your clinical reminder from Wednesday
+becomes a task in Thursday's Goals.
+
+Your idea from last month
+gets mentioned when relevant.
+
+That's not a notes app.
+That's a second memory.
+And for busy people —
+doctors, parents, professionals —
+a second memory is everything.
+```
+
+---
+
+## Tell Developer — Notes Polish This Week
+
+```
+Priority 1 — Show summary on note card:
+  Summary bullets visible immediately
+  Full transcript collapsed below
+  "Show transcript ▾" to expand
+
+Priority 2 — Audio playback:
+  [🔊 Play] button on each note
+  Plays back original recording
+  Users can verify transcription
+
+Priority 3 — ARYA references notes:
+  In chat-engine context builder:
+  Include recent unactioned note items
+  ARYA mentions naturally in conversation
+
+Priority 4 — Note card redesign:
+  Timestamp prominent
+  Summary first
+  Actions clear (Play/Copy/Delete/Tasks)
+  
+These four = Notes is complete.
+```

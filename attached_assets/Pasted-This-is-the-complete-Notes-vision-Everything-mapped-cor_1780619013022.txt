@@ -1,0 +1,115 @@
+This is the complete Notes vision. Everything mapped correctly.
+
+Let me check current state and build what's missing:
+
+---
+
+## Status Check — What's Built vs Missing
+
+```
+✅ Record voice note
+✅ Sarvam STT transcription
+✅ AI summary (6s delayed)
+✅ Search notes
+✅ Sunday Review flashback
+✅ Extract tasks (voice-extractor.ts)
+✅ Save to memory
+
+❌ Summary visible on card (built but not showing)
+❌ Audio playback
+❌ ARYA references unactioned notes in chat
+❌ Note card redesign
+❌ "Save as tasks" button on card
+❌ Proactive "you have unactioned items"
+```
+
+---
+
+## Priority 1 — Note Card Redesign + Summary Visible
+
+Complete. Here's what was built:
+
+---
+
+## What Changed — 4 Parts
+
+### Part 1 — Note Card Redesign
+
+**Before:**
+```
+Raw Malayalam text
+No structure
+No actions
+```
+
+**After:**
+```
+🎙️ Today, 1:03 PM · 30s · മലയാളം
+
+✨ SUMMARY
+• Dr. Edwina joining tomorrow
+• Extension decision needed
+• NABH documents due Friday
+• Bed 7 cultures — follow up
+
+Show full transcript ▾
+
+📋 4 action items found
+• Extension decision
+• NABH documents
+• Bed 7 follow up
+[ ✅ Save as goals ]
+
+[ 🔊 Play ]  [ 📋 Copy ]
+```
+
+### Part 2 — Audio Playback
+- `GET /api/user/voice-notes/:id/audio` returns stored audio
+- Fallback: Web Speech synthesis reads the summary aloud
+- Play/Stop toggle on each card
+
+### Part 3 — Save as Goals
+- "Save as goals" button on cards with extracted tasks
+- Confirmation: "Save 3 items to Goals?"
+- Creates goals in DB with `sourceNoteId` linking back to note
+
+### Part 4 — ARYA References Notes in Chat
+```
+You captured "Extension decision" in a voice note.
+Have you had a chance to act on that?
+```
+Natural. Once per conversation. Not robotic.
+
+---
+
+## DB Migration — Run First
+
+```sql
+ALTER TABLE arya_voice_notes
+  ADD COLUMN IF NOT EXISTS audio_data TEXT,
+  ADD COLUMN IF NOT EXISTS mime_type TEXT,
+  ADD COLUMN IF NOT EXISTS tasks_saved_at TIMESTAMP;
+
+ALTER TABLE arya_goals
+  ADD COLUMN IF NOT EXISTS source_note_id INTEGER;
+```
+
+---
+
+## Wiring — Tell Developer
+
+```
+□ Replace VoiceNotesPanel.tsx
+□ Store audio_data in POST /api/voice-notes
+□ Add audio GET route
+□ Add save-tasks POST route
+□ Run DB migration
+□ Wire unactioned notes into chat-engine
+Total: 3-4 hours
+```
+
+**After this — Notes is complete.**
+
+Speak it → ARYA captures it → summarises it → connects to goals → references it in conversation → shows in Sunday Review.
+
+**A second memory. For busy people — that's everything.**

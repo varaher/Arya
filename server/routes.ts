@@ -2751,7 +2751,7 @@ RULES:
   app.post("/api/user/voice-notes", requireUser, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).userId;
-      const { transcript, title, tags, durationSeconds, language } = req.body;
+      const { transcript, title, tags, durationSeconds, language, audioData, mimeType } = req.body;
       if (!transcript?.trim()) return res.status(400).json({ error: "Transcript is required" });
       const autoTitle = title || transcript.slice(0, 60) + (transcript.length > 60 ? "…" : "");
       const [note] = await db.insert(aryaVoiceNotes).values({
@@ -2761,7 +2761,9 @@ RULES:
         tags: Array.isArray(tags) ? tags : [],
         durationSeconds: durationSeconds || 0,
         language: language || "en",
-      }).returning();
+        audioData: audioData || null,
+        mimeType: mimeType || null,
+      } as any).returning();
       res.json(note);
 
       // Background: summarize + extract tasks with GPT
@@ -2846,15 +2848,20 @@ Note: """${(transcript as string).trim()}"""`,
       for (const t of tasks) {
         await db.insert(aryaGoals).values({
           userId,
+          tenantId: "default",
           title: t.task,
           description: `From voice note recorded on ${new Date(note.createdAt).toLocaleDateString()}`,
-          category: "personal",
           priority: "medium",
           status: "active",
+          goalType: "task",
+          isCompleted: false,
+          reminderFired: false,
+          sourceNoteId: note.id,
+          dueDate: t.deadline ? new Date(t.deadline) : null,
         } as any).catch(() => {});
       }
 
-      await db.update(aryaVoiceNotes).set({ tasksSavedToGoals: true }).where(eq(aryaVoiceNotes.id, id));
+      await db.update(aryaVoiceNotes).set({ tasksSavedToGoals: true, tasksSavedAt: new Date() } as any).where(eq(aryaVoiceNotes.id, id));
       res.json({ success: true, tasksCreated: tasks.length });
     } catch (err: any) {
       res.status(500).json({ error: "Failed to save tasks" });
@@ -2871,6 +2878,28 @@ Note: """${(transcript as string).trim()}"""`,
       res.json({ notes });
     } catch (err: any) {
       res.status(500).json({ error: "Failed to get voice notes" });
+    }
+  });
+
+  // Stream back stored audio for playback
+  app.get("/api/user/voice-notes/:id/audio", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const { id } = req.params;
+      const [note] = await db.select({
+        audioData: (aryaVoiceNotes as any).audioData,
+        mimeType: (aryaVoiceNotes as any).mimeType,
+        userId: aryaVoiceNotes.userId,
+      }).from(aryaVoiceNotes)
+        .where(and(eq(aryaVoiceNotes.id, id), eq(aryaVoiceNotes.userId, userId)))
+        .limit(1);
+      if (!note) return res.status(404).json({ error: "Not found" });
+      if (!note.audioData) return res.status(204).end();
+      const buf = Buffer.from(note.audioData, "base64");
+      const ct = (note.mimeType as string) || "audio/webm";
+      res.set("Content-Type", ct).set("Content-Length", String(buf.length)).send(buf);
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to retrieve audio" });
     }
   });
 

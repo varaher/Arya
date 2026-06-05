@@ -830,16 +830,21 @@ export async function generateAryaResponse(
         parts.push(`VEDIC PROFILE: ${ctx.rashi}${ctx.nakshatra ? ` · ${ctx.nakshatra}` : ""}`);
       }
 
-      // Connection 6 — recent voice note awareness
+      // Connection 6 — recent voice note awareness + unactioned items
       try {
         const { aryaVoiceNotes } = await import("@shared/schema");
         const { desc } = await import("drizzle-orm");
         const recentNotes = await db
-          .select({ summary: aryaVoiceNotes.summary, extractedPeople: aryaVoiceNotes.extractedPeople, extractedTasks: aryaVoiceNotes.extractedTasks })
+          .select({
+            summary: aryaVoiceNotes.summary,
+            extractedPeople: aryaVoiceNotes.extractedPeople,
+            extractedTasks: aryaVoiceNotes.extractedTasks,
+            tasksSavedToGoals: aryaVoiceNotes.tasksSavedToGoals,
+          })
           .from(aryaVoiceNotes)
           .where(eq(aryaVoiceNotes.userId, userId))
           .orderBy(desc(aryaVoiceNotes.createdAt))
-          .limit(3);
+          .limit(5);
 
         const noteWithContent = recentNotes.find(n => n.summary && n.summary.trim().length > 20);
         if (noteWithContent?.summary) {
@@ -849,6 +854,22 @@ export async function generateAryaResponse(
         const uniquePeople = [...new Set(allPeople)].slice(0, 3);
         if (uniquePeople.length > 0) {
           parts.push(`PEOPLE THEY'VE MENTIONED: ${uniquePeople.join(", ")}`);
+        }
+
+        // Proactive unactioned items — only if user has notes with tasks they haven't saved yet
+        const unactionedNotes = recentNotes.filter(n =>
+          !n.tasksSavedToGoals &&
+          Array.isArray(n.extractedTasks) &&
+          (n.extractedTasks as any[]).length > 0
+        );
+        if (unactionedNotes.length > 0) {
+          const unactionedItems = unactionedNotes
+            .flatMap(n => (n.extractedTasks as any[]).map((t: any) => t.task || t))
+            .filter(Boolean)
+            .slice(0, 4);
+          if (unactionedItems.length > 0) {
+            parts.push(`UNACTIONED VOICE NOTE ITEMS (mention naturally once if relevant — never announce this list directly): ${unactionedItems.join(" · ")}`);
+          }
         }
       } catch {}
 
