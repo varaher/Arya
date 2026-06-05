@@ -50,6 +50,12 @@ const PLANS = [
     badgeBg: "",
     badge: null,
     highlight: false,
+    features: [
+      "20 messages per day",
+      "Up to 3 goals",
+      "All 11 Indian languages",
+      "Document & image scan",
+    ],
   },
   {
     id: "core" as PlanId,
@@ -62,6 +68,16 @@ const PLANS = [
     badgeBg: "#10b981",
     badge: "Most Popular",
     highlight: false,
+    features: [
+      "Unlimited conversations",
+      "150 min voice / month",
+      "Up to 10 goals",
+      "30-day memory",
+      "Weekly Review + Morning Briefing",
+      "Voice Notes",
+      "Document analysis (10/month)",
+      "All 11 Indian languages",
+    ],
   },
   {
     id: "pro" as PlanId,
@@ -74,6 +90,15 @@ const PLANS = [
     badgeBg: "#f59e0b",
     badge: "Best Value",
     highlight: true,
+    features: [
+      "Everything in Core",
+      "500 min voice / month",
+      "Unlimited goals",
+      "1-year memory",
+      "Business Mind + Market Lens",
+      "KAAL Full access",
+      "Early access to new features",
+    ],
   },
   {
     id: "elite" as PlanId,
@@ -86,6 +111,14 @@ const PLANS = [
     badgeBg: "#8b5cf6",
     badge: "Full Access",
     highlight: false,
+    features: [
+      "Everything in Pro",
+      "Unlimited voice",
+      "Lifetime memory",
+      "Priority response speed",
+      "KAAL Full Vedic experience",
+      "Monthly life review session",
+    ],
   },
 ];
 
@@ -93,7 +126,7 @@ const FEATURES: Array<{ label: string; free: string | boolean; core: string | bo
   { label: "Daily messages",    free: "20/day",     core: "Unlimited",  pro: "Unlimited",       elite: "Unlimited"       },
   { label: "Memory",            free: "Resets daily",core: "30 days",   pro: "1 year",          elite: "Full lifetime"   },
   { label: "Goals",             free: "3 max",      core: "10 max",     pro: "Unlimited",       elite: "Unlimited"       },
-  { label: "Voice input",       free: false,        core: "150 min/month", pro: "50 min/month + overages", elite: "Unlimited", note: "Pro overages: ₹2/min (India) · $0.02/min (Global). Capped at ₹200/month extra." },
+  { label: "Voice input",       free: false,        core: "150 min/month", pro: "500 min/month", elite: "Unlimited", note: "Above 500 min on Pro: ₹2/min (India) · $0.02/min (Global). Capped at ₹200/month extra." },
   { label: "Voice notes",       free: false,        core: true,         pro: true,              elite: true              },
   { label: "Document & image scan", free: true,     core: true,         pro: true,              elite: true              },
   { label: "KAAL timing lens",  free: false,        core: "Basic",      pro: "Full",            elite: "Full + Vedic"    },
@@ -149,6 +182,7 @@ export default function PricingPage() {
   const [loading, setLoading] = useState<PlanId | null>(null);
   const [success, setSuccess] = useState<PlanId | null>(null);
   const [error,   setError]   = useState<string | null>(null);
+  const [showExitNudge, setShowExitNudge] = useState(false);
 
   const currentPlan = (user as any)?.plan || "free";
   const prices = PRICES[region];
@@ -247,7 +281,7 @@ export default function PricingPage() {
       {/* Header */}
       <div className="bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 sticky top-0 z-30">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center gap-4">
-          <button onClick={() => setLocation("/")}
+          <button onClick={() => setShowExitNudge(true)}
             className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 transition-colors">
             <ArrowLeft className="w-4 h-4" />
           </button>
@@ -373,30 +407,45 @@ export default function PricingPage() {
                     )}
                   </div>
 
+                  {/* Feature bullets */}
+                  <ul className="space-y-1 mb-4">
+                    {plan.features.map((f, fi) => (
+                      <li key={fi} className="flex items-start gap-1.5 text-[11px] text-gray-600 dark:text-gray-300 leading-snug">
+                        <Check className="w-3 h-3 flex-shrink-0 mt-0.5" style={{ color: plan.color }} />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+
                   <div className="flex-1" />
 
                   {/* CTA */}
-                  <button
-                    data-testid={`button-subscribe-${plan.id}`}
-                    onClick={() => handleSubscribe(plan.id)}
-                    disabled={isCurrent || isLoading || plan.id === "free"}
-                    className="w-full mt-4 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-60"
-                    style={
-                      isCurrent
-                        ? { background: `${plan.color}18`, color: plan.color, border: `1px solid ${plan.color}40` }
-                        : plan.id === "free"
-                        ? { background: "#f3f4f6", color: "#6b7280" }
-                        : { background: plan.color, color: "#fff" }
-                    }
-                  >
-                    {isLoading ? "…" : isCurrent ? "Current Plan" : plan.id === "free" ? "Free forever" : isIntlPaddle ? `Subscribe — $${billing === "annual" ? p.annual : p.monthly}` : `Subscribe — ₹${billing === "annual" ? p.annual : p.monthly}/mo`}
-                  </button>
-
-                  {isIntlPaddle && plan.id !== "free" && (
-                    <p className="text-[10px] text-center text-amber-600 dark:text-amber-400 mt-1.5">
-                      International checkout coming soon
-                    </p>
+                  {isIntlPaddle && plan.id !== "free" ? (
+                    <button
+                      data-testid={`button-subscribe-${plan.id}`}
+                      disabled
+                      className="w-full mt-4 py-2.5 rounded-xl text-sm font-semibold bg-gray-100 dark:bg-slate-700 text-gray-400 dark:text-gray-500 cursor-not-allowed border border-gray-200 dark:border-slate-600"
+                    >
+                      Coming soon — ${billing === "annual" ? p.annual : p.monthly}
+                    </button>
+                  ) : (
+                    <button
+                      data-testid={`button-subscribe-${plan.id}`}
+                      onClick={() => handleSubscribe(plan.id)}
+                      disabled={isCurrent || isLoading || plan.id === "free"}
+                      className="w-full mt-4 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-60"
+                      style={
+                        isCurrent
+                          ? { background: `${plan.color}18`, color: plan.color, border: `1px solid ${plan.color}40` }
+                          : plan.id === "free"
+                          ? { background: "#f3f4f6", color: "#6b7280" }
+                          : { background: plan.color, color: "#fff" }
+                      }
+                    >
+                      {isLoading ? "…" : isCurrent ? "Current Plan" : plan.id === "free" ? "Free forever" : `Subscribe — ₹${billing === "annual" ? p.annual : p.monthly}/mo`}
+                    </button>
                   )}
+
                   {region === INDIA && plan.id !== "free" && (
                     <p className="text-[10px] text-center text-muted-foreground mt-1.5">
                       Secured by Razorpay · GST included
@@ -415,7 +464,7 @@ export default function PricingPage() {
             <div>
               <p className="text-sm font-semibold text-amber-800 dark:text-amber-300 mb-1">How Pro voice works</p>
               <p className="text-sm text-amber-700 dark:text-amber-400 leading-relaxed">
-                Pro includes <strong>50 voice minutes per month</strong> — enough for most users.
+                Pro includes <strong>500 voice minutes per month</strong> — enough for most users.
                 If you go over, you're charged{" "}
                 <strong>{region === INDIA ? "₹2" : "$0.02"} per extra minute</strong>, capped at{" "}
                 <strong>{region === INDIA ? "₹200" : "$2.40"} extra per month</strong> — so your bill never doubles.
@@ -537,6 +586,53 @@ export default function PricingPage() {
           <a href="mailto:hello@varah.in" className="text-emerald-600 dark:text-emerald-400 hover:underline">Support</a>
         </p>
       </div>
+
+      {/* Exit intent nudge */}
+      <AnimatePresence>
+        {showExitNudge && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-6"
+            onClick={() => { setShowExitNudge(false); setLocation("/"); }}
+          >
+            <motion.div
+              initial={{ scale: 0.88, opacity: 0, y: 16 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.92, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 380, damping: 30 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-white dark:bg-slate-900 rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl border border-gray-100 dark:border-slate-700"
+              data-testid="modal-exit-nudge"
+            >
+              <div className="w-14 h-14 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-5">
+                <Star className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Before you go</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-1">
+                312 people use ARYA. Most started with Core.
+              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-6">
+                That's <span className="font-semibold text-gray-700 dark:text-gray-200">₹249</span>.
+                {" "}Less than one coffee a week.
+              </p>
+              <button
+                data-testid="button-exit-nudge-core"
+                onClick={() => { setShowExitNudge(false); handleSubscribe("core"); }}
+                className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-semibold text-sm transition-colors mb-2.5"
+              >
+                Start with Core — ₹249/mo
+              </button>
+              <button
+                data-testid="button-exit-nudge-dismiss"
+                onClick={() => { setShowExitNudge(false); setLocation("/"); }}
+                className="w-full py-2.5 rounded-xl text-sm text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              >
+                Maybe later
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </div>
   );

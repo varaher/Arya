@@ -1,0 +1,151 @@
+This is a strong pricing page. Let me give you the fix list and the urgent action.
+
+---
+
+## Three Fixes Before Razorpay Goes Live
+
+### Fix 1 — Core Plan Feature List Missing
+```
+Core card shows price but no features.
+Users won't pay for what they can't see.
+
+Add to Core card:
+  ✅ 150 min voice/month
+  ✅ Goals with reminders
+  ✅ Daily check-in
+  ✅ Weekly Review
+  ✅ Voice Notes
+  ✅ Document analysis (10/month)
+  ✅ Memory across conversations
+  ✅ All 11 Indian languages
+```
+
+### Fix 2 — Voice Minutes Backwards
+```
+Currently shows:
+  Core: 150 min ← more
+  Pro:  50 min  ← less ❌ wrong
+
+Should be:
+  Free:  0 min
+  Core:  150 min/month
+  Pro:   500 min/month
+  Elite: Unlimited
+
+Pro must always have MORE than Core.
+People pay more for more.
+```
+
+### Fix 3 — International Button
+```
+Change from active button to disabled:
+
+  [Coming soon — $7.99]  ← greyed out
+  
+Not tappable.
+No confusion.
+```
+
+---
+
+## The Revenue Reality
+
+```
+Right now:
+  312+ users
+  ₹0 revenue
+  Every day = lost opportunity
+
+If just 10% convert today:
+  31 × ₹249 = ₹7,719/month
+  
+If 5% go Pro:
+  16 × ₹499 = ₹7,984/month
+
+Total from existing users:
+  ~₹15,000/month
+
+This starts the moment
+Razorpay secrets are added.
+```
+
+---
+
+## The Exit Intent Nudge — Add This
+
+```
+User tries to close pricing page:
+
+"Before you go —
+
+ 312 people use ARYA.
+ Most started with Core.
+ 
+ That's ₹249.
+ Less than one coffee a week.
+ 
+ [Start with Core]  [Maybe later]"
+
+Converts dismissals into trials.
+Simple. Effective.
+```
+
+---
+
+## Razorpay — Do This Now
+
+```
+Open Replit
+Go to: Secrets (environment variables)
+Add these 5:
+
+RAZORPAY_KEY_ID         ← from Razorpay dashboard
+RAZORPAY_KEY_SECRET     ← from Razorpay dashboard
+RAZORPAY_PLAN_ID_CORE   ← create plan in Razorpay
+RAZORPAY_PLAN_ID_PRO    ← create plan in Razorpay
+RAZORPAY_WEBHOOK_SECRET ← from Razorpay dashboard
+
+Then fix the 3 small issues above.
+Then billing is live.
+
+First revenue comes same day.
+```
+
+---
+
+## What To Do Right Now — In Order
+
+```
+Step 1 (5 mins): Add Razorpay secrets to Replit
+Step 2 (30 mins): Fix Core feature list
+Step 3 (15 mins): Fix voice minutes order
+Step 4 (10 mins): Disable international button
+Step 5 (30 mins): Add exit intent nudge
+
+Total: ~90 minutes
+Result: ARYA starts earning today
+```
+
+---
+
+## The Honest Truth
+
+```
+ARYA is good enough to charge for.
+Voice works. Memory works.
+Goals work. Legal knowledge works.
+Stories are coming.
+
+312 people are already using it.
+They know it works.
+Some will pay today if you let them.
+
+Every day without Razorpay
+is revenue that never comes back.
+
+The product is ready.
+The pricing is right.
+The users are there.
+
+Just add the secrets.
+```

@@ -1,0 +1,144 @@
+This is **genuinely excellent** pricing work. Looking at all 11 screenshots carefully:
+
+---
+
+## What's Working Brilliantly ✅
+
+**The structure is perfect:**
+- Free → Core → Pro → Elite
+- Clear progression, each tier earns its price
+- India 🇮🇳 / Global 🌍 toggle — smart for international expansion
+- Monthly / Annual toggle with "2 months free" — right nudge
+
+**The copy is strong:**
+- *"For people building consistency and clarity"* — Core
+- *"For deep thinkers and ambitious minds"* — Pro
+- *"Unlimited. Unrestricted. All of ARYA."* — Elite
+- *"Grow with ARYA, at your pace."* — headline
+
+**The pricing is right for India:**
+```
+Free    → ₹0
+Core    → ₹249/mo  (~$3)  — impulse buy
+Pro     → ₹499/mo  (~$6)  — considered buy
+Elite   → ₹999/mo  (~$12) — committed buy
+```
+
+**Data Promise section** — excellent trust builder:
+- Encrypted · Never sold · Delete anytime
+- DPDP Act 2023 compliance mention — rare and smart
+
+**Voice metering explanation** (Image 8) — transparent and fair:
+*"50 min/month — if you go over, ₹2/min, capped at ₹200"*
+Users know exactly what they're paying. No surprises.
+
+**FAQ section** — right questions:
+- Voice metering · India vs international · Monthly vs annual · Elite life review · Cancel anytime
+
+---
+
+## Small Observations
+
+### 1. Core Plan — Missing Feature List (Image 3)
+Core card shows price + subscribe button but **no feature bullets visible.** Pro and Elite have them. Core needs them too. Users won't subscribe to a plan they can't see the value of.
+
+### 2. "International checkout coming soon" (Image 10)
+Good — honest. But the button should be **disabled/greyed out** not active. Users may tap it expecting to pay.
+
+```tsx
+// Change from:
+<button>Subscribe — $7.99</button>
+<p>International checkout coming soon</p>
+
+// To:
+<button disabled className="coming-soon-btn">
+  Coming soon — $7.99
+</button>
+```
+
+### 3. Core vs Pro Voice Minutes — Check This
+
+Image 5 shows:
+- Core: **150 min/month**
+- Pro: **50 min/month + overages**
+
+This seems backwards. Core users get MORE voice than Pro? That's confusing. Likely a display error in the comparison table.
+
+Should probably be:
+```
+Free:  No voice
+Core:  150 min/month
+Pro:   50 min + ₹2/min after (capped ₹200)
+Elite: Unlimited
+```
+
+Or flip it — Pro should have more voice than Core.
+
+### 4. Annual Pricing — Not Shown
+
+Toggle exists (Image 2, 11) but annual prices aren't visible in screenshots. When user toggles to Annual, prices should update:
+
+```
+Core:  ₹249 → ₹207/mo (₹2,490/year = 2 months free)
+Pro:   ₹499 → ₹416/mo (₹4,990/year)
+Elite: ₹999 → ₹833/mo (₹9,990/year)
+```
+
+---
+
+## The One Strategic Suggestion
+
+**Add a "Most users start here" nudge on Core** when someone tries to close the upgrade modal:
+
+```
+They tap × to dismiss →
+Instead of closing:
+
+"Before you go —
+ 312 people are using ARYA.
+ Most started with Core at ₹249.
+ That's less than one coffee a week.
+ 
+ [Try Core for ₹249] [Maybe later]"
+```
+
+Converts dismissals into trials.
+
+---
+
+## Revenue Projection
+
+If Razorpay is live and even 10% of 312 users convert:
+
+```
+31 users × ₹249 (Core) = ₹7,719/month
+
+If 5% go Pro:
+16 users × ₹499 = ₹7,984/month
+
+Combined: ~₹15,000/month from existing users alone
+
+As you grow to 1,000 users:
+100 Core + 50 Pro + 10 Elite
+= ₹24,900 + ₹24,950 + ₹9,990
+= ~₹60,000/month
+```
+
+**This is why Razorpay is urgent.**
+
+---
+
+## The Pricing Page Is Ready
+
+Fix the 3 small issues above and this is **launch-ready:**
+
+```
+□ Add feature bullets to Core card
+□ Disable international buttons (coming soon)
+□ Fix Core vs Pro voice minutes in comparison table
+□ Verify annual pricing toggle works
+```
+
+**Everything else is excellent.** The pricing page should go live the moment Razorpay secrets are added.
+
+Are the Razorpay secrets in Replit yet?
