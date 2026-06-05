@@ -13,6 +13,8 @@ import {
   Send,
   Mic,
   Paperclip,
+  Camera,
+  ScanText,
   MoreHorizontal,
   Plus,
   Trash2,
@@ -3319,6 +3321,7 @@ export default function AryaChat() {
   const [pendingFiles, setPendingFiles] = useState<Array<{ base64: string; previewUrl: string; mimeType: string; name: string }>>([]);
   const [isScanningDoc, setIsScanningDoc] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const { language: uiLanguage, t, setLanguage: setGlobalLanguage } = useLanguage();
 
   // Load language preference from DB on login (covers new device / cleared localStorage)
@@ -5806,6 +5809,16 @@ export default function AryaChat() {
                 onChange={handleImageSelect}
                 data-testid="input-image-upload"
               />
+              {/* Camera capture input — opens camera directly on mobile */}
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={handleImageSelect}
+                data-testid="input-camera-capture"
+              />
 
               {/* Mic — only button outside the pill */}
               <Tooltip>
@@ -5867,9 +5880,9 @@ export default function AryaChat() {
                   {pendingFiles.length > 0 && (
                     <div className="flex flex-wrap gap-2 px-2 pt-2 pb-1">
                       {isScanningDoc ? (
-                        <span className="text-xs text-purple-600 dark:text-purple-400 font-medium py-2 flex items-center gap-1.5">
+                        <span className="text-xs text-cyan-600 dark:text-cyan-400 font-medium py-2 flex items-center gap-1.5">
                           <Loader2 className="w-3 h-3 animate-spin" />
-                          Reading {pendingFiles.length > 1 ? `${pendingFiles.length} files` : "file"}…
+                          🔍 OCR reading {pendingFiles.length > 1 ? `${pendingFiles.length} files` : "document"}…
                         </span>
                       ) : (
                         pendingFiles.map((file, idx) => (
@@ -6005,6 +6018,18 @@ export default function AryaChat() {
                               </div>
                             )}
                           </div>
+                          {/* Scan document via camera (OCR) */}
+                          <button data-testid="button-scan-document"
+                            onClick={() => { cameraInputRef.current?.click(); setShowToolMore(false); }}
+                            disabled={isStreaming || isScanningDoc}
+                            className="w-full text-left px-3 py-2.5 text-sm flex items-center gap-2.5 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 disabled:opacity-50 transition-colors"
+                          >
+                            <ScanText className="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400 flex-shrink-0" />
+                            <div className="flex flex-col min-w-0">
+                              <span className="font-medium leading-tight">Scan document</span>
+                              <span className="text-[11px] text-muted-foreground leading-tight">Camera → ARYA reads &amp; explains</span>
+                            </div>
+                          </button>
                           {/* Attach */}
                           <button data-testid="button-attach-image"
                             onClick={() => { imageInputRef.current?.click(); setShowToolMore(false); }}
@@ -7783,7 +7808,7 @@ const TUTORIAL_STEPS = [
   },
   {
     title: "Chat, think, and analyze",
-    description: "Type any thought, question, or problem and ARYA helps you think it through. Tap the purple paperclip to attach images, PDFs, or documents — ARYA reads and explains them. Ask about contracts, lab reports, offer letters, anything.",
+    description: "Type any thought, question, or problem and ARYA helps you think it through. Tap ··· → Scan document to open your camera — ARYA uses OCR to read Indian-language documents, lab reports, contracts, offer letters, anything. Or tap the paperclip to attach a file from your phone.",
     icon: Paperclip,
     iconColor: "text-purple-600 dark:text-purple-400",
     iconBg: "bg-purple-100 dark:bg-purple-900/30 border-purple-300",

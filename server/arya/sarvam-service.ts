@@ -332,3 +332,41 @@ async function callSarvamTTS(
     }),
   });
 }
+
+/**
+ * Sarvam OCR — extracts text from an image (supports Indian scripts + English).
+ * Primary path for document scanning; caller should fall back to GPT-4o vision on error.
+ */
+export async function sarvamOCR(imageBuffer: Buffer, mimeType: string = "image/jpeg"): Promise<string> {
+  const ext = mimeType.includes("png") ? "png" : mimeType.includes("webp") ? "webp" : "jpg";
+  const blob = new Blob([imageBuffer], { type: mimeType });
+
+  const formData = new FormData();
+  formData.append("file", blob, `document.${ext}`);
+
+  const response = await fetch(`${SARVAM_BASE_URL}/v1/ocr`, {
+    method: "POST",
+    headers: {
+      "api-subscription-key": getApiKey(),
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Sarvam OCR failed (${response.status}): ${errText}`);
+  }
+
+  const data = await response.json() as any;
+
+  // Sarvam OCR response: { pages: [{ page_number, text }] } or { text: "..." }
+  let extractedText = "";
+  if (Array.isArray(data.pages)) {
+    extractedText = data.pages.map((p: any) => (p.text || "").trim()).filter(Boolean).join("\n\n");
+  } else if (typeof data.text === "string") {
+    extractedText = data.text.trim();
+  }
+
+  if (!extractedText) throw new Error("Sarvam OCR returned empty text");
+  return extractedText;
+}

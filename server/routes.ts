@@ -3027,25 +3027,57 @@ Note: """${(transcript as string).trim()}"""`,
           }
         }
       } else {
-        // Image vision analysis
-        const userQuestion = question?.trim() || "What is in this image? Please explain it clearly and helpfully.";
+        // Image — try Sarvam OCR first (best for Indian-script documents), fall back to GPT-4o vision
+        const userQuestion = question?.trim() || "Please read and explain this document clearly and helpfully.";
         userMessageForStorage = question?.trim() ? `📷 ${question.trim()}` : "📷 Shared an image";
 
-        const visionResponse = await openai.chat.completions.create({
-          model: "gpt-4o",
-          messages: [
-            { role: "system", content: systemPrompt },
-            {
-              role: "user",
-              content: [
-                { type: "image_url", image_url: { url: `data:${mimeType};base64,${image}`, detail: "high" } as any },
-                { type: "text", text: userQuestion },
-              ],
-            },
-          ],
-          max_tokens: 1200,
-        } as any);
-        aryaResponse = (visionResponse as any).choices?.[0]?.message?.content || "I couldn't read that image clearly. Please try with a clearer photo.";
+        let extractedText: string | null = null;
+        let ocrSource = "gpt-vision";
+
+        if (process.env.SARVAM_API_KEY) {
+          try {
+            const { sarvamOCR } = await import("./arya/sarvam-service");
+            const imgBuffer = Buffer.from(image, "base64");
+            extractedText = await sarvamOCR(imgBuffer, mimeType);
+            ocrSource = "sarvam";
+            console.log(`[OCR] Sarvam extracted ${extractedText.length} chars`);
+          } catch (ocrErr) {
+            console.warn("[OCR] Sarvam OCR failed, falling back to GPT-4o vision:", (ocrErr as Error).message);
+          }
+        }
+
+        if (extractedText) {
+          // Sarvam OCR succeeded — use text completion (faster + more accurate for interpretation)
+          const textResponse = await openai.chat.completions.create({
+            model: "gpt-4o",
+            messages: [
+              { role: "system", content: systemPrompt },
+              {
+                role: "user",
+                content: `I've scanned a document. Here is the text extracted from it:\n\n---\n${extractedText.slice(0, 10000)}\n---\n\n${userQuestion}`,
+              },
+            ],
+            max_tokens: 1500,
+          } as any);
+          aryaResponse = (textResponse as any).choices?.[0]?.message?.content || "I read your document but couldn't summarise it. Please try again.";
+        } else {
+          // Fallback: GPT-4o vision
+          const visionResponse = await openai.chat.completions.create({
+            model: "gpt-4o",
+            messages: [
+              { role: "system", content: systemPrompt },
+              {
+                role: "user",
+                content: [
+                  { type: "image_url", image_url: { url: `data:${mimeType};base64,${image}`, detail: "high" } as any },
+                  { type: "text", text: userQuestion },
+                ],
+              },
+            ],
+            max_tokens: 1200,
+          } as any);
+          aryaResponse = (visionResponse as any).choices?.[0]?.message?.content || "I couldn't read that image clearly. Please try with a clearer photo.";
+        }
       }
 
       await chatStorage.createMessage(conversationId, "user", userMessageForStorage);
