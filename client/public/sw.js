@@ -87,19 +87,23 @@ self.addEventListener('push', (event) => {
 
   const isAlarm = data.type === 'alarm';
 
+  // Include card image if provided by scheduler
+  const cardImage = data.image || undefined;
+
   const notifOptions = isAlarm
     ? {
         body: data.body || data.message || '',
         icon: '/icons/icon-192.png',
         badge: '/icons/icon-192.png',
+        ...(cardImage ? { image: cardImage } : {}),
         vibrate: [500, 200, 500, 200, 500, 400, 200, 400, 500, 200, 500],
         requireInteraction: true,
         silent: false,
         renotify: true,
         tag: ALARM_TAG,
         actions: [
-          { action: 'dismiss',  title: '✓ Dismiss' },
-          { action: 'snooze_5', title: '⏰ Snooze 5 min' },
+          { action: 'dismiss',   title: '✓ Dismiss' },
+          { action: 'snooze_5',  title: '⏰ Snooze 5 min' },
           { action: 'snooze_10', title: '⏰ Snooze 10 min' },
         ],
         data: { reminderId: data.reminderId, type: 'alarm', url: data.url || '/' },
@@ -108,16 +112,17 @@ self.addEventListener('push', (event) => {
         body: data.body || data.message || '',
         icon: '/icons/icon-192.png',
         badge: '/icons/icon-192.png',
+        ...(cardImage ? { image: cardImage } : {}),
         vibrate: [200, 100, 200],
         requireInteraction: false,
         silent: false,
         renotify: true,
         tag: `${REMINDER_TAG}-${data.reminderId || Date.now()}`,
-        actions: [
+        actions: data.actions || [
           { action: 'dismiss',  title: '✓ Done' },
           { action: 'snooze_5', title: '⏰ Snooze 5 min' },
         ],
-        data: { reminderId: data.reminderId, type: data.type, url: data.url || '/' },
+        data: { reminderId: data.reminderId, type: data.type, goalId: data.goalId, url: data.url || '/' },
       };
 
   event.waitUntil(
@@ -198,6 +203,49 @@ self.addEventListener('notificationclick', (event) => {
           if (client.url.includes(self.location.origin) && 'focus' in client) return client.focus();
         }
         if (clients.openWindow) return clients.openWindow(`/?goalId=${goalId}&context=missed`);
+      })
+    );
+    return;
+  }
+
+  // New card actions — open_arya, voice_chat, listen
+  if (action === 'open_arya') {
+    event.waitUntil(
+      clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+        for (const client of clientList) {
+          if (client.url.includes(self.location.origin) && 'focus' in client) return client.focus();
+        }
+        if (clients.openWindow) return clients.openWindow('/');
+      })
+    );
+    return;
+  }
+
+  if (action === 'voice_chat') {
+    event.waitUntil(
+      clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+        for (const client of clientList) {
+          if (client.url.includes(self.location.origin) && 'focus' in client) {
+            client.postMessage({ type: 'OPEN_VOICE_MODE' });
+            return client.focus();
+          }
+        }
+        if (clients.openWindow) return clients.openWindow('/?voice=true');
+      })
+    );
+    return;
+  }
+
+  if (action === 'listen') {
+    event.waitUntil(
+      clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+        for (const client of clientList) {
+          if (client.url.includes(self.location.origin) && 'focus' in client) {
+            client.postMessage({ type: 'OPEN_DRISHYA_AUTOPLAY' });
+            return client.focus();
+          }
+        }
+        if (clients.openWindow) return clients.openWindow('/?tab=drishya&autoplay=true');
       })
     );
     return;

@@ -3100,6 +3100,104 @@ Note: """${(transcript as string).trim()}"""`,
     }
   });
 
+  // ── Rich Notification Card endpoint ──────────────────────────────────
+  // GET /api/cards/:type/:userId
+  // Returns an SVG card image used as the `image` field in push notifications.
+  // Types: morning | goal_checkin | story | reminder | alarm | sunday_review
+  app.get("/api/cards/:type/:userId", async (req: Request, res: Response) => {
+    try {
+      const { generateCard, svgToBuffer } = await import("./arya/card-generator");
+      const type = req.params.type as any;
+      const userId = req.params.userId;
+
+      // Fetch minimal user context for personalisation
+      const [userRow] = await db
+        .select()
+        .from(aryaUsers)
+        .where(eq(aryaUsers.id, userId))
+        .limit(1);
+
+      const firstName = (userRow as any)?.name?.split(" ")[0] || "there";
+      const now       = new Date();
+      const hour      = now.getHours();
+      const greeting  = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+
+      // Fetch top active goal
+      let topGoal = "Set a goal to get started";
+      try {
+        const goals = await db.execute(
+          sql`SELECT title FROM arya_goals WHERE user_id = ${userId} AND status = 'active' AND is_completed = false ORDER BY created_at DESC LIMIT 1`
+        ) as any;
+        if (goals.rows?.[0]?.title) topGoal = goals.rows[0].title;
+      } catch {}
+
+      let svg = "";
+      switch (type) {
+        case "morning":
+          svg = generateCard("morning", {
+            firstName,
+            greeting,
+            kaalWindow: "10:00 AM – 12:00 PM",
+            kaalEnergy: 7,
+            kaalTheme: "Clarity · Focus",
+            topGoal,
+            dayName: now.toLocaleDateString("en-IN", { weekday: "long" }),
+            date: now.toLocaleDateString("en-IN", { day: "numeric", month: "short" }),
+          });
+          break;
+        case "goal_checkin": {
+          const result = await db.execute(
+            sql`SELECT title, created_at FROM arya_goals WHERE user_id = ${userId} AND status = 'active' AND progress = 0 ORDER BY created_at ASC LIMIT 1`
+          ) as any;
+          const goal = result.rows?.[0];
+          const daysAgo = goal?.created_at
+            ? Math.floor((Date.now() - new Date(goal.created_at).getTime()) / 86400000)
+            : 3;
+          svg = generateCard("goal_checkin", {
+            firstName,
+            goalTitle: goal?.title || topGoal,
+            daysAgo,
+            checkInType: "stalled_early",
+          });
+          break;
+        }
+        case "sunday_review": {
+          const active = await db.execute(
+            sql`SELECT COUNT(*) as cnt FROM arya_goals WHERE user_id = ${userId} AND status = 'active'`
+          ) as any;
+          const moved = await db.execute(
+            sql`SELECT COUNT(*) as cnt FROM arya_goals WHERE user_id = ${userId} AND progress > 0 AND updated_at > NOW() - INTERVAL '7 days'`
+          ) as any;
+          svg = generateCard("sunday_review", {
+            firstName,
+            weekSummary: "A week of quiet focus and real movement",
+            goalsActive: parseInt(active.rows?.[0]?.cnt || "0"),
+            goalsMoved: parseInt(moved.rows?.[0]?.cnt || "0"),
+          });
+          break;
+        }
+        case "story":
+          svg = generateCard("story", {
+            firstName,
+            rasa: "Karuna",
+            rasaEmoji: "🌙",
+            storyHint: "A tale for someone carrying a hard day home",
+            language: (userRow as any)?.uiLanguage === "hi" ? "Hindi" : "English",
+          });
+          break;
+        default:
+          return res.status(400).json({ error: "Unknown card type" });
+      }
+
+      res.setHeader("Content-Type", "image/svg+xml");
+      res.setHeader("Cache-Control", "public, max-age=300"); // 5 min cache
+      res.end(svgToBuffer(svg));
+    } catch (err: any) {
+      console.error("[CARD] Error:", err.message);
+      res.status(500).send("Card generation failed");
+    }
+  });
+
   app.get("/api/arya/languages", (_req: Request, res: Response) => {
     res.json({ languages: SUPPORTED_LANGUAGES });
   });

@@ -75,6 +75,16 @@ function getNextScheduledAt(reminder: typeof aryaReminders.$inferSelect): Date |
   }
 }
 
+function getAppBaseUrl(): string {
+  if (process.env.APP_URL) return process.env.APP_URL.replace(/\/$/, '');
+  const domains = process.env.REPLIT_DOMAINS;
+  if (domains) {
+    const first = domains.split(',')[0].trim();
+    if (first) return `https://${first}`;
+  }
+  return '';
+}
+
 async function sendPushToUser(userId: string, title: string, body: string, icon: string, extra?: Record<string, unknown>): Promise<void> {
   const subs = await db.select().from(aryaPushSubscriptions).where(eq(aryaPushSubscriptions.userId, userId));
   const payload = JSON.stringify({ title, body, icon, url: "/", ...extra });
@@ -203,7 +213,19 @@ async function checkMorningBriefing(): Promise<void> {
     if (hour !== 7) return; // Only fire at 7 AM IST
     if (lastMorningBriefingSent === dateKey) return; // Already sent today
     lastMorningBriefingSent = dateKey;
-    await sendMorningBriefings(sendPushToUser);
+    const appUrl = getAppBaseUrl();
+    const sendPushWithMorningCard = async (userId: string, title: string, body: string, icon: string) => {
+      const image = appUrl ? `${appUrl}/api/cards/morning/${userId}` : undefined;
+      return sendPushToUser(userId, title, body, icon, {
+        type: "morning_briefing",
+        ...(image ? { image } : {}),
+        actions: [
+          { action: "open_arya", title: "🌅 Open ARYA" },
+          { action: "voice_chat", title: "🎤 Voice chat" },
+        ],
+      });
+    };
+    await sendMorningBriefings(sendPushWithMorningCard);
   } catch (err: any) {
     console.error("[MORNING BRIEFING CHECK]", err.message);
   }
@@ -218,7 +240,16 @@ async function checkWeeklyReview(): Promise<void> {
     if (dayOfWeek !== 0 || hour !== 20) return; // Only Sunday 8 PM IST
     if (lastWeeklyReviewSent === weekKey) return;
     lastWeeklyReviewSent = weekKey;
-    await sendWeeklyReviews(sendPushToUser);
+    const appUrlW = getAppBaseUrl();
+    const sendPushWithSundayCard = async (userId: string, title: string, body: string, icon: string) => {
+      const image = appUrlW ? `${appUrlW}/api/cards/sunday_review/${userId}` : undefined;
+      return sendPushToUser(userId, title, body, icon, {
+        type: "weekly_review",
+        ...(image ? { image } : {}),
+        actions: [{ action: "open_arya", title: "📖 Read your letter" }],
+      });
+    };
+    await sendWeeklyReviews(sendPushWithSundayCard);
     // Also generate reflection share links for users who opted in
     await generateWeeklyReflectionShares(sendPushToUser);
   } catch (err: any) {
@@ -348,12 +379,14 @@ async function checkEveningGoalCheckins(): Promise<void> {
     for (const goal of rows) {
       if (!goal.user_id || seen.has(goal.user_id)) continue;
       seen.add(goal.user_id);
+      const appUrl = getAppBaseUrl();
+      const cardImage = appUrl ? `${appUrl}/api/cards/goal_checkin/${goal.user_id}` : undefined;
       await sendPushToUser(
         goal.user_id,
         `🎯 ${goal.title}`,
         "Did you work on this today?",
         "/icons/icon-192.png",
-        { type: "goal_checkin", goalId: goal.id }
+        { type: "goal_checkin", goalId: goal.id, ...(cardImage ? { image: cardImage } : {}) }
       );
       console.log(`[EveningCheckin] Sent to user ${goal.user_id} for goal "${goal.title}"`);
     }

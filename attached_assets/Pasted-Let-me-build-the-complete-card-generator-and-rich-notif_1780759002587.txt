@@ -1,0 +1,116 @@
+Let me build the complete card generator and rich notification system:
+
+Canvas not available in sandbox. I'll build this using pure SVG — no dependencies needed, works anywhere:
+
+Now let me preview all 5 cards:
+
+Both files delivered. Open the HTML file to see all 5 cards rendered. Here's the complete summary:
+
+---
+
+## What Was Built
+
+### 5 Rich Notification Cards
+
+**Card 1 — Morning KAAL Briefing**
+```
+Dark green · Gold accent bar
+"Good morning, Varah."
+Peak window: 10:30 AM – 12:15 PM
+Energy bar (fills based on KAAL score)
+Top goal: POCUS conference speech
+```
+
+**Card 2 — Evening Goal Check-in**
+```
+Dark amber · Gold accent
+"Evening check-in, Varah."
+Goal card with days since set
+ARYA's question in italic
+"Tap → Yes · Skip · Not yet"
+```
+
+**Card 3 — Drishya Story Offer**
+```
+Deep purple · Star decorations
+Malayalam offer text: "ഒരു കഥ പറയട്ടെ?"
+Rasa: Karuna
+Story hint in amber
+"🎙 Listen · 📖 Read · Maybe later"
+```
+
+**Card 4 — Reminder**
+```
+Dark green · Bell icon
+Reminder name + time
+"✓ Done · ⏰ Snooze 5 min"
+```
+
+**Card 5 — Sunday Review**
+```
+Deep olive · Gold accents
+"ARYA's Sunday Letter to Varah."
+Week summary quote
+Goals: 15 active · 3 moved
+Progress bar
+"Read your letter →"
+```
+
+---
+
+## Zero Dependencies
+
+**Pure SVG.** No canvas library. No ImageMagick. No sharp. Works on Replit exactly as is.
+
+---
+
+## Wiring — Tell Your Developer
+
+```
+□ 1. Save card-generator.ts to:
+      server/arya/card-generator.ts
+
+□ 2. Add route to routes.ts:
+      GET /api/cards/:type/:userId
+      → Returns SVG image
+
+□ 3. Add to Replit secrets:
+      APP_URL = https://aryaai.in
+
+□ 4. Update reminder-scheduler.ts:
+      Morning briefing notification:
+        image: APP_URL/api/cards/morning/userId
+      
+      Goal check-in notification:
+        image: APP_URL/api/cards/goal_checkin/userId
+      
+      Story offer notification:
+        image: APP_URL/api/cards/story/userId
+
+□ 5. Update sw.js — add handlers:
+      open_arya → clients.openWindow('/')
+      voice_chat → clients.openWindow('/?voice=true')
+      listen → clients.openWindow('/?tab=drishya&autoplay=true')
+
+Total: 2-3 hours
+```
+
+---
+
+## What The User Sees
+
+```
+Phone lock screen:
+
+┌─────────────────────────────────┐
+│ 🪔 KAAL · Good morning, Varah  │
+│                                 │
+│ [Beautiful dark green card]     │
+│ Peak: 10:30–12:15 PM ████████░ │
+│ 🎯 POCUS conference speech     │
+│                                 │
+│ [🌅 Open ARYA] [🎤 Voice chat] │
+└─────────────────────────────────┘
+```
+
+**Before they open any app. Before WhatsApp. ARYA is already there.**
