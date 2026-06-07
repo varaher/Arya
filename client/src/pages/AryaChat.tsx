@@ -5806,12 +5806,13 @@ export default function AryaChat() {
           {thinkingMode !== "default" && (() => {
             const mode = THINKING_MODES_CLIENT.find(m => m.id === thinkingMode);
             if (!mode) return null;
+            const bannerLang = getStoredUiLanguage();
             return (
               <div className={`flex items-center gap-2 px-3 py-1.5 mb-1 rounded-xl text-xs font-medium ${mode.activeBg} ${mode.color} border ${mode.activeBorder}`}>
                 <span className="text-sm leading-none">{mode.emoji}</span>
-                <span>{mode.label} active</span>
+                <span>{mode.label} {getTranslation(bannerLang, "thinking_mode_active") || "active"}</span>
                 <span className="opacity-60">—</span>
-                <span className="opacity-70 flex-1 truncate">{mode.tagline}</span>
+                <span className="opacity-70 flex-1 truncate">{getTranslation(bannerLang, mode.taglineKey) || mode.tagline}</span>
                 <button
                   onClick={() => setThinkingMode("default")}
                   className="ml-auto opacity-50 hover:opacity-100 transition-opacity text-sm leading-none flex-shrink-0"
@@ -5967,6 +5968,7 @@ export default function AryaChat() {
                     <ThinkingModeSelector
                       activeMode={thinkingMode}
                       onChange={setThinkingMode}
+                      lang={uiLanguage as any}
                       className="mr-1"
                     />
                     {/* Speaker */}

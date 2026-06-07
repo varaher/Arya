@@ -1,39 +1,45 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { getTranslation, getStoredUiLanguage, type UiLanguage } from "@/lib/i18n";
 
 export interface ThinkingModeInfo {
   id: string;
+  labelKey: string;   // i18n key for tagline; label is always English (brand name)
   label: string;
   emoji: string;
-  tagline: string;
-  color: string;         // Tailwind text colour class
-  activeBg: string;     // Tailwind bg class for active state
-  activeBorder: string; // Tailwind border class for active state
+  taglineKey: string;
+  tagline: string;    // English fallback tagline
+  color: string;
+  activeBg: string;
+  activeBorder: string;
 }
 
 export const THINKING_MODES_CLIENT: ThinkingModeInfo[] = [
-  { id: "default",          label: "ARYA",             emoji: "🤝", tagline: "Your thinking companion",          color: "text-emerald-400", activeBg: "bg-emerald-400/10",  activeBorder: "border-emerald-400/30" },
-  { id: "founder",          label: "Founder",          emoji: "🔥", tagline: "Uncomfortable truth first",        color: "text-red-400",     activeBg: "bg-red-400/10",      activeBorder: "border-red-400/30"     },
-  { id: "devil",            label: "Devil's Advocate", emoji: "😈", tagline: "Destroy before launch",            color: "text-purple-400",  activeBg: "bg-purple-400/10",   activeBorder: "border-purple-400/30"  },
-  { id: "first_principles", label: "First Principles", emoji: "🔬", tagline: "Strip to what is true",            color: "text-blue-400",    activeBg: "bg-blue-400/10",     activeBorder: "border-blue-400/30"    },
-  { id: "therapist",        label: "Therapist",        emoji: "🧠", tagline: "What fear is blocking you?",       color: "text-amber-400",   activeBg: "bg-amber-400/10",    activeBorder: "border-amber-400/30"   },
-  { id: "contrarian",       label: "Contrarian",       emoji: "⚡", tagline: "Bet against consensus",             color: "text-yellow-300",  activeBg: "bg-yellow-300/10",   activeBorder: "border-yellow-300/30"  },
-  { id: "chain",            label: "Full Chain",       emoji: "🔗", tagline: "All 5 lenses together",            color: "text-cyan-400",    activeBg: "bg-cyan-400/10",     activeBorder: "border-cyan-400/30"    },
+  { id: "default",          labelKey: "mode_default_label",          label: "ARYA",             emoji: "🤝", taglineKey: "mode_default_tagline",          tagline: "Your thinking companion",          color: "text-emerald-400", activeBg: "bg-emerald-400/10",  activeBorder: "border-emerald-400/30" },
+  { id: "founder",          labelKey: "mode_founder_label",          label: "Founder",          emoji: "🔥", taglineKey: "mode_founder_tagline",          tagline: "Uncomfortable truth first",        color: "text-red-400",     activeBg: "bg-red-400/10",      activeBorder: "border-red-400/30"     },
+  { id: "devil",            labelKey: "mode_devil_label",            label: "Devil's Advocate", emoji: "😈", taglineKey: "mode_devil_tagline",            tagline: "Destroy before launch",            color: "text-purple-400",  activeBg: "bg-purple-400/10",   activeBorder: "border-purple-400/30"  },
+  { id: "first_principles", labelKey: "mode_first_principles_label", label: "First Principles", emoji: "🔬", taglineKey: "mode_first_principles_tagline", tagline: "Strip to what is true",            color: "text-blue-400",    activeBg: "bg-blue-400/10",     activeBorder: "border-blue-400/30"    },
+  { id: "therapist",        labelKey: "mode_therapist_label",        label: "Therapist",        emoji: "🧠", taglineKey: "mode_therapist_tagline",        tagline: "What fear is blocking you?",       color: "text-amber-400",   activeBg: "bg-amber-400/10",    activeBorder: "border-amber-400/30"   },
+  { id: "contrarian",       labelKey: "mode_contrarian_label",       label: "Contrarian",       emoji: "⚡", taglineKey: "mode_contrarian_tagline",       tagline: "Bet against consensus",            color: "text-yellow-300",  activeBg: "bg-yellow-300/10",   activeBorder: "border-yellow-300/30"  },
+  { id: "chain",            labelKey: "mode_chain_label",            label: "Full Chain",       emoji: "🔗", taglineKey: "mode_chain_tagline",            tagline: "All 5 lenses together",            color: "text-cyan-400",    activeBg: "bg-cyan-400/10",     activeBorder: "border-cyan-400/30"    },
 ];
 
 interface Props {
   activeMode: string;
   onChange: (modeId: string) => void;
+  lang?: UiLanguage;
   className?: string;
 }
 
-export default function ThinkingModeSelector({ activeMode, onChange, className = "" }: Props) {
+export default function ThinkingModeSelector({ activeMode, onChange, lang, className = "" }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const uiLang: UiLanguage = lang ?? getStoredUiLanguage();
+  const t = (key: string, fallback: string) => getTranslation(uiLang, key) || fallback;
+
   const active = THINKING_MODES_CLIENT.find(m => m.id === activeMode) || THINKING_MODES_CLIENT[0];
   const isNonDefault = activeMode !== "default";
 
-  // Close on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
@@ -73,7 +79,7 @@ export default function ThinkingModeSelector({ activeMode, onChange, className =
             className="absolute bottom-[calc(100%+8px)] left-0 z-50 w-72 rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl overflow-hidden"
           >
             <p className="text-[10px] tracking-widest uppercase text-gray-400 dark:text-slate-500 px-4 pt-3 pb-2">
-              Thinking Mode
+              {t("thinking_mode_header", "Thinking Mode")}
             </p>
 
             {THINKING_MODES_CLIENT.map(mode => (
@@ -95,7 +101,7 @@ export default function ThinkingModeSelector({ activeMode, onChange, className =
                     {mode.label}
                   </p>
                   <p className="text-xs text-gray-400 dark:text-slate-500 leading-tight mt-0.5 truncate">
-                    {mode.tagline}
+                    {t(mode.taglineKey, mode.tagline)}
                   </p>
                 </div>
                 {activeMode === mode.id && (
@@ -110,7 +116,7 @@ export default function ThinkingModeSelector({ activeMode, onChange, className =
                   onClick={() => { onChange("default"); setOpen(false); }}
                   className="text-xs text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-400 transition-colors"
                 >
-                  Reset to default ARYA
+                  {t("thinking_mode_reset", "Reset to default ARYA")}
                 </button>
               </div>
             )}
