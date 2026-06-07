@@ -636,7 +636,8 @@ export async function generateAryaResponse(
   voiceMode: boolean = false,
   sarvamDetectedLang?: string,   // Pre-detected by Sarvam STT — skips script detection
   targetLanguage?: string,        // User's selected display language (globe picker)
-  section: string = "chat"        // App section — chat | kaal | niti | mood | health | goals
+  section: string = "chat",       // App section — chat | kaal | niti | mood | health | goals
+  thinkingMode: string = "default" // Active thinking mode (founder/devil/first_principles/therapist/contrarian/chain)
 ): Promise<{ stream: AsyncIterable<string>; meta: AryaResponseMeta }> {
   const startTime = Date.now();
 
@@ -937,8 +938,15 @@ export async function generateAryaResponse(
     ? `\n\nLONG-FORM WRITING MODE: You are producing extended content. Write fully and completely — do not cut yourself short. If you are about to reach your response limit before finishing, always complete the current paragraph cleanly, then end with exactly: "— *continued in next message* —". Never stop mid-sentence or mid-thought.`
     : "";
 
+  // Thinking mode injection
+  let thinkingModePrompt = "";
+  try {
+    const { getModeSystemPrompt, CONFIDENCE_RATING_PROMPT } = await import("./thinking-modes");
+    thinkingModePrompt = CONFIDENCE_RATING_PROMPT + getModeSystemPrompt(thinkingMode);
+  } catch {}
+
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-    { role: "system", content: ARYA_SYSTEM_PROMPT + userPrefs + (langInstruction ? `\n\n${langInstruction}` : "") + sectionToneAddition + knowledgeContext + newsContext + memoryContext + liveContext + uncertaintyGuidance + voiceInstruction + longFormInstruction + goalCheckInCtx.systemPromptBlock },
+    { role: "system", content: ARYA_SYSTEM_PROMPT + userPrefs + (langInstruction ? `\n\n${langInstruction}` : "") + sectionToneAddition + knowledgeContext + newsContext + memoryContext + liveContext + uncertaintyGuidance + voiceInstruction + longFormInstruction + goalCheckInCtx.systemPromptBlock + thinkingModePrompt },
     ...conversationHistory.slice(-20).map(m => ({
       role: m.role as "user" | "assistant",
       content: m.content,

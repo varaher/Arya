@@ -85,6 +85,7 @@ import { useLanguage } from "@/lib/language-context";
 import { useTheme } from "@/lib/theme";
 import RemindersPanel from "@/components/RemindersPanel";
 import PricingModal from "@/components/PricingModal";
+import ThinkingModeSelector, { THINKING_MODES_CLIENT } from "@/components/ThinkingModeSelector";
 import { requestNotificationPermission } from "@/lib/push-notifications";
 import { playARYASound, playAlarmSound, stopAlarmSound } from "@/utils/reminderSound";
 
@@ -3163,6 +3164,7 @@ export default function AryaChat() {
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [showVoiceMode, setShowVoiceMode] = useState(false);
   const [activeConversation, setActiveConversation] = useState<number | null>(null);
+  const [thinkingMode, setThinkingMode] = useState("default");
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
@@ -3813,7 +3815,7 @@ export default function AryaChat() {
       const response = await fetch(`/api/arya/conversations/${convId}/messages`, {
         method: "POST",
         headers,
-        body: JSON.stringify({ content: text, tenant_id: "varah", language: selectedLanguage, section: "chat" }),
+        body: JSON.stringify({ content: text, tenant_id: "varah", language: selectedLanguage, section: "chat", thinkingMode }),
       });
 
       if (!response.ok) {
@@ -4478,6 +4480,7 @@ export default function AryaChat() {
                 setIsStreaming(false);
                 setInput("");
                 setShowSidebar(false);
+                setThinkingMode("default");
               }}
               className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:from-emerald-500 hover:to-emerald-400 shadow-lg shadow-emerald-300/30 dark:shadow-emerald-500/20"
               size="sm"
@@ -4916,6 +4919,7 @@ export default function AryaChat() {
                 setActiveConversation(null);
                 setStreamingContent("");
                 setIsStreaming(false);
+                setThinkingMode("default");
                 setInput("");
               }}
               className="p-1.5 rounded-lg bg-primary/20 border border-primary/30 hover:bg-primary/30 transition-all"
@@ -5798,6 +5802,25 @@ export default function AryaChat() {
               </div>
             </div>
           )}
+          {/* ── Thinking mode banner (visible when non-default mode is active) ── */}
+          {thinkingMode !== "default" && (() => {
+            const mode = THINKING_MODES_CLIENT.find(m => m.id === thinkingMode);
+            if (!mode) return null;
+            return (
+              <div className={`flex items-center gap-2 px-3 py-1.5 mb-1 rounded-xl text-xs font-medium ${mode.activeBg} ${mode.color} border ${mode.activeBorder}`}>
+                <span className="text-sm leading-none">{mode.emoji}</span>
+                <span>{mode.label} active</span>
+                <span className="opacity-60">—</span>
+                <span className="opacity-70 flex-1 truncate">{mode.tagline}</span>
+                <button
+                  onClick={() => setThinkingMode("default")}
+                  className="ml-auto opacity-50 hover:opacity-100 transition-opacity text-sm leading-none flex-shrink-0"
+                  aria-label="Reset thinking mode"
+                >✕</button>
+              </div>
+            );
+          })()}
+
           {/* ── Input bar — full width, WhatsApp-style pill ── */}
           <div className="flex items-end gap-2">
               <input
@@ -5938,8 +5961,14 @@ export default function AryaChat() {
                       target.style.height = Math.min(target.scrollHeight, 160) + "px";
                     }}
                   />
-                  {/* ── Pill footer: speaker + more (inside pill, bottom-left) ── */}
+                  {/* ── Pill footer: thinking mode + speaker + more (inside pill, bottom-left) ── */}
                   <div className="flex items-center gap-0.5 px-2 pb-1.5">
+                    {/* Thinking mode selector */}
+                    <ThinkingModeSelector
+                      activeMode={thinkingMode}
+                      onChange={setThinkingMode}
+                      className="mr-1"
+                    />
                     {/* Speaker */}
                     <button
                       data-testid="button-speaker-toggle"

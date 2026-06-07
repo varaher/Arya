@@ -2049,7 +2049,7 @@ export async function registerRoutes(
   app.post("/api/arya/conversations/:id/messages", optionalUser, async (req: Request, res: Response) => {
     try {
       const conversationId = parseInt(req.params.id);
-      const { content, tenant_id, language, section } = req.body;
+      const { content, tenant_id, language, section, thinkingMode } = req.body;
       const userId = (req as any).userId || null;
 
       if (!content || !content.trim()) {
@@ -2115,7 +2115,7 @@ export async function registerRoutes(
         return;
       }
 
-      const { stream, meta } = await generateAryaResponse(content, history, userId || tenant_id || "varah", conversationId, userId, false, undefined, language, section || "chat");
+      const { stream, meta } = await generateAryaResponse(content, history, userId || tenant_id || "varah", conversationId, userId, false, undefined, language, section || "chat", thinkingMode || "default");
       let fullResponse = "";
 
       res.write(`data: ${JSON.stringify({ type: "meta", mode: meta.mode, icon: meta.icon, confidence: meta.confidence, sourcesCount: meta.sourcesCount, memoryUsed: meta.memoryUsed })}\n\n`);
