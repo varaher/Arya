@@ -1,0 +1,236 @@
+I can see the menu is open showing "Voice language" — but it's not showing the current language name next to it (unlike before when it showed "മലയാളം").
+
+This means the click handler was fixed but the language picker sheet isn't opening after tapping.
+
+---
+
+## What's Happening Now
+
+Looking at the screenshot:
+
+```
+Before fix:  "Voice language    മലയാളം"  ← showed language, no click
+After fix:   "Voice language"            ← click wired, but picker not opening
+```
+
+The onClick is now wired but `setShowLangPicker(true)` isn't triggering the sheet, OR the sheet is rendering but not visible.
+
+---
+
+## Tell Your Developer — Exact Debug Steps
+
+**Step 1 — Check if showLangPicker state exists:**
+```typescript
+// Search AryaChat.tsx for:
+showLangPicker
+// If not found → state was never added
+```
+
+**Step 2 — Add a console.log to confirm click fires:**
+
+```typescript
+onClick={() => {
+  console.log('Voice language tapped'); // ← add this
+  setShowDotsMenu(false);
+  setShowLangPicker(true);
+}}
+```
+
+**Step 3 — Check if picker JSX is inside wrong container:**
+
+The same portal bug that affected the beta popup is likely affecting the language picker too. It needs `createPortal`:
+
+```typescript
+// At the bottom of AryaChat.tsx return,
+// alongside the existing createPortal overlays:
+
+{showLangPicker && createPortal(
+  <div
+    className="lang-picker-overlay"
+    onClick={() => setShowLangPicker(false)}
+  >
+    <div
+      className="lang-picker-sheet"
+      onClick={e => e.stopPropagation()}
+    >
+      <div className="lang-picker-header">
+        <p className="lang-picker-title">Voice Language</p>
+        <button
+          className="lang-picker-close"
+          onClick={() => setShowLangPicker(false)}
+        >✕</button>
+      </div>
+
+      {AVAILABLE_LANGUAGES.map(lang => (
+        <button
+          key={lang.code}
+          className={`lang-option ${
+            selectedLanguage === lang.code ? 'selected' : ''
+          }`}
+          onClick={() => {
+            handleLanguageChange(lang.code);
+            setShowLangPicker(false);
+          }}
+        >
+          <div className="lang-option-left">
+            <span className="lang-native">{lang.native}</span>
+            <span className="lang-english">{lang.name}</span>
+          </div>
+          <div className="lang-option-right">
+            {INDIAN_LANG_CODES.includes(lang.code) && (
+              <span className="lang-beta-badge">BETA</span>
+            )}
+            {selectedLanguage === lang.code && (
+              <span className="lang-check">✓</span>
+            )}
+          </div>
+        </button>
+      ))}
+    </div>
+  </div>,
+  document.body  // ← portal to body, escapes all transforms
+)}
+```
+
+---
+
+## The Styles
+
+```css
+.lang-picker-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 9999;
+  display: flex;
+  align-items: flex-end;
+  animation: fadeIn 0.2s ease;
+}
+
+.lang-picker-sheet {
+  width: 100%;
+  background: #0f1923;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 24px 24px 0 0;
+  padding: 0 0 max(20px, env(safe-area-inset-bottom));
+  max-height: 75vh;
+  overflow-y: auto;
+  animation: slideUp 0.25s ease;
+}
+
+.lang-picker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 20px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  position: sticky;
+  top: 0;
+  background: #0f1923;
+}
+
+.lang-picker-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #f0fdf4;
+}
+
+.lang-picker-close {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.4);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.lang-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border: none;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  background: none;
+  cursor: pointer;
+  transition: background 0.15s;
+  text-align: left;
+}
+
+.lang-option:hover {
+  background: rgba(255,255,255,0.03);
+}
+
+.lang-option.selected {
+  background: rgba(74,222,128,0.06);
+}
+
+.lang-option-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lang-native {
+  font-size: 16px;
+  color: rgba(255,255,255,0.9);
+  font-family: 'DM Sans', sans-serif;
+}
+
+.lang-option.selected .lang-native {
+  color: #4ade80;
+}
+
+.lang-english {
+  font-size: 12px;
+  color: rgba(255,255,255,0.3);
+}
+
+.lang-option-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lang-beta-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #fbbf24;
+  background: rgba(251,191,36,0.1);
+  border: 1px solid rgba(251,191,36,0.2);
+  border-radius: 6px;
+  padding: 2px 6px;
+}
+
+.lang-check {
+  font-size: 15px;
+  color: #4ade80;
+  font-weight: 600;
+}
+```
+
+---
+
+## Summary For Developer
+
+```
+Root cause: same portal bug as beta popup.
+Language picker is rendering inside an
+animated container — position:fixed breaks.
+
+Fix:
+1. Confirm showLangPicker state exists
+2. Move language picker JSX to createPortal
+   alongside other portal overlays
+3. Add BETA badge next to Indian languages
+4. Add ✓ checkmark on selected language
+
+Same pattern as the beta popup fix —
+just needs createPortal(…, document.body)
+
+30 minutes.
+```
+
+After this fix — tap Voice language → sheet slides up from bottom → all languages listed with BETA badges → tap to select → sheet closes → language changes.

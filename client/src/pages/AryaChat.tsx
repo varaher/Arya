@@ -3690,9 +3690,6 @@ export default function AryaChat() {
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (langMenuRef.current && !langMenuRef.current.contains(e.target as Node)) {
-        setShowLanguageMenu(false);
-      }
       if (toolMoreRef.current && !toolMoreRef.current.contains(e.target as Node)) {
         setShowToolMore(false);
       }
@@ -6029,60 +6026,17 @@ export default function AryaChat() {
                       {showToolMore && (
                         <div className="absolute bottom-full left-0 mb-2 w-48 bg-card border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl z-50 py-1">
                           {/* Voice language */}
-                          <div className="relative" ref={langMenuRef}>
-                            <button
-                              data-testid="button-language-select"
-                              onClick={() => setShowLanguageMenu(v => !v)}
-                              className={`w-full text-left px-3 py-2.5 text-sm flex items-center gap-2.5 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors rounded-t-xl ${
-                                selectedLanguage !== "en-IN" ? "text-amber-600 dark:text-amber-400" : "text-gray-700 dark:text-gray-200"
-                              }`}
-                            >
-                              <Globe className="w-3.5 h-3.5 flex-shrink-0" />
-                              <span className="flex-1 font-medium">{t("toolbar_lang")}</span>
-                              {selectedLanguage !== "en-IN" && <span className="text-[11px] opacity-75">{currentLang?.native}</span>}
-                            </button>
-                            {showLanguageMenu && (
-                              <div className="absolute bottom-0 left-full ml-2 w-52 bg-card border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden z-50">
-                                <div className="px-3 py-2 border-b border-gray-200 dark:border-slate-700">
-                                  <p className="text-xs font-medium text-muted-foreground">{t("voice_lang_header")}</p>
-                                </div>
-                                <div className="max-h-72 overflow-y-auto py-1">
-                                  {DEFAULT_LANGUAGES.filter(l => SARVAM_LANGUAGE_CODES.has(l.code) || l.code === "en-IN").map((lang) => (
-                                    <button key={lang.code} data-testid={`button-lang-${lang.code}`}
-                                      onClick={() => {
-                                        handleLanguageChange(lang.code);
-                                        setShowLanguageMenu(false); setShowToolMore(false);
-                                        const sc = lang.code.split("-")[0] as UiLanguage;
-                                        const validUi: UiLanguage[] = ["en","hi","mr","bn","ta","te","kn","ml","gu","pa","od"];
-                                        if (validUi.includes(sc)) setGlobalLanguage(sc);
-                                      }}
-                                      className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors ${selectedLanguage === lang.code ? "text-primary bg-primary/10" : "text-gray-700 dark:text-gray-200"}`}
-                                    >
-                                      <span className="flex-1">{lang.name}</span>
-                                      {lang.code !== "en-IN" && (
-                                        <span className="text-[9px] font-bold tracking-widest text-amber-500 bg-amber-400/10 border border-amber-400/20 rounded px-1.5 py-0.5 flex-shrink-0">BETA</span>
-                                      )}
-                                      <span className="text-xs text-muted-foreground flex-shrink-0">{lang.native}</span>
-                                    </button>
-                                  ))}
-                                  <div className="mx-3 my-1 border-t border-gray-100 dark:border-slate-700" />
-                                  {DEFAULT_LANGUAGES.filter(l => isGlobalVoiceLang(l.code)).map((lang) => (
-                                    <button key={lang.code} data-testid={`button-lang-${lang.code}`}
-                                      onClick={() => {
-                                        handleLanguageChange(lang.code);
-                                        setShowLanguageMenu(false); setShowToolMore(false);
-                                      }}
-                                      className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors ${selectedLanguage === lang.code ? "text-primary bg-primary/10" : "text-gray-700 dark:text-gray-200"}`}
-                                    >
-                                      <span className="flex-1">{lang.name}</span>
-                                      <span className="text-[9px] font-bold tracking-widest text-amber-500 bg-amber-400/10 border border-amber-400/20 rounded px-1.5 py-0.5 flex-shrink-0">BETA</span>
-                                      <span className="text-xs text-muted-foreground flex-shrink-0">{lang.native}</span>
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
+                          <button
+                            data-testid="button-language-select"
+                            onClick={() => { setShowToolMore(false); setShowLanguageMenu(true); }}
+                            className={`w-full text-left px-3 py-2.5 text-sm flex items-center gap-2.5 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors rounded-t-xl ${
+                              selectedLanguage !== "en-IN" ? "text-amber-600 dark:text-amber-400" : "text-gray-700 dark:text-gray-200"
+                            }`}
+                          >
+                            <Globe className="w-3.5 h-3.5 flex-shrink-0" />
+                            <span className="flex-1 font-medium">{t("toolbar_lang")}</span>
+                            {selectedLanguage !== "en-IN" && <span className="text-[11px] opacity-75">{currentLang?.native}</span>}
+                          </button>
                           {/* Scan document via camera (OCR) */}
                           <button data-testid="button-scan-document"
                             onClick={() => { cameraInputRef.current?.click(); setShowToolMore(false); }}
@@ -6153,6 +6107,72 @@ export default function AryaChat() {
           </div>
         </div>
       </div>
+
+      {showLanguageMenu && createPortal(
+        <div
+          className="fixed inset-0 z-[9999] flex items-end"
+          style={{ background: "rgba(0,0,0,0.6)" }}
+          onClick={() => setShowLanguageMenu(false)}
+        >
+          <div
+            className="w-full rounded-t-3xl overflow-hidden"
+            style={{ background: "#0f1923", maxHeight: "75vh", overflowY: "auto", animation: "slideUp 0.25s ease" }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center px-5 py-4 border-b sticky top-0" style={{ borderColor: "rgba(255,255,255,0.06)", background: "#0f1923" }}>
+              <p className="text-base font-semibold" style={{ color: "#f0fdf4" }}>Voice Language</p>
+              <button onClick={() => setShowLanguageMenu(false)} className="text-xl px-2" style={{ color: "rgba(255,255,255,0.4)", background: "none", border: "none" }}>✕</button>
+            </div>
+            {DEFAULT_LANGUAGES.filter(l => SARVAM_LANGUAGE_CODES.has(l.code) || l.code === "en-IN").map((lang) => (
+              <button
+                key={lang.code}
+                data-testid={`button-lang-${lang.code}`}
+                className="w-full flex items-center justify-between px-5 text-left"
+                style={{ padding: "14px 20px", borderBottom: "1px solid rgba(255,255,255,0.04)", background: selectedLanguage === lang.code ? "rgba(74,222,128,0.06)" : "none" }}
+                onClick={() => {
+                  handleLanguageChange(lang.code);
+                  setShowLanguageMenu(false);
+                  const sc = lang.code.split("-")[0] as UiLanguage;
+                  const validUi: UiLanguage[] = ["en","hi","mr","bn","ta","te","kn","ml","gu","pa","od"];
+                  if (validUi.includes(sc)) setGlobalLanguage(sc);
+                }}
+              >
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-base" style={{ color: selectedLanguage === lang.code ? "#4ade80" : "rgba(255,255,255,0.9)" }}>{lang.native}</span>
+                  <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>{lang.name}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {lang.code !== "en-IN" && (
+                    <span className="text-[9px] font-bold tracking-widest px-1.5 py-0.5 rounded" style={{ color: "#fbbf24", background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.2)" }}>BETA</span>
+                  )}
+                  {selectedLanguage === lang.code && <span className="text-base font-semibold" style={{ color: "#4ade80" }}>✓</span>}
+                </div>
+              </button>
+            ))}
+            <div className="mx-5 my-1" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }} />
+            {DEFAULT_LANGUAGES.filter(l => isGlobalVoiceLang(l.code)).map((lang) => (
+              <button
+                key={lang.code}
+                data-testid={`button-lang-${lang.code}`}
+                className="w-full flex items-center justify-between text-left"
+                style={{ padding: "14px 20px", borderBottom: "1px solid rgba(255,255,255,0.04)", background: selectedLanguage === lang.code ? "rgba(74,222,128,0.06)" : "none" }}
+                onClick={() => { handleLanguageChange(lang.code); setShowLanguageMenu(false); }}
+              >
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-base" style={{ color: selectedLanguage === lang.code ? "#4ade80" : "rgba(255,255,255,0.9)" }}>{lang.native}</span>
+                  <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>{lang.name}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[9px] font-bold tracking-widest px-1.5 py-0.5 rounded" style={{ color: "#fbbf24", background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.2)" }}>BETA</span>
+                  {selectedLanguage === lang.code && <span className="text-base font-semibold" style={{ color: "#4ade80" }}>✓</span>}
+                </div>
+              </button>
+            ))}
+            <div style={{ height: "max(20px, env(safe-area-inset-bottom))" }} />
+          </div>
+        </div>,
+        document.body
+      )}
 
       {betaLangPopup?.show && createPortal(
         <div className="beta-popup-overlay" onClick={() => dismissBetaPopup()}>
