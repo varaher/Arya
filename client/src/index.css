@@ -213,6 +213,11 @@ div[class*="replit-badge"] {
   to   { transform: translateY(0);    opacity: 1; }
 }
 
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
 .beta-popup-header {
   display: flex;
   align-items: center;

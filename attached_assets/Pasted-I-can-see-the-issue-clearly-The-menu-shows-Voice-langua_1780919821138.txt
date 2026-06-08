@@ -1,0 +1,218 @@
+I can see the issue clearly. The menu shows:
+- Voice language → മലയാളം
+- Scan document
+- Attach file
+- Live voice
+
+And at the bottom: **"Voice: മലയാളം"** — it's stuck on Malayalam and not opening the language picker when tapped.
+
+---
+
+## The Bug
+
+When user taps "Voice language" — it should open a language selection list. Instead it's just displaying the current language without any picker.
+
+**Two possible causes:**
+
+### Cause A — Click handler not wired
+```tsx
+// In AryaChat.tsx — find the Voice language menu item
+// It probably looks like this (broken):
+
+<div className="menu-item">
+  <Globe className="menu-icon" />
+  <span>Voice language</span>
+  <span className="current-lang">മലയാളം</span>
+</div>
+
+// Missing onClick — needs:
+<div
+  className="menu-item"
+  onClick={() => {
+    setShowDotMenu(false);    // close the dots menu
+    setShowLangPicker(true);  // open language picker
+  }}
+>
+```
+
+### Cause B — Language picker state not toggling
+```tsx
+// Check if showLangPicker state exists and is connected
+// to the language dropdown component
+```
+
+---
+
+## The Fix — Exact Code
+
+Find the `...` menu handler in AryaChat.tsx where "Voice language" is rendered:
+
+```tsx
+// 1. Add state if missing:
+const [showLangPicker, setShowLangPicker] = useState(false);
+
+// 2. Wire the menu item:
+{/* Voice language menu item */}
+<button
+  className="dots-menu-item"
+  onClick={() => {
+    setShowDotsMenu(false);   // close dots menu
+    setShowLangPicker(true);  // open language list
+  }}
+>
+  <span className="dots-menu-icon">🌐</span>
+  <div>
+    <p className="dots-menu-label">Voice language</p>
+  </div>
+  <span className="dots-menu-current">
+    {getLangNativeName(selectedLanguage)}
+  </span>
+</button>
+
+// 3. Show language picker when open:
+{showLangPicker && (
+  <div
+    className="lang-picker-overlay"
+    onClick={() => setShowLangPicker(false)}
+  >
+    <div
+      className="lang-picker-sheet"
+      onClick={e => e.stopPropagation()}
+    >
+      <p className="lang-picker-title">Voice Language</p>
+
+      {AVAILABLE_LANGUAGES.map(lang => (
+        <button
+          key={lang.code}
+          className={`lang-option ${
+            selectedLanguage === lang.code ? 'selected' : ''
+          }`}
+          onClick={() => {
+            handleLanguageChange(lang.code); // your existing handler
+            setShowLangPicker(false);
+          }}
+        >
+          <span className="lang-native">{lang.native}</span>
+          <span className="lang-english">{lang.name}</span>
+          {INDIAN_LANG_CODES.includes(lang.code) && (
+            <span className="lang-beta">BETA</span>
+          )}
+          {selectedLanguage === lang.code && (
+            <span className="lang-check">✓</span>
+          )}
+        </button>
+      ))}
+    </div>
+  </div>
+)}
+```
+
+---
+
+## Quick Styles
+
+```css
+.lang-picker-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 300;
+  display: flex;
+  align-items: flex-end;
+}
+
+.lang-picker-sheet {
+  width: 100%;
+  background: #0f1923;
+  border-radius: 24px 24px 0 0;
+  padding: 20px 16px
+    max(20px, env(safe-area-inset-bottom));
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.lang-picker-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #f0fdf4;
+  margin-bottom: 16px;
+  padding-left: 4px;
+}
+
+.lang-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 12px;
+  border-radius: 12px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.lang-option:hover,
+.lang-option.selected {
+  background: rgba(74,222,128,0.06);
+}
+
+.lang-native {
+  font-size: 16px;
+  color: rgba(255,255,255,0.9);
+  flex: 1;
+  text-align: left;
+}
+
+.lang-english {
+  font-size: 13px;
+  color: rgba(255,255,255,0.35);
+}
+
+.lang-beta {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #fbbf24;
+  background: rgba(251,191,36,0.1);
+  border: 1px solid rgba(251,191,36,0.2);
+  border-radius: 6px;
+  padding: 1px 6px;
+}
+
+.lang-check {
+  font-size: 14px;
+  color: #4ade80;
+}
+```
+
+---
+
+## Tell Your Developer
+
+```
+In AryaChat.tsx — find the "Voice language"
+menu item in the dots menu (···)
+
+Problem: onClick not wired OR
+         showLangPicker state not connected
+
+Fix:
+1. Add showLangPicker state
+2. Wire onClick on the menu item
+   → setShowDotsMenu(false)
+   → setShowLangPicker(true)
+3. Add language picker bottom sheet
+   (code above)
+4. Each lang button calls
+   handleLanguageChange(lang.code)
+   then closes the sheet
+
+Also add BETA badge next to
+Indian language names in the list.
+
+30 minutes. Critical bug — users
+cannot change voice language.
+```
+
+This is a **critical fix** — users are stuck on whatever language they first set. Fix this today.
