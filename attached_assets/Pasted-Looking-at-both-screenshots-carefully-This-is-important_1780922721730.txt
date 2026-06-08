@@ -1,0 +1,200 @@
+Looking at both screenshots carefully. This is important feedback.
+
+---
+
+## What's Wrong With The Pricing Page
+
+### Image 2 — Free Plan Has Too Many ❌ Strikethroughs
+
+```
+Free plan shows:
+✅ 20 messages per day
+✅ Track up to 3 goals
+✅ Basic mood check-ins
+✅ All 11 Indian languages
+✅ Documents & image scan
+❌ Voice input          ← strikethrough
+❌ Memory persistence   ← strikethrough
+❌ KAAL                 ← strikethrough
+❌ Weekly Review        ← strikethrough
+```
+
+**The problem:** Showing what users CAN'T have is a dark pattern. It feels punishing. It makes Free feel like a broken product instead of a genuine starting point.
+
+**The rule:** Show what you GET. Never show what you don't.
+
+---
+
+### Image 1 — Pro Plan Voice Minutes Wrong
+
+```
+Pro shows:
+"50 voice min/month (₹2/min above, capped ₹200)"
+```
+
+This was supposed to be fixed to **500 min**. It's still showing 50. The fix from our earlier session didn't land correctly.
+
+---
+
+### Image 2 — Core Plan Missing Features
+
+Core shows only 6 bullets. Earlier we said Core should have 8 including Voice Notes and Document analysis. Those are missing.
+
+---
+
+## The Fixes — Tell Your Developer
+
+### Fix 1 — Remove all strikethroughs from Free plan
+
+```tsx
+// PricingPage.tsx — Free plan features array
+// REMOVE these entirely:
+{ feature: 'Voice input', included: false },
+{ feature: 'Memory persistence', included: false },
+{ feature: 'KAAL', included: false },
+{ feature: 'Weekly Review', included: false },
+
+// KEEP only what Free includes:
+const freeFeatures = [
+  '20 conversations per day',
+  'Up to 3 goals',
+  'Mood check-ins',
+  'All 11 Indian languages',
+  'Document & image scan',
+];
+```
+
+### Fix 2 — Pro voice minutes
+
+```tsx
+// Change:
+'50 voice min/month (₹2/min above, capped ₹200)'
+
+// To:
+'500 min voice per month'
+```
+
+### Fix 3 — Add missing Core features
+
+```tsx
+const coreFeatures = [
+  'Unlimited conversations',
+  '150 min voice per month',
+  'Up to 10 goals',
+  '30-day memory',
+  'Weekly Review + Morning Briefing',
+  'KAAL Basic + Health tracking',
+  'Voice Notes',           // ← ADD
+  'Document & image scan', // ← ADD
+];
+```
+
+---
+
+## But There's A Bigger Question
+
+You asked — *"Is this what we kept after adding so many features?"*
+
+**Honest answer: No. This pricing page doesn't reflect what ARYA actually is now.**
+
+Here's the gap:
+
+| What ARYA Can Do | What Pricing Page Shows |
+|-----------------|------------------------|
+| Proactive goal check-ins | Not mentioned |
+| Voice notes with AI summary | Missing from Core |
+| Drishya stories | Not mentioned anywhere |
+| Sunday Review letter | Listed but buried |
+| KAAL 3-tab dashboard | Just says "KAAL Basic" |
+| Niti decision records | Only in Pro, not explained |
+| 7 thinking modes | Not mentioned |
+| Confidence ratings | Not mentioned |
+| 25 languages | Says "11 Indian languages" |
+| Context builder - full awareness | Not mentioned |
+
+---
+
+## What The Pricing Page Should Actually Say
+
+**Free** — Try ARYA. No pressure.
+```
+20 conversations/day
+3 goals
+Mood check-ins
+All 11 Indian languages
+Document scan
+```
+
+**Core ₹249** — ARYA that knows you.
+```
+Unlimited conversations
+Voice in 11 Indian languages — 150 min/month
+10 goals with smart check-ins
+Voice Notes — speak, ARYA summarises
+30-day memory
+Weekly Review letter
+Morning KAAL briefing
+Health tracking (Prana)
+Document & image scan
+```
+
+**Pro ₹499** — ARYA that thinks with you.
+```
+Everything in Core
+500 min voice/month
+Unlimited goals
+1-year memory
+Niti — business thinking + Decision Records
+7 thinking modes (Founder, Devil's Advocate...)
+Market Lens
+KAAL full 3-tab dashboard
+Early access to new features
+```
+
+**Elite ₹999** — All of ARYA. Unrestricted.
+```
+Everything in Pro
+Unlimited voice
+Lifetime memory
+Drishya — personal stories
+Monthly life review session
+Priority response
+KAAL Full Vedic experience
+```
+
+---
+
+## The One Line That's Missing Everywhere
+
+Not a single plan mentions **Drishya** — the story feature. That's one of the most emotionally resonant features ARYA has. It should be on Elite at minimum.
+
+---
+
+## Summary — What To Fix This Week
+
+```
+Urgent (30 min):
+□ Remove strikethroughs from Free plan
+□ Fix Pro voice: 50 → 500 min
+□ Add Voice Notes to Core features
+
+This week (2 hours):
+□ Rewrite all 4 plan descriptions
+  to reflect current ARYA capabilities
+□ Add Drishya to Elite
+□ Add thinking modes to Pro
+□ Change "11 Indian languages" 
+  to "25 languages" where applicable
+□ Add "smart goal check-ins" to Core
+
+The pricing page should make
+someone feel they're getting
+enormous value at every tier.
+
+Right now it reads like
+a feature restriction list.
+It should read like a 
+capability unlock.
+```
+
+The product is extraordinary. The pricing page doesn't reflect that yet. Fix the copy — and it will.
