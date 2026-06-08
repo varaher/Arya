@@ -3196,14 +3196,14 @@ export default function AryaChat() {
     try { localStorage.setItem("arya_lang", newLangCode); } catch {}
     if (newLangCode === "en-IN") return;
     const displayName = LANG_NAMES[newLangCode] || newLangCode;
-    const seenKey = `arya_lang_beta_seen_${newLangCode}`;
+    const seenKey = `arya_lang_beta_v2_${newLangCode}`;
     try { if (localStorage.getItem(seenKey)) return; } catch {}
     setBetaLangPopup({ show: true, language: displayName, langCode: newLangCode });
   };
 
   const dismissBetaPopup = (reportIssue = false) => {
     if (!betaLangPopup) return;
-    try { localStorage.setItem(`arya_lang_beta_seen_${betaLangPopup.langCode}`, "true"); } catch {}
+    try { localStorage.setItem(`arya_lang_beta_v2_${betaLangPopup.langCode}`, "true"); } catch {}
     const lang = betaLangPopup.language;
     setBetaLangPopup(null);
     if (reportIssue) setInput(`Voice feedback for ${lang}: `);
