@@ -240,7 +240,7 @@ export default function PricingModal({ onClose, token, currentPlan = "free", onU
             )}
           </AnimatePresence>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 items-start">
             {PLANS.map(plan => {
               const Icon = plan.icon;
               const isCurrentPlan = currentPlan === plan.id;
@@ -282,7 +282,7 @@ export default function PricingModal({ onClose, token, currentPlan = "free", onU
                     )}
                   </div>
 
-                  <ul className="space-y-1.5 mb-4 flex-1">
+                  <ul className="space-y-1.5 mb-4">
                     {plan.features.map(f => (
                       <li key={f} className="flex items-start gap-1.5 text-xs text-gray-700 dark:text-gray-300">
                         <Check className="w-3 h-3 text-emerald-500 mt-0.5 flex-shrink-0" />{f}

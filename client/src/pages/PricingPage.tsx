@@ -347,7 +347,7 @@ export default function PricingPage() {
         </AnimatePresence>
 
         {/* Plan cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
           {PLANS.map(plan => {
             const Icon = plan.icon;
             const p = prices[plan.id];
@@ -447,7 +447,7 @@ export default function PricingPage() {
                           : { background: plan.color, color: "#fff" }
                       }
                     >
-                      {isLoading ? "…" : isCurrent ? "Current Plan" : plan.id === "free" ? "Free forever" : `Subscribe — ₹${billing === "annual" ? p.annual : p.monthly}/mo`}
+                      <span className="truncate">{isLoading ? "…" : isCurrent ? "Current Plan" : plan.id === "free" ? "Free forever" : billing === "annual" ? `₹${p.annual}/yr` : `Subscribe ₹${p.monthly}/mo`}</span>
                     </button>
                   )}
 
