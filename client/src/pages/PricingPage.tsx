@@ -438,7 +438,7 @@ export default function PricingPage() {
                       data-testid={`button-subscribe-${plan.id}`}
                       onClick={() => handleSubscribe(plan.id)}
                       disabled={isCurrent || isLoading || plan.id === "free"}
-                      className="w-full mt-4 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-60"
+                      className="w-full mt-4 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-60 overflow-hidden whitespace-nowrap"
                       style={
                         isCurrent
                           ? { background: `${plan.color}18`, color: plan.color, border: `1px solid ${plan.color}40` }
@@ -447,7 +447,7 @@ export default function PricingPage() {
                           : { background: plan.color, color: "#fff" }
                       }
                     >
-                      <span className="truncate">{isLoading ? "…" : isCurrent ? "Current Plan" : plan.id === "free" ? "Free forever" : billing === "annual" ? `₹${p.annual}/yr` : `Subscribe ₹${p.monthly}/mo`}</span>
+                      {isLoading ? "…" : isCurrent ? "Current Plan" : plan.id === "free" ? "Free forever" : billing === "annual" ? `₹${p.annual}/yr` : `Subscribe ₹${p.monthly}/mo`}
                     </button>
                   )}
 
