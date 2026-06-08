@@ -3180,6 +3180,31 @@ export default function AryaChat() {
   });
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const [showToolMore, setShowToolMore] = useState(false);
+  const [betaLangPopup, setBetaLangPopup] = useState<{ show: boolean; language: string; langCode: string } | null>(null);
+
+  const LANG_NAMES: Record<string, string> = {
+    "ml-IN": "Malayalam", "hi-IN": "Hindi", "ta-IN": "Tamil", "te-IN": "Telugu",
+    "kn-IN": "Kannada", "bn-IN": "Bengali", "mr-IN": "Marathi",
+    "gu-IN": "Gujarati", "pa-IN": "Punjabi", "od-IN": "Odia",
+  };
+  const INDIAN_LANG_CODES = Object.keys(LANG_NAMES);
+
+  const handleLanguageChange = (newLangCode: string) => {
+    setSelectedLanguage(newLangCode);
+    try { localStorage.setItem("arya_lang", newLangCode); } catch {}
+    if (!INDIAN_LANG_CODES.includes(newLangCode)) return;
+    const seenKey = `arya_lang_beta_seen_${newLangCode}`;
+    try { if (localStorage.getItem(seenKey)) return; } catch {}
+    setBetaLangPopup({ show: true, language: LANG_NAMES[newLangCode], langCode: newLangCode });
+  };
+
+  const dismissBetaPopup = (reportIssue = false) => {
+    if (!betaLangPopup) return;
+    try { localStorage.setItem(`arya_lang_beta_seen_${betaLangPopup.langCode}`, "true"); } catch {}
+    const lang = betaLangPopup.language;
+    setBetaLangPopup(null);
+    if (reportIssue) setInput(`Voice feedback for ${lang}: `);
+  };
 
   // Sync globe when IP detection banner is accepted
   useEffect(() => {
@@ -6022,23 +6047,27 @@ export default function AryaChat() {
                                   {DEFAULT_LANGUAGES.filter(l => SARVAM_LANGUAGE_CODES.has(l.code) || l.code === "en-IN").map((lang) => (
                                     <button key={lang.code} data-testid={`button-lang-${lang.code}`}
                                       onClick={() => {
-                                        setSelectedLanguage(lang.code); setShowLanguageMenu(false); setShowToolMore(false);
-                                        try { localStorage.setItem("arya_lang", lang.code); } catch {}
+                                        handleLanguageChange(lang.code);
+                                        setShowLanguageMenu(false); setShowToolMore(false);
                                         const sc = lang.code.split("-")[0] as UiLanguage;
                                         const validUi: UiLanguage[] = ["en","hi","mr","bn","ta","te","kn","ml","gu","pa","od"];
                                         if (validUi.includes(sc)) setGlobalLanguage(sc);
                                       }}
-                                      className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors ${selectedLanguage === lang.code ? "text-primary bg-primary/10" : "text-gray-700 dark:text-gray-200"}`}
+                                      className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors ${selectedLanguage === lang.code ? "text-primary bg-primary/10" : "text-gray-700 dark:text-gray-200"}`}
                                     >
-                                      <span>{lang.name}</span><span className="text-xs text-muted-foreground">{lang.native}</span>
+                                      <span className="flex-1">{lang.name}</span>
+                                      {INDIAN_LANG_CODES.includes(lang.code) && lang.code !== "en-IN" && (
+                                        <span className="text-[9px] font-bold tracking-widest text-amber-500 bg-amber-400/10 border border-amber-400/20 rounded px-1.5 py-0.5 flex-shrink-0">BETA</span>
+                                      )}
+                                      <span className="text-xs text-muted-foreground flex-shrink-0">{lang.native}</span>
                                     </button>
                                   ))}
                                   <div className="mx-3 my-1 border-t border-gray-100 dark:border-slate-700" />
                                   {DEFAULT_LANGUAGES.filter(l => isGlobalVoiceLang(l.code)).map((lang) => (
                                     <button key={lang.code} data-testid={`button-lang-${lang.code}`}
                                       onClick={() => {
-                                        setSelectedLanguage(lang.code); setShowLanguageMenu(false); setShowToolMore(false);
-                                        try { localStorage.setItem("arya_lang", lang.code); } catch {}
+                                        handleLanguageChange(lang.code);
+                                        setShowLanguageMenu(false); setShowToolMore(false);
                                       }}
                                       className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors ${selectedLanguage === lang.code ? "text-primary bg-primary/10" : "text-gray-700 dark:text-gray-200"}`}
                                     >
@@ -6100,6 +6129,30 @@ export default function AryaChat() {
                 )}
               </button>
             </div>
+          {/* ── Indian language voice beta popup ── */}
+          {betaLangPopup?.show && (
+            <div className="beta-popup-overlay" onClick={() => dismissBetaPopup()}>
+              <div className="beta-popup" onClick={e => e.stopPropagation()}>
+                <div className="beta-popup-header">
+                  <span className="beta-popup-icon">🎙️</span>
+                  <div>
+                    <p className="beta-popup-title">Voice in {betaLangPopup.language}</p>
+                    <span className="beta-badge">BETA</span>
+                  </div>
+                </div>
+                <p className="beta-popup-body">
+                  ARYA speaks and listens in <strong>{betaLangPopup.language}</strong>.
+                  This feature works well for most conversations but may occasionally mishear or mispronounce.
+                </p>
+                <p className="beta-popup-sub">Your feedback makes it better for everyone.</p>
+                <div className="beta-popup-actions">
+                  <button className="beta-btn-report" onClick={() => dismissBetaPopup(true)}>Report an issue</button>
+                  <button className="beta-btn-got-it" onClick={() => dismissBetaPopup()}>Got it →</button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {voiceError && (
             <div className="flex items-center gap-2 mt-1 px-1">
               <p className="text-xs text-red-500 dark:text-red-400">{voiceError}</p>

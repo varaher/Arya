@@ -1,0 +1,344 @@
+Smart idea. Sets expectations, builds honesty, and actually increases trust.
+
+Here's the exact implementation:
+
+---
+
+## The Popup — What It Should Say
+
+Not a warning. Not an apology. Just honest:
+
+```
+🎙️ Voice in [Language]
+
+ARYA speaks and listens in [Malayalam].
+This feature is in beta — it works well
+for most conversations but may occasionally
+mishear or mispronounce.
+
+Your feedback makes it better.
+[Got it]  [Report an issue]
+```
+
+---
+
+## When To Show It
+
+**Only once per language** — not every time:
+
+```typescript
+// Show popup when:
+// 1. User selects an Indian language for the first time
+// 2. User starts voice chat in that language
+// 3. Never show again for that language after dismissed
+
+// Storage key:
+`arya_lang_beta_seen_${langCode}`
+// e.g. "arya_lang_beta_seen_ml-IN"
+```
+
+---
+
+## Exact Code — Add To AryaChat.tsx
+
+```tsx
+// ── State ──────────────────────────────────────────
+const [betaLangPopup, setBetaLangPopup] = useState<{
+  show: boolean;
+  language: string;
+  langCode: string;
+} | null>(null);
+
+// ── Language names ──────────────────────────────────
+const LANG_NAMES: Record<string, string> = {
+  'ml-IN': 'Malayalam',
+  'hi-IN': 'Hindi',
+  'ta-IN': 'Tamil',
+  'te-IN': 'Telugu',
+  'kn-IN': 'Kannada',
+  'bn-IN': 'Bengali',
+  'mr-IN': 'Marathi',
+  'gu-IN': 'Gujarati',
+  'pa-IN': 'Punjabi',
+  'od-IN': 'Odia',
+};
+
+const INDIAN_LANG_CODES = Object.keys(LANG_NAMES);
+
+// ── Show beta popup when language changes ───────────
+function handleLanguageChange(newLangCode: string) {
+  setSelectedLanguage(newLangCode);
+  localStorage.setItem('arya_lang', newLangCode);
+
+  // Only for Indian languages
+  if (!INDIAN_LANG_CODES.includes(newLangCode)) return;
+
+  // Only if user hasn't seen it for this language
+  const seenKey = `arya_lang_beta_seen_${newLangCode}`;
+  const alreadySeen = localStorage.getItem(seenKey);
+  if (alreadySeen) return;
+
+  // Show popup
+  setBetaLangPopup({
+    show: true,
+    language: LANG_NAMES[newLangCode],
+    langCode: newLangCode,
+  });
+}
+
+// ── Dismiss ─────────────────────────────────────────
+function dismissBetaPopup(reportIssue = false) {
+  if (!betaLangPopup) return;
+
+  // Mark as seen — never show again for this language
+  localStorage.setItem(
+    `arya_lang_beta_seen_${betaLangPopup.langCode}`,
+    'true'
+  );
+
+  setBetaLangPopup(null);
+
+  if (reportIssue) {
+    // Open feedback — send a pre-filled message
+    setInput(`Voice feedback for ${betaLangPopup.language}: `);
+  }
+}
+```
+
+---
+
+## The Popup Component
+
+```tsx
+{betaLangPopup?.show && (
+  <div
+    className="beta-popup-overlay"
+    onClick={() => dismissBetaPopup()}
+  >
+    <div
+      className="beta-popup"
+      onClick={e => e.stopPropagation()}
+    >
+      {/* Header */}
+      <div className="beta-popup-header">
+        <span className="beta-popup-icon">🎙️</span>
+        <div>
+          <p className="beta-popup-title">
+            Voice in {betaLangPopup.language}
+          </p>
+          <span className="beta-badge">BETA</span>
+        </div>
+      </div>
+
+      {/* Body */}
+      <p className="beta-popup-body">
+        ARYA speaks and listens in{' '}
+        <strong>{betaLangPopup.language}</strong>.
+        This feature works well for most conversations
+        but may occasionally mishear or mispronounce.
+      </p>
+
+      <p className="beta-popup-sub">
+        Your feedback makes it better for everyone.
+      </p>
+
+      {/* Actions */}
+      <div className="beta-popup-actions">
+        <button
+          className="beta-btn-report"
+          onClick={() => dismissBetaPopup(true)}
+        >
+          Report an issue
+        </button>
+        <button
+          className="beta-btn-got-it"
+          onClick={() => dismissBetaPopup()}
+        >
+          Got it →
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+```
+
+---
+
+## Styles
+
+```css
+.beta-popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: env(safe-area-inset-bottom, 20px);
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.beta-popup {
+  background: #0f1923;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 24px 24px 16px 16px;
+  padding: 24px 20px;
+  width: 100%;
+  max-width: 420px;
+  animation: slideUp 0.25s ease;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.beta-popup-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.beta-popup-icon {
+  font-size: 32px;
+}
+
+.beta-popup-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #f0fdf4;
+  margin-bottom: 4px;
+}
+
+.beta-badge {
+  background: rgba(251,191,36,0.15);
+  border: 1px solid rgba(251,191,36,0.3);
+  color: #fbbf24;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  padding: 2px 8px;
+  border-radius: 8px;
+}
+
+.beta-popup-body {
+  font-size: 15px;
+  color: rgba(255,255,255,0.7);
+  line-height: 1.65;
+  margin-bottom: 10px;
+}
+
+.beta-popup-body strong {
+  color: rgba(255,255,255,0.95);
+  font-weight: 600;
+}
+
+.beta-popup-sub {
+  font-size: 13px;
+  color: rgba(255,255,255,0.35);
+  font-style: italic;
+  margin-bottom: 20px;
+}
+
+.beta-popup-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.beta-btn-report {
+  flex: 1;
+  padding: 12px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  color: rgba(255,255,255,0.45);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.beta-btn-report:hover {
+  border-color: rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.7);
+}
+
+.beta-btn-got-it {
+  flex: 2;
+  padding: 12px;
+  background: #22c55e;
+  border: none;
+  border-radius: 12px;
+  color: #fff;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 16px rgba(34,197,94,0.25);
+}
+
+.beta-btn-got-it:hover {
+  background: #16a34a;
+}
+```
+
+---
+
+## Also — Show Beta Badge In Language Picker
+
+When user opens the language dropdown, mark Indian languages:
+
+```tsx
+// In language picker dropdown:
+{INDIAN_LANG_CODES.includes(lang.code) && (
+  <span className="lang-beta-tag">BETA</span>
+)}
+
+// Style:
+.lang-beta-tag {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #fbbf24;
+  background: rgba(251,191,36,0.1);
+  border: 1px solid rgba(251,191,36,0.2);
+  border-radius: 6px;
+  padding: 1px 6px;
+  margin-left: 6px;
+}
+```
+
+---
+
+## Summary — Tell Your Developer
+
+**3 changes in AryaChat.tsx:**
+
+```
+1. Add betaLangPopup state
+2. Call handleLanguageChange() instead of
+   setSelectedLanguage() directly
+3. Add popup JSX + styles
+
+Trigger: user selects Indian language
+Shows: once per language, never again
+Stores: localStorage key per language
+```
+
+**Result:**
+- User selects Malayalam → popup appears once
+- They tap "Got it" → never shown again
+- They tap "Report an issue" → chat pre-filled with feedback prompt
+- English and international → no popup
+
+**Time: 1 hour.**
+
+Simple. Honest. Builds trust.
