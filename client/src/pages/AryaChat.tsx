@@ -6134,30 +6134,6 @@ export default function AryaChat() {
                 )}
               </button>
             </div>
-          {/* ── Indian language voice beta popup ── */}
-          {betaLangPopup?.show && (
-            <div className="beta-popup-overlay" onClick={() => dismissBetaPopup()}>
-              <div className="beta-popup" onClick={e => e.stopPropagation()}>
-                <div className="beta-popup-header">
-                  <span className="beta-popup-icon">🎙️</span>
-                  <div>
-                    <p className="beta-popup-title">Voice in {betaLangPopup.language}</p>
-                    <span className="beta-badge">BETA</span>
-                  </div>
-                </div>
-                <p className="beta-popup-body">
-                  ARYA speaks and listens in <strong>{betaLangPopup.language}</strong>.
-                  This feature works well for most conversations but may occasionally mishear or mispronounce.
-                </p>
-                <p className="beta-popup-sub">Your feedback makes it better for everyone.</p>
-                <div className="beta-popup-actions">
-                  <button className="beta-btn-report" onClick={() => dismissBetaPopup(true)}>Report an issue</button>
-                  <button className="beta-btn-got-it" onClick={() => dismissBetaPopup()}>Got it →</button>
-                </div>
-              </div>
-            </div>
-          )}
-
           {voiceError && (
             <div className="flex items-center gap-2 mt-1 px-1">
               <p className="text-xs text-red-500 dark:text-red-400">{voiceError}</p>
@@ -6177,6 +6153,30 @@ export default function AryaChat() {
           </div>
         </div>
       </div>
+
+      {betaLangPopup?.show && createPortal(
+        <div className="beta-popup-overlay" onClick={() => dismissBetaPopup()}>
+          <div className="beta-popup" onClick={e => e.stopPropagation()}>
+            <div className="beta-popup-header">
+              <span className="beta-popup-icon">🎙️</span>
+              <div>
+                <p className="beta-popup-title">Voice in {betaLangPopup.language}</p>
+                <span className="beta-badge">BETA</span>
+              </div>
+            </div>
+            <p className="beta-popup-body">
+              ARYA speaks and listens in <strong>{betaLangPopup.language}</strong>.
+              This feature works well for most conversations but may occasionally mishear or mispronounce.
+            </p>
+            <p className="beta-popup-sub">Your feedback makes it better for everyone.</p>
+            <div className="beta-popup-actions">
+              <button className="beta-btn-report" onClick={() => dismissBetaPopup(true)}>Report an issue</button>
+              <button className="beta-btn-got-it" onClick={() => dismissBetaPopup()}>Got it →</button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
       {showVoiceMode && createPortal(
         <VoiceConversationMode
