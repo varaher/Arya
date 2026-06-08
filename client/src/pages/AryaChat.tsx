@@ -3186,16 +3186,19 @@ export default function AryaChat() {
     "ml-IN": "Malayalam", "hi-IN": "Hindi", "ta-IN": "Tamil", "te-IN": "Telugu",
     "kn-IN": "Kannada", "bn-IN": "Bengali", "mr-IN": "Marathi",
     "gu-IN": "Gujarati", "pa-IN": "Punjabi", "od-IN": "Odia",
+    "ar-AE": "Arabic", "fr-FR": "French", "de-DE": "German", "es-ES": "Spanish",
+    "pt-BR": "Portuguese", "zh-CN": "Chinese", "ja-JP": "Japanese", "ko-KR": "Korean",
+    "ru-RU": "Russian", "tr-TR": "Turkish", "sw-KE": "Swahili",
   };
-  const INDIAN_LANG_CODES = Object.keys(LANG_NAMES);
 
   const handleLanguageChange = (newLangCode: string) => {
     setSelectedLanguage(newLangCode);
     try { localStorage.setItem("arya_lang", newLangCode); } catch {}
-    if (!INDIAN_LANG_CODES.includes(newLangCode)) return;
+    if (newLangCode === "en-IN") return;
+    const displayName = LANG_NAMES[newLangCode] || newLangCode;
     const seenKey = `arya_lang_beta_seen_${newLangCode}`;
     try { if (localStorage.getItem(seenKey)) return; } catch {}
-    setBetaLangPopup({ show: true, language: LANG_NAMES[newLangCode], langCode: newLangCode });
+    setBetaLangPopup({ show: true, language: displayName, langCode: newLangCode });
   };
 
   const dismissBetaPopup = (reportIssue = false) => {
@@ -6056,7 +6059,7 @@ export default function AryaChat() {
                                       className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors ${selectedLanguage === lang.code ? "text-primary bg-primary/10" : "text-gray-700 dark:text-gray-200"}`}
                                     >
                                       <span className="flex-1">{lang.name}</span>
-                                      {INDIAN_LANG_CODES.includes(lang.code) && lang.code !== "en-IN" && (
+                                      {lang.code !== "en-IN" && (
                                         <span className="text-[9px] font-bold tracking-widest text-amber-500 bg-amber-400/10 border border-amber-400/20 rounded px-1.5 py-0.5 flex-shrink-0">BETA</span>
                                       )}
                                       <span className="text-xs text-muted-foreground flex-shrink-0">{lang.native}</span>
@@ -6069,9 +6072,11 @@ export default function AryaChat() {
                                         handleLanguageChange(lang.code);
                                         setShowLanguageMenu(false); setShowToolMore(false);
                                       }}
-                                      className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors ${selectedLanguage === lang.code ? "text-primary bg-primary/10" : "text-gray-700 dark:text-gray-200"}`}
+                                      className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors ${selectedLanguage === lang.code ? "text-primary bg-primary/10" : "text-gray-700 dark:text-gray-200"}`}
                                     >
-                                      <span>{lang.name}</span><span className="text-xs text-muted-foreground">{lang.native}</span>
+                                      <span className="flex-1">{lang.name}</span>
+                                      <span className="text-[9px] font-bold tracking-widest text-amber-500 bg-amber-400/10 border border-amber-400/20 rounded px-1.5 py-0.5 flex-shrink-0">BETA</span>
+                                      <span className="text-xs text-muted-foreground flex-shrink-0">{lang.native}</span>
                                     </button>
                                   ))}
                                 </div>
