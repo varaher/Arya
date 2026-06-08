@@ -51,3 +51,7 @@ BETA_MODE = "false"
 USER_DAILY_LLM_LIMIT = "50"
 SYSTEM_DAILY_LLM_LIMIT = "2000"
 GOOGLE_CALENDAR_REDIRECT_URI = "https://aryaai.in/api/calendar/callback"
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 120000
