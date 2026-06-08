@@ -293,7 +293,7 @@ export default function PricingModal({ onClose, token, currentPlan = "free", onU
                   <Button data-testid={`button-subscribe-${plan.id}`}
                     onClick={() => handleSubscribe(plan.id)}
                     disabled={isCurrentPlan || isLoadingPlan || plan.ctaDisabled}
-                    className={`w-full rounded-xl py-2 text-xs font-semibold ${isCurrentPlan ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 cursor-default" : colors.btnClass}`}>
+                    className={`w-full rounded-md py-2.5 text-xs font-semibold leading-tight text-center whitespace-normal break-words ${isCurrentPlan ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 cursor-default" : colors.btnClass}`}>
                     {isLoadingPlan ? <Loader2 className="w-3.5 h-3.5 animate-spin mx-auto" /> : isCurrentPlan ? "Current" : plan.cta}
                   </Button>
                 </motion.div>

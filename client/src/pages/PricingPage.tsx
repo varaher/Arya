@@ -438,7 +438,7 @@ export default function PricingPage() {
                       data-testid={`button-subscribe-${plan.id}`}
                       onClick={() => handleSubscribe(plan.id)}
                       disabled={isCurrent || isLoading || plan.id === "free"}
-                      className="w-full mt-4 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-60 overflow-hidden whitespace-nowrap"
+                      className="w-full mt-4 py-2.5 rounded-md text-sm font-semibold transition-all disabled:opacity-60"
                       style={
                         isCurrent
                           ? { background: `${plan.color}18`, color: plan.color, border: `1px solid ${plan.color}40` }
