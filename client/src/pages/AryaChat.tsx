@@ -2294,7 +2294,7 @@ function VoiceNotesPanel({ onClose, token, uiLang = "en", voiceLang = "en-IN" }:
   const formatDate = (d: string) => new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 
   return (
-    <div className="w-80 sm:w-96 h-full bg-white dark:bg-slate-900 border-l border-gray-200 dark:border-slate-700 flex flex-col" data-testid="panel-voice-notes">
+    <div className="w-full h-full bg-white dark:bg-slate-900 border-l border-gray-200 dark:border-slate-700 flex flex-col" data-testid="panel-voice-notes">
       <div className="p-3 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <NotebookPen className="w-4 h-4 text-violet-600 dark:text-violet-400" />
@@ -2342,25 +2342,14 @@ function VoiceNotesPanel({ onClose, token, uiLang = "en", voiceLang = "en-IN" }:
       </div>
 
       <div className="p-3 border-b border-gray-100 dark:border-slate-700 space-y-2">
-        <div className="flex gap-2">
-          <div className="flex-1 relative">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-300" />
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Search notes..."
-              className="w-full pl-7 pr-2 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:outline-none"
-            />
-          </div>
-        </div>
         <button
           data-testid="button-record-note"
           onClick={isRecording ? stopRecording : startRecording}
           disabled={saving}
-          className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+          className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-all ${
             isRecording
               ? "bg-red-500 hover:bg-red-600 text-white border border-red-400"
-              : "bg-gradient-to-r from-violet-500/20 to-violet-600/10 border border-violet-200 dark:border-violet-800 text-violet-600 dark:text-violet-400 hover:from-violet-500/30 hover:to-violet-600/20"
+              : "bg-gradient-to-r from-violet-500 to-violet-600 text-white shadow-sm hover:from-violet-600 hover:to-violet-700"
           }`}
         >
           {saving ? (
@@ -2387,6 +2376,16 @@ function VoiceNotesPanel({ onClose, token, uiLang = "en", voiceLang = "en-IN" }:
             </button>
           </div>
         )}
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-300" />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search notes..."
+            autoFocus={false}
+            className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:border-violet-300 dark:focus:border-violet-700"
+          />
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
@@ -5249,10 +5248,18 @@ export default function AryaChat() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40"
+              className="fixed inset-0 z-40 flex justify-end"
             >
               <div className="absolute inset-0 bg-black/40" onClick={() => setShowNotes(false)} />
-              <VoiceNotesPanel onClose={() => setShowNotes(false)} token={token} uiLang={uiLanguage} voiceLang={selectedLanguage} />
+              <motion.div
+                initial={{ x: "100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "100%" }}
+                transition={{ type: "tween", duration: 0.22 }}
+                className="relative z-10 h-full w-full sm:w-96"
+              >
+                <VoiceNotesPanel onClose={() => setShowNotes(false)} token={token} uiLang={uiLanguage} voiceLang={selectedLanguage} />
+              </motion.div>
             </motion.div>
           )}
           {showCalendar && isLoggedIn && token && (
