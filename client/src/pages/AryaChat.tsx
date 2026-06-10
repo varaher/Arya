@@ -2270,8 +2270,11 @@ function VoiceNotesPanel({ onClose, token, uiLang = "en", voiceLang = "en-IN" }:
               }),
             });
             queryClient.invalidateQueries({ queryKey: ["/api/user/voice-notes"] });
-            // Refetch after 6 s so background GPT summary has time to land
+            // Poll at 6 s, 14 s, and 25 s — GPT-4o-mini summary usually lands within 10 s
+            // but can take longer on a cold start or slow connection
             setTimeout(() => queryClient.invalidateQueries({ queryKey: ["/api/user/voice-notes"] }), 6000);
+            setTimeout(() => queryClient.invalidateQueries({ queryKey: ["/api/user/voice-notes"] }), 14000);
+            setTimeout(() => queryClient.invalidateQueries({ queryKey: ["/api/user/voice-notes"] }), 25000);
             setTranscript("");
           } else if (sttData.error) {
             setVoiceNoteError(sttData.message || "Could not hear anything. Please speak clearly and try again.");

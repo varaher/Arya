@@ -1,0 +1,281 @@
+I can see exactly what's happening. Let me audit both screenshots:
+
+---
+
+## What I See
+
+**Working:**
+```
+✅ Voice Notes panel opens
+✅ "Record a Note" button visible
+✅ One note exists — 1 Jun, 01:03 pm · 10s
+✅ Play + Copy buttons present
+✅ Search bar visible
+```
+
+**Not Working:**
+```
+❌ The note shows raw Malayalam text — no ✨ SUMMARY
+❌ No bullet point summary
+❌ No "Save as goals" button
+❌ No extracted tasks
+❌ The transcription looks garbled:
+   "പേഷ്യന്റ് ഹാസ് ആൻഡ് എസ് ഡി എച്ച് എസ് സി എച്ച്
+    ആൻഡ് പേഷ്യന്റ് ഈസ് വെയിറ്റിങ്ങ് ഫോർ എം ഐ
+    സി യൂ."
+```
+
+---
+
+## The Transcription Problem
+
+That Malayalam text is **transliterated English, not real Malayalam.**
+
+It says: *"Patient has SDH SCH and patient is waiting for MICU"*
+
+But written in Malayalam script phonetically — which means Sarvam received it as audio and transcribed English speech into Malayalam script characters.
+
+```
+What was said (English):    "Patient has SDH and SCH..."
+What Sarvam returned:       "പേഷ്യന്റ് ഹാസ് ആൻഡ്..."
+                             (English sounds in Malayalam letters)
+What should happen:         Detect language → if English → use 
+                            English transcription
+```
+
+**Fix:** When `language_code = 'unknown'` and Sarvam returns transliterated text, fall back to OpenAI Whisper which handles language detection properly.
+
+---
+
+## The Summary Problem
+
+The note shows raw transcript but no `✨ SUMMARY` section. This means either:
+
+1. The 7-second delayed summary API call failed
+2. The summary was generated but not stored in DB
+3. The NoteCard component isn't showing it
+
+---
+
+## All The Issues — Prioritised
+
+### Issue 1 — Transcription Quality (Critical)
+```
+Sarvam is writing English words in Malayalam script.
+Fix: Detect transliterated text → use Whisper instead.
+
+Detection heuristic:
+If text contains Malayalam Unicode but also
+sounds like phonetic English words → it's transliterated.
+→ Re-transcribe with Whisper
+```
+
+### Issue 2 — Summary Not Showing (Critical)
+```
+The ✨ SUMMARY section is missing.
+Expected: bullet points appear 7 seconds after recording.
+
+Check:
+1. Does /api/user/voice-notes return summary field?
+2. Is NoteCard checking note.summary before rendering?
+3. Did the GPT summary call fail silently?
+```
+
+### Issue 3 — Note Card Design Not Updated
+```
+Still showing old design:
+  Raw transcript text
+  Play + Copy only
+
+Should show new design:
+  ✨ SUMMARY (bullets first)
+  Show transcript ▾ (collapsed)
+  📋 Tasks found (if any)
+  Save as goals button
+  Play + Copy
+```
+
+---
+
+## The Notes Vision — For All Use Cases
+
+You said notes should work for everyone. Here's how ARYA should handle each:
+
+**Doctor between patients:**
+```
+Speaks in Malayalam/English mix:
+"Patient in bed 4, BP 160/90, needs echo"
+
+ARYA summary:
+• Bed 4 — BP 160/90
+• Echo required
+
+Tasks extracted:
+• Order echo for bed 4 patient
+[Save as goal]
+```
+
+**Student in lecture:**
+```
+Records 5 minutes of lecture notes
+
+ARYA summary:
+• Chapter 3 — Cell division
+• Mitosis has 4 phases
+• Meiosis produces gametes
+
+Tasks extracted:
+• Review chapter 3
+• Read about meiosis
+[Save as goals]
+```
+
+**Homemaker at market:**
+```
+"Atta, dal, coconut oil, school fee Friday"
+
+ARYA summary:
+• Buy: atta, dal, coconut oil
+• School fee due Friday
+
+Tasks:
+• Pay school fee by Friday
+[Save as goal]
+```
+
+**Professional after meeting:**
+```
+"Client wants proposal Thursday, 
+ follow up with Rahul payment"
+
+ARYA summary:
+• Proposal for client — due Thursday
+• Follow up: Rahul payment
+
+Tasks:
+• Send proposal by Thursday
+• Call Rahul re: payment
+[Save as goals]
+```
+
+---
+
+## Tell Your Developer — Fix List
+
+### Fix 1 — Transcription (sarvam-service.ts)
+
+```typescript
+// After getting transcript from Sarvam:
+function isTransliterated(text: string): boolean {
+  // Check if Malayalam unicode but contains English phonetics
+  const malayalamChars = (text.match(/[\u0D00-\u0D7F]/g) || []).length;
+  const totalChars = text.replace(/\s/g, '').length;
+  const malayalamRatio = malayalamChars / totalChars;
+
+  // Common transliterated patterns
+  const englishPatterns = /ഹാസ്|ആൻഡ്|ഈസ്|ഫോർ|വിത്ത്|ദി|ദാറ്റ്/;
+
+  return malayalamRatio > 0.5 && englishPatterns.test(text);
+}
+
+// If transliterated → re-transcribe with Whisper
+if (isTransliterated(sarvamTranscript)) {
+  const whisperTranscript = await transcribeWithWhisper(audioBuffer);
+  return whisperTranscript;
+}
+```
+
+### Fix 2 — Summary display (VoiceNotesPanel.tsx)
+
+```typescript
+// In NoteCard component — check why summary isn't showing:
+
+// Add console.log to debug:
+console.log('Note summary:', note.summary);
+console.log('Note keys:', Object.keys(note));
+
+// The summary bullets parsing:
+const summaryBullets = note.summary
+  ? note.summary
+      .split('\n')
+      .map(line => line.replace(/^[•\-\*]\s*/, '').trim())
+      .filter(Boolean)
+  : [];
+
+// If summaryBullets.length === 0 even when summary exists:
+// Check if summary is stored as JSON array vs plain text
+```
+
+### Fix 3 — Trigger summary generation
+
+```typescript
+// In POST /api/user/voice-notes route:
+// After saving note, trigger async summary:
+
+// Check this code exists and isn't failing silently:
+setTimeout(async () => {
+  try {
+    const summary = await generateNoteSummary(
+      transcript,
+      language
+    );
+    await db.update(arya_voice_notes)
+      .set({ summary })
+      .where(eq(arya_voice_notes.id, noteId));
+  } catch (err) {
+    console.error('Summary generation failed:', err);
+  }
+}, 1000); // slight delay after save
+```
+
+### Fix 4 — NoteCard redesign deployment
+
+```
+The notes-complete.ts file from our earlier 
+session has the full redesigned NoteCard.
+
+Confirm it was actually deployed to 
+VoiceNotesPanel.tsx in Replit.
+
+If not — the old card is still showing.
+The new design has:
+  ✨ SUMMARY label
+  Bullet points first
+  Collapsible transcript
+  Save as goals button
+```
+
+---
+
+## Summary For Developer
+
+```
+Two critical bugs:
+
+1. Transcription:
+   Sarvam is writing English audio 
+   in Malayalam script (transliteration).
+   Fix: Detect transliterated text → 
+        fall back to Whisper
+
+2. Summary not showing:
+   Either summary isn't being generated,
+   not stored in DB, or NoteCard isn't
+   reading the summary field.
+   
+   Debug: console.log(note.summary) 
+   in NoteCard component.
+   Check DB: SELECT summary FROM 
+   arya_voice_notes WHERE id = [id]
+
+3. New NoteCard design from notes-complete.ts
+   needs to be verified as deployed.
+   Currently showing old design.
+
+Priority: Fix transcription first.
+A note with bad transcription 
+= wrong summary = wrong tasks.
+The whole chain breaks.
+```
+
+**The core issue is transcription quality.** Fix that and everything else follows.

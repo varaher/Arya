@@ -111,6 +111,34 @@ const responseCacheEngine = new ResponseCacheEngine();
 const adminSessions = new Map<string, { createdAt: number }>();
 const ADMIN_SESSION_TTL = 24 * 60 * 60 * 1000;
 
+/**
+ * Detects when Sarvam has phonetically transcribed English audio into Indian script
+ * characters (e.g. "ഹാസ്" for "has", "ആൻഡ്" for "and"). This happens when a
+ * user speaks English but Sarvam is called with an Indian language code.
+ * Returns true → caller should re-transcribe with Whisper.
+ */
+function isTransliteratedEnglish(text: string): boolean {
+  const total = text.replace(/\s/g, "").length;
+  if (total < 8) return false;
+  // Count characters from all major Indian script Unicode blocks
+  const indianChars = (text.match(/[\u0900-\u0DFF]/g) || []).length;
+  if (indianChars / total < 0.35) return false; // not predominantly Indian script
+
+  const patterns: RegExp[] = [
+    // Malayalam — ഹ=ha, ആൻഡ്=and, ഈസ്=is, ഫോർ=for, പേഷ്യ=patient, ഡോക്ടർ=doctor
+    /ഹാസ്|ആൻഡ്|ഈസ്|ഫോർ|വിത്ത്|ദ്|ദി\s|ദാറ്റ്|എസ്\s|ഡി\s|എച്ച്|പേഷ്യ|ഡോക്ടർ|നീഡ്|വെയ്|ഐ\.?സി\.?യു|എം\.?ആർ\.?ഐ/,
+    // Hindi transliterated English
+    /पेशेंट|डॉक्टर|हैज़|एंड\s|इज़\s|फ़ॉर\s|विद\s|ऑर\s|ऐन्ड\s|इज\s|नीड्स/,
+    // Tamil transliterated English
+    /பேஷன்ட|டாக்டர்|வெய்ட்|அண்ட்\s|இஸ்\s|ஃபார்\s|நீட்ஸ்/,
+    // Telugu transliterated English
+    /పేషెంట|డాక్టర|వెయిటింగ|అండ్\s|ఈస్\s|ఫర్\s|నీడ్స్/,
+    // Kannada transliterated English
+    /ಪೇಷಂಟ|ಡಾಕ್ಟರ|ವೇಟಿಂಗ|ಅಂಡ್\s|ಈಸ್\s|ಫಾರ್\s|ನೀಡ್ಸ/,
+  ];
+  return patterns.some(p => p.test(text));
+}
+
 function cleanExpiredSessions() {
   const now = Date.now();
   const entries = Array.from(adminSessions.entries());
@@ -2784,7 +2812,7 @@ Schema:
   "extracted_deadlines": [{"task": "short action", "date": "natural language or YYYY-MM-DD"}]
 }
 
-Keep each bullet under 12 words. Reply in the same language as the note.
+Keep each bullet under 12 words. Language hint: "${language || "en"}". Reply in the same language as the note content.
 
 Note: """${(transcript as string).trim()}"""`,
             }],
@@ -3235,6 +3263,18 @@ Note: """${(transcript as string).trim()}"""`,
         let detected = result.languageCode || lang;
         if (detected === "ur-IN" || detected === "ur") detected = "hi-IN" as SarvamLanguageCode;
         transcript = result.transcript?.trim() || "";
+
+        // Detect transliterated English written in Indian script — Sarvam sometimes
+        // phonetically writes English audio using Indian script characters (e.g. "ഹാസ്" for "has").
+        // If detected, fall back to Whisper which handles code-switching correctly.
+        if (transcript && isTransliteratedEnglish(transcript)) {
+          console.warn("[stt] Transliterated English detected in Indian script — re-transcribing with Whisper");
+          const whisperText = (await speechToText(audioBuffer, inputFormat, "en"))?.trim();
+          if (whisperText) {
+            transcript = whisperText;
+            console.log("[stt] Whisper fallback transcript:", transcript.slice(0, 80));
+          }
+        }
       } else {
         const isoLang = (lang).split("-")[0] || "en";
         console.log("[stt] Using OpenAI STT for:", isoLang);
