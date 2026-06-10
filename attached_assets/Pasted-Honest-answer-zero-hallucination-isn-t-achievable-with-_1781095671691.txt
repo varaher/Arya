@@ -1,0 +1,44 @@
+Honest answer — **zero hallucination isn't achievable** with any current LLM, including Claude. But *very low and manageable* is absolutely achievable with the right architecture.
+
+---
+
+**Why hallucinations happen**
+
+LLMs generate the most *probable* next token — they don't "know" facts, they *predict* them. When the model is uncertain, it fills gaps confidently. That's the root problem.
+
+---
+
+**Practical ways to keep it very low**
+
+**1. RAG (Retrieval Augmented Generation)**
+Instead of relying on the model's memory, you feed it verified source documents at query time. The model answers *from the document*, not from training weights. This is the single biggest lever.
+
+**2. Constrained prompting**
+Tell the model explicitly: *"If you don't know, say you don't know. Never infer."* Claude follows this more faithfully than most models.
+
+**3. Structured outputs**
+Force JSON or schema-bound responses. Hallucinations drop significantly when the model can't free-form narrate.
+
+**4. Temperature control**
+Lower temperature = less creative, less hallucinatory. For factual tasks, keep it at 0 or 0.1.
+
+**5. Verification layer**
+For high-stakes outputs (like ErMate's clinical data), add a second Claude call that *reviews* the first output and flags uncertain fields.
+
+**6. Grounding with tools**
+Give the model web search or a database lookup — it then cites rather than invents.
+
+---
+
+**For your specific products**
+
+- **ErMate** — RAG + structured JSON output + verification layer is non-negotiable for clinical safety. Hallucinated drug names or dosages are a real risk.
+- **ARYA** — Lower stakes, but constrained prompting + low temperature for any factual reflection keeps it honest.
+
+---
+
+**Bottom line**
+
+With RAG + structured outputs + a verification pass, you can get hallucination rates on *factual tasks* down to near-negligible. The residual risk is on *open-ended generation* — which for ARYA is actually fine, since creative depth matters more than factual precision there.
+
+Want me to design a hallucination-mitigation architecture specifically for ErMate's clinical extraction pipeline?
