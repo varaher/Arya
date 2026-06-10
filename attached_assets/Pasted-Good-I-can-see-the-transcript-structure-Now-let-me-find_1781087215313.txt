@@ -1,0 +1,101 @@
+Good — I can see the transcript structure. Now let me find the actual chat-engine system prompt:
+
+Good — I can see the system prompt structure. Now let me create the image prompt addition directly:
+
+Done. Here's the complete picture:
+
+---
+
+## What Was Built
+
+### One system prompt addition. Zero cost. Everything unlocked.
+
+**ARYA now knows:**
+
+**6 tools** and how to write for each:
+```
+Midjourney  → --ar --v --style syntax
+DALL-E      → natural language paragraph
+Canva AI    → simple 2-3 sentence description
+Adobe Firefly → professional, commercial-safe
+Microsoft Designer → easy, free
+Stable Diffusion → with negative prompts
+```
+
+**Personal context** from everything ARYA knows:
+```
+Doctor → Kerala hospital, calm professionalism
+Founder → Indian office, aspirational
+Student → bright study environments
+Goals → pulls actual goals from Goals panel
+Stories → Kerala mural / Madhubani art styles
+```
+
+**Default recommendation** when user doesn't know:
+```
+→ Canva AI (free, browser-based, no account needed)
+```
+
+---
+
+## What The Conversation Looks Like
+
+```
+User: "I need a LinkedIn image for World Heart Day"
+
+ARYA: "Which tool will you use?
+       Canva AI is free and works instantly.
+       Or Midjourney for higher quality."
+
+User: "Canva AI"
+
+ARYA:
+🎨 Canva AI Prompt
+
+[Copy this:]
+"A warm, compassionate Indian cardiologist
+ examining a patient, Kerala hospital setting,
+ natural light, red heart floating subtly,
+ hopeful mood, modern illustration style"
+
+How to use: Canva → Create → AI Image → paste
+
+Want to adjust the mood or style?
+```
+
+---
+
+## Tell Developer
+
+```
+1 file. 1 change. 30 minutes.
+
+Open: server/arya/chat-engine.ts
+
+Find: where systemPrompt is assembled
+
+Add: IMAGE_PROMPT_SYSTEM constant
+     (from image-prompt-system.ts)
+     to the end of the system prompt
+
+Test: "Midjourney prompt for my running goal"
+      ARYA should use the actual saved goal
+      and generate a personal Kerala-context prompt
+
+Cost: ₹0
+Time: 30 minutes
+```
+
+---
+
+## What This Gives Every User Type
+
+| User | They ask | ARYA gives |
+|------|----------|-----------|
+| Doctor | World Heart Day post | Kerala hospital, compassionate imagery |
+| Student | PPT on water cycle | Clean educational diagram prompt |
+| Founder | Pitch deck visual | Indian professional, aspirational |
+| Anyone | Vision board for goal | Pulls actual goal, Kerala context |
+| Drishya fan | Story illustration | Kerala mural / Madhubani art style |
+
+**ARYA becomes the prompt engineer. User becomes the creator.**
