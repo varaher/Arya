@@ -1,0 +1,255 @@
+Looking at all 7 screenshots carefully. This is excellent real-world usage.
+
+---
+
+## What Happened Here — Summary
+
+```
+You uploaded a photo of NABH ED indicators
+Asked ARYA to prepare a data capture format
+ARYA created a complete framework ✅
+You asked for Word format with columns/rows
+ARYA generated a downloadable .docx ✅
+With proper tables for:
+  PSQ 3a — Time for Initial Assessment
+  PSQ 3b — Medication Error tracking
+Download link provided ✅
+```
+
+**This is ARYA working exactly as intended for a medical professional.**
+
+---
+
+## Two Issues Visible
+
+### Issue 1 — Table Rendering Broken In Chat
+```
+Images 1, 4, 6, 7 show:
+| Patient ID | Date | Time | |------|------|
+
+The markdown table is rendering as
+raw text with dashes and pipes.
+Not as a proper visual table.
+
+This is a rendering bug.
+Tables should show as:
+┌──────────┬──────────┬──────────┐
+│ Patient  │ Date     │ Time     │
+├──────────┼──────────┼──────────┤
+│          │          │          │
+└──────────┴──────────┴──────────┘
+
+Not as: | Patient | Date | |-----|
+```
+
+### Issue 2 — Word Document Works ✅
+```
+Image 5 shows:
+"Download NABH ED Indicators Template.docx"
+Link works ✅
+Tables properly formatted in Word ✅
+PSQ 3a and 3b both included ✅
+
+This part is working correctly.
+The Word output is good.
+The chat rendering is the problem.
+```
+
+---
+
+## About Teens Using This Feature
+
+You're right to think about this. Here's what needs to be appropriate for teens:
+
+### What's Fine For Teens ✅
+```
+Research help → ✅
+Essay writing → ✅
+Study notes → ✅
+Goal setting → ✅
+Document creation → ✅
+Career guidance → ✅
+```
+
+### What Needs Care For Teens ⚠️
+```
+Medical document analysis:
+  Teen uploads a medical report
+  ARYA gives detailed clinical analysis
+  
+  For a professional (you) → perfect ✅
+  For a teenager → could be:
+    Scary if they misinterpret results
+    Anxiety-inducing without context
+    Should always say "discuss with doctor"
+
+Legal document analysis:
+  Teen uploads legal notice
+  Without adult guidance → risky
+  Should always say "discuss with parent/lawyer"
+
+Mental health conversations:
+  Teens are vulnerable
+  ARYA needs extra care
+  Always suggest trusted adult/professional
+```
+
+---
+
+## The Table Rendering Fix
+
+```
+Tell developer:
+
+File: client/src/components/FormattedMessage.tsx
+OR wherever markdown is rendered
+
+Tables with | pipes | are not rendering
+as visual HTML tables.
+
+Add to the ReactMarkdown components:
+
+import remarkGfm from 'remark-gfm'
+
+<ReactMarkdown
+  remarkPlugins={[remarkGfm]}  ← ADD THIS
+  components={{
+    table: ({children}) => (
+      <div className="table-wrapper">
+        <table className="arya-table">
+          {children}
+        </table>
+      </div>
+    ),
+    th: ({children}) => (
+      <th className="arya-th">{children}</th>
+    ),
+    td: ({children}) => (
+      <td className="arya-td">{children}</td>
+    ),
+  }}
+>
+  {content}
+</ReactMarkdown>
+
+CSS:
+.arya-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin: 12px 0;
+  overflow-x: auto;
+  display: block;
+}
+
+.arya-th {
+  background: #f0f4f0;
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.arya-td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  vertical-align: top;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 8px 0;
+}
+```
+
+---
+
+## Add Teen Safety To System Prompt
+
+```typescript
+// server/arya/chat-engine.ts
+// Add to system prompt:
+
+`TEEN AND YOUNG USER SAFETY:
+When user appears to be a student or teen:
+
+Medical results or reports:
+  Always end with:
+  "These results should be discussed with
+   your doctor who knows your full history.
+   Don't worry based on reports alone."
+
+Legal documents:
+  Always end with:
+  "Share this with a parent or trusted adult.
+   A lawyer can explain what this means
+   for your specific situation."
+
+Mental health topics:
+  Extra warmth and care.
+  Always mention a trusted adult or
+  school counselor as a resource.
+  Never dismiss feelings.
+  Never minimize what they're going through.
+
+Academic pressure:
+  Validate the stress.
+  Give practical help.
+  Remind them their worth is not their grades.
+
+Career confusion:
+  Explore options without pressure.
+  "There's no single right path."
+  Indian context — family expectations
+  are real, acknowledge them.`
+```
+
+---
+
+## What This Conversation Shows
+
+```
+ARYA handled a complex professional
+medical task perfectly:
+
+✅ Read a clinical indicator document
+✅ Created a proper data capture framework
+✅ Generated a downloadable Word document
+✅ Included correct NABH PSQ references
+✅ Proper table structure with formulas
+✅ Asked the right follow-up question
+
+The intelligence is there.
+The Word generation works.
+Only the in-chat table rendering is broken.
+
+One package install (remark-gfm)
+fixes the visual display.
+```
+
+---
+
+## Priority Fix
+
+```
+Most urgent from these screenshots:
+
+1. Table rendering (remark-gfm):
+   Install package + update ReactMarkdown
+   Tables show visually in chat
+   Not as raw pipe characters
+   30 minutes to fix
+
+2. Teen safety additions to system prompt:
+   Add the safety guidelines above
+   Medical/legal/mental health caveats
+   No code change — just prompt update
+   15 minutes
+
+Everything else in these screenshots
+is working correctly and well.
+ARYA did a genuinely good job
+with the NABH clinical work.
+```

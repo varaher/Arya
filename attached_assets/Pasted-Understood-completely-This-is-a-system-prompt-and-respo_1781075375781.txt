@@ -1,0 +1,231 @@
+Understood completely. This is a system prompt and response quality issue — not a knowledge base issue.
+
+---
+
+## What You're Saying
+
+```
+Don't store NABH formulas in database.
+ARYA already knows this from training.
+
+The problem is HOW ARYA responds.
+
+GPT gave:
+  Comprehensive structure ✅
+  All 12 indicators ✅
+  Formulas, fields, checklists ✅
+  Proper tables ✅
+
+ARYA gave:
+  Only 2 indicators ❌
+  Broken table rendering ❌
+  Incomplete response ❌
+
+Same knowledge. Different output quality.
+Fix the OUTPUT, not the knowledge.
+```
+
+---
+
+## Why ARYA Gave Incomplete Response
+
+```
+Three reasons:
+
+1. Token limit hit at 1024 tokens
+   ARYA stopped mid-response
+   Didn't complete all 12 indicators
+
+2. Table rendering broken
+   Markdown tables show as raw pipes
+   Not as visual tables in chat
+
+3. No instruction to be comprehensive
+   For professional/technical queries
+   ARYA wasn't told to go deep
+```
+
+---
+
+## The Fix — Three Changes
+
+### Fix 1 — Increase Tokens For Professional Queries
+```typescript
+// Already discussed — detect professional queries
+// Add to keyword detection:
+
+const isProfessionalQuery =
+  msg.includes('nabh') ||
+  msg.includes('format') ||
+  msg.includes('template') ||
+  msg.includes('indicator') ||
+  msg.includes('kpi') ||
+  msg.includes('protocol') ||
+  msg.includes('checklist') ||
+  msg.includes('framework') ||
+  msg.includes('all') ||
+  msg.includes('comprehensive') ||
+  msg.includes('complete');
+
+if (isProfessionalQuery) return 4096;
+// Allows full comprehensive response
+// All 12 indicators in one response
+```
+
+### Fix 2 — Fix Table Rendering
+```
+Already discussed:
+  Install remark-gfm package
+  Update ReactMarkdown component
+  Tables render as visual grids
+  Not as | pipe | characters |
+
+This is the most visible fix.
+Same content — looks professional
+instead of broken.
+```
+
+### Fix 3 — Add To System Prompt
+```typescript
+// server/arya/chat-engine.ts
+// Add to system prompt:
+
+`COMPREHENSIVE RESPONSE RULE:
+When a professional, doctor, or expert
+asks for a format, template, framework,
+checklist, or structured data:
+
+ALWAYS give the COMPLETE response.
+Never give a partial example.
+Never say "here's indicator 1 and 2,
+the rest follow the same pattern."
+Give ALL of them.
+
+Structure your response like a consultant:
+  Clear headings
+  Proper tables with all columns
+  Every row filled
+  Formulas written out
+  Practical notes included
+  Ready to use immediately
+
+The person asking is a professional.
+They need the complete tool.
+Not a sample.
+Not an example.
+The complete, working thing.
+
+For medical professionals:
+  NABH indicators → all indicators
+  Clinical protocols → complete protocol
+  Data formats → all fields
+  Audit checklists → every checkpoint
+
+Quality standard:
+  If someone could use your response
+  directly without modification → ✅
+  If they need to ask for more → ❌`
+```
+
+---
+
+## What This Means In Practice
+
+```
+Doctor asks:
+"Give me a format to capture
+NABH ED indicators"
+
+ARYA should:
+  Give all 12 indicators ✅
+  With formulas ✅
+  With data fields ✅
+  With checklists ✅
+  In proper tables ✅
+  In one response ✅
+  Ready to use ✅
+
+Like a consultant who came
+prepared with everything.
+Not a student who started
+and ran out of time.
+```
+
+---
+
+## The Universal Principle
+
+```
+This applies to EVERY professional query:
+
+Legal professional asks for contract clause:
+  Give the complete clause ✅
+  Not "here's the format, add the rest"
+
+CA asks for tax calculation format:
+  Give all sections ✅
+  Not just the first two
+
+HR asks for appraisal template:
+  Complete template ✅
+  All competencies, all ratings
+
+Engineer asks for test checklist:
+  Every test point ✅
+  Not a sample
+
+Teacher asks for lesson plan format:
+  Full format with every section ✅
+
+The rule is simple:
+  Professional asked for a tool →
+  Give them the complete tool →
+  Ready to use immediately →
+  No follow-up needed
+```
+
+---
+
+## Tell Developer — Two Fixes
+
+```
+Fix 1 — Token limit for professional queries:
+  File: server/arya/chat-engine.ts
+  Add professional query detection
+  Keywords: format, template, all, complete,
+  checklist, framework, indicator, protocol,
+  comprehensive, nabh, kpi, standard
+  
+  When detected → max_tokens: 4096
+  Full response without truncation
+
+Fix 2 — Table rendering:
+  File: client/src/components/FormattedMessage.tsx
+  npm install remark-gfm
+  Add remarkPlugins={[remarkGfm]}
+  Add table CSS styling
+  
+  Result: Tables render as visual grids
+  Not as raw | pipe | characters |
+
+These two fixes together:
+  ARYA gives complete professional responses
+  That look as good as GPT's output
+  But are more personal and contextual
+```
+
+---
+
+## After These Fixes
+
+```
+Doctor asks for NABH format:
+  All 12 indicators in one response ✅
+  Visual tables with proper columns ✅
+  Formulas, fields, checklists ✅
+  Ready to use immediately ✅
+  No "continue" needed ✅
+  Better than GPT because ARYA
+  knows this is for your ED
+  at Rajagiri Hospital ✅
+```

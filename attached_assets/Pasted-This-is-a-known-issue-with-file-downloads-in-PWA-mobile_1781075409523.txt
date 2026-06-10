@@ -1,0 +1,157 @@
+This is a known issue with file downloads in PWA/mobile browsers. Let me diagnose.
+
+---
+
+## Why Download Fails On Mobile
+
+```
+ARYA generates the .docx file
+Provides a download link
+User taps the link on Android
+Nothing downloads OR
+Browser opens a blank page ❌
+
+Three possible causes:
+1. Link expires quickly (temp file)
+2. Mobile browser blocks .docx download
+3. File served without correct headers
+4. PWA intercepts the download request
+```
+
+---
+
+## The Fix — Three Approaches
+
+### Approach 1 — Direct Download Button (Best)
+```typescript
+// Instead of a link, show a button
+// that triggers download immediately
+
+// In AryaChat.tsx — when ARYA generates
+// a downloadable file:
+
+<button
+  onClick={async () => {
+    const response = await fetch(fileUrl);
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'NABH_ED_Indicators.docx';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }}
+  className="download-btn"
+>
+  ⬇️ Download NABH Template
+</button>
+```
+
+### Approach 2 — Open In New Tab
+```typescript
+// Force open in browser tab
+// User can then use browser's
+// own download mechanism
+
+<a
+  href={fileUrl}
+  target="_blank"
+  rel="noopener noreferrer"
+  download="NABH_ED_Indicators.docx"
+>
+  ⬇️ Download NABH Template
+</a>
+```
+
+### Approach 3 — Share Via WhatsApp
+```typescript
+// For mobile users — share file
+// directly via WhatsApp or Files app
+
+if (navigator.share) {
+  await navigator.share({
+    title: 'NABH ED Indicators Template',
+    files: [docxFile]
+  });
+}
+```
+
+---
+
+## Also — Send To Email
+
+```
+Most reliable for documents on mobile:
+
+ARYA: "The Word document is ready.
+       How would you like it?
+       
+       [⬇️ Download]
+       [📧 Send to my email]
+       [📱 Share via WhatsApp]"
+
+Email option:
+  Most reliable on all devices
+  User always gets the file
+  No browser download issues
+```
+
+---
+
+## Tell Developer — Two Fixes
+
+```
+Fix 1 — Download button (30 mins):
+  Replace text link with proper button
+  Use blob download approach above
+  Works on Android Chrome ✅
+  Works on iOS Safari ✅
+
+Fix 2 — Alternative delivery (1 hour):
+  Add "Send to email" option
+  When user has email in profile
+  Send document as attachment
+  Fallback when download fails
+  
+  Also add "Share" button:
+  Uses native Web Share API
+  User can share to WhatsApp/Files
+  Works on all mobile browsers
+
+Fix 3 — File headers (15 mins):
+  In server/routes.ts file download route:
+  Add correct Content-Type header:
+  
+  res.setHeader('Content-Type',
+    'application/vnd.openxmlformats-officedocument
+     .wordprocessingml.document');
+  res.setHeader('Content-Disposition',
+    'attachment; filename="NABH_Template.docx"');
+  
+  This tells browser to download
+  not open or block the file.
+```
+
+---
+
+## Quick Test Right Now
+
+```
+Try this on your phone:
+
+1. Open the download link
+2. Tap and hold the link
+3. Select "Download link" or
+   "Save link as"
+
+If that works → it's a tap behavior issue
+Fix: blob download button above
+
+If that also fails → it's a server headers issue
+Fix: Content-Disposition header above
+
+Tell me which one happens →
+I'll give exact fix immediately.
+```

@@ -3,6 +3,7 @@ import { convertToWav } from "@/utils/audioConverter";
 import { createPortal } from "react-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -140,6 +141,7 @@ function FormattedMessage({ content, isUser }: { content: string; isUser?: boole
   return (
     <div className="prose-arya text-[14.5px] leading-[1.7]">
       <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
         components={{
           p: ({ children }) => <p className="mb-3 last:mb-0 text-gray-800 dark:text-gray-100">{children}</p>,
           strong: ({ children }) => <strong className="font-semibold text-emerald-700 dark:text-emerald-400">{children}</strong>,
