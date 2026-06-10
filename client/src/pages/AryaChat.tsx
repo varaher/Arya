@@ -1954,6 +1954,55 @@ function GoalsPanel({ onClose }: { onClose: () => void }) {
   );
 }
 
+function StudyNoteToast({ noteId, title, studyType, onClose, onOpen }: {
+  noteId: string;
+  title: string;
+  studyType: string;
+  onClose: () => void;
+  onOpen: () => void;
+}) {
+  const studyTypeIcon: Record<string, string> = {
+    exam_prep: "📝",
+    ppt_prep: "📊",
+    concept_learn: "💡",
+    essay_writing: "✍️",
+    topic_summary: "📌",
+  };
+  const icon = studyTypeIcon[studyType] || "📚";
+
+  return (
+    <motion.div
+      initial={{ y: 80, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: 80, opacity: 0 }}
+      transition={{ type: "spring", stiffness: 400, damping: 32 }}
+      className="fixed bottom-24 left-1/2 z-[9999] -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm"
+    >
+      <div className="flex items-center gap-3 px-4 py-3 rounded-2xl shadow-xl border border-cyan-200/60 dark:border-cyan-800/60 bg-white dark:bg-slate-800">
+        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-400 to-teal-500 flex items-center justify-center flex-shrink-0 text-base shadow-sm">
+          {icon}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-cyan-600 dark:text-cyan-400 mb-0.5">📚 Saved to Notes</p>
+          <p className="text-xs font-semibold text-gray-800 dark:text-gray-100 truncate">{title}</p>
+        </div>
+        <button
+          onClick={onOpen}
+          className="flex-shrink-0 text-[11px] font-semibold text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 px-2 py-1 rounded-lg hover:bg-cyan-50 dark:hover:bg-cyan-900/20 transition-all"
+        >
+          Open →
+        </button>
+        <button
+          onClick={onClose}
+          className="flex-shrink-0 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
 function NoteCard({ note, token, deleteNote, formatDate, formatDur, isEditMode, isSelected, onSelect }: {
   note: any;
   token: string | null;
@@ -2048,6 +2097,103 @@ function NoteCard({ note, token, deleteNote, formatDate, formatDur, isEditMode, 
     };
   }, []);
 
+  const isStudyNote = note.sourceType === 'chat';
+  const examQuestions: string[] = Array.isArray(note.examQuestions) ? note.examQuestions : [];
+
+  const studyTypeLabel: Record<string, string> = {
+    exam_prep: "Exam Prep", ppt_prep: "Presentation", concept_learn: "Concept Note",
+    essay_writing: "Essay Guide", topic_summary: "Summary",
+  };
+  const studyTypeIcon: Record<string, string> = {
+    exam_prep: "📝", ppt_prep: "📊", concept_learn: "💡", essay_writing: "✍️", topic_summary: "📌",
+  };
+
+  // ── Study note card ──────────────────────────────────────────────────────────
+  if (isStudyNote) {
+    return (
+      <div
+        data-testid={`card-study-note-${note.id}`}
+        onClick={isEditMode ? onSelect : undefined}
+        className={`rounded-xl border transition-all ${
+          isEditMode && isSelected
+            ? "bg-cyan-50 dark:bg-cyan-900/20 border-cyan-300 dark:border-cyan-700 cursor-pointer"
+            : "bg-white dark:bg-slate-800 border-gray-100 dark:border-slate-700 hover:border-cyan-200 dark:hover:border-cyan-800 hover:shadow-sm"
+        } ${isEditMode ? "cursor-pointer" : ""}`}
+      >
+        {/* Study card header */}
+        <div className="flex items-center gap-2 px-3 pt-2.5 pb-1">
+          <div className={`w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 text-[13px] ${
+            isEditMode && isSelected ? "bg-cyan-500" : "bg-cyan-50 dark:bg-cyan-900/30"
+          }`}>
+            {isEditMode ? <Check className={`w-3 h-3 ${isSelected ? "text-white" : "text-transparent"}`} /> : (studyTypeIcon[note.studyType] || "📚")}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[11px] font-semibold text-gray-800 dark:text-gray-100 truncate">{note.title || "Study Note"}</p>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[10px] text-gray-400 dark:text-gray-500">{formatDate(note.createdAt)}</span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-cyan-50 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400 font-medium border border-cyan-200 dark:border-cyan-800">
+                {studyTypeLabel[note.studyType] || "From chat"}
+              </span>
+            </div>
+          </div>
+          {!isEditMode && (
+            <button
+              onClick={e => { e.stopPropagation(); deleteNote.mutate(note.id); }}
+              data-testid={`button-delete-note-${note.id}`}
+              className="p-1 rounded-md text-gray-300 dark:text-gray-600 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 dark:hover:text-red-400 transition-all flex-shrink-0"
+            >
+              <Trash2 className="w-3 h-3" />
+            </button>
+          )}
+        </div>
+
+        {/* Summary bullets */}
+        {summaryLines.length > 0 && (
+          <div className="px-3 pb-1">
+            <p className="text-[9px] font-bold uppercase tracking-widest text-cyan-500 dark:text-cyan-400 mb-1">✨ Summary</p>
+            <ul className="space-y-0.5 mb-1">
+              {summaryLines.map((line: string, i: number) => (
+                <li key={i} className="text-[11px] text-gray-700 dark:text-gray-200 leading-relaxed flex gap-1.5">
+                  <span className="text-cyan-400 flex-shrink-0 mt-px">•</span>
+                  <span>{line.replace(/^[•\-]\s*/, "")}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Exam questions — shown when available */}
+        {examQuestions.length > 0 && (
+          <div className="px-3 pb-1">
+            <p className="text-[9px] font-bold uppercase tracking-widest text-amber-500 dark:text-amber-400 mb-1">❓ Likely Exam Questions</p>
+            <ol className="space-y-0.5 mb-1">
+              {examQuestions.map((q: string, i: number) => (
+                <li key={i} className="text-[11px] text-gray-600 dark:text-gray-300 leading-relaxed flex gap-1.5">
+                  <span className="text-amber-400 flex-shrink-0 font-medium">{i + 1}.</span>
+                  <span>{q}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
+
+        {/* Action bar */}
+        {!isEditMode && (
+          <div className="flex gap-1.5 px-3 pb-2.5">
+            <button
+              onClick={handleCopy}
+              data-testid={`button-copy-note-${note.id}`}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium border bg-gray-50 dark:bg-slate-700 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600 transition-all"
+            >
+              {copied ? "✓ Copied" : "📋 Copy"}
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── Voice note card (default) ────────────────────────────────────────────────
   return (
     <div
       data-testid={`card-voice-note-${note.id}`}
@@ -3173,6 +3319,8 @@ export default function AryaChat() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
   const [pendingStoryRasa, setPendingStoryRasa] = useState<string | null>(null);
+  const [studyNoteToast, setStudyNoteToast] = useState<{ noteId: string; title: string; studyType: string } | null>(null);
+  const studyNoteToastTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [showingStory, setShowingStory] = useState(false);
   const [storyText, setStoryText] = useState("");
   const [storyLoading, setStoryLoading] = useState(false);
@@ -3926,6 +4074,11 @@ export default function AryaChat() {
             }
             if (event.type === "story_moment") {
               setPendingStoryRasa(event.rasa || null);
+            }
+            if (event.type === "note_saved" && event.noteId) {
+              setStudyNoteToast({ noteId: event.noteId, title: event.title || "Study Note", studyType: event.studyType || "concept_learn" });
+              if (studyNoteToastTimerRef.current) clearTimeout(studyNoteToastTimerRef.current);
+              studyNoteToastTimerRef.current = setTimeout(() => setStudyNoteToast(null), 6000);
             }
             if (event.content) {
               fullContent += event.content;
@@ -6209,6 +6362,22 @@ export default function AryaChat() {
         </div>,
         document.body
       )}
+
+      <AnimatePresence>
+        {studyNoteToast && createPortal(
+          <StudyNoteToast
+            noteId={studyNoteToast.noteId}
+            title={studyNoteToast.title}
+            studyType={studyNoteToast.studyType}
+            onClose={() => setStudyNoteToast(null)}
+            onOpen={() => {
+              setStudyNoteToast(null);
+              setShowNotes(true);
+            }}
+          />,
+          document.body
+        )}
+      </AnimatePresence>
 
       {showVoiceMode && createPortal(
         <VoiceConversationMode

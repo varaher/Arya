@@ -690,10 +690,11 @@ export async function generateAryaResponse(
   conversationId?: number,
   userId?: string | null,
   voiceMode: boolean = false,
-  sarvamDetectedLang?: string,   // Pre-detected by Sarvam STT — skips script detection
-  targetLanguage?: string,        // User's selected display language (globe picker)
-  section: string = "chat",       // App section — chat | kaal | niti | mood | health | goals
-  thinkingMode: string = "default" // Active thinking mode (founder/devil/first_principles/therapist/contrarian/chain)
+  sarvamDetectedLang?: string,    // Pre-detected by Sarvam STT — skips script detection
+  targetLanguage?: string,         // User's selected display language (globe picker)
+  section: string = "chat",        // App section — chat | kaal | niti | mood | health | goals
+  thinkingMode: string = "default", // Active thinking mode
+  studyNotesAddition?: string       // Injected when study intent detected
 ): Promise<{ stream: AsyncIterable<string>; meta: AryaResponseMeta }> {
   const startTime = Date.now();
 
@@ -1002,7 +1003,7 @@ export async function generateAryaResponse(
   } catch {}
 
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-    { role: "system", content: ARYA_SYSTEM_PROMPT + userPrefs + (langInstruction ? `\n\n${langInstruction}` : "") + sectionToneAddition + knowledgeContext + newsContext + memoryContext + liveContext + uncertaintyGuidance + voiceInstruction + longFormInstruction + goalCheckInCtx.systemPromptBlock + thinkingModePrompt },
+    { role: "system", content: ARYA_SYSTEM_PROMPT + userPrefs + (langInstruction ? `\n\n${langInstruction}` : "") + sectionToneAddition + knowledgeContext + newsContext + memoryContext + liveContext + uncertaintyGuidance + voiceInstruction + longFormInstruction + goalCheckInCtx.systemPromptBlock + thinkingModePrompt + (studyNotesAddition || "") },
     ...conversationHistory.slice(-20).map(m => ({
       role: m.role as "user" | "assistant",
       content: m.content,

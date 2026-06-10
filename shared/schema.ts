@@ -819,6 +819,10 @@ export const aryaVoiceNotes = pgTable("arya_voice_notes", {
   language: varchar("language", { length: 10 }).default("en"),
   audioData: text("audio_data"),
   mimeType: varchar("mime_type", { length: 50 }),
+  sourceType: varchar("source_type", { length: 20 }).default("voice"),
+  studyType: varchar("study_type", { length: 30 }),
+  examQuestions: jsonb("exam_questions").default([]),
+  conversationId: integer("conversation_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

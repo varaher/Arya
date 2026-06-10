@@ -1,0 +1,126 @@
+Now build the interactive preview:
+
+Both files delivered. Open the preview to see the complete flow rendered. Here's exactly what was built:
+
+---
+
+## What Was Built — 6 Parts
+
+### Part 1 — Study Intent Detector
+Automatically detects when user wants to study:
+
+```
+"Help me study photosynthesis" → exam_prep
+"Make a PPT on water cycle"    → ppt_prep
+"Explain cell division"        → concept_learn
+"Essay on climate change"      → essay_writing
+"Key points of chapter 5"      → topic_summary
+```
+
+No user needs to select a mode. ARYA notices.
+
+### Part 2 — Notes Content Parser
+Extracts hidden `[NOTES_CONTENT]` blocks from ARYA's response:
+
+```
+Bullets → key points
+Terms   → definitions
+Q:      → exam questions
+PPT     → slide outline
+```
+
+Block is invisible to user. Extracted silently. Saved automatically.
+
+### Part 3 — Study Note Toast
+
+```
+📚 Saved to Notes
+   Photosynthesis — Class 10 Exam Prep
+   [Open →]
+```
+Slides up from bottom. Auto-dismisses in 6 seconds. Uses `createPortal` — no positioning bugs.
+
+### Part 4 — Study Note Card
+Different from voice note card:
+
+```
+📚 Photosynthesis — Exam Prep  [From chat]
+
+✨ SUMMARY
+• 6CO₂ + 6H₂O → glucose + oxygen
+• Happens in chloroplast
+• Chlorophyll captures sunlight
+
+❓ LIKELY EXAM QUESTIONS
+1. What are the raw materials?
+2. Where does it happen?
+3. Why are leaves green?
+
+[📋 Copy]  [📖 Open chat]
+```
+
+PPT requests also get a slide-by-slide outline in the note card.
+
+---
+
+## The Complete Flow
+
+```
+User: "Help me study photosynthesis for exam"
+          ↓
+ARYA detects: exam_prep intent
+          ↓
+ARYA asks: "Save to Notes?"
+          ↓
+User: "Yes"
+          ↓
+ARYA teaches beautifully
+          ↓
+[NOTES_CONTENT] parsed silently
+          ↓
+Saved to arya_voice_notes
+with source_type = 'chat'
+          ↓
+Toast: "📚 Saved to Notes [Open →]"
+          ↓
+Notes panel: study card with
+bullets + exam questions
+          ↓
+Sunday Review:
+"You studied 3 topics this week.
+ Photosynthesis exam on Monday —
+ want to review it?"
+```
+
+---
+
+## Tell Developer — 10 Steps
+
+```
+□ 1. Save study-notes-system.ts →
+      server/arya/study-notes-extractor.ts
+
+□ 2. DB migration (4 new columns)
+
+□ 3. Update schema.ts
+
+□ 4. chat-engine.ts → add STUDY_NOTES_SYSTEM_PROMPT
+
+□ 5. routes.ts → detect intent, parse notes,
+      save, return savedNoteId
+
+□ 6. Create StudyNoteToast.tsx
+
+□ 7. AryaChat.tsx → show toast on savedNoteId
+
+□ 8. VoiceNotesPanel.tsx → study card design
+
+□ 9. Add styles to global CSS
+
+□ 10. Test: photosynthesis exam query →
+       full flow end to end
+
+Total: 5-6 hours
+```
+
+**Chat and Notes become one system. What you learn in chat lives in your notes. Forever.**

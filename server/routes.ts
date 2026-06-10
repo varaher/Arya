@@ -98,6 +98,7 @@ import { extractFromVoiceNote } from "./arya/voice-extractor";
 import { autoCreateCalendarReminders } from "./arya/calendar-auto-reminders";
 import { computeKundliProfile, generateVedicBriefing } from "./arya/vedic-lens";
 import { createNitiSession, addNitiMessage } from "./arya/niti";
+import { detectStudyIntent, buildNoteTitle, extractBulletsFromResponse, buildStudyNotesPromptAddition } from "./arya/study-notes-extractor";
 
 const retriever = new KnowledgeRetriever();
 const medicalEngine = new MedicalEngine();
@@ -2143,7 +2144,11 @@ export async function registerRoutes(
         return;
       }
 
-      const { stream, meta } = await generateAryaResponse(content, history, userId || tenant_id || "varah", conversationId, userId, false, undefined, language, section || "chat", thinkingMode || "default");
+      // Detect study intent — injects structured guidance into ARYA's system prompt
+      const studyIntent = userId ? detectStudyIntent(content) : null;
+      const studyNotesAddition = studyIntent ? buildStudyNotesPromptAddition(studyIntent) : undefined;
+
+      const { stream, meta } = await generateAryaResponse(content, history, userId || tenant_id || "varah", conversationId, userId, false, undefined, language, section || "chat", thinkingMode || "default", studyNotesAddition);
       let fullResponse = "";
 
       res.write(`data: ${JSON.stringify({ type: "meta", mode: meta.mode, icon: meta.icon, confidence: meta.confidence, sourcesCount: meta.sourcesCount, memoryUsed: meta.memoryUsed })}\n\n`);
@@ -2156,6 +2161,62 @@ export async function registerRoutes(
       // Parse + strip any [STORY_MOMENT: rasa] tag before storing
       const { cleanResponse, storyMoment } = parseStoryMoment(fullResponse);
       await chatStorage.createMessage(conversationId, "assistant", cleanResponse);
+
+      // Save study note (zero-latency — uses bullet extraction, no extra LLM call)
+      let savedStudyNoteId: string | null = null;
+      if (studyIntent && userId) {
+        try {
+          const bullets = extractBulletsFromResponse(cleanResponse);
+          const title = buildNoteTitle(studyIntent);
+          const summary = bullets.length > 0
+            ? bullets.map(b => `• ${b}`).join('\n')
+            : cleanResponse.slice(0, 400);
+          const [savedNote] = await db.insert(aryaVoiceNotes).values({
+            userId,
+            title,
+            transcript: cleanResponse.slice(0, 3000),
+            summary,
+            sourceType: 'chat',
+            studyType: studyIntent.type,
+            conversationId,
+            extractedTasks: [],
+            language: 'en',
+            durationSeconds: 0,
+          } as any).returning({ id: aryaVoiceNotes.id });
+          savedStudyNoteId = (savedNote as any)?.id || null;
+
+          // Background: enrich with exam questions (GPT-4o-mini, ~3s, doesn't block)
+          if (savedStudyNoteId && (studyIntent.type === 'exam_prep' || studyIntent.type === 'concept_learn')) {
+            const openaiForNotes = new OpenAI({
+              apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+              baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+            });
+            const noteIdForBg = savedStudyNoteId;
+            openaiForNotes.chat.completions.create({
+              model: "gpt-4.1-mini",
+              messages: [
+                { role: "system", content: "Generate exactly 4 exam questions based on this content. Return ONLY a JSON array of strings: [\"Q1?\", \"Q2?\", \"Q3?\", \"Q4?\"]" },
+                { role: "user", content: cleanResponse.slice(0, 1500) }
+              ],
+              max_tokens: 300,
+              temperature: 0.5,
+            }).then(async (r) => {
+              try {
+                const raw = r.choices[0]?.message?.content || "[]";
+                const match = raw.match(/\[[\s\S]*\]/);
+                const questions: string[] = match ? JSON.parse(match[0]) : [];
+                if (questions.length > 0) {
+                  await db.update(aryaVoiceNotes)
+                    .set({ examQuestions: questions } as any)
+                    .where(eq(aryaVoiceNotes.id, noteIdForBg));
+                }
+              } catch {}
+            }).catch(() => {});
+          }
+        } catch (e: any) {
+          console.error("[STUDY NOTE] Save failed:", e?.message);
+        }
+      }
 
       // Translate to selected Indian language if not English
       const isIndianNonEnglish = language && language !== "en-IN" && language.endsWith("-IN");
@@ -2170,6 +2231,10 @@ export async function registerRoutes(
 
       if (storyMoment) {
         res.write(`data: ${JSON.stringify({ type: "story_moment", rasa: storyMoment })}\n\n`);
+      }
+
+      if (savedStudyNoteId && studyIntent) {
+        res.write(`data: ${JSON.stringify({ type: "note_saved", noteId: savedStudyNoteId, title: buildNoteTitle(studyIntent), studyType: studyIntent.type })}\n\n`);
       }
 
       res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
