@@ -3442,8 +3442,8 @@ export default function AryaChat() {
   const [speakerOn, setSpeakerOn] = useState(() => {
     try {
       const stored = localStorage.getItem("arya_speaker");
-      return stored === null ? true : stored === "true";
-    } catch { return true; }
+      return stored === null ? false : stored === "true";
+    } catch { return false; }
   });
   const [responseMode, setResponseMode] = useState<"instant" | "thinking" | null>(null);
   const [responseModeIcon, setResponseModeIcon] = useState<string | null>(null);
