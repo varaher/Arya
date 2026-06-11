@@ -1,0 +1,14 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "Ata0zyyfj4IIMsQ9NVTB-"
+uri = "file://client/public/arya-logo.png"
+type = "image"
+title = "ARYA Logo"
+
+[[outputs]]
+id = "h20Vj-SVQCIax6VE3kAfZ"
+uri = "file://client/public/arya-logo-transparent.png"
+type = "image"
+title = "ARYA Logo (Transparent)"
