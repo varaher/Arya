@@ -4282,7 +4282,7 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
     }
   });
 
-  app.post("/api/subscription/webhook", async (req: Request, res: Response) => {
+  const handleRazorpayWebhook = async (req: Request, res: Response) => {
     try {
       const signature = req.headers["x-razorpay-signature"] as string;
       const rawBody = JSON.stringify(req.body);
@@ -4299,7 +4299,12 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
       console.error("[RAZORPAY WEBHOOK] Error:", error.message);
       res.status(500).json({ error: "Webhook processing failed" });
     }
-  });
+  };
+
+  // Primary webhook route
+  app.post("/api/subscription/webhook", handleRazorpayWebhook);
+  // Alias matching the URL configured in Razorpay dashboard
+  app.post("/api/webhook/razorpay", handleRazorpayWebhook);
 
   app.get("/api/admin/subscriptions", requireAdmin, async (_req: Request, res: Response) => {
     try {

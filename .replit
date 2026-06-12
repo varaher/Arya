@@ -51,6 +51,9 @@ BETA_MODE = "false"
 USER_DAILY_LLM_LIMIT = "50"
 SYSTEM_DAILY_LLM_LIMIT = "2000"
 GOOGLE_CALENDAR_REDIRECT_URI = "https://aryaai.in/api/calendar/callback"
+RAZORPAY_PLAN_ID_CORE = "plan_T0fnn35ua7yT6N"
+RAZORPAY_PLAN_ID_PRO = "plan_T0fp7nnyhofjgd"
+RAZORPAY_PLAN_ID_ELITE = "plan_T0fpdhtZSdr85E"
 
 [postMerge]
 path = "scripts/post-merge.sh"
