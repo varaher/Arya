@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { Check, X, Zap, Star, Crown, Gem, ChevronDown, ChevronUp, ArrowLeft } from "lucide-react";
 import { useUserAuth } from "@/lib/user-auth";
+import { useQuery } from "@tanstack/react-query";
 
 
 declare global { interface Window { Razorpay: any; } }
@@ -189,6 +190,21 @@ export default function PricingPage() {
   const [error,   setError]   = useState<string | null>(null);
   const [showExitNudge, setShowExitNudge] = useState(false);
 
+  const { data: trialStatus } = useQuery<{
+    trialStatus: string; daysLeft: number; isFoundingMember: boolean;
+    foundingPrice: number | null; isPaidSubscriber: boolean; effectivePlan: string;
+  }>({
+    queryKey: ["trial-status"],
+    queryFn: async () => {
+      if (!token) return null;
+      const res = await fetch("/api/user/trial-status", { headers: { "x-user-token": token } });
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!token,
+    staleTime: 60 * 60 * 1000,
+  });
+
   const currentPlan = (user as any)?.plan || "free";
   const prices = PRICES[region];
 
@@ -309,6 +325,45 @@ export default function PricingPage() {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-8">
+        {/* Trial hero — shown when not yet on a paid plan */}
+        {(!trialStatus?.isPaidSubscriber) && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/20 border border-amber-200/60 dark:border-amber-700/40 p-6 text-center"
+          >
+            {trialStatus?.trialStatus === "active" && trialStatus.daysLeft > 0 ? (
+              <>
+                <div className="text-2xl mb-1">⏳</div>
+                <p className="text-lg font-bold text-amber-900 dark:text-amber-200 mb-1">
+                  {trialStatus.daysLeft === 1
+                    ? "Last day of full access"
+                    : `${trialStatus.daysLeft} days of full access left`}
+                </p>
+                <p className="text-sm text-amber-700 dark:text-amber-400">
+                  Everything you've been using continues on any paid plan. Choose before your trial ends.
+                </p>
+                {trialStatus.isFoundingMember && (
+                  <div className="mt-3 inline-block px-4 py-1.5 rounded-full bg-amber-200/60 dark:bg-amber-800/40 text-xs font-semibold text-amber-900 dark:text-amber-200">
+                    🌿 Founding member — Core at ₹{trialStatus.foundingPrice ? Math.round(trialStatus.foundingPrice / 100) : 149}/month, forever
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="text-2xl mb-1">🎁</div>
+                <p className="text-lg font-bold text-amber-900 dark:text-amber-200 mb-1">
+                  45 days. All features. No credit card.
+                </p>
+                <p className="text-sm text-amber-700 dark:text-amber-400 max-w-md mx-auto">
+                  Explore everything ARYA offers — all 9 sections — before choosing a plan.
+                  Sign up to start your trial.
+                </p>
+              </>
+            )}
+          </motion.div>
+        )}
+
         {/* Hero text */}
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">

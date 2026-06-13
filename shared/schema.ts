@@ -451,6 +451,11 @@ export const aryaUsers = pgTable("arya_users", {
   sex: varchar("sex", { length: 20 }),
   activityLevel: varchar("activity_level", { length: 20 }).default("moderate"),
   healthGoals: text("health_goals"),
+  trialStartedAt: timestamp("trial_started_at"),
+  trialEndsAt: timestamp("trial_ends_at"),
+  trialStatus: varchar("trial_status", { length: 20 }).default("active"),
+  isFoundingMember: boolean("is_founding_member").default(false),
+  foundingPrice: integer("founding_price"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -1055,6 +1060,24 @@ export const aryaDrishyaStories = pgTable("arya_drishya_stories", {
 export const insertAryaDrishyaStorySchema = createInsertSchema(aryaDrishyaStories).omit({ id: true, createdAt: true });
 export type InsertAryaDrishyaStory = z.infer<typeof insertAryaDrishyaStorySchema>;
 export type AryaDrishyaStory = typeof aryaDrishyaStories.$inferSelect;
+
+// =============================================
+// TRIAL NOTIFICATIONS
+// =============================================
+
+export const aryaTrialNotifications = pgTable("arya_trial_notifications", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 36 }).notNull().references(() => aryaUsers.id, { onDelete: "cascade" }),
+  dayNumber: integer("day_number").notNull(),
+  notificationType: varchar("notification_type", { length: 20 }).notNull(),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  scheduledAt: timestamp("scheduled_at").notNull(),
+  sentAt: timestamp("sent_at"),
+  openedAt: timestamp("opened_at"),
+  converted: boolean("converted").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
 
 // Re-export chat models
 export * from "./models/chat";

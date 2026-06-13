@@ -10,6 +10,7 @@ import { sendYourPatterns } from "./patterns-engine";
 import { generateWeeklyReflectionShares } from "./reflection-share";
 import { sweepGoalReminders } from "./auto-reminder";
 import { sweepCalendarForReminders } from "./calendar-auto-reminders";
+import { processTrialNotifications } from "./trial-notifications";
 
 let vapidPublicKey: string | null = null;
 let isInitialized = false;
@@ -348,6 +349,7 @@ async function checkGoalReminders(): Promise<void> {
 
 let goalReminderInterval: ReturnType<typeof setInterval> | null = null;
 let eveningGoalCheckinInterval: ReturnType<typeof setInterval> | null = null;
+let trialNotifInterval: ReturnType<typeof setInterval> | null = null;
 let sarvamHealthInterval: ReturnType<typeof setInterval> | null = null;
 
 async function checkEveningGoalCheckins(): Promise<void> {
@@ -431,6 +433,7 @@ export function startReminderScheduler(): void {
   patternsInterval = setInterval(checkPatterns, 60 * 60 * 1000); // check every hour
   goalReminderInterval = setInterval(checkGoalReminders, 5 * 60 * 1000); // check every 5 min
   eveningGoalCheckinInterval = setInterval(checkEveningGoalCheckins, 10 * 60 * 1000); // check every 10 min
+  trialNotifInterval = setInterval(() => processTrialNotifications(sendPushToUser).catch(() => {}), 10 * 60 * 1000); // check every 10 min
 
   // Nightly sweep — auto-create reminders for goals due within 7 days
   const msUntilNightly = (() => {
@@ -467,5 +470,6 @@ export function stopReminderScheduler(): void {
   if (patternsInterval) { clearInterval(patternsInterval); patternsInterval = null; }
   if (goalReminderInterval) { clearInterval(goalReminderInterval); goalReminderInterval = null; }
   if (eveningGoalCheckinInterval) { clearInterval(eveningGoalCheckinInterval); eveningGoalCheckinInterval = null; }
+  if (trialNotifInterval) { clearInterval(trialNotifInterval); trialNotifInterval = null; }
   if (sarvamHealthInterval) { clearInterval(sarvamHealthInterval); sarvamHealthInterval = null; }
 }

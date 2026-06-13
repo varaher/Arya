@@ -1,0 +1,767 @@
+# ARYA — 45-Day Trial System
+## Complete Developer Specification
+
+---
+
+## Overview
+
+Every new user gets 45 days of full Pro access.
+No credit card required at signup.
+On Day 45 — they choose a plan or move to Free.
+Beta users (existing 312) get special founding member treatment.
+
+---
+
+## 1. Database Changes
+
+### 1A — Add trial columns to users table
+
+```sql
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS trial_started_at   TIMESTAMP,
+  ADD COLUMN IF NOT EXISTS trial_ends_at      TIMESTAMP,
+  ADD COLUMN IF NOT EXISTS trial_status       TEXT DEFAULT 'active',
+  -- 'active' | 'expired' | 'converted' | 'founding_member'
+  ADD COLUMN IF NOT EXISTS is_founding_member BOOLEAN DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS founding_price     INTEGER;
+  -- stores ₹149 in paise (14900) for founding members
+```
+
+### 1B — Create trial notifications tracking table
+
+```sql
+CREATE TABLE IF NOT EXISTS arya_trial_notifications (
+  id              SERIAL PRIMARY KEY,
+  user_id         INTEGER NOT NULL REFERENCES users(id),
+  day_number      INTEGER NOT NULL,
+  notification_type TEXT NOT NULL,
+  -- 'discovery' | 'nudge' | 'upgrade_soft' | 'upgrade_final'
+  title           TEXT NOT NULL,
+  body            TEXT NOT NULL,
+  scheduled_at    TIMESTAMP NOT NULL,
+  sent_at         TIMESTAMP,
+  opened_at       TIMESTAMP,
+  converted       BOOLEAN DEFAULT FALSE,
+  created_at      TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_trial_notif_user ON arya_trial_notifications(user_id);
+CREATE INDEX idx_trial_notif_scheduled ON arya_trial_notifications(scheduled_at);
+```
+
+### 1C — Update schema.ts (Drizzle)
+
+```typescript
+// In shared/schema.ts — add to users table definition:
+trialStartedAt:    timestamp('trial_started_at'),
+trialEndsAt:       timestamp('trial_ends_at'),
+trialStatus:       text('trial_status').default('active'),
+isFoundingMember:  boolean('is_founding_member').default(false),
+foundingPrice:     integer('founding_price'),
+```
+
+---
+
+## 2. Trial Activation — On User Registration
+
+### 2A — In POST /api/auth/register (routes.ts)
+
+```typescript
+import { addDays } from 'date-fns';
+
+// After user is created — immediately activate trial:
+const trialStartedAt = new Date();
+const trialEndsAt = addDays(trialStartedAt, 45);
+
+await db
+  .update(users)
+  .set({
+    trialStartedAt,
+    trialEndsAt,
+    trialStatus: 'active',
+  })
+  .where(eq(users.id, newUser.id));
+
+// Schedule all 16 trial notifications:
+await scheduleTrialNotifications(newUser.id, trialStartedAt);
+```
+
+### 2B — Trial notification scheduler function
+
+```typescript
+// server/arya/trial-notifications.ts (NEW FILE)
+
+import { addDays, setHour, setMinute } from 'date-fns';
+import { db } from '../db';
+import { arya_trial_notifications } from '../../shared/schema';
+
+interface TrialNotification {
+  dayNumber: number;
+  type: 'discovery' | 'nudge' | 'upgrade_soft' | 'upgrade_final';
+  title: string;
+  body: string;
+  sendHour: number;  // 24h format
+}
+
+const TRIAL_NOTIFICATIONS: TrialNotification[] = [
+  // ── Week 1: Core ──────────────────────────────────────────
+  {
+    dayNumber: 1,
+    type: 'discovery',
+    title: 'ARYA is ready for you 🤝',
+    body: 'Start with one thought. A decision. A worry. Anything. Just open ARYA and say it.',
+    sendHour: 9,
+  },
+  {
+    dayNumber: 3,
+    type: 'discovery',
+    title: 'Tell ARYA what you want to do 🎯',
+    body: 'Just say it naturally in conversation. ARYA will turn it into a goal — and check in when it goes quiet.',
+    sendHour: 10,
+  },
+  {
+    dayNumber: 5,
+    type: 'discovery',
+    title: 'Something on your mind? 🎤',
+    body: 'Tap Notes → Record. Speak for 30 seconds. ARYA transcribes, summarises, and pulls out the action items. In your language.',
+    sendHour: 11,
+  },
+  {
+    dayNumber: 7,
+    type: 'discovery',
+    title: 'Your first Sunday letter 📖',
+    body: 'Open ARYA today. Your first weekly review is ready — a reflection of your first week. Reads like a letter from someone paying close attention.',
+    sendHour: 18,
+  },
+
+  // ── Week 2: Voice, Thinking, Body ─────────────────────────
+  {
+    dayNumber: 8,
+    type: 'discovery',
+    title: 'ARYA has 7 ways to think 🧠',
+    body: 'Tap the mode selector above the input. Try Founder Mode on any decision today — "Here\'s what I\'d actually do:" Uncomfortable. Useful.',
+    sendHour: 9,
+  },
+  {
+    dayNumber: 10,
+    type: 'discovery',
+    title: 'Try talking to ARYA 🗣️',
+    body: 'Tap the mic. Speak in Malayalam, Hindi, Tamil — any language. ARYA listens and replies in the same language. Hands-free.',
+    sendHour: 10,
+  },
+  {
+    dayNumber: 12,
+    type: 'discovery',
+    title: 'Got a document you don\'t understand? 📸',
+    body: 'Prescription. Legal notice. Bank statement. Tap + → Scan document. ARYA reads it and explains it in plain language.',
+    sendHour: 11,
+  },
+  {
+    dayNumber: 14,
+    type: 'discovery',
+    title: 'How is your body doing? 💪',
+    body: 'Open Prana. Build your health profile. Log your first reading. ARYA coaches you on your actual numbers — not generic averages.',
+    sendHour: 8,
+  },
+
+  // ── Week 3: Timing, Business, Market ──────────────────────
+  {
+    dayNumber: 17,
+    type: 'discovery',
+    title: 'What kind of day is today? 🌙',
+    body: 'Open KAAL. See today\'s energy, your best window, and what to handle with care. Setup takes 2 minutes.',
+    sendHour: 7,
+  },
+  {
+    dayNumber: 20,
+    type: 'discovery',
+    title: 'Got a business decision pending? ⚖️',
+    body: 'Open Niti. Bring the decision you\'ve been sitting with. ARYA thinks through it with you — sharply, not gently.',
+    sendHour: 10,
+  },
+  {
+    dayNumber: 23,
+    type: 'discovery',
+    title: 'NIFTY, SENSEX, your portfolio 📈',
+    body: 'Inside Niti → Market Lens. Live indices. Rotating news. Tap "What does this mean for me?" — ARYA explains it without jargon.',
+    sendHour: 9,
+  },
+
+  // ── Week 4: Stories, Rehearsal, Community ─────────────────
+  {
+    dayNumber: 26,
+    type: 'discovery',
+    title: 'ARYA wants to tell you a story 📖',
+    body: 'Open Drishya. Describe what you need — a feeling, a situation. ARYA generates a complete story from India\'s ancient tradition. For your exact moment tonight.',
+    sendHour: 21,
+  },
+  {
+    dayNumber: 30,
+    type: 'discovery',
+    title: 'Got a difficult conversation coming? 🎭',
+    body: 'Open ARYA → say "I need to rehearse a conversation with..." ARYA plays them. You practise. You go in sharper.',
+    sendHour: 10,
+  },
+  {
+    dayNumber: 33,
+    type: 'discovery',
+    title: 'You\'re not the only one 👥',
+    body: 'Open Community. See this week\'s shared challenge. Others are building habits, making decisions, growing alongside you.',
+    sendHour: 19,
+  },
+
+  // ── Final stretch ──────────────────────────────────────────
+  {
+    dayNumber: 37,
+    type: 'discovery',
+    title: 'Start tomorrow differently ☀️',
+    body: 'Set up your morning briefing. Profile → Morning Briefing → set your time. Tomorrow: your goals, the news, one line to carry through the day.',
+    sendHour: 20,
+  },
+  {
+    dayNumber: 40,
+    type: 'upgrade_soft',
+    title: '5 days left of full access ⏳',
+    body: '', // dynamically generated — see section 3
+    sendHour: 9,
+  },
+  {
+    dayNumber: 43,
+    type: 'nudge',
+    title: '2 days left 🔔',
+    body: 'Your 45-day full trial ends in 2 days. Everything you\'ve built stays with you on any plan. Core ₹249 · Pro ₹499 · Elite ₹999',
+    sendHour: 10,
+  },
+  {
+    dayNumber: 45,
+    type: 'upgrade_final',
+    title: 'Today is day 45 🌿',
+    body: 'Thank you for 45 days with ARYA. Whatever you choose — your data, your memory, your goals — all yours. Always.',
+    sendHour: 9,
+  },
+];
+
+export async function scheduleTrialNotifications(
+  userId: number,
+  trialStartedAt: Date
+): Promise<void> {
+  const notifications = TRIAL_NOTIFICATIONS.map(n => {
+    const scheduledDate = addDays(trialStartedAt, n.dayNumber - 1);
+    scheduledDate.setHours(n.sendHour, 0, 0, 0);
+
+    return {
+      userId,
+      dayNumber: n.dayNumber,
+      notificationType: n.type,
+      title: n.title,
+      body: n.body,
+      scheduledAt: scheduledDate,
+    };
+  });
+
+  await db.insert(arya_trial_notifications).values(notifications);
+}
+```
+
+---
+
+## 3. Dynamic Day 40 Message
+
+The Day 40 notification must be personalised. Generate it at send time:
+
+```typescript
+// server/arya/trial-notifications.ts
+
+async function buildDay40Body(userId: number): Promise<string> {
+  // Count user's activity
+  const [convCount] = await db
+    .select({ count: count() })
+    .from(arya_conversations)
+    .where(eq(arya_conversations.userId, userId));
+
+  const [goalCount] = await db
+    .select({ count: count() })
+    .from(arya_goals)
+    .where(eq(arya_goals.userId, userId));
+
+  const [completedCount] = await db
+    .select({ count: count() })
+    .from(arya_goals)
+    .where(
+      and(
+        eq(arya_goals.userId, userId),
+        eq(arya_goals.status, 'completed')
+      )
+    );
+
+  const [noteCount] = await db
+    .select({ count: count() })
+    .from(arya_voice_notes)
+    .where(eq(arya_voice_notes.userId, userId));
+
+  const conversations = convCount?.count || 0;
+  const goals = goalCount?.count || 0;
+  const completed = completedCount?.count || 0;
+  const notes = noteCount?.count || 0;
+
+  return `You've been with ARYA for 40 days.
+
+${conversations} conversations.
+${goals} goals set${completed > 0 ? `, ${completed} completed` : ''}.
+${notes > 0 ? `${notes} voice notes recorded.` : ''}
+
+ARYA knows you now.
+5 more days of full access — then choose how you continue.
+
+Core ₹249/month — everything you've been using, continues.`;
+}
+```
+
+---
+
+## 4. Notification Scheduler — Runs Every 10 Minutes
+
+```typescript
+// Add to server/arya/reminder-scheduler.ts
+// Or create server/arya/trial-scheduler.ts
+
+export async function processTrialNotifications(): Promise<void> {
+  const now = new Date();
+  const tenMinutesAgo = new Date(now.getTime() - 10 * 60 * 1000);
+
+  // Find all unsent notifications due in the last 10 minutes
+  const due = await db
+    .select()
+    .from(arya_trial_notifications)
+    .where(
+      and(
+        isNull(arya_trial_notifications.sentAt),
+        lte(arya_trial_notifications.scheduledAt, now),
+        gte(arya_trial_notifications.scheduledAt, tenMinutesAgo)
+      )
+    )
+    .limit(50);
+
+  for (const notification of due) {
+    try {
+      let body = notification.body;
+
+      // Day 40: build dynamic body
+      if (notification.dayNumber === 40) {
+        body = await buildDay40Body(notification.userId);
+      }
+
+      // Send push notification
+      await sendPushNotification(notification.userId, {
+        title: notification.title,
+        body,
+        type: 'trial',
+        dayNumber: notification.dayNumber,
+        data: {
+          url: getNotificationUrl(notification.dayNumber),
+          trialDay: notification.dayNumber,
+        },
+        // Upgrade notifications: require interaction
+        requireInteraction: [40, 43, 45].includes(notification.dayNumber),
+        actions: [40, 43, 45].includes(notification.dayNumber)
+          ? [
+              { action: 'upgrade', title: '🚀 See plans' },
+              { action: 'dismiss', title: 'Later' },
+            ]
+          : undefined,
+      });
+
+      // Mark as sent
+      await db
+        .update(arya_trial_notifications)
+        .set({ sentAt: new Date() })
+        .where(eq(arya_trial_notifications.id, notification.id));
+
+    } catch (err) {
+      console.error(
+        `Trial notification failed: user=${notification.userId} day=${notification.dayNumber}`,
+        err
+      );
+    }
+  }
+}
+
+// URL to open when notification is tapped
+function getNotificationUrl(day: number): string {
+  const urlMap: Record<number, string> = {
+    1:  '/',
+    3:  '/?panel=goals',
+    5:  '/?panel=notes',
+    7:  '/?tab=review',
+    8:  '/?mode=founder',
+    10: '/?voice=true',
+    12: '/?scan=true',
+    14: '/?tab=prana',
+    17: '/?tab=kaal',
+    20: '/?tab=niti',
+    23: '/?tab=niti&section=market',
+    26: '/?tab=drishya',
+    30: '/?rehearse=true',
+    33: '/?tab=community',
+    37: '/?settings=morning',
+    40: '/pricing',
+    43: '/pricing',
+    45: '/pricing',
+  };
+  return urlMap[day] || '/';
+}
+
+// Add to existing scheduler interval:
+// setInterval(processTrialNotifications, 10 * 60 * 1000);
+```
+
+---
+
+## 5. Trial Status Check — Middleware
+
+```typescript
+// server/middleware/trial-check.ts
+
+export async function getEffectivePlan(userId: number): Promise<string> {
+  const user = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  if (!user[0]) return 'free';
+
+  const u = user[0];
+
+  // Paid subscriber — return their plan
+  if (u.subscriptionPlan && u.subscriptionStatus === 'active') {
+    return u.subscriptionPlan;
+  }
+
+  // Active trial — return 'pro' (full access)
+  if (u.trialStatus === 'active' && u.trialEndsAt) {
+    if (new Date() < new Date(u.trialEndsAt)) {
+      return 'pro'; // trial = full pro access
+    } else {
+      // Trial expired — update status
+      await db
+        .update(users)
+        .set({ trialStatus: 'expired' })
+        .where(eq(users.id, userId));
+      return 'free';
+    }
+  }
+
+  return 'free';
+}
+
+// Use this everywhere you currently check subscription plan:
+// const plan = await getEffectivePlan(userId);
+// if (plan === 'pro' || plan === 'elite') { ... }
+```
+
+---
+
+## 6. Trial Status API — Frontend
+
+```typescript
+// Add to routes.ts:
+
+app.get('/api/user/trial-status', requireAuth, async (req, res) => {
+  const userId = req.user.id;
+  const user = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  const u = user[0];
+  const now = new Date();
+  const trialEnds = u.trialEndsAt ? new Date(u.trialEndsAt) : null;
+  const daysLeft = trialEnds
+    ? Math.max(0, Math.ceil(
+        (trialEnds.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+      ))
+    : 0;
+
+  const effectivePlan = await getEffectivePlan(userId);
+
+  res.json({
+    trialStatus: u.trialStatus,           // 'active' | 'expired' | 'converted'
+    trialStartedAt: u.trialStartedAt,
+    trialEndsAt: u.trialEndsAt,
+    daysLeft,
+    effectivePlan,                         // 'free' | 'pro' | 'elite' etc
+    isFoundingMember: u.isFoundingMember,
+    foundingPrice: u.foundingPrice,
+    isPaidSubscriber: u.subscriptionStatus === 'active',
+  });
+});
+```
+
+---
+
+## 7. Trial Banner — Frontend (AryaChat.tsx)
+
+Show a subtle trial countdown in the UI when trial is active:
+
+```tsx
+// In AryaChat.tsx — fetch trial status on mount:
+
+const { data: trialStatus } = useQuery({
+  queryKey: ['trial-status'],
+  queryFn: () =>
+    fetch('/api/user/trial-status').then(r => r.json()),
+  staleTime: 60 * 60 * 1000, // refresh hourly
+});
+
+// Show banner when trial has ≤10 days left:
+{trialStatus?.trialStatus === 'active' &&
+ trialStatus?.daysLeft <= 10 &&
+ trialStatus?.daysLeft > 0 && (
+  <div className="trial-banner">
+    <span className="trial-banner-text">
+      {trialStatus.daysLeft === 1
+        ? 'Last day of full access'
+        : `${trialStatus.daysLeft} days of full access left`}
+    </span>
+    <button
+      className="trial-banner-cta"
+      onClick={() => navigate('/pricing')}
+    >
+      See plans →
+    </button>
+  </div>
+)}
+
+// Banner styles:
+/*
+.trial-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: rgba(251,191,36,0.08);
+  border-bottom: 1px solid rgba(251,191,36,0.15);
+  font-size: 13px;
+}
+
+.trial-banner-text {
+  color: #fbbf24;
+}
+
+.trial-banner-cta {
+  background: rgba(251,191,36,0.12);
+  border: 1px solid rgba(251,191,36,0.25);
+  border-radius: 10px;
+  color: #fbbf24;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+}
+*/
+```
+
+---
+
+## 8. Beta Users — Founding Member Flow
+
+For your existing 312 users — handle separately:
+
+```typescript
+// server/arya/founding-members.ts
+
+// Run this ONCE when Razorpay activates:
+export async function markFoundingMembers(): Promise<void> {
+  // All users created before launch date are founding members
+  const launchDate = new Date('2026-06-16'); // adjust to actual launch
+
+  const earlyUsers = await db
+    .select()
+    .from(users)
+    .where(lt(users.createdAt, launchDate));
+
+  for (const user of earlyUsers) {
+    await db
+      .update(users)
+      .set({
+        isFoundingMember: true,
+        foundingPrice: 14900,      // ₹149 in paise
+        trialStatus: 'active',     // give them 30 more days
+        trialEndsAt: addDays(new Date(), 30),
+      })
+      .where(eq(users.id, user.id));
+  }
+
+  console.log(`Marked ${earlyUsers.length} founding members`);
+}
+```
+
+**Founding member notification** — send once when Razorpay activates:
+
+```typescript
+// Title: "You built ARYA with us 🌿"
+// Body:
+`You've been with ARYA since the beginning.
+
+You have 30 more days of full access.
+
+When you're ready — Core plan at ₹149/month.
+Forever. As a thank you.
+
+That's your founding member price.
+It never increases.
+
+[Claim founding price →]`
+```
+
+---
+
+## 9. Razorpay — Founding Member Subscription
+
+```typescript
+// When founding member subscribes via Razorpay:
+
+// Use a separate Razorpay plan for ₹149:
+// RAZORPAY_PLAN_ID_FOUNDING = plan_XXXX (create in Razorpay dashboard)
+
+// In subscription creation:
+const planId = user.isFoundingMember
+  ? process.env.RAZORPAY_PLAN_ID_FOUNDING   // ₹149/month
+  : getPlanId(selectedPlan);                  // regular pricing
+
+const subscription = await razorpay.subscriptions.create({
+  plan_id: planId,
+  total_count: 120,  // 10 years
+  notes: {
+    userId: user.id,
+    isFoundingMember: user.isFoundingMember,
+  },
+});
+```
+
+---
+
+## 10. Pricing Page — Trial CTA
+
+Update the pricing page to show the trial offer prominently:
+
+```tsx
+// At the top of PricingPage.tsx — above plan cards:
+
+<div className="trial-hero">
+  <p className="trial-hero-title">
+    45 days. All features. No credit card.
+  </p>
+  <p className="trial-hero-sub">
+    Explore everything ARYA offers — all 9 sections —
+    before choosing a plan.
+  </p>
+</div>
+
+// Update each plan's subscribe button:
+// If user is in active trial → show "You're on trial"
+// If trial expired → show "Subscribe — ₹XXX/mo"
+// If founding member → show "Claim ₹149/mo founding price →"
+```
+
+---
+
+## 11. Complete Wiring Checklist
+
+```
+□ 1. DB migration — run SQL from Section 1A + 1B
+
+□ 2. schema.ts — add new fields (Section 1C)
+
+□ 3. server/arya/trial-notifications.ts
+     → Create new file with:
+       TRIAL_NOTIFICATIONS array (18 entries)
+       scheduleTrialNotifications()
+       buildDay40Body()
+       processTrialNotifications()
+       getNotificationUrl()
+
+□ 4. routes.ts — POST /api/auth/register
+     → After user created: activate trial
+     → Call scheduleTrialNotifications()
+
+□ 5. routes.ts — GET /api/user/trial-status
+     → Returns trial info for frontend
+
+□ 6. server/middleware/trial-check.ts
+     → getEffectivePlan() function
+     → Replace all plan checks with this
+
+□ 7. reminder-scheduler.ts
+     → Add: setInterval(processTrialNotifications, 600000)
+
+□ 8. AryaChat.tsx
+     → Fetch /api/user/trial-status
+     → Show trial banner when ≤10 days left
+
+□ 9. PricingPage.tsx
+     → Show trial offer at top
+     → Founding member pricing logic
+
+□ 10. sw.js
+     → Handle 'upgrade' action on trial notifications
+     → clients.openWindow('/pricing')
+
+□ 11. server/arya/founding-members.ts
+     → Create this file
+     → Run markFoundingMembers() ONCE on launch day
+
+□ 12. Razorpay Dashboard
+     → Create new plan: ₹149/month (Core founding)
+     → Add to Replit secrets:
+       RAZORPAY_PLAN_ID_FOUNDING = plan_XXXX
+
+□ 13. Test complete flow:
+     → Create test account
+     → Verify trial activated immediately
+     → Verify Day 1 notification scheduled
+     → Fast-forward to Day 40 in test DB
+     → Verify dynamic body generated correctly
+     → Verify trial expires on Day 45
+     → Verify free plan kicks in after expiry
+```
+
+---
+
+## 12. Summary — What This Builds
+
+```
+Every new user:
+  Signup → trial_started_at set
+         → trial_ends_at = +45 days
+         → 18 notifications scheduled
+         → Full Pro access until Day 45
+
+During trial:
+  getEffectivePlan() returns 'pro'
+  All Pro features unlocked
+  Discovery notifications arrive daily
+  Day 40: personalised upgrade nudge
+  Day 45: graceful downgrade to free
+
+After trial:
+  getEffectivePlan() returns 'free'
+  Free plan features only
+  Can upgrade anytime via pricing page
+
+Beta users (312):
+  Marked as founding members
+  30 more days grace period
+  ₹149/month forever on Core
+  Special notification when Razorpay activates
+
+Estimated dev time: 1.5 to 2 days
+```
+
+---
+
+*ARYA — Think clearly. Feel less alone.*
+*aryaai.in*

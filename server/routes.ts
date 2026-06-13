@@ -99,6 +99,8 @@ import { autoCreateCalendarReminders } from "./arya/calendar-auto-reminders";
 import { computeKundliProfile, generateVedicBriefing } from "./arya/vedic-lens";
 import { createNitiSession, addNitiMessage } from "./arya/niti";
 import { detectStudyIntent, buildNoteTitle, extractBulletsFromResponse, buildStudyNotesPromptAddition } from "./arya/study-notes-extractor";
+import { scheduleTrialNotifications, getEffectivePlan } from "./arya/trial-notifications";
+import { markFoundingMembers } from "./arya/founding-members";
 
 const retriever = new KnowledgeRetriever();
 const medicalEngine = new MedicalEngine();
@@ -265,6 +267,20 @@ export async function registerRoutes(
         if (!redeemResult.success) {
           return res.status(400).json({ error: redeemResult.error || "Invalid invite code" });
         }
+      }
+
+      // Activate 45-day trial immediately on signup
+      try {
+        const trialStartedAt = new Date();
+        const trialEndsAt = new Date(trialStartedAt);
+        trialEndsAt.setDate(trialEndsAt.getDate() + 45);
+        await db
+          .update(aryaUsers)
+          .set({ trialStartedAt, trialEndsAt, trialStatus: "active" })
+          .where(eq(aryaUsers.id, result.user.id));
+        await scheduleTrialNotifications(result.user.id, trialStartedAt);
+      } catch (trialErr: any) {
+        console.error("[TRIAL] Failed to activate trial for new user:", trialErr.message);
       }
 
       res.json(result);
@@ -5199,6 +5215,49 @@ Be honest. Be brief. No padding. Write like someone who was present in the room.
     } catch (err: any) {
       console.error("[Drishya] Delete error:", err.message);
       res.status(500).json({ error: "Failed to delete story" });
+    }
+  });
+
+  // ── Trial status ──────────────────────────────────────────────────────
+  app.get("/api/user/trial-status", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const [u] = await db.select().from(aryaUsers).where(eq(aryaUsers.id, userId)).limit(1);
+      if (!u) return res.status(404).json({ error: "User not found" });
+
+      const now = new Date();
+      const trialEnds = u.trialEndsAt ? new Date(u.trialEndsAt) : null;
+      const daysLeft = trialEnds
+        ? Math.max(0, Math.ceil((trialEnds.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+        : 0;
+
+      const effectivePlan = await getEffectivePlan(userId);
+
+      res.json({
+        trialStatus: u.trialStatus,
+        trialStartedAt: u.trialStartedAt,
+        trialEndsAt: u.trialEndsAt,
+        daysLeft,
+        effectivePlan,
+        isFoundingMember: u.isFoundingMember,
+        foundingPrice: u.foundingPrice,
+        isPaidSubscriber: u.plan !== "free" && u.planExpiresAt ? new Date(u.planExpiresAt) > now : false,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to fetch trial status" });
+    }
+  });
+
+  // ── Admin: mark founding members (run once on launch) ─────────────────
+  app.post("/api/admin/mark-founding-members", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { sendPushToUser } = await import("./arya/reminder-scheduler") as any;
+      const launchDate = req.body.launchDate ? new Date(req.body.launchDate) : new Date("2026-06-16");
+      const result = await markFoundingMembers(sendPushToUser, launchDate);
+      res.json({ success: true, ...result });
+    } catch (err: any) {
+      console.error("[ADMIN] mark-founding-members error:", err.message);
+      res.status(500).json({ error: err.message });
     }
   });
 

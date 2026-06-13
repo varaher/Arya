@@ -251,6 +251,22 @@ self.addEventListener('notificationclick', (event) => {
     return;
   }
 
+  // Trial upgrade action — open pricing page
+  if (action === 'upgrade') {
+    event.waitUntil(
+      clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+        for (const client of clientList) {
+          if (client.url.includes(self.location.origin) && 'focus' in client) {
+            client.postMessage({ type: 'NAVIGATE', url: '/pricing' });
+            return client.focus();
+          }
+        }
+        if (clients.openWindow) return clients.openWindow('/pricing');
+      })
+    );
+    return;
+  }
+
   // Dismiss action
   if (action === 'dismiss') {
     if (reminderId) {

@@ -3506,6 +3506,20 @@ export default function AryaChat() {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const { language: uiLanguage, t, setLanguage: setGlobalLanguage } = useLanguage();
 
+  const { data: trialStatus } = useQuery<{
+    trialStatus: string; daysLeft: number; isFoundingMember: boolean; isPaidSubscriber: boolean;
+  }>({
+    queryKey: ["trial-status"],
+    queryFn: async () => {
+      if (!token) return null;
+      const res = await fetch("/api/user/trial-status", { headers: { "x-user-token": token } });
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!token && isLoggedIn,
+    staleTime: 60 * 60 * 1000,
+  });
+
   // Load language preference from DB on login (covers new device / cleared localStorage)
   useEffect(() => {
     if (!user?.uiLanguage) return;
@@ -5076,6 +5090,25 @@ export default function AryaChat() {
       </div>
 
       <div className="flex-1 flex flex-col min-w-0 relative">
+        {/* Trial countdown banner — shown when ≤10 days left */}
+        {isLoggedIn && trialStatus?.trialStatus === "active" && (trialStatus?.daysLeft ?? 99) <= 10 && (trialStatus?.daysLeft ?? 0) > 0 && (
+          <div
+            className="flex items-center justify-between px-4 py-2 text-xs"
+            style={{ background: "rgba(251,191,36,0.08)", borderBottom: "1px solid rgba(251,191,36,0.18)" }}
+          >
+            <span style={{ color: "#d97706", fontWeight: 500 }}>
+              {trialStatus.daysLeft === 1 ? "Last day of full access" : `${trialStatus.daysLeft} days of full access left`}
+            </span>
+            <button
+              onClick={() => setLocation("/pricing")}
+              className="ml-3 rounded-lg px-3 py-1 text-xs font-semibold transition-opacity hover:opacity-80"
+              style={{ background: "rgba(251,191,36,0.14)", border: "1px solid rgba(251,191,36,0.30)", color: "#d97706" }}
+            >
+              See plans →
+            </button>
+          </div>
+        )}
+
         <div className="flex items-center justify-between px-3 py-2 md:hidden border-b border-gray-200 dark:border-slate-700">
           <button
             data-testid="button-toggle-conversations"
