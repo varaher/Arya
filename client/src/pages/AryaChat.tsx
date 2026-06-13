@@ -3561,6 +3561,7 @@ export default function AryaChat() {
   const moodCardRef = useRef<HTMLDivElement>(null);
   const [rehearsalPerson, setRehearsalPerson] = useState("");
   const [rehearsalSituation, setRehearsalSituation] = useState("");
+  const [rehearsalDifficulty, setRehearsalDifficulty] = useState<"realistic" | "tougher" | "hardest">("realistic");
   const [rehearsalLoading, setRehearsalLoading] = useState(false);
   const [rehearsalFeedbackOpen, setRehearsalFeedbackOpen] = useState(false);
   const [rehearsalFeedback, setRehearsalFeedback] = useState("");
@@ -3725,7 +3726,7 @@ export default function AryaChat() {
 
       const startRes = await fetch(`/api/arya/conversations/${conv.id}/start-rehearsal`, {
         method: "POST", headers,
-        body: JSON.stringify({ persona: rehearsalPerson, situation: rehearsalSituation }),
+        body: JSON.stringify({ persona: rehearsalPerson, situation: rehearsalSituation, difficulty: rehearsalDifficulty }),
       });
       const startData = await startRes.json();
 
@@ -3735,7 +3736,7 @@ export default function AryaChat() {
           (old: any) => ({
             ...(old || {}),
             mode: "rehearsal",
-            rehearsalPersona: `${rehearsalPerson}|||${rehearsalSituation}`,
+            rehearsalPersona: `${rehearsalPerson}|||${rehearsalSituation}|||${rehearsalDifficulty}`,
             messages: [
               ...((old as any)?.messages || []),
               { id: Date.now(), conversationId: conv.id, role: "assistant", content: startData.setupMessage, createdAt: new Date().toISOString() },
@@ -5675,6 +5676,31 @@ export default function AryaChat() {
                           placeholder="e.g. asking for a raise, setting a boundary, delivering difficult feedback"
                           className="w-full text-sm rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-3 py-2 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400"
                         />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">How tough should they be?</label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {([
+                            { value: "realistic", label: "Realistic", desc: "Firm but fair", icon: "🙂" },
+                            { value: "tougher",   label: "Tougher",   desc: "Sharp & direct", icon: "😤" },
+                            { value: "hardest",   label: "Hardest",   desc: "Already against it", icon: "😠" },
+                          ] as const).map(opt => (
+                            <button
+                              key={opt.value}
+                              data-testid={`button-difficulty-${opt.value}`}
+                              onClick={() => setRehearsalDifficulty(opt.value)}
+                              className={`flex flex-col items-center gap-1 rounded-lg border p-2 text-center transition-all ${
+                                rehearsalDifficulty === opt.value
+                                  ? "border-violet-500 bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300"
+                                  : "border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-gray-400 hover:border-violet-300"
+                              }`}
+                            >
+                              <span className="text-lg">{opt.icon}</span>
+                              <span className="text-xs font-semibold">{opt.label}</span>
+                              <span className="text-[10px] leading-tight text-gray-400 dark:text-gray-500">{opt.desc}</span>
+                            </button>
+                          ))}
+                        </div>
                       </div>
                       <Button
                         data-testid="button-start-rehearsal"

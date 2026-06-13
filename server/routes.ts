@@ -2002,7 +2002,7 @@ export async function registerRoutes(
   app.post("/api/arya/conversations/:id/start-rehearsal", optionalUser, async (req: Request, res: Response) => {
     try {
       const conversationId = parseInt(req.params.id);
-      const { persona, situation } = req.body;
+      const { persona, situation, difficulty } = req.body;
       const userId = (req as any).userId || null;
 
       if (!persona?.trim()) {
@@ -2013,15 +2013,18 @@ export async function registerRoutes(
       if (!conv) return res.status(404).json({ error: "Conversation not found" });
       if (conv.userId && conv.userId !== userId) return res.status(403).json({ error: "Access denied" });
 
+      const safeD = ["realistic","tougher","hardest"].includes(difficulty) ? difficulty : "realistic";
+
       await db.update(conversations)
         .set({
           mode: "rehearsal",
-          rehearsalPersona: `${persona.trim()}|||${(situation || "").trim()}`,
+          rehearsalPersona: `${persona.trim()}|||${(situation || "").trim()}|||${safeD}`,
           rehearsalExchangeCount: 0,
         })
         .where(eq(conversations.id, conversationId));
 
-      const setupMessage = `Ready. I'm stepping into the role of ${persona.trim()}. Take a breath — then say whatever you'd actually say when this conversation begins. I'll respond as them.\n\n*(Type 'feedback' at any time to step out and get coaching on how it's going.)*`;
+      const difficultyLabel = safeD === "hardest" ? " (hardest mode — they're resistant)" : safeD === "tougher" ? " (tougher mode — expect sharp questions)" : "";
+      const setupMessage = `Ready. I'm stepping into the role of ${persona.trim()}${difficultyLabel}. Take a breath — then say whatever you'd actually say when this conversation begins. I'll respond as them.\n\n*(Type 'feedback' at any time to step out and get coaching on how it's going.)*`;
 
       await chatStorage.createMessage(conversationId, "assistant", setupMessage);
 
@@ -2124,6 +2127,7 @@ export async function registerRoutes(
         const personaData = (((convMeta as any).rehearsalPersona) || "|||").split("|||");
         const persona = personaData[0] || "the other person";
         const situation = personaData[1] || "";
+        const difficulty = (personaData[2] || "realistic") as "realistic" | "tougher" | "hardest";
         const exchangeCount = ((convMeta as any).rehearsalExchangeCount || 0);
 
         await db.update(conversations)
@@ -2133,7 +2137,7 @@ export async function registerRoutes(
         res.write(`data: ${JSON.stringify({ type: "meta", mode: "rehearsal", icon: "🎭" })}\n\n`);
 
         let fullResponse = "";
-        for await (const chunk of streamRehearsalResponse(content, history, { persona, situation, exchangeCount })) {
+        for await (const chunk of streamRehearsalResponse(content, history, { persona, situation, exchangeCount, difficulty })) {
           fullResponse += chunk;
           res.write(`data: ${JSON.stringify({ content: chunk })}\n\n`);
         }
