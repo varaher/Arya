@@ -2136,6 +2136,8 @@ export async function registerRoutes(
       res.setHeader("Cache-Control", "no-cache");
       res.setHeader("Connection", "keep-alive");
       res.setHeader("X-Accel-Buffering", "no");
+      try { (req as any).socket?.setNoDelay(true); } catch {}
+      res.flushHeaders();
 
       // Intercept rehearsal conversations — ARYA responds as the persona
       const convMeta = await chatStorage.getConversation(conversationId);
