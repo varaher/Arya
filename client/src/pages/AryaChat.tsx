@@ -3315,7 +3315,13 @@ export default function AryaChat() {
   const [showVoiceMode, setShowVoiceMode] = useState(false);
   const [activeConversation, setActiveConversation] = useState<number | null>(null);
   const [thinkingMode, setThinkingMode] = useState("default");
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState(() => {
+    try {
+      const prefill = localStorage.getItem("arya_prefill_message");
+      if (prefill) { localStorage.removeItem("arya_prefill_message"); return prefill; }
+    } catch {}
+    return "";
+  });
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
   const [pendingStoryRasa, setPendingStoryRasa] = useState<string | null>(null);

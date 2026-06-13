@@ -1,0 +1,268 @@
+This is a clear bug — no research needed. I know exactly what's wrong from the codebase.
+
+---
+
+## What's Happening
+
+```
+User opens KAAL
+→ Fills birth date, star sign, Rashi
+→ Sees their KAAL dashboard
+→ Closes KAAL
+
+User opens KAAL again
+→ Same questions appear again
+→ Profile was never saved
+```
+
+---
+
+## The Root Cause
+
+Three possible causes — likely all three together:
+
+**Cause 1 — Profile not saving to DB**
+```typescript
+// The KAAL setup form is probably doing this:
+const [birthData, setBirthData] = useState({});
+// Stored in React state only — lost on unmount
+// Never sent to the server
+```
+
+**Cause 2 — Profile not being fetched on load**
+```typescript
+// On KAAL open — not checking DB first:
+// Should do: fetch('/api/user/kaal-profile')
+// If exists → skip setup, go to dashboard
+// If not exists → show setup form
+```
+
+**Cause 3 — Wrong check on mount**
+```typescript
+// The component probably always shows setup
+// instead of checking if profile exists first
+```
+
+---
+
+## The Fix — Exact Code
+
+### Fix 1 — Save profile to DB (routes.ts)
+
+```typescript
+// Add this route if it doesn't exist:
+app.post('/api/user/kaal-profile', requireAuth, async (req, res) => {
+  const userId = req.user.id;
+  const {
+    birthDate,
+    birthTime,
+    birthCity,
+    starSign,      // Western
+    moonSign,      // Vedic Rashi
+    setupComplete,
+  } = req.body;
+
+  // Upsert — insert or update
+  await db
+    .insert(arya_kaal_profiles)
+    .values({
+      userId,
+      birthDate,
+      birthTime,
+      birthCity,
+      starSign,
+      moonSign,
+      setupComplete: true,
+      updatedAt: new Date(),
+    })
+    .onConflictDoUpdate({
+      target: arya_kaal_profiles.userId,
+      set: {
+        birthDate,
+        birthTime,
+        birthCity,
+        starSign,
+        moonSign,
+        setupComplete: true,
+        updatedAt: new Date(),
+      }
+    });
+
+  res.json({ success: true });
+});
+
+// Add GET route:
+app.get('/api/user/kaal-profile', requireAuth, async (req, res) => {
+  const userId = req.user.id;
+
+  const profile = await db
+    .select()
+    .from(arya_kaal_profiles)
+    .where(eq(arya_kaal_profiles.userId, userId))
+    .limit(1);
+
+  res.json(profile[0] || null);
+});
+```
+
+### Fix 2 — Check profile on KAAL open (VedicLensPage.tsx)
+
+```typescript
+// At the top of VedicLensPage component:
+
+const [profileLoaded, setProfileLoaded] = useState(false);
+const [hasProfile, setHasProfile] = useState(false);
+const [kaalProfile, setKaalProfile] = useState(null);
+
+useEffect(() => {
+  // Check if profile exists when component mounts
+  fetch('/api/user/kaal-profile')
+    .then(r => r.json())
+    .then(profile => {
+      if (profile && profile.setupComplete) {
+        setHasProfile(true);     // ← skip setup
+        setKaalProfile(profile); // ← use saved data
+      } else {
+        setHasProfile(false);    // ← show setup
+      }
+      setProfileLoaded(true);
+    })
+    .catch(() => {
+      setHasProfile(false);
+      setProfileLoaded(true);
+    });
+}, []); // runs once on mount
+
+// In JSX:
+if (!profileLoaded) {
+  return <LoadingSpinner />; // don't flash setup form
+}
+
+if (!hasProfile) {
+  return <KaalSetupForm onComplete={handleSetupComplete} />;
+}
+
+return <KaalDashboard profile={kaalProfile} />;
+```
+
+### Fix 3 — Save on form completion
+
+```typescript
+// In the KAAL setup form — onComplete handler:
+
+async function handleSetupComplete(formData) {
+  try {
+    // Save to server
+    const res = await fetch('/api/user/kaal-profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...formData,
+        setupComplete: true,
+      }),
+    });
+
+    if (!res.ok) throw new Error('Save failed');
+
+    // Update local state
+    setKaalProfile(formData);
+    setHasProfile(true); // ← now shows dashboard
+
+  } catch (err) {
+    console.error('KAAL profile save failed:', err);
+    // Show error to user
+  }
+}
+```
+
+### Fix 4 — DB table (if not exists)
+
+```sql
+CREATE TABLE IF NOT EXISTS arya_kaal_profiles (
+  id              SERIAL PRIMARY KEY,
+  user_id         INTEGER UNIQUE NOT NULL REFERENCES users(id),
+  birth_date      TEXT,
+  birth_time      TEXT,
+  birth_city      TEXT,
+  star_sign       TEXT,    -- Western: Aries, Taurus etc
+  moon_sign       TEXT,    -- Vedic Rashi: Mesh, Vrishabh etc
+  setup_complete  BOOLEAN DEFAULT FALSE,
+  created_at      TIMESTAMP DEFAULT NOW(),
+  updated_at      TIMESTAMP DEFAULT NOW()
+);
+```
+
+---
+
+## Also — Save to User Memory
+
+Once profile is saved, also add it to ARYA's memory so it shows up in chat context:
+
+```typescript
+// After saving kaal profile:
+await db.insert(arya_memory).values({
+  userId,
+  content: `KAAL profile: born ${birthDate}${birthTime ? ' at ' + birthTime : ''}${birthCity ? ' in ' + birthCity : ''}. Star sign: ${starSign}. Moon sign (Rashi): ${moonSign}.`,
+  category: 'profile',
+  source: 'kaal_setup',
+  createdAt: new Date(),
+});
+```
+
+This means ARYA can reference the user's birth details in conversation without asking again.
+
+---
+
+## Tell Developer — 4 Files, 2 Hours
+
+```
+1. DB migration:
+   CREATE TABLE arya_kaal_profiles (...)
+   (run once)
+
+2. routes.ts:
+   Add GET /api/user/kaal-profile
+   Add POST /api/user/kaal-profile
+   (upsert — safe to call multiple times)
+
+3. VedicLensPage.tsx:
+   On mount → fetch kaal profile
+   If profile exists + setupComplete = true
+     → show dashboard directly
+   If not → show setup form
+   Never show setup if already completed
+
+4. KaalSetupForm (inside VedicLensPage):
+   On complete → POST to /api/user/kaal-profile
+   On success → setHasProfile(true)
+   Show dashboard immediately
+
+Also: save to arya_memory after profile saved
+      So ARYA knows birth details in chat
+
+Total: 2 hours
+Result: User sets up KAAL once.
+        Never asked again.
+```
+
+---
+
+## The User Experience After Fix
+
+```
+First time:
+  Open KAAL → setup questions appear
+  Fill birth date, star sign, Rashi
+  Tap Complete
+  Dashboard appears immediately
+
+Every time after:
+  Open KAAL → dashboard appears directly
+  No questions. No setup. Just the data.
+
+If user wants to change details:
+  Settings → Edit KAAL Profile
+  (add an Edit button on the dashboard)
+```
+
+This is a straightforward save-and-check pattern. The setup form is probably working fine — the data is just never being persisted to the database.

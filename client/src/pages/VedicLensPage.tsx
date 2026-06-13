@@ -914,6 +914,42 @@ function BriefingScreen({ briefing, loading, error, onHome, onRetry, path, profi
               </div>
             )}
 
+            {/* Ask ARYA about today */}
+            <div style={{ padding: "8px 0 4px" }}>
+              <button
+                data-testid="button-kaal-ask-arya"
+                onClick={() => {
+                  const hour = new Date().getHours();
+                  const window = b.muhurat ? `${b.muhurat.startTime} – ${b.muhurat.endTime}` : "your peak window";
+                  const theme = b.aryaInsight?.slice(0, 40) || "clarity";
+                  let q: string;
+                  if (hour >= 5 && hour < 9) q = `My KAAL peak today is ${window}. How should I use it — what's the most important thing to put in that window?`;
+                  else if (hour >= 9 && hour < 12) q = `I'm in my KAAL peak window right now (${window}). What should I be doing?`;
+                  else if (hour >= 12 && hour < 16) q = `My KAAL peak has passed. Based on my timing today — what's the best use of my afternoon?`;
+                  else if (hour >= 16 && hour < 20) q = `Looking at my KAAL for today — what should I close out before the day ends?`;
+                  else q = `Based on my KAAL — today's energy has passed. What should I carry into tomorrow?`;
+                  try { localStorage.setItem("arya_prefill_message", q); } catch {}
+                  setLocation("/");
+                }}
+                style={{
+                  width: "100%", padding: "16px 20px", borderRadius: 16, cursor: "pointer",
+                  background: "linear-gradient(135deg, rgba(26,74,46,0.8) 0%, rgba(15,35,24,0.9) 100%)",
+                  border: `1px solid rgba(74,222,128,0.25)`, display: "flex", alignItems: "center",
+                  gap: 12, fontFamily: sans, boxShadow: "0 4px 20px rgba(26,74,46,0.2)",
+                  transition: "all 0.25s ease",
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(74,222,128,0.45)"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-2px)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(74,222,128,0.25)"; (e.currentTarget as HTMLButtonElement).style.transform = "none"; }}
+              >
+                <span style={{ fontSize: 20, flexShrink: 0 }}>💬</span>
+                <span style={{ fontSize: 15, fontWeight: 600, color: "#4ade80", flex: 1, textAlign: "left" as const }}>Ask ARYA about today</span>
+                <span style={{ fontSize: 18, color: "rgba(74,222,128,0.6)" }}>→</span>
+              </button>
+              <p style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", textAlign: "center" as const, marginTop: 8, fontStyle: "italic" }}>
+                ARYA already knows your timing for today
+              </p>
+            </div>
+
             <div style={{ height: 8 }} />
             <button onClick={onHome} style={{ width: "100%", padding: "14px 16px", borderRadius: 14, background: "transparent", border: `1px solid ${C.border}`, color: C.textDim, fontFamily: sans, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
               <Home size={16} /> {t("kaal_back_home")}
@@ -978,6 +1014,25 @@ export default function VedicLensPage() {
     document.head.appendChild(style);
     return () => { try { document.head.removeChild(link); document.head.removeChild(style); } catch {} };
   }, []);
+
+  // Load saved profile on mount — skip setup if already completed
+  useEffect(() => {
+    if (!token || !isLoggedIn) return;
+    fetch("/api/user/vedic-lens", { headers: { "x-user-token": token } })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.vedicLensEnabled) {
+          if (data.birthDate) setBirthDate(data.birthDate);
+          if (data.birthPlace) setBirthPlace(data.birthPlace);
+          if (data.birthTimeApprox) setBirthTimeApprox(data.birthTimeApprox);
+          if (data.rashi) setSelectedRashi(data.rashi);
+          setBriefingLoading(true);
+          setScreen("briefing");
+          fetchBriefing();
+        }
+      })
+      .catch(() => {});
+  }, [token, isLoggedIn]);
 
   const stars = useMemo(() => Array.from({ length: 60 }, (_, i) => ({
     id: i, left: `${(i * 17 + 7) % 100}%`, top: `${(i * 23 + 11) % 100}%`,

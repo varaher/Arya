@@ -1,0 +1,395 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// KAAL — "Ask ARYA about today" Button
+// One button. Opens chat. Pre-fills with timing question.
+// No new backend. No new section. Just a connection.
+//
+// Add to: client/src/pages/VedicLensPage.tsx
+// ═══════════════════════════════════════════════════════════════════════════
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PART 1: The Button Component
+// Add inside VedicLensPage.tsx — at the bottom of the Today tab
+// ─────────────────────────────────────────────────────────────────────────────
+
+/*
+// Props needed from parent (AryaChat.tsx passes these down):
+interface KaalChatButtonProps {
+  kaalContext: {
+    todayEnergy: number;
+    todayWindow: string;
+    todayTheme: string;
+    moonSign: string;
+    venusPhase: string;
+  };
+  onAskARYA: (prefilledMessage: string) => void;
+  // This function navigates to chat + sets the input
+}
+
+function AskARYAButton({ kaalContext, onAskARYA }: KaalChatButtonProps) {
+  const questions = [
+    "What should I focus on today based on my KAAL?",
+    "Is today a good day for important decisions?",
+    `My peak window is ${kaalContext.todayWindow} — how should I use it?`,
+    "What should I handle with care today?",
+    "How does my KAAL timing affect this week's goals?",
+  ];
+
+  // Pick a question based on time of day
+  function getContextualQuestion(): string {
+    const hour = new Date().getHours();
+
+    if (hour < 9) {
+      return `My KAAL peak is ${kaalContext.todayWindow}. How should I plan my morning?`;
+    }
+    if (hour < 12) {
+      return `My best window today is ${kaalContext.todayWindow}. What's the most important thing to do in it?`;
+    }
+    if (hour < 15) {
+      return `Today's KAAL theme is ${kaalContext.todayTheme}. How does that show up in what I'm dealing with right now?`;
+    }
+    if (hour < 18) {
+      return "Based on my KAAL, what should I focus on for the rest of today?";
+    }
+    return "Looking at my KAAL for today — what should I carry into tomorrow?";
+  }
+
+  return (
+    <button
+      className="kaal-ask-arya-btn"
+      onClick={() => onAskARYA(getContextualQuestion())}
+    >
+      <span className="kaal-ask-icon">💬</span>
+      <span className="kaal-ask-text">Ask ARYA about today</span>
+      <span className="kaal-ask-arrow">→</span>
+    </button>
+  );
+}
+*/
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PART 2: Where to place it in VedicLensPage.tsx
+// Add at the BOTTOM of the Today tab content, before closing tag
+// ─────────────────────────────────────────────────────────────────────────────
+
+/*
+// Find the Today tab JSX in VedicLensPage.tsx
+// After the energy bar, theme, and guidance sections — add:
+
+{activeTab === 'today' && (
+  <div className="kaal-today-content">
+    
+    // ... existing today content (energy bar, theme, guidance) ...
+
+    // ← ADD THIS AT THE BOTTOM:
+    <div className="kaal-ask-section">
+      <AskARYAButton
+        kaalContext={kaalData}
+        onAskARYA={handleAskARYA}
+      />
+      <p className="kaal-ask-hint">
+        ARYA already knows your timing for today
+      </p>
+    </div>
+
+  </div>
+)}
+*/
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PART 3: The handler — passes message to chat
+// Add in VedicLensPage.tsx or in parent AryaChat.tsx
+// ─────────────────────────────────────────────────────────────────────────────
+
+/*
+// Option A — If VedicLensPage is a panel inside AryaChat.tsx:
+// Pass the handler as a prop:
+
+// In AryaChat.tsx:
+function handleKaalAskARYA(prefilledMessage: string) {
+  setShowVedicLens(false);     // close KAAL panel
+  setInput(prefilledMessage);  // pre-fill chat input
+  
+  // Focus the input so user can see it:
+  setTimeout(() => {
+    inputRef.current?.focus();
+  }, 300); // slight delay for panel close animation
+}
+
+// Pass to VedicLensPage:
+<VedicLensPage
+  onClose={() => setShowVedicLens(false)}
+  onAskARYA={handleKaalAskARYA}    // ← ADD THIS PROP
+/>
+
+
+// Option B — If VedicLensPage is a separate route (/kaal):
+// Use navigation + localStorage to pass the message:
+
+function handleAskARYA(prefilledMessage: string) {
+  // Store message for chat to pick up:
+  localStorage.setItem('arya_prefill_message', prefilledMessage);
+  localStorage.setItem('arya_prefill_source', 'kaal');
+  
+  // Navigate to home (chat):
+  navigate('/');
+}
+
+// In AryaChat.tsx — on mount, check for prefill:
+useEffect(() => {
+  const prefill = localStorage.getItem('arya_prefill_message');
+  const source = localStorage.getItem('arya_prefill_source');
+  
+  if (prefill) {
+    setInput(prefill);
+    localStorage.removeItem('arya_prefill_message');
+    localStorage.removeItem('arya_prefill_source');
+    
+    // Optional: show where it came from
+    if (source === 'kaal') {
+      setInputHint('From KAAL — edit or send');
+      setTimeout(() => setInputHint(''), 3000);
+    }
+    
+    // Focus input
+    setTimeout(() => inputRef.current?.focus(), 100);
+  }
+}, []);
+*/
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PART 4: Styles
+// Add to VedicLensPage.tsx or global CSS
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const KAAL_ASK_STYLES = `
+/* ── Ask ARYA section ────────────────────────────────── */
+.kaal-ask-section {
+  padding: 20px 16px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ── Main button ─────────────────────────────────────── */
+.kaal-ask-arya-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 16px 20px;
+  background: linear-gradient(135deg,
+    rgba(26,74,46,0.8) 0%,
+    rgba(15,35,24,0.9) 100%
+  );
+  border: 1px solid rgba(74,222,128,0.25);
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  font-family: 'DM Sans', sans-serif;
+  box-shadow: 0 4px 20px rgba(26,74,46,0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Shimmer effect on hover */
+.kaal-ask-arya-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(74,222,128,0.08) 0%,
+    transparent 100%
+  );
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+
+.kaal-ask-arya-btn:hover::before {
+  opacity: 1;
+}
+
+.kaal-ask-arya-btn:hover {
+  border-color: rgba(74,222,128,0.45);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(26,74,46,0.35);
+}
+
+.kaal-ask-arya-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 12px rgba(26,74,46,0.2);
+}
+
+/* Icon */
+.kaal-ask-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+/* Text */
+.kaal-ask-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: #4ade80;
+  flex: 1;
+  text-align: left;
+  letter-spacing: 0.2px;
+}
+
+/* Arrow */
+.kaal-ask-arrow {
+  font-size: 18px;
+  color: rgba(74,222,128,0.6);
+  transition: transform 0.2s;
+}
+
+.kaal-ask-arya-btn:hover .kaal-ask-arrow {
+  transform: translateX(4px);
+  color: #4ade80;
+}
+
+/* Hint text below button */
+.kaal-ask-hint {
+  font-size: 12px;
+  color: rgba(255,255,255,0.25);
+  text-align: center;
+  font-style: italic;
+  letter-spacing: 0.2px;
+}
+
+/* ── Input hint (shows in chat after navigating from KAAL) ── */
+.input-kaal-hint {
+  font-size: 11px;
+  color: rgba(74,222,128,0.6);
+  padding: 4px 12px;
+  text-align: center;
+  animation: fadeIn 0.3s ease;
+  letter-spacing: 0.5px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+`;
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PART 5: The 5 contextual questions — full logic
+// Time-aware, pulls from real KAAL data
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function buildKaalQuestion(kaalContext: {
+  todayEnergy?: number;
+  todayWindow?: string;
+  todayTheme?: string;
+  moonSign?: string;
+}): string {
+  const hour = new Date().getHours();
+  const energy = kaalContext.todayEnergy || 7;
+  const window = kaalContext.todayWindow || 'this morning';
+  const theme = kaalContext.todayTheme || 'clarity';
+
+  // Early morning — plan the day
+  if (hour >= 5 && hour < 9) {
+    return `My KAAL peak today is ${window}. How should I use it — what's the most important thing to put in that window?`;
+  }
+
+  // Morning — in the peak
+  if (hour >= 9 && hour < 12) {
+    if (energy >= 8) {
+      return `KAAL says today is a high-energy day with theme "${theme}". I'm in my peak window right now — what should I be doing?`;
+    }
+    return `My KAAL window is ${window} and theme is "${theme}". Based on this — how should I spend the next hour?`;
+  }
+
+  // Afternoon — past peak
+  if (hour >= 12 && hour < 16) {
+    return `My KAAL peak has passed for today. Theme is "${theme}". Based on my timing — what's the best use of my afternoon?`;
+  }
+
+  // Evening — wind down
+  if (hour >= 16 && hour < 20) {
+    return `Looking at my KAAL for today — the theme was "${theme}". What should I close out before the day ends?`;
+  }
+
+  // Night — reflect and prepare
+  return `Based on my KAAL — today was a ${energy >= 7 ? 'strong' : 'quiet'} day with theme "${theme}". What should I carry into tomorrow?`;
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPLETE WIRING CHECKLIST
+// ─────────────────────────────────────────────────────────────────────────────
+
+/*
+□ 1. VedicLensPage.tsx
+     Import: buildKaalQuestion from this file
+     
+     Add AskARYAButton component (PART 1)
+     
+     Place at bottom of Today tab (PART 2):
+     <div className="kaal-ask-section">
+       <button
+         className="kaal-ask-arya-btn"
+         onClick={() => handleAskARYA(
+           buildKaalQuestion(kaalData)
+         )}
+       >
+         <span className="kaal-ask-icon">💬</span>
+         <span className="kaal-ask-text">Ask ARYA about today</span>
+         <span className="kaal-ask-arrow">→</span>
+       </button>
+       <p className="kaal-ask-hint">
+         ARYA already knows your timing for today
+       </p>
+     </div>
+
+□ 2. Determine how VedicLensPage connects to chat:
+     
+     IF it's a panel inside AryaChat.tsx (most likely):
+       → Add onAskARYA prop to VedicLensPage
+       → In AryaChat.tsx handleKaalAskARYA():
+            setShowVedicLens(false)
+            setInput(prefilledMessage)
+            setTimeout(() => inputRef.current?.focus(), 300)
+     
+     IF it's a separate route (/kaal):
+       → Use localStorage approach (Option B in PART 3)
+       → In AryaChat.tsx useEffect: check + clear prefill
+
+□ 3. Add styles (PART 4) to:
+     VedicLensPage.tsx inline styles
+     OR global CSS file
+
+□ 4. Test:
+     Open KAAL → Today tab
+     Scroll to bottom
+     See "Ask ARYA about today →" button
+     
+     Morning (9 AM): tap button
+     → KAAL closes
+     → Chat opens with:
+       "My KAAL peak today is 10:30–12:15 PM.
+        How should I use it?"
+     
+     Evening (7 PM): tap button
+     → Chat opens with:
+       "Based on my KAAL — today's theme was
+        Communication. What should I close out
+        before the day ends?"
+     
+     ARYA responds using kaal context
+     already in the system prompt.
+     No extra work needed.
+
+Total time: 1–2 hours
+Zero new backend. Zero new routes.
+Just one button that connects two things.
+*/
