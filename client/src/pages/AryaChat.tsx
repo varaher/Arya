@@ -379,17 +379,17 @@ function FeedbackButtons({ messageId, conversationId }: { messageId: number; con
             data-testid={`button-thumbsup-${messageId}`}
             onClick={() => handleFeedback('up')}
             title="Helpful"
-            className="p-1 rounded hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-gray-300 dark:text-gray-600 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+            className="p-1 rounded hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
           >
-            <ThumbsUp className="w-3 h-3" />
+            <ThumbsUp className="w-3.5 h-3.5" />
           </button>
           <button
             data-testid={`button-thumbsdown-${messageId}`}
             onClick={() => handleFeedback('down')}
             title="Not helpful"
-            className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+            className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
           >
-            <ThumbsDown className="w-3 h-3" />
+            <ThumbsDown className="w-3.5 h-3.5" />
           </button>
         </div>
       )}
@@ -5832,8 +5832,8 @@ export default function AryaChat() {
                   <div className="text-[15px] md:text-[16px] leading-[1.65] text-gray-800 dark:text-gray-100">
                     <FormattedMessage content={msg.content} />
                   </div>
-                  {/* Action row — subtle, reveals on hover */}
-                  <div className="flex items-center gap-0.5 mt-2.5 opacity-40 group-hover:opacity-100 transition-opacity">
+                  {/* Action row */}
+                  <div className="flex items-center gap-0.5 mt-2.5 opacity-70 group-hover:opacity-100 transition-opacity">
                     <button
                       data-testid={`button-copy-msg-${msg.id}`}
                       onClick={() => copyMessage(msg.id, msg.content)}
