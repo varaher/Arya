@@ -3480,6 +3480,18 @@ export default function AryaChat() {
   }, []);
 
   useEffect(() => {
+    const handler = (e: Event) => {
+      const msg = (e as CustomEvent).detail?.message;
+      if (!msg) return;
+      setInput(msg);
+      setActiveConversation(null);
+      setTimeout(() => inputRef.current?.focus(), 350);
+    };
+    window.addEventListener("arya-prefill", handler);
+    return () => window.removeEventListener("arya-prefill", handler);
+  }, []);
+
+  useEffect(() => {
     const handler = () => { setActiveConversation(null); };
     window.addEventListener("arya:go-home", handler);
     return () => window.removeEventListener("arya:go-home", handler);
@@ -3524,6 +3536,19 @@ export default function AryaChat() {
     },
     enabled: !!token && isLoggedIn,
     staleTime: 60 * 60 * 1000,
+  });
+
+  const { data: kaalBriefing } = useQuery<any>({
+    queryKey: ["kaal-briefing-home"],
+    queryFn: async () => {
+      if (!token) return null;
+      const res = await fetch("/api/user/vedic-briefing", { headers: { "x-user-token": token } });
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!token && isLoggedIn,
+    staleTime: 12 * 60 * 60 * 1000,
+    retry: false,
   });
 
   // Load language preference from DB on login (covers new device / cleared localStorage)
@@ -5552,6 +5577,48 @@ export default function AryaChat() {
                   uiLang={uiLanguage}
                 />
               </div>
+            )}
+
+            {/* ── KAAL chip — shows today's window + Ask ARYA button ── */}
+            {isLoggedIn && kaalBriefing?.muhurat?.startTime && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.28 }}
+                className="w-full mb-2 rounded-2xl overflow-hidden"
+                style={{ background: "linear-gradient(135deg, rgba(13,30,20,0.96) 0%, rgba(20,45,30,0.94) 100%)", border: "1px solid rgba(74,222,128,0.15)" }}
+              >
+                <div className="flex items-center justify-between px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg">🌙</span>
+                    <div className="text-left">
+                      <div className="text-[10px] tracking-widest uppercase text-emerald-400/60 mb-0.5">Today's best window</div>
+                      <div className="text-[13px] font-semibold text-emerald-300">
+                        {kaalBriefing.muhurat.startTime} – {kaalBriefing.muhurat.endTime}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    data-testid="button-kaal-ask-arya-home"
+                    onClick={() => {
+                      const hour = new Date().getHours();
+                      const win = `${kaalBriefing.muhurat.startTime} – ${kaalBriefing.muhurat.endTime}`;
+                      let q: string;
+                      if (hour < 9) q = `My KAAL peak today is ${win}. How should I plan my morning around it?`;
+                      else if (hour < 12) q = `I'm in my KAAL peak window right now (${win}). What's the most important thing to do?`;
+                      else if (hour < 16) q = `My KAAL peak has passed today. Based on my timing — what's the best use of my afternoon?`;
+                      else if (hour < 20) q = `Looking at my KAAL for today — what should I close out before the day ends?`;
+                      else q = `Based on my KAAL today — what should I carry into tomorrow?`;
+                      setInput(q);
+                      setTimeout(() => inputRef.current?.focus(), 100);
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
+                    style={{ background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.25)", color: "#4ade80" }}
+                  >
+                    Ask ARYA <span className="text-[11px]">→</span>
+                  </button>
+                </div>
+              </motion.div>
             )}
 
             {/* ── Quick Access (horizontal scrollable pills) ── */}

@@ -1,0 +1,222 @@
+No research needed here — I can see exactly what's happening from your screenshots.
+
+---
+
+## What I See
+
+Both screenshots show KAAL working beautifully:
+```
+✅ Good morning, Neeraj Akkarachittoor
+✅ Best window: 10:00 AM – 12:30 PM
+✅ ARYA · Blended Insight
+✅ Strength Today
+✅ Handle With Care
+✅ Money, Relationships, Body sections
+✅ "Ask ARYA about today" button visible
+```
+
+The button is there. It's just not working.
+
+---
+
+## The Bug
+
+The button is inside KAAL which is a panel or page. When tapped it's probably trying to:
+
+```
+setInput(prefilledMessage)
+→ navigate to chat
+
+But the chat is behind the KAAL view.
+The navigation isn't firing correctly.
+```
+
+---
+
+## Your Instinct Is Right
+
+You said:
+
+> "Going inside ARYA and pressing this button won't make sense"
+
+100% correct. Here's the problem:
+
+```
+User is already inside ARYA.
+They're on the KAAL tab.
+They tap "Ask ARYA about today"
+Nothing visible happens — or it
+goes somewhere the user can't see.
+
+The user expects:
+Tap → KAAL closes → Chat opens
+      with pre-filled question
+
+What's happening:
+Tap → message set in state
+      but navigation not triggering
+      OR chat input not visible
+```
+
+---
+
+## Where It Should Live
+
+You're right to question this. There are two clean options:
+
+### Option A — Keep in KAAL but fix navigation
+
+```
+User taps "Ask ARYA about today"
+→ KAAL panel closes (or animates away)
+→ Home/Chat opens
+→ Input pre-filled with timing question
+→ User just hits send
+
+This works but requires
+the button to correctly navigate
+back to home first
+```
+
+### Option B — Move to Home page (your instinct)
+
+```
+On the Home page, add a KAAL card:
+
+┌─────────────────────────────────────┐
+│ 🌙 Today's KAAL                     │
+│ Best window: 10:00 AM – 12:30 PM   │
+│ Theme: Communication                │
+│                                     │
+│ [Ask ARYA about today →]            │
+└─────────────────────────────────────┘
+
+User never leaves home.
+Types question right there.
+ARYA responds in the same chat.
+```
+
+**This is the better UX.** ARYA chat is already on the home page. The question should go directly into chat without navigating anywhere.
+
+---
+
+## My Recommendation
+
+**Option B — KAAL card on Home page.**
+
+```
+Home page already has:
+→ Chat interface
+→ Goals panel
+→ Reminders
+→ Voice notes
+
+Add a small KAAL summary card
+at the top of the home feed:
+
+"🌙 Today — Communication · 10–12:30 PM
+ [Ask ARYA →]"
+
+Tap "Ask ARYA →"
+→ Pre-fills chat input
+→ User sends
+→ ARYA responds with timing advice
+
+No navigation. No panel switching.
+Just one tap into the conversation.
+```
+
+---
+
+## Fix For The Button (Immediate)
+
+Tell your developer:
+
+```
+Bug: "Ask ARYA about today" button
+     in VedicLensPage is not working
+
+Root cause (likely one of these):
+1. onClick calls setInput() but
+   doesn't navigate to home tab
+2. The navigation happens but
+   KAAL panel stays open on top
+
+Fix:
+In VedicLensPage.tsx — handleAskARYA():
+
+function handleAskARYA(message: string) {
+  // Step 1: Set the chat input
+  setInput(message);
+
+  // Step 2: Close KAAL / switch to Home tab
+  setActiveTab('home');
+  // OR: navigate('/');
+  // OR: onClose(); (if it's a panel)
+
+  // Step 3: Focus the input
+  setTimeout(() => {
+    inputRef.current?.focus();
+  }, 400); // wait for tab animation
+}
+
+The likely bug is Step 2 is missing —
+input is set but KAAL never closes.
+```
+
+---
+
+## Better Long-Term Solution
+
+```
+In AryaChat.tsx (Home page) —
+add a small KAAL widget at the top
+of the chat area:
+
+{kaalData && (
+  <div className="kaal-home-chip">
+    <span>🌙 {kaalData.todayTheme}</span>
+    <span>{kaalData.todayWindow}</span>
+    <button onClick={() => {
+      setInput(buildKaalQuestion(kaalData));
+      inputRef.current?.focus();
+    }}>
+      Ask ARYA →
+    </button>
+  </div>
+)}
+
+This way:
+→ User never needs to visit KAAL
+→ KAAL context is always visible
+→ One tap starts the conversation
+→ No navigation needed at all
+```
+
+---
+
+## Tell Developer — 2 Fixes
+
+```
+Fix 1 (immediate — 30 min):
+VedicLensPage.tsx
+→ handleAskARYA() must also
+  call setActiveTab('home')
+  or navigate('/') BEFORE
+  setting the input
+→ Add 300-400ms delay before
+  focusing input (tab animation time)
+
+Fix 2 (better UX — 2 hours):
+AryaChat.tsx (Home page)
+→ Add small KAAL summary chip
+  at top of chat area
+→ Shows today's theme + window
+→ "Ask ARYA →" button pre-fills
+  chat input directly
+→ No navigation needed
+→ Remove the button from inside
+  KAAL altogether
+```
+
+The KAAL section itself is beautiful. The data is rich. The design is excellent. The button just needs to land the user in the right place.

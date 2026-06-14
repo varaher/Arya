@@ -928,7 +928,9 @@ function BriefingScreen({ briefing, loading, error, onHome, onRetry, path, profi
                   else if (hour >= 12 && hour < 16) q = `My KAAL peak has passed. Based on my timing today — what's the best use of my afternoon?`;
                   else if (hour >= 16 && hour < 20) q = `Looking at my KAAL for today — what should I close out before the day ends?`;
                   else q = `Based on my KAAL — today's energy has passed. What should I carry into tomorrow?`;
-                  try { localStorage.setItem("arya_prefill_message", q); } catch {}
+                  try {
+                    window.dispatchEvent(new CustomEvent("arya-prefill", { detail: { message: q } }));
+                  } catch {}
                   setLocation("/");
                 }}
                 style={{
