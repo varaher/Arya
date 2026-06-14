@@ -920,17 +920,15 @@ function BriefingScreen({ briefing, loading, error, onHome, onRetry, path, profi
                 data-testid="button-kaal-ask-arya"
                 onClick={() => {
                   const hour = new Date().getHours();
-                  const window = b.muhurat ? `${b.muhurat.startTime} – ${b.muhurat.endTime}` : "your peak window";
+                  const win = b.muhurat ? `${b.muhurat.startTime} – ${b.muhurat.endTime}` : "your peak window";
                   const theme = b.aryaInsight?.slice(0, 40) || "clarity";
                   let q: string;
-                  if (hour >= 5 && hour < 9) q = `My KAAL peak today is ${window}. How should I use it — what's the most important thing to put in that window?`;
-                  else if (hour >= 9 && hour < 12) q = `I'm in my KAAL peak window right now (${window}). What should I be doing?`;
+                  if (hour >= 5 && hour < 9) q = `My KAAL peak today is ${win}. How should I use it — what's the most important thing to put in that window?`;
+                  else if (hour >= 9 && hour < 12) q = `I'm in my KAAL peak window right now (${win}). What should I be doing?`;
                   else if (hour >= 12 && hour < 16) q = `My KAAL peak has passed. Based on my timing today — what's the best use of my afternoon?`;
                   else if (hour >= 16 && hour < 20) q = `Looking at my KAAL for today — what should I close out before the day ends?`;
                   else q = `Based on my KAAL — today's energy has passed. What should I carry into tomorrow?`;
-                  try {
-                    window.dispatchEvent(new CustomEvent("arya-prefill", { detail: { message: q } }));
-                  } catch {}
+                  window.dispatchEvent(new CustomEvent("arya-prefill", { detail: { message: q } }));
                   setLocation("/");
                 }}
                 style={{
