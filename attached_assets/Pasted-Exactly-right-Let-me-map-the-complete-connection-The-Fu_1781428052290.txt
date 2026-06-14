@@ -1,0 +1,372 @@
+Exactly right. Let me map the complete connection.
+
+---
+
+## The Full Connection Map
+
+```
+Document uploaded to Notes
+         ↓
+ARYA extracts:
+  → Key points (summary)
+  → Tasks / action items
+  → Deadlines mentioned
+  → Exam questions
+         ↓
+User can:
+  → Save key points as Goals  ← already built for voice notes
+  → Set reminders for deadlines found in document
+  → Ask ARYA about it in chat
+  → Generate PPT from it
+```
+
+---
+
+## What Gets Connected — Specifically
+
+### Connection 1 — Document → Goals
+
+```
+User uploads:
+"NEET 2026 Study Plan.pdf"
+
+ARYA extracts tasks:
+• Complete Organic Chemistry by July 15
+• Attempt 3 mock tests per week
+• Revise Biology Unit 4 before August
+
+Document note card shows:
+
+📊 NEET 2026 Study Plan
+    PDF · 8 pages
+
+    ✨ SUMMARY
+    • 6-month plan covering Physics,
+      Chemistry, Biology
+    • Mock test schedule: 3/week
+    • Weak areas: Organic Chemistry
+
+    📌 TASKS FOUND
+    • Complete Organic Chemistry by July 15
+    • Attempt 3 mock tests per week        [→ Save as goal]
+    • Revise Biology Unit 4 before August  [→ Save as goal]
+
+    [Save all as goals]  [Ask ARYA]  [Copy]
+```
+
+### Connection 2 — Document → Reminders
+
+```
+User uploads:
+"Rajagiri Hospital Duty Roster June.pdf"
+
+ARYA extracts dates and times:
+• Night duty: June 18, 8 PM
+• CME conference: June 22, 9 AM
+• NABH audit: June 28, 10 AM
+
+Document note card shows:
+
+📊 Duty Roster June 2026
+    PDF · 2 pages
+
+    ✨ SUMMARY
+    • 12 shifts scheduled
+    • 2 night duties
+    • 1 conference, 1 audit
+
+    ⏰ DATES & DEADLINES FOUND
+    • Night duty — June 18, 8 PM     [Set reminder]
+    • CME conference — June 22, 9 AM [Set reminder]
+    • NABH audit — June 28, 10 AM   [Set reminder]
+
+    [Set all reminders]  [Ask ARYA]
+```
+
+### Connection 3 — Document → Goals + Reminders Together
+
+```
+User uploads:
+"Q3 Business Plan.pdf"
+
+ARYA extracts:
+Tasks → Goals
+Deadlines → Reminders
+
+Document card shows both:
+→ [Save 5 goals]
+→ [Set 3 reminders]
+→ [Ask ARYA about this]
+```
+
+---
+
+## The Complete Document Note Card
+
+```
+┌─────────────────────────────────────────┐
+│ 📊  NCERT Biology Class 12       🗑️     │
+│     PDF · From Notes · 312 pages        │
+│                                         │
+│ ✨ SUMMARY                              │
+│ • Covers Reproduction, Genetics,        │
+│   Evolution, Ecology, Biotechnology     │
+│ • 6 units, 16 chapters                 │
+│ • High-weightage for NEET: Unit 1, 4   │
+│                                         │
+│ 📌 TASKS FOUND (3)                      │
+│ • Complete Unit 4 revision              │
+│ • Attempt chapter-end exercises    [→ Goals] │
+│ • Make formula sheet for Unit 6         │
+│          [Save all as goals]            │
+│                                         │
+│ ⏰ DATES FOUND (1)                      │
+│ • Chapter test: July 20           [Set reminder] │
+│                                         │
+│ ❓ EXAM QUESTIONS (3)                   │
+│ 1. What is double fertilisation?        │
+│ 2. Differentiate mitosis and meiosis    │
+│ 3. Explain DNA replication              │
+│                                         │
+│ [💬 Ask ARYA]  [📋 Copy]  [📊 Make PPT]│
+└─────────────────────────────────────────┘
+```
+
+---
+
+## The Extraction Logic
+
+Add to `document-processor.ts`:
+
+```typescript
+export interface DocumentExtracts {
+  summary: string[];           // Key bullet points
+  tasks: string[];             // Action items found
+  dates: ExtractedDate[];      // Dates + times found
+  examQuestions: string[];     // For study content
+  terms: string[];             // Definitions found
+}
+
+export interface ExtractedDate {
+  text: string;          // "NABH audit"
+  dateString: string;    // "June 28, 10 AM"
+  isoDate?: string;      // "2026-06-28T10:00:00"
+}
+
+// GPT-4o mini extraction prompt:
+export const DOCUMENT_EXTRACTION_PROMPT = `
+Analyse this document and extract:
+
+1. SUMMARY: 4-6 bullet points covering the main content
+   Format: bullet per line starting with •
+
+2. TASKS: Any action items, to-dos, things that need doing
+   Look for: "complete", "submit", "prepare", "attend",
+   "review", "finish", "send", "call", "schedule"
+   Format: one task per line starting with TASK:
+
+3. DATES: Any dates, deadlines, schedules mentioned
+   Format: DATE: [what it is] | [date and time as mentioned]
+
+4. EXAM_QUESTIONS: If study/educational content —
+   generate 3-5 likely exam questions from this content
+   Format: Q: [question]
+
+5. TERMS: Important terms or definitions found
+   Format: TERM: [term] — [definition]
+
+Be specific. Don't invent what isn't there.
+If a category has nothing — leave it empty.
+
+Document content:
+{document_text}
+`;
+```
+
+---
+
+## What Changes In Each Section
+
+### Notes Panel (VoiceNotesPanel.tsx)
+
+```
+Document note card shows:
+→ Tasks found → [Save as goals] per task
+→ Dates found → [Set reminder] per date
+→ [Save all as goals] bulk button
+→ [Set all reminders] bulk button
+→ [💬 Ask ARYA]
+→ [📊 Make PPT] (if study content)
+```
+
+### Goals Panel (GoalsPanel.tsx)
+
+```
+When goal is saved from document:
+source: 'document'
+sourceDocumentId: [id]
+sourceFilename: "NCERT Biology.pdf"
+
+Goal card shows:
+"📊 From NCERT Biology.pdf"
+Small chip under goal title
+
+So user knows where each goal came from.
+```
+
+### Reminders Panel (RemindersPanel.tsx)
+
+```
+When reminder is saved from document:
+type: 'document_date'
+sourceNote: "Extracted from Duty Roster June.pdf"
+
+Reminder card shows:
+"📄 From Duty Roster June.pdf"
+
+User knows why this reminder exists.
+```
+
+### Chat (AryaChat.tsx)
+
+```
+When document is active in chat,
+ARYA's context includes:
+→ Document content
+→ Tasks already saved as goals
+→ Reminders already set
+
+ARYA won't duplicate:
+"I see you've already saved 3 goals
+ from this document. Want me to help
+ you plan the first one?"
+```
+
+---
+
+## The Sunday Review Connection
+
+```
+Sunday Review should reference document activity:
+
+"This week you uploaded 2 documents:
+ NCERT Biology Ch 3 and your duty roster.
+
+ 3 goals were created from them.
+ 1 reminder is coming up — NABH audit
+ on June 28.
+
+ The Biology goals haven't been
+ touched yet. Exam pressure building?"
+```
+
+---
+
+## Tell Developer — What To Add
+
+```
+server/arya/document-processor.ts:
+  Add extractDocumentItems() function:
+  → Calls GPT-4o-mini (cheap + fast)
+  → Extracts tasks, dates, questions, terms
+  → Returns structured DocumentExtracts object
+
+  Cost: ~$0.001 per document
+  Time: 3-5 seconds
+
+routes.ts (/api/arya/document/upload):
+  After text extraction:
+  → Call extractDocumentItems()
+  → Store in arya_voice_notes:
+     extracted_tasks = tasks array
+     extracted_dates = dates array
+     exam_questions = questions array
+  → Return all to frontend
+
+VoiceNotesPanel.tsx (document card):
+  Show tasks with [→ Goal] buttons
+  Show dates with [Set reminder] buttons
+  [Save all as goals] bulk action
+  [Set all reminders] bulk action
+
+GoalsPanel.tsx:
+  Accept source: 'document' + sourceFilename
+  Show "📊 From [filename]" on goal card
+
+RemindersPanel.tsx:
+  Accept type: 'document_date'
+  Show "📄 From [filename]" on reminder card
+
+AryaChat.tsx:
+  When document active — check if goals
+  already saved from it
+  Don't re-suggest what's already saved
+
+WeeklyReviewPage.tsx:
+  Query documents uploaded this week
+  Reference in review if goals/reminders
+  were created from them
+```
+
+---
+
+## The Complete Flow — End to End
+
+```
+1. Upload "NEET Study Plan.pdf" in Notes
+         ↓
+2. ARYA reads + extracts in 10 seconds
+         ↓
+3. Note card appears with:
+   → Summary
+   → 4 tasks found
+   → 2 dates found
+   → 5 exam questions
+         ↓
+4. User taps "Save all as goals"
+   → 4 goals appear in Goals panel
+   → Each tagged "From NEET Study Plan.pdf"
+         ↓
+5. User taps "Set all reminders"
+   → 2 reminders set
+   → Each tagged "From NEET Study Plan.pdf"
+         ↓
+6. User taps "Ask ARYA about this"
+   → Chat opens with document loaded
+   → ARYA knows which goals were saved
+   → "You've set 4 goals from this plan.
+      Want to tackle Organic Chemistry
+      first — that's where most NEET
+      questions come from."
+         ↓
+7. Sunday Review:
+   → "You uploaded your study plan.
+      4 goals set. None touched yet.
+      Exam in 6 months.
+      What's holding you back?"
+```
+
+---
+
+## Summary
+
+```
+Document in Notes
+connects to:
+
+→ Chat     (Ask ARYA about it)
+→ Goals    (Save tasks as goals)
+→ Reminders (Set date alerts)
+→ PPT      (Generate from content)
+→ Sunday Review (References it)
+
+ARYA is not a document reader.
+ARYA is what happens after you read —
+the thinking, the planning,
+the follow-through.
+
+The document starts the process.
+ARYA carries it forward.
+```
+
+Shall I write the complete `extractDocumentItems()` function with the GPT prompt and the updated note card component?

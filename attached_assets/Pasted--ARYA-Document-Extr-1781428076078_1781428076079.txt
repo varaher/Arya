@@ -1,0 +1,1005 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// ARYA Document Extractor — Complete Implementation
+//
+// What this does:
+// After a document is uploaded, ARYA reads it and pulls out:
+//   → Key points (summary)
+//   → Tasks / things to do
+//   → Dates and deadlines
+//   → Exam questions (if study content)
+//   → Important terms
+//
+// Then connects everything to Goals, Reminders, Notes, and Chat.
+//
+// File: server/arya/document-processor.ts
+// ═══════════════════════════════════════════════════════════════════════════
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TYPES
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface ExtractedDate {
+  label: string;        // "Night duty" / "NABH audit" / "Chapter test"
+  dateText: string;     // "June 18, 8 PM" — exactly as it appears in document
+  isoDate?: string;     // "2026-06-18T20:00:00" — parsed if possible
+}
+
+export interface DocumentExtracts {
+  summary: string[];          // 4-6 bullet points
+  tasks: string[];            // Action items found
+  dates: ExtractedDate[];     // Dates and deadlines
+  examQuestions: string[];    // Generated from study content
+  terms: string[];            // "Term — definition" strings
+  isStudyContent: boolean;    // True if textbook/notes/exam prep
+  hasDates: boolean;          // True if any dates found
+  hasTasks: boolean;          // True if any tasks found
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// THE EXTRACTION PROMPT
+// What we ask GPT-4o-mini to do with the document
+// ─────────────────────────────────────────────────────────────────────────────
+
+function buildExtractionPrompt(
+  documentText: string,
+  filename: string,
+  fileType: string
+): string {
+  return `You are helping someone understand a document they just uploaded.
+Your job: pull out the most useful things from it.
+
+Document name: "${filename}"
+Document type: ${fileType}
+
+---
+
+DOCUMENT CONTENT:
+${documentText.slice(0, 50000)}
+${documentText.length > 50000 ? '\n[Document continues — analysing first 50,000 characters]' : ''}
+
+---
+
+Extract the following. Be specific — only include what is actually in the document.
+Do NOT invent or guess. If something doesn't exist in the document, return empty array.
+
+Return ONLY valid JSON. No explanation. No markdown. Just the JSON object.
+
+{
+  "summary": [
+    "One clear sentence about what this document covers",
+    "Second key point",
+    "Third key point",
+    "Fourth key point"
+  ],
+
+  "tasks": [
+    "Complete Organic Chemistry revision",
+    "Submit assignment by Friday",
+    "Call Dr. Sharma about test results"
+  ],
+
+  "dates": [
+    {
+      "label": "Chapter test",
+      "dateText": "July 20, 2026",
+      "isoDate": "2026-07-20T00:00:00"
+    },
+    {
+      "label": "Night duty",
+      "dateText": "June 18, 8 PM",
+      "isoDate": "2026-06-18T20:00:00"
+    }
+  ],
+
+  "examQuestions": [
+    "What is double fertilisation and where does it occur?",
+    "Differentiate between mitosis and meiosis.",
+    "Explain the role of DNA polymerase in replication."
+  ],
+
+  "terms": [
+    "Mitosis — cell division producing two identical daughter cells",
+    "Meiosis — cell division producing four genetically unique cells"
+  ],
+
+  "isStudyContent": true,
+
+  "hasDates": true,
+
+  "hasTasks": true
+}
+
+RULES:
+→ summary: 3-6 items. One sentence each. Clear and specific to this document.
+→ tasks: Only real action items that need to be done. Ignore headings.
+→ dates: Only actual dates/times mentioned. Parse to ISO if year is clear.
+→ examQuestions: Only for textbooks, notes, coaching material.
+   If not study content → return empty array.
+→ terms: Only important definitions explicitly stated in the document.
+→ isStudyContent: true if this is a textbook, notes, exam prep material.
+→ hasDates: true if dates array is not empty.
+→ hasTasks: true if tasks array is not empty.
+`;
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// THE MAIN FUNCTION
+// Call this after extractDocument() returns the text
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function extractDocumentItems(
+  documentText: string,
+  filename: string,
+  fileType: string,
+  openai: any  // your existing OpenAI client
+): Promise<DocumentExtracts> {
+
+  const empty: DocumentExtracts = {
+    summary: [],
+    tasks: [],
+    dates: [],
+    examQuestions: [],
+    terms: [],
+    isStudyContent: false,
+    hasDates: false,
+    hasTasks: false,
+  };
+
+  if (!documentText || documentText.trim().length < 50) {
+    return empty;
+  }
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',  // cheap + fast — perfect for extraction
+      max_tokens: 1500,
+      temperature: 0.1,      // low temperature = consistent structured output
+      messages: [
+        {
+          role: 'user',
+          content: buildExtractionPrompt(documentText, filename, fileType),
+        },
+      ],
+    });
+
+    const raw = response.choices[0]?.message?.content || '';
+
+    // Clean up response (remove any accidental markdown)
+    const cleaned = raw
+      .replace(/```json/g, '')
+      .replace(/```/g, '')
+      .trim();
+
+    const parsed = JSON.parse(cleaned) as DocumentExtracts;
+
+    // Validate and sanitise
+    return {
+      summary:       Array.isArray(parsed.summary)       ? parsed.summary.slice(0, 6)       : [],
+      tasks:         Array.isArray(parsed.tasks)         ? parsed.tasks.slice(0, 10)        : [],
+      dates:         Array.isArray(parsed.dates)         ? parsed.dates.slice(0, 10)        : [],
+      examQuestions: Array.isArray(parsed.examQuestions) ? parsed.examQuestions.slice(0, 5) : [],
+      terms:         Array.isArray(parsed.terms)         ? parsed.terms.slice(0, 8)         : [],
+      isStudyContent: Boolean(parsed.isStudyContent),
+      hasDates:       Boolean(parsed.hasDates),
+      hasTasks:       Boolean(parsed.hasTasks),
+    };
+
+  } catch (err) {
+    console.error('Document extraction failed:', err);
+    return empty;
+  }
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ROUTES.TS PATCH
+// Add extraction to the upload endpoint
+// ─────────────────────────────────────────────────────────────────────────────
+
+/*
+In POST /api/arya/document/upload — after extractDocument():
+
+  const doc = await extractDocument(req.file.path, req.file.originalname);
+
+  // ← ADD THIS:
+  const extracts = await extractDocumentItems(
+    doc.text,
+    doc.filename,
+    doc.type,
+    openai   // your existing openai client
+  );
+
+  // Save note to arya_voice_notes with all extracts:
+  const [savedNote] = await db
+    .insert(arya_voice_notes)
+    .values({
+      userId,
+      transcription: doc.text.slice(0, 2000), // preview only
+      summary: extracts.summary.map(s => `• ${s}`).join('\n'),
+      language: 'en',
+      duration: 0,
+      sourceType: 'document',
+      noteTitle: doc.filename,
+      extractedTasks: extracts.tasks,
+      pptOutline: null,
+      // New fields:
+      extractedDates: JSON.stringify(extracts.dates),
+      examQuestions: extracts.examQuestions,
+      terms: JSON.stringify(extracts.terms),
+      isStudyContent: extracts.isStudyContent,
+      fileType: doc.type,
+      filePageCount: doc.slideCount || null,
+      createdAt: new Date(),
+    })
+    .returning();
+
+  res.json({
+    noteId: savedNote.id,
+    filename: doc.filename,
+    type: doc.type,
+    wordCount: doc.wordCount,
+    slideCount: doc.slideCount,
+    extracts,                    // ← frontend uses this to render card
+    contextPrompt: buildDocumentContextPrompt(doc),
+  });
+*/
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DB MIGRATION
+// Add new columns to arya_voice_notes
+// ─────────────────────────────────────────────────────────────────────────────
+
+/*
+ALTER TABLE arya_voice_notes
+  ADD COLUMN IF NOT EXISTS extracted_dates  TEXT,
+  ADD COLUMN IF NOT EXISTS terms            TEXT,
+  ADD COLUMN IF NOT EXISTS is_study_content BOOLEAN DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS file_type        TEXT,
+  ADD COLUMN IF NOT EXISTS file_page_count  INTEGER;
+
+-- exam_questions and extracted_tasks already exist as arrays
+-- source_type 'document' is a new valid value
+*/
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// THE DOCUMENT NOTE CARD (VoiceNotesPanel.tsx)
+// Full JSX component — replace the existing NoteCard for document notes
+// ─────────────────────────────────────────────────────────────────────────────
+
+/*
+interface DocumentNoteCardProps {
+  note: VoiceNote & {
+    extracts: DocumentExtracts;
+  };
+  onDelete: (id: number) => void;
+  onSaveGoal: (task: string, noteId: number, filename: string) => Promise<void>;
+  onSaveAllGoals: (tasks: string[], noteId: number, filename: string) => Promise<void>;
+  onSetReminder: (date: ExtractedDate, noteId: number) => Promise<void>;
+  onSetAllReminders: (dates: ExtractedDate[], noteId: number) => Promise<void>;
+  onAskARYA: (noteId: number, contextPrompt: string) => void;
+  onMakePPT: (noteId: number, title: string) => void;
+}
+
+function DocumentNoteCard({
+  note,
+  onDelete,
+  onSaveGoal,
+  onSaveAllGoals,
+  onSetReminder,
+  onSetAllReminders,
+  onAskARYA,
+  onMakePPT,
+}: DocumentNoteCardProps) {
+
+  const [expandedSection, setExpandedSection] = useState<string | null>(null);
+  const [savedGoals, setSavedGoals] = useState<Set<number>>(new Set());
+  const [savedReminders, setSavedReminders] = useState<Set<number>>(new Set());
+  const [allGoalsSaved, setAllGoalsSaved] = useState(false);
+  const [allRemindersSaved, setAllRemindersSaved] = useState(false);
+
+  const ex = note.extracts;
+  const fileIcon = note.fileType === 'pptx' ? '📊'
+                 : note.fileType === 'pdf'  ? '📄'
+                 : note.fileType === 'docx' ? '📝'
+                 : '📎';
+
+  const pageLabel = note.filePageCount
+    ? note.fileType === 'pptx'
+      ? `${note.filePageCount} slides`
+      : `${note.filePageCount} pages`
+    : '';
+
+  return (
+    <div className="note-card document-card">
+
+      {// ── HEADER ─────────────────────────────────────────────────────── //}
+      <div className="note-header">
+        <div className="note-meta">
+          <span className="note-icon">{fileIcon}</span>
+          <span className="note-study-title">
+            {note.noteTitle?.replace(/\.[^.]+$/, '') || 'Document'}
+          </span>
+          <span className="note-source-badge doc-badge">
+            {note.fileType?.toUpperCase() || 'FILE'}
+          </span>
+        </div>
+        <button className="note-delete" onClick={() => onDelete(note.id)}>
+          🗑️
+        </button>
+      </div>
+
+      <p className="doc-meta-line">
+        {pageLabel && <span>{pageLabel}</span>}
+        <span>{timeAgo(note.createdAt)}</span>
+      </p>
+
+      {// ── SUMMARY ────────────────────────────────────────────────────── //}
+      {ex.summary.length > 0 && (
+        <div className="note-summary-section">
+          <p className="note-summary-label">✨ SUMMARY</p>
+          <ul className="note-bullets">
+            {ex.summary.map((point, i) => (
+              <li key={i} className="note-bullet">{point}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {// ── TERMS ──────────────────────────────────────────────────────── //}
+      {ex.terms.length > 0 && (
+        <div className="note-terms-section">
+          <button
+            className="note-section-toggle"
+            onClick={() => setExpandedSection(
+              expandedSection === 'terms' ? null : 'terms'
+            )}
+          >
+            📌 KEY TERMS ({ex.terms.length})
+            <span>{expandedSection === 'terms' ? '▲' : '▼'}</span>
+          </button>
+          {expandedSection === 'terms' && (
+            <ul className="terms-list">
+              {ex.terms.map((term, i) => (
+                <li key={i} className="term-item">{term}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {// ── TASKS → GOALS ──────────────────────────────────────────────── //}
+      {ex.tasks.length > 0 && (
+        <div className="note-tasks-section">
+          <div className="note-section-header">
+            <span className="note-section-label">
+              📌 TASKS FOUND ({ex.tasks.length})
+            </span>
+            {!allGoalsSaved && (
+              <button
+                className="save-all-btn"
+                onClick={async () => {
+                  await onSaveAllGoals(ex.tasks, note.id, note.noteTitle || '');
+                  setAllGoalsSaved(true);
+                }}
+              >
+                Save all as goals
+              </button>
+            )}
+            {allGoalsSaved && (
+              <span className="all-saved-badge">✓ All saved</span>
+            )}
+          </div>
+
+          {ex.tasks.map((task, i) => (
+            <div key={i} className="task-row">
+              <span className="task-text">{task}</span>
+              {!savedGoals.has(i) ? (
+                <button
+                  className="save-goal-btn"
+                  onClick={async () => {
+                    await onSaveGoal(task, note.id, note.noteTitle || '');
+                    setSavedGoals(prev => new Set([...prev, i]));
+                  }}
+                >
+                  → Goal
+                </button>
+              ) : (
+                <span className="goal-saved-check">✓</span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {// ── DATES → REMINDERS ──────────────────────────────────────────── //}
+      {ex.dates.length > 0 && (
+        <div className="note-dates-section">
+          <div className="note-section-header">
+            <span className="note-section-label">
+              ⏰ DATES FOUND ({ex.dates.length})
+            </span>
+            {!allRemindersSaved && (
+              <button
+                className="save-all-btn"
+                onClick={async () => {
+                  await onSetAllReminders(ex.dates, note.id);
+                  setAllRemindersSaved(true);
+                }}
+              >
+                Set all reminders
+              </button>
+            )}
+            {allRemindersSaved && (
+              <span className="all-saved-badge">✓ All set</span>
+            )}
+          </div>
+
+          {ex.dates.map((date, i) => (
+            <div key={i} className="date-row">
+              <div className="date-info">
+                <span className="date-label">{date.label}</span>
+                <span className="date-text">{date.dateText}</span>
+              </div>
+              {!savedReminders.has(i) ? (
+                <button
+                  className="set-reminder-btn"
+                  onClick={async () => {
+                    await onSetReminder(date, note.id);
+                    setSavedReminders(prev => new Set([...prev, i]));
+                  }}
+                >
+                  Set reminder
+                </button>
+              ) : (
+                <span className="reminder-saved-check">✓ Set</span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {// ── EXAM QUESTIONS ─────────────────────────────────────────────── //}
+      {ex.examQuestions.length > 0 && (
+        <div className="note-exam-section">
+          <button
+            className="note-section-toggle"
+            onClick={() => setExpandedSection(
+              expandedSection === 'exam' ? null : 'exam'
+            )}
+          >
+            ❓ LIKELY EXAM QUESTIONS ({ex.examQuestions.length})
+            <span>{expandedSection === 'exam' ? '▲' : '▼'}</span>
+          </button>
+          {expandedSection === 'exam' && (
+            <div className="exam-questions-list">
+              {ex.examQuestions.map((q, i) => (
+                <div key={i} className="exam-q-row">
+                  <span className="exam-q-num">{i + 1}.</span>
+                  <span className="exam-q-text">{q}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {// ── ACTION BUTTONS ─────────────────────────────────────────────── //}
+      <div className="note-actions">
+        <button
+          className="note-action-btn ask-arya-btn"
+          onClick={() => onAskARYA(note.id, note.contextPrompt || '')}
+        >
+          💬 Ask ARYA
+        </button>
+
+        {ex.isStudyContent && (
+          <button
+            className="note-action-btn ppt-btn"
+            onClick={() => onMakePPT(
+              note.id,
+              note.noteTitle?.replace(/\.[^.]+$/, '') || 'Presentation'
+            )}
+          >
+            📊 Make PPT
+          </button>
+        )}
+
+        <button className="note-action-btn copy-btn">
+          📋 Copy
+        </button>
+      </div>
+
+    </div>
+  );
+}
+*/
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STYLES FOR DOCUMENT NOTE CARD
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const DOCUMENT_CARD_STYLES = `
+/* ── Document card base ─────────────────────────────────────────────── */
+.document-card {
+  border-color: rgba(99,102,241,0.15);
+}
+
+/* ── PDF badge ──────────────────────────────────────────────────────── */
+.doc-badge {
+  background: rgba(99,102,241,0.12);
+  border-color: rgba(99,102,241,0.2);
+  color: #818cf8;
+  font-size: 9px;
+  letter-spacing: 1px;
+}
+
+/* ── File meta line (pages + time) ─────────────────────────────────── */
+.doc-meta-line {
+  display: flex;
+  gap: 10px;
+  font-size: 11px;
+  color: rgba(255,255,255,0.3);
+  margin: -8px 0 12px;
+  padding-left: 2px;
+}
+.doc-meta-line span::after {
+  content: '·';
+  margin-left: 10px;
+}
+.doc-meta-line span:last-child::after { content: ''; }
+
+/* ── Section toggles (terms, exam questions) ────────────────────────── */
+.note-section-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 10px 0;
+  cursor: pointer;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  color: rgba(255,255,255,0.4);
+  text-transform: uppercase;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  margin-top: 8px;
+  transition: color 0.15s;
+}
+.note-section-toggle:hover { color: rgba(255,255,255,0.7); }
+
+/* ── Section header (tasks, dates) ─────────────────────────────────── */
+.note-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+.note-section-label {
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  color: rgba(255,255,255,0.4);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+/* ── Save all / Set all buttons ─────────────────────────────────────── */
+.save-all-btn {
+  background: rgba(74,222,128,0.1);
+  border: 1px solid rgba(74,222,128,0.2);
+  border-radius: 8px;
+  color: #4ade80;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.15s;
+}
+.save-all-btn:hover {
+  background: rgba(74,222,128,0.18);
+}
+
+.all-saved-badge {
+  font-size: 11px;
+  color: #4ade80;
+  font-weight: 600;
+}
+
+/* ── Task rows ──────────────────────────────────────────────────────── */
+.task-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.task-row:last-child { border-bottom: none; }
+
+.task-text {
+  font-size: 13px;
+  color: rgba(255,255,255,0.75);
+  line-height: 1.4;
+  flex: 1;
+}
+
+.save-goal-btn {
+  background: rgba(74,222,128,0.08);
+  border: 1px solid rgba(74,222,128,0.15);
+  border-radius: 8px;
+  color: #4ade80;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  white-space: nowrap;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.save-goal-btn:hover {
+  background: rgba(74,222,128,0.15);
+}
+
+.goal-saved-check {
+  font-size: 14px;
+  color: #4ade80;
+  flex-shrink: 0;
+  font-weight: 600;
+}
+
+/* ── Date rows ──────────────────────────────────────────────────────── */
+.date-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.date-row:last-child { border-bottom: none; }
+
+.date-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.date-label {
+  font-size: 13px;
+  color: rgba(255,255,255,0.8);
+  font-weight: 500;
+}
+
+.date-text {
+  font-size: 12px;
+  color: #fbbf24;
+}
+
+.set-reminder-btn {
+  background: rgba(251,191,36,0.08);
+  border: 1px solid rgba(251,191,36,0.2);
+  border-radius: 8px;
+  color: #fbbf24;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  white-space: nowrap;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.set-reminder-btn:hover {
+  background: rgba(251,191,36,0.15);
+}
+
+.reminder-saved-check {
+  font-size: 11px;
+  color: #fbbf24;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* ── Terms list ─────────────────────────────────────────────────────── */
+.terms-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 8px;
+}
+
+.term-item {
+  font-size: 13px;
+  color: rgba(255,255,255,0.65);
+  padding: 5px 0 5px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  line-height: 1.5;
+  position: relative;
+}
+.term-item::before {
+  content: '📌';
+  position: absolute;
+  left: -4px;
+  font-size: 10px;
+}
+.term-item:last-child { border-bottom: none; }
+
+/* ── Exam questions list ─────────────────────────────────────────────── */
+.exam-questions-list {
+  padding: 4px 0 8px;
+}
+
+.exam-q-row {
+  display: flex;
+  gap: 8px;
+  padding: 5px 0;
+  font-size: 13px;
+  color: rgba(255,255,255,0.65);
+  line-height: 1.5;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.exam-q-row:last-child { border-bottom: none; }
+
+.exam-q-num {
+  color: #60a5fa;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* ── Action buttons ─────────────────────────────────────────────────── */
+.note-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.note-action-btn {
+  flex: 1;
+  min-width: 80px;
+  padding: 8px 10px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  color: rgba(255,255,255,0.55);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.15s;
+  text-align: center;
+}
+.note-action-btn:hover {
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.85);
+}
+
+.ask-arya-btn {
+  background: rgba(74,222,128,0.06);
+  border-color: rgba(74,222,128,0.15);
+  color: #4ade80;
+}
+.ask-arya-btn:hover {
+  background: rgba(74,222,128,0.12);
+  color: #4ade80;
+}
+
+.ppt-btn {
+  background: rgba(99,102,241,0.06);
+  border-color: rgba(99,102,241,0.15);
+  color: #818cf8;
+}
+.ppt-btn:hover {
+  background: rgba(99,102,241,0.12);
+  color: #818cf8;
+}
+`;
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SAVE GOAL FROM DOCUMENT (routes.ts)
+// When user taps "→ Goal" on a task
+// ─────────────────────────────────────────────────────────────────────────────
+
+/*
+app.post('/api/arya/document/save-goal', requireAuth, async (req, res) => {
+  const { task, noteId, filename } = req.body;
+  const userId = req.user.id;
+
+  const [goal] = await db
+    .insert(arya_goals)
+    .values({
+      userId,
+      title: task,
+      source: 'document',
+      sourceNoteId: noteId,
+      sourceFilename: filename,
+      status: 'active',
+      priority: 'medium',
+      createdAt: new Date(),
+    })
+    .returning();
+
+  res.json({ goalId: goal.id, success: true });
+});
+
+app.post('/api/arya/document/save-all-goals', requireAuth, async (req, res) => {
+  const { tasks, noteId, filename } = req.body;
+  const userId = req.user.id;
+
+  const goals = await Promise.all(
+    tasks.map((task: string) =>
+      db.insert(arya_goals).values({
+        userId,
+        title: task,
+        source: 'document',
+        sourceNoteId: noteId,
+        sourceFilename: filename,
+        status: 'active',
+        priority: 'medium',
+        createdAt: new Date(),
+      }).returning()
+    )
+  );
+
+  res.json({ count: goals.length, success: true });
+});
+*/
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SET REMINDER FROM DOCUMENT (routes.ts)
+// When user taps "Set reminder" on a date
+// ─────────────────────────────────────────────────────────────────────────────
+
+/*
+app.post('/api/arya/document/set-reminder', requireAuth, async (req, res) => {
+  const { date, noteId } = req.body;
+  // date = { label, dateText, isoDate }
+  const userId = req.user.id;
+
+  const scheduledAt = date.isoDate
+    ? new Date(date.isoDate)
+    : null;
+
+  if (!scheduledAt) {
+    return res.status(400).json({
+      error: 'Could not parse date. Please set reminder manually.'
+    });
+  }
+
+  // Set reminder 1 hour before the event:
+  const reminderTime = new Date(scheduledAt.getTime() - 60 * 60 * 1000);
+
+  const [reminder] = await db
+    .insert(arya_reminders)
+    .values({
+      userId,
+      title: date.label,
+      message: `${date.label} — ${date.dateText}`,
+      scheduledAt: reminderTime,
+      type: 'document_date',
+      status: 'active',
+      sourceNoteId: noteId,
+      createdAt: new Date(),
+    })
+    .returning();
+
+  res.json({ reminderId: reminder.id, success: true });
+});
+*/
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GOAL CARD UPDATE (GoalsPanel.tsx)
+// Show where the goal came from
+// ─────────────────────────────────────────────────────────────────────────────
+
+/*
+In the goal card — add source chip below title:
+
+{goal.source === 'document' && goal.sourceFilename && (
+  <span className="goal-source-chip">
+    📄 {goal.sourceFilename.replace(/\.[^.]+$/, '').slice(0, 30)}
+  </span>
+)}
+
+{goal.source === 'chat' && (
+  <span className="goal-source-chip">
+    💬 From conversation
+  </span>
+)}
+
+{goal.source === 'voice' && (
+  <span className="goal-source-chip">
+    🎙️ From voice note
+  </span>
+)}
+
+CSS:
+.goal-source-chip {
+  display: inline-block;
+  font-size: 10px;
+  color: rgba(255,255,255,0.35);
+  background: rgba(255,255,255,0.04);
+  border-radius: 6px;
+  padding: 2px 7px;
+  margin-top: 4px;
+  letter-spacing: 0.3px;
+}
+*/
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPLETE CHECKLIST
+// ─────────────────────────────────────────────────────────────────────────────
+
+/*
+NEW FUNCTION:
+□ extractDocumentItems() in document-processor.ts
+  Uses gpt-4o-mini — ~$0.001 per doc
+  Returns tasks, dates, questions, terms
+
+ROUTES.TS:
+□ Call extractDocumentItems() in upload endpoint
+□ Save extracts to arya_voice_notes
+□ POST /api/arya/document/save-goal
+□ POST /api/arya/document/save-all-goals
+□ POST /api/arya/document/set-reminder
+
+DB MIGRATION:
+□ ALTER TABLE arya_voice_notes
+  ADD extracted_dates TEXT,
+  ADD terms TEXT,
+  ADD is_study_content BOOLEAN,
+  ADD file_type TEXT,
+  ADD file_page_count INTEGER;
+
+□ ALTER TABLE arya_goals
+  ADD source_filename TEXT;
+  (source_note_id already exists)
+
+□ ALTER TABLE arya_reminders
+  ADD source_note_id INTEGER;
+
+VOICENOTESPANEL.TSX:
+□ DocumentNoteCard component (above)
+□ Detect source_type === 'document'
+□ Render DocumentNoteCard instead of NoteCard
+□ Wire onSaveGoal → POST /save-goal
+□ Wire onSaveAllGoals → POST /save-all-goals
+□ Wire onSetReminder → POST /set-reminder
+□ Wire onSetAllReminders → loop set-reminder
+□ Wire onAskARYA → navigate to chat + load doc context
+□ Wire onMakePPT → generate-pptx endpoint
+
+GOALSPANEL.TSX:
+□ Show source chip on goal card
+□ source: 'document' → show filename
+
+CSS:
+□ Add DOCUMENT_CARD_STYLES to global CSS
+
+TEST:
+□ Upload PDF → tasks appear → save as goal → shows in Goals ✓
+□ Upload PDF → dates appear → set reminder → shows in Reminders ✓
+□ Upload PPT → "Make PPT" button → pptx downloads ✓
+□ Goal card shows "📄 From [filename]" ✓
+□ Reminder shows "📄 From [filename]" ✓
+□ Ask ARYA → opens chat with doc loaded ✓
+
+TOTAL: 1 day on top of existing document spec
+*/

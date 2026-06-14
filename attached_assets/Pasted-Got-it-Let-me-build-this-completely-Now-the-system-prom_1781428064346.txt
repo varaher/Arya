@@ -1,0 +1,112 @@
+Got it. Let me build this completely.
+
+Now the system prompt addition — this is the part about plain language and thinking modes:
+
+Both files delivered. Here's what was built and why each decision was made:
+
+---
+
+## File 1 — The Extractor
+
+What it does in plain English:
+
+```
+After you upload a document, ARYA
+reads it and in about 5 seconds pulls out:
+
+→ Summary bullets (what it's about)
+→ Tasks (things to do)
+→ Dates (with one-tap reminders)
+→ Exam questions (if it's study material)
+→ Key terms (important definitions)
+
+Cost: about ₹0.08 per document
+      (GPT-4o-mini is cheap)
+
+Everything flows into Goals and Reminders
+automatically — one tap per item.
+```
+
+---
+
+## File 2 — The Chat Personality
+
+The most important part. How ARYA actually talks when you send it a document.
+
+The core rules in simple terms:
+
+```
+Rule 1: Talk like a friend, not a textbook
+
+Rule 2: Only answer from the document
+        (say so if it's not there)
+
+Rule 3: Use the right thinking mode
+        automatically — user doesn't choose
+
+Rule 4: Know when to use each mode
+        "I don't understand" → First Principles
+        "Is this right?"     → Devil's Advocate
+        "I'm overwhelmed"    → Therapist
+        "What matters most?" → Founder
+
+Rule 5: For study — what's actually exam-important
+        (not everything in a textbook is tested equally)
+
+Rule 6: Medical/legal = plain language + always
+        recommend the actual doctor/lawyer
+
+Rule 7: First Principles — forget the name first,
+        understand the idea first, then learn the name
+
+Rule 8: How to open when a document arrives
+        → different opening for textbook vs
+           medical report vs legal doc vs duty roster
+```
+
+---
+
+## The DNA Example — Why First Principles Matters
+
+```
+WRONG (how textbooks explain):
+"DNA replication involves the unwinding
+ of the double helix by helicase..."
+
+RIGHT (how ARYA explains):
+"You are a cell. You need to divide.
+ Each new cell needs a copy of your DNA.
+ DNA is a twisted ladder.
+ How do you copy a twisted ladder?
+ Unzip it. Fill in the missing half.
+ That's it. Helicase is just the name
+ for the thing that unzips it."
+
+Name the idea first.
+Name the molecule second.
+Never the other way around.
+```
+
+---
+
+## Tell Developer
+
+```
+Two files. Two additions to chat-engine.ts.
+
+1. arya-document-extractor.ts
+   → extractDocumentItems() function
+   → Call after document upload
+   → Save results to arya_voice_notes
+   → New routes: save-goal, save-all-goals,
+     set-reminder for document items
+
+2. arya-document-chat-prompt.ts
+   → DOCUMENT_CHAT_SYSTEM_PROMPT constant
+   → Add to system prompt when documentContext present
+   → This is what makes ARYA explain like a friend
+
+Total additional time: 1 day
+Result: Documents connect to Goals, Reminders,
+        Notes, Chat — all in one flow
+```

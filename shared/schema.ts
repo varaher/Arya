@@ -828,6 +828,11 @@ export const aryaVoiceNotes = pgTable("arya_voice_notes", {
   studyType: varchar("study_type", { length: 30 }),
   examQuestions: jsonb("exam_questions").default([]),
   conversationId: integer("conversation_id"),
+  extractedDates: jsonb("extracted_dates").default([]),
+  terms: jsonb("terms").default([]),
+  isStudyContent: boolean("is_study_content").default(false),
+  fileType: varchar("file_type", { length: 20 }),
+  filePageCount: integer("file_page_count"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

@@ -3050,6 +3050,278 @@ Note: """${(transcript as string).trim()}"""`,
     }
   });
 
+  // ── Document upload to Notes panel ──────────────────────────────────────────
+  // POST /api/arya/notes/upload-doc
+  // Accepts base64 file, extracts text, saves to arya_voice_notes as sourceType='document',
+  // runs extractDocumentItems() in background to enrich the note.
+  app.post("/api/arya/notes/upload-doc", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const { data, mimeType = "application/pdf", filename = "Document" } = req.body;
+      if (!data) return res.status(400).json({ error: "File data required" });
+
+      const { openai } = await import("./replit_integrations/audio/client");
+      const isPdf = mimeType === "application/pdf";
+      let documentText = "";
+      let pageCount: number | null = null;
+      const rawExt = (filename as string).split(".").pop()?.toLowerCase() || "";
+      const fileType = isPdf ? "pdf"
+        : mimeType.startsWith("image/") ? "image"
+        : rawExt === "docx" ? "docx"
+        : "file";
+
+      if (isPdf) {
+        try {
+          const pdfParse = (await import("pdf-parse")).default;
+          const pdfBuffer = Buffer.from(data as string, "base64");
+          const parsed = await pdfParse(pdfBuffer);
+          documentText = parsed.text || "";
+          pageCount = parsed.numpages || null;
+        } catch (e: any) {
+          console.error("[DocUpload] PDF parse failed:", e.message);
+        }
+      } else if ((mimeType as string).startsWith("image/")) {
+        if (process.env.SARVAM_API_KEY) {
+          try {
+            const { sarvamOCR } = await import("./arya/sarvam-service");
+            const imgBuffer = Buffer.from(data as string, "base64");
+            documentText = await sarvamOCR(imgBuffer, mimeType as string);
+          } catch (e: any) {
+            console.warn("[DocUpload] Sarvam OCR failed:", e.message);
+          }
+        }
+        if (!documentText) {
+          try {
+            const visionRes = await (openai.chat.completions as any).create({
+              model: "gpt-4o",
+              messages: [
+                { role: "system", content: "Extract all text from this image accurately." },
+                { role: "user", content: [
+                  { type: "image_url", image_url: { url: `data:${mimeType};base64,${data}`, detail: "high" } },
+                  { type: "text", text: "Extract all visible text from this image. Return only the text content." },
+                ]},
+              ],
+              max_tokens: 2000,
+            });
+            documentText = visionRes.choices[0]?.message?.content || "";
+          } catch (e: any) {
+            console.error("[DocUpload] Vision OCR failed:", e.message);
+          }
+        }
+      }
+
+      const cleanFilename = (filename as string).replace(/[<>:"/\\|?*]/g, "").slice(0, 200) || "Document";
+
+      const [savedNote] = await db.insert(aryaVoiceNotes).values({
+        userId,
+        title: cleanFilename,
+        transcript: documentText.slice(0, 3000) || "[Text extraction in progress]",
+        summary: null,
+        language: "en",
+        durationSeconds: 0,
+        sourceType: "document",
+        fileType,
+        filePageCount: pageCount,
+        extractedTasks: [],
+        extractedDates: [],
+        examQuestions: [],
+        terms: [],
+        isStudyContent: false,
+      } as any).returning();
+
+      // Fire-and-forget background extraction
+      (async () => {
+        try {
+          const { extractDocumentItems } = await import("./arya/document-processor");
+          const extracts = await extractDocumentItems(documentText, cleanFilename, fileType, openai as any);
+          await db.update(aryaVoiceNotes).set({
+            summary: extracts.summary.length > 0 ? extracts.summary.map(s => `• ${s}`).join("\n") : null,
+            extractedTasks: extracts.tasks,
+            extractedDates: extracts.dates,
+            examQuestions: extracts.examQuestions,
+            terms: extracts.terms,
+            isStudyContent: extracts.isStudyContent,
+          } as any).where(eq(aryaVoiceNotes.id, savedNote.id));
+          console.log(`[DocUpload] Extraction complete for ${savedNote.id}: ${extracts.tasks.length} tasks, ${extracts.dates.length} dates`);
+        } catch (e: any) {
+          console.error("[DocUpload] Background extraction failed:", e.message);
+        }
+      })();
+
+      res.json({ noteId: savedNote.id, filename: cleanFilename, fileType, pageCount });
+    } catch (err: any) {
+      console.error("[DocUpload]", err.message);
+      res.status(500).json({ error: "Document upload failed. Please try again." });
+    }
+  });
+
+  // POST /api/user/voice-notes/:id/save-doc-goal — save one extracted task as a goal
+  app.post("/api/user/voice-notes/:id/save-doc-goal", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const { id } = req.params;
+      const { task } = req.body;
+      if (!task) return res.status(400).json({ error: "task required" });
+
+      const [note] = await db.select().from(aryaVoiceNotes)
+        .where(and(eq(aryaVoiceNotes.id, id), eq(aryaVoiceNotes.userId, userId))).limit(1);
+      if (!note) return res.status(404).json({ error: "Note not found" });
+
+      const today = new Date();
+      today.setHours(23, 59, 59, 0);
+
+      await db.insert(aryaGoals).values({
+        userId,
+        tenantId: "default",
+        title: task,
+        description: `From document: ${note.title || "Uploaded document"}`,
+        priority: "medium",
+        status: "active",
+        goalType: "task",
+        isCompleted: false,
+        reminderFired: false,
+        sourceNoteId: note.id,
+        dueDate: today,
+      } as any);
+
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error("[save-doc-goal]", err.message);
+      res.status(500).json({ error: "Failed to save goal" });
+    }
+  });
+
+  // POST /api/user/voice-notes/:id/save-all-doc-goals — save all extracted tasks as goals
+  app.post("/api/user/voice-notes/:id/save-all-doc-goals", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const { id } = req.params;
+
+      const [note] = await db.select().from(aryaVoiceNotes)
+        .where(and(eq(aryaVoiceNotes.id, id), eq(aryaVoiceNotes.userId, userId))).limit(1);
+      if (!note) return res.status(404).json({ error: "Note not found" });
+
+      const tasks: string[] = Array.isArray(note.extractedTasks)
+        ? (note.extractedTasks as any[]).map((t: any) => (typeof t === "string" ? t : t.task)).filter(Boolean)
+        : [];
+
+      if (tasks.length === 0) return res.json({ success: true, created: 0 });
+
+      const today = new Date();
+      today.setHours(23, 59, 59, 0);
+      let created = 0;
+
+      for (const task of tasks) {
+        try {
+          await db.insert(aryaGoals).values({
+            userId,
+            tenantId: "default",
+            title: task,
+            description: `From document: ${note.title || "Uploaded document"}`,
+            priority: "medium",
+            status: "active",
+            goalType: "task",
+            isCompleted: false,
+            reminderFired: false,
+            sourceNoteId: note.id,
+            dueDate: today,
+          } as any);
+          created++;
+        } catch { /* skip duplicates */ }
+      }
+
+      await db.update(aryaVoiceNotes).set({ tasksSavedToGoals: true, tasksSavedAt: new Date() } as any)
+        .where(eq(aryaVoiceNotes.id, id));
+
+      res.json({ success: true, created });
+    } catch (err: any) {
+      console.error("[save-all-doc-goals]", err.message);
+      res.status(500).json({ error: "Failed to save goals" });
+    }
+  });
+
+  // POST /api/user/voice-notes/:id/set-doc-reminder — set one extracted date as a reminder
+  app.post("/api/user/voice-notes/:id/set-doc-reminder", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const { id } = req.params;
+      const { label, dateText, isoDate } = req.body;
+      if (!label) return res.status(400).json({ error: "label required" });
+
+      const [note] = await db.select().from(aryaVoiceNotes)
+        .where(and(eq(aryaVoiceNotes.id, id), eq(aryaVoiceNotes.userId, userId))).limit(1);
+      if (!note) return res.status(404).json({ error: "Note not found" });
+
+      let scheduledAt = new Date(Date.now() + 3600 * 1000); // default: 1h from now
+      if (isoDate) {
+        const parsed = new Date(isoDate);
+        if (!isNaN(parsed.getTime())) scheduledAt = parsed;
+      }
+
+      await db.insert(aryaReminders).values({
+        userId,
+        title: label,
+        message: `${dateText} — from ${note.title || "document"}`,
+        type: "reminder",
+        scheduledAt,
+        recurrence: "once",
+        isActive: true,
+        soundEnabled: true,
+        snoozeCount: 0,
+      } as any);
+
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error("[set-doc-reminder]", err.message);
+      res.status(500).json({ error: "Failed to set reminder" });
+    }
+  });
+
+  // POST /api/user/voice-notes/:id/set-all-doc-reminders — set all extracted dates as reminders
+  app.post("/api/user/voice-notes/:id/set-all-doc-reminders", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const { id } = req.params;
+
+      const [note] = await db.select().from(aryaVoiceNotes)
+        .where(and(eq(aryaVoiceNotes.id, id), eq(aryaVoiceNotes.userId, userId))).limit(1);
+      if (!note) return res.status(404).json({ error: "Note not found" });
+
+      const dates: Array<{ label: string; dateText: string; isoDate?: string }> =
+        Array.isArray(note.extractedDates) ? (note.extractedDates as any) : [];
+
+      if (dates.length === 0) return res.json({ success: true, created: 0 });
+
+      let created = 0;
+      for (const d of dates) {
+        try {
+          let scheduledAt = new Date(Date.now() + 3600 * 1000);
+          if (d.isoDate) {
+            const parsed = new Date(d.isoDate);
+            if (!isNaN(parsed.getTime())) scheduledAt = parsed;
+          }
+          await db.insert(aryaReminders).values({
+            userId,
+            title: d.label,
+            message: `${d.dateText} — from ${note.title || "document"}`,
+            type: "reminder",
+            scheduledAt,
+            recurrence: "once",
+            isActive: true,
+            soundEnabled: true,
+            snoozeCount: 0,
+          } as any);
+          created++;
+        } catch { /* skip */ }
+      }
+
+      res.json({ success: true, created });
+    } catch (err: any) {
+      console.error("[set-all-doc-reminders]", err.message);
+      res.status(500).json({ error: "Failed to set reminders" });
+    }
+  });
+
   app.post("/api/arya/voice-quality/:logId/rate", optionalUser, async (req: Request, res: Response) => {
     try {
       const { logId } = req.params;
@@ -3072,7 +3344,8 @@ Note: """${(transcript as string).trim()}"""`,
       const { openai } = await import("./replit_integrations/audio/client");
       const isPdf = mimeType === "application/pdf";
 
-      const systemPrompt = `You are ARYA (Augmented Reasoning & Yielding Awareness), a warm, wise personal thinking & growth assistant. When analyzing images and documents, be clear, practical, and compassionate. For medical reports or health documents, explain findings in simple language without causing alarm — be reassuring and suggest consulting a doctor for anything serious. For text documents, summarize key points clearly. For general images, describe and provide relevant insights. Always be encouraging and helpful like a wise friend.`;
+      const { DOCUMENT_CHAT_SYSTEM_PROMPT } = await import("./arya/document-chat-prompt");
+      const systemPrompt = `You are ARYA (Augmented Reasoning & Yielding Awareness), a warm, wise personal thinking & growth assistant.\n\n${DOCUMENT_CHAT_SYSTEM_PROMPT}`;
 
       let aryaResponse: string;
       let userMessageForStorage: string;

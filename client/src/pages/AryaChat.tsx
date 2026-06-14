@@ -2003,7 +2003,277 @@ function StudyNoteToast({ noteId, title, studyType, onClose, onOpen }: {
   );
 }
 
-function NoteCard({ note, token, deleteNote, formatDate, formatDur, isEditMode, isSelected, onSelect }: {
+function DocumentNoteCard({ note, token, deleteNote, formatDate, isEditMode, isSelected, onSelect, onAskArya }: {
+  note: any; token: string | null; deleteNote: any;
+  formatDate: (d: string | Date) => string;
+  isEditMode?: boolean; isSelected?: boolean; onSelect?: () => void;
+  onAskArya?: (text: string) => void;
+}) {
+  const qc = useQueryClient();
+  const [savedGoalIdx, setSavedGoalIdx] = useState<Set<number>>(new Set());
+  const [savingGoal, setSavingGoal] = useState<number | null>(null);
+  const [allGoalsSaved, setAllGoalsSaved] = useState(!!note.tasksSavedToGoals);
+  const [savingAllGoals, setSavingAllGoals] = useState(false);
+  const [savedReminderIdx, setSavedReminderIdx] = useState<Set<number>>(new Set());
+  const [savingReminder, setSavingReminder] = useState<number | null>(null);
+  const [allRemindersSaved, setAllRemindersSaved] = useState(false);
+  const [savingAllReminders, setSavingAllReminders] = useState(false);
+  const [expandedTerms, setExpandedTerms] = useState(false);
+  const [expandedExam, setExpandedExam] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const tasks: string[] = Array.isArray(note.extractedTasks)
+    ? (note.extractedTasks as any[]).map((t: any) => typeof t === "string" ? t : t?.task).filter(Boolean)
+    : [];
+  const dates: Array<{ label: string; dateText: string; isoDate?: string }> =
+    Array.isArray(note.extractedDates) ? (note.extractedDates as any) : [];
+  const examQs: string[] = Array.isArray(note.examQuestions) ? note.examQuestions : [];
+  const terms: string[] = Array.isArray(note.terms) ? note.terms : [];
+  const summaryLines: string[] = note.summary ? note.summary.split(/\n/).filter(Boolean).slice(0, 6) : [];
+  const isExtracting = !note.summary && tasks.length === 0 && dates.length === 0;
+  const fileIcon = note.fileType === "pdf" ? "📄" : note.fileType === "docx" ? "📝"
+    : note.fileType === "image" ? "🖼️" : note.fileType === "pptx" ? "📊" : "📎";
+  const pageLabel = note.filePageCount ? `${note.filePageCount} ${note.fileType === "pptx" ? "slides" : "pages"}` : "";
+
+  async function saveGoal(task: string, i: number) {
+    if (!token || savedGoalIdx.has(i)) return;
+    setSavingGoal(i);
+    try {
+      const r = await fetch(`/api/user/voice-notes/${note.id}/save-doc-goal`, {
+        method: "POST", headers: { "Content-Type": "application/json", "x-user-token": token },
+        body: JSON.stringify({ task }),
+      });
+      if (r.ok) { setSavedGoalIdx(p => new Set([...p, i])); qc.invalidateQueries({ queryKey: ["user-goals"] }); qc.invalidateQueries({ queryKey: ["/api/user/goals"] }); }
+    } catch {} finally { setSavingGoal(null); }
+  }
+
+  async function saveAllGoals() {
+    if (!token || allGoalsSaved || savingAllGoals) return;
+    setSavingAllGoals(true);
+    try {
+      const r = await fetch(`/api/user/voice-notes/${note.id}/save-all-doc-goals`, {
+        method: "POST", headers: { "Content-Type": "application/json", "x-user-token": token },
+      });
+      if (r.ok) { setAllGoalsSaved(true); setSavedGoalIdx(new Set(tasks.map((_, i) => i))); qc.invalidateQueries({ queryKey: ["user-goals"] }); qc.invalidateQueries({ queryKey: ["/api/user/goals"] }); }
+    } catch {} finally { setSavingAllGoals(false); }
+  }
+
+  async function setReminder(date: { label: string; dateText: string; isoDate?: string }, i: number) {
+    if (!token || savedReminderIdx.has(i)) return;
+    setSavingReminder(i);
+    try {
+      const r = await fetch(`/api/user/voice-notes/${note.id}/set-doc-reminder`, {
+        method: "POST", headers: { "Content-Type": "application/json", "x-user-token": token },
+        body: JSON.stringify(date),
+      });
+      if (r.ok) setSavedReminderIdx(p => new Set([...p, i]));
+    } catch {} finally { setSavingReminder(null); }
+  }
+
+  async function setAllReminders() {
+    if (!token || allRemindersSaved || savingAllReminders) return;
+    setSavingAllReminders(true);
+    try {
+      const r = await fetch(`/api/user/voice-notes/${note.id}/set-all-doc-reminders`, {
+        method: "POST", headers: { "Content-Type": "application/json", "x-user-token": token },
+      });
+      if (r.ok) { setAllRemindersSaved(true); setSavedReminderIdx(new Set(dates.map((_, i) => i))); }
+    } catch {} finally { setSavingAllReminders(false); }
+  }
+
+  function askArya() {
+    if (!onAskArya) return;
+    const first = summaryLines[0]?.replace(/^[•\-]\s*/, "") || "";
+    onAskArya(first
+      ? `I uploaded "${note.title?.replace(/\.[^.]+$/, "") || "a document"}". ${first} — can you help me understand this?`
+      : `I uploaded "${note.title?.replace(/\.[^.]+$/, "") || "a document"}". Can you help me understand it?`);
+  }
+
+  return (
+    <div data-testid={`card-doc-note-${note.id}`} onClick={isEditMode ? onSelect : undefined}
+      className={`rounded-xl border transition-all ${
+        isEditMode && isSelected
+          ? "bg-indigo-50 dark:bg-indigo-900/20 border-indigo-300 dark:border-indigo-700 cursor-pointer"
+          : "bg-white dark:bg-slate-800 border-indigo-100 dark:border-indigo-900/40 hover:border-indigo-200 dark:hover:border-indigo-800 hover:shadow-sm"
+      } ${isEditMode ? "cursor-pointer" : ""}`}
+    >
+      {/* Header */}
+      <div className="flex items-center gap-2 px-3 pt-2.5 pb-1">
+        <div className={`w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 text-[13px] ${isEditMode && isSelected ? "bg-indigo-500" : "bg-indigo-50 dark:bg-indigo-900/30"}`}>
+          {isEditMode ? <Check className={`w-3 h-3 ${isSelected ? "text-white" : "text-transparent"}`} /> : fileIcon}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[11px] font-semibold text-gray-800 dark:text-gray-100 truncate">{note.title?.replace(/\.[^.]+$/, "") || "Document"}</p>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[10px] text-gray-400 dark:text-gray-500">{formatDate(note.createdAt)}</span>
+            {pageLabel && <span className="text-[10px] text-gray-400 dark:text-gray-500">· {pageLabel}</span>}
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500 dark:text-indigo-400 font-semibold border border-indigo-100 dark:border-indigo-800 uppercase tracking-wide">
+              {note.fileType || "DOC"}
+            </span>
+          </div>
+        </div>
+        {!isEditMode && (
+          <button onClick={e => { e.stopPropagation(); deleteNote.mutate(note.id); }}
+            data-testid={`button-delete-doc-note-${note.id}`}
+            className="p-1 rounded-md text-gray-300 dark:text-gray-600 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 dark:hover:text-red-400 transition-all flex-shrink-0">
+            <Trash2 className="w-3 h-3" />
+          </button>
+        )}
+      </div>
+
+      {/* Extracting indicator */}
+      {isExtracting && (
+        <div className="px-3 pb-2 flex items-center gap-1.5">
+          <Loader2 className="w-3 h-3 animate-spin text-indigo-400" />
+          <span className="text-[10px] text-indigo-400 italic">ARYA is reading this document…</span>
+        </div>
+      )}
+
+      {/* Summary */}
+      {summaryLines.length > 0 && (
+        <div className="px-3 pb-1">
+          <p className="text-[9px] font-bold uppercase tracking-widest text-indigo-500 dark:text-indigo-400 mb-1">✨ Summary</p>
+          <ul className="space-y-0.5 mb-1">
+            {summaryLines.map((line, i) => (
+              <li key={i} className="text-[11px] text-gray-700 dark:text-gray-200 leading-relaxed flex gap-1.5">
+                <span className="text-indigo-400 flex-shrink-0 mt-px">•</span>
+                <span>{line.replace(/^[•\-]\s*/, "")}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Tasks → Goals */}
+      {tasks.length > 0 && (
+        <div className="px-3 pb-1.5 pt-1.5 border-t border-gray-50 dark:border-slate-700/50">
+          <div className="flex items-center justify-between mb-1.5">
+            <p className="text-[9px] font-bold uppercase tracking-widest text-amber-500 dark:text-amber-400">📌 Tasks Found ({tasks.length})</p>
+            {allGoalsSaved
+              ? <span className="text-[9px] text-green-500 font-semibold">✓ All saved</span>
+              : <button onClick={e => { e.stopPropagation(); saveAllGoals(); }} disabled={savingAllGoals}
+                  className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-800 hover:bg-green-100 transition-all disabled:opacity-50">
+                  {savingAllGoals ? "Saving…" : "Save all"}
+                </button>
+            }
+          </div>
+          <div className="space-y-1.5">
+            {tasks.map((task, i) => (
+              <div key={i} className="flex items-start gap-2">
+                <span className="flex-1 text-[11px] text-gray-700 dark:text-gray-200 leading-relaxed">{task}</span>
+                {savedGoalIdx.has(i)
+                  ? <span className="text-[9px] text-green-500 font-semibold flex-shrink-0">✓ Goal</span>
+                  : <button onClick={e => { e.stopPropagation(); saveGoal(task, i); }} disabled={savingGoal === i}
+                      className="flex-shrink-0 text-[9px] font-semibold px-1.5 py-0.5 rounded bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-800 hover:bg-green-100 transition-all disabled:opacity-50">
+                      {savingGoal === i ? "…" : "→ Goal"}
+                    </button>
+                }
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Dates → Reminders */}
+      {dates.length > 0 && (
+        <div className="px-3 pb-1.5 pt-1.5 border-t border-gray-50 dark:border-slate-700/50">
+          <div className="flex items-center justify-between mb-1.5">
+            <p className="text-[9px] font-bold uppercase tracking-widest text-blue-500 dark:text-blue-400">⏰ Dates Found ({dates.length})</p>
+            {allRemindersSaved
+              ? <span className="text-[9px] text-blue-500 font-semibold">✓ All set</span>
+              : <button onClick={e => { e.stopPropagation(); setAllReminders(); }} disabled={savingAllReminders}
+                  className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 transition-all disabled:opacity-50">
+                  {savingAllReminders ? "Setting…" : "Set all"}
+                </button>
+            }
+          </div>
+          <div className="space-y-1.5">
+            {dates.map((date, i) => (
+              <div key={i} className="flex items-start gap-2">
+                <div className="flex-1 min-w-0">
+                  <span className="text-[11px] text-gray-700 dark:text-gray-200 font-medium">{date.label}</span>
+                  <span className="text-[10px] text-gray-400 dark:text-gray-500 ml-1.5">{date.dateText}</span>
+                </div>
+                {savedReminderIdx.has(i)
+                  ? <span className="text-[9px] text-blue-500 font-semibold flex-shrink-0">✓ Set</span>
+                  : <button onClick={e => { e.stopPropagation(); setReminder(date, i); }} disabled={savingReminder === i}
+                      className="flex-shrink-0 text-[9px] font-semibold px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 transition-all disabled:opacity-50">
+                      {savingReminder === i ? "…" : "Remind"}
+                    </button>
+                }
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Exam questions (collapsible) */}
+      {examQs.length > 0 && (
+        <div className="px-3 pt-1.5 border-t border-gray-50 dark:border-slate-700/50">
+          <button onClick={e => { e.stopPropagation(); setExpandedExam(v => !v); }}
+            className="w-full flex items-center justify-between py-1">
+            <p className="text-[9px] font-bold uppercase tracking-widest text-amber-500 dark:text-amber-400">❓ Likely Exam Questions ({examQs.length})</p>
+            <span className="text-[10px] text-gray-400">{expandedExam ? "▲" : "▼"}</span>
+          </button>
+          {expandedExam && (
+            <ol className="space-y-1 mb-1.5">
+              {examQs.map((q, i) => (
+                <li key={i} className="text-[11px] text-gray-600 dark:text-gray-300 leading-relaxed flex gap-1.5">
+                  <span className="text-amber-400 flex-shrink-0 font-semibold">{i + 1}.</span><span>{q}</span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+      )}
+
+      {/* Key terms (collapsible) */}
+      {terms.length > 0 && (
+        <div className="px-3 pt-1.5 border-t border-gray-50 dark:border-slate-700/50">
+          <button onClick={e => { e.stopPropagation(); setExpandedTerms(v => !v); }}
+            className="w-full flex items-center justify-between py-1">
+            <p className="text-[9px] font-bold uppercase tracking-widest text-indigo-500 dark:text-indigo-400">📌 Key Terms ({terms.length})</p>
+            <span className="text-[10px] text-gray-400">{expandedTerms ? "▲" : "▼"}</span>
+          </button>
+          {expandedTerms && (
+            <ul className="space-y-1 mb-1.5">
+              {terms.map((term, i) => (
+                <li key={i} className="text-[10px] text-gray-600 dark:text-gray-300 leading-relaxed">{term}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {/* Action bar */}
+      {!isEditMode && (
+        <div className="flex gap-1.5 px-3 pb-2.5 pt-2 border-t border-gray-50 dark:border-slate-700/50 flex-wrap">
+          {onAskArya && (
+            <button onClick={e => { e.stopPropagation(); askArya(); }}
+              data-testid={`button-ask-arya-doc-${note.id}`}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-semibold border bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-all">
+              💬 Ask ARYA
+            </button>
+          )}
+          <button onClick={e => { e.stopPropagation(); const txt = summaryLines.map(l => l.replace(/^[•\-]\s*/, "")).join("\n") || note.transcript?.slice(0, 1000) || ""; navigator.clipboard.writeText(txt).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1800); }).catch(() => {}); }}
+            data-testid={`button-copy-doc-note-${note.id}`}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium border bg-gray-50 dark:bg-slate-700 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600 transition-all">
+            {copied ? "✓ Copied" : "📋 Copy"}
+          </button>
+          {note.isStudyContent && onAskArya && (
+            <button onClick={e => { e.stopPropagation(); onAskArya(`Can you make a PPT outline for "${note.title?.replace(/\.[^.]+$/, "") || "this document"}"?`); }}
+              data-testid={`button-ppt-doc-${note.id}`}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium border bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-all">
+              📊 PPT
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NoteCard({ note, token, deleteNote, formatDate, formatDur, isEditMode, isSelected, onSelect, onAskArya }: {
   note: any;
   token: string | null;
   deleteNote: any;
@@ -2012,6 +2282,7 @@ function NoteCard({ note, token, deleteNote, formatDate, formatDur, isEditMode, 
   isEditMode?: boolean;
   isSelected?: boolean;
   onSelect?: () => void;
+  onAskArya?: (text: string) => void;
 }) {
   const qc = useQueryClient();
   const [tasksSaved, setTasksSaved] = useState(!!note.tasksSavedToGoals);
@@ -2328,7 +2599,7 @@ function NoteCard({ note, token, deleteNote, formatDate, formatDur, isEditMode, 
   );
 }
 
-function VoiceNotesPanel({ onClose, token, uiLang = "en", voiceLang = "en-IN" }: { onClose: () => void; token: string; uiLang?: UiLanguage; voiceLang?: string }) {
+function VoiceNotesPanel({ onClose, token, uiLang = "en", voiceLang = "en-IN", onAskArya }: { onClose: () => void; token: string; uiLang?: UiLanguage; voiceLang?: string; onAskArya?: (text: string) => void; }) {
   const tl = (key: string) => getTranslation(uiLang, key);
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
@@ -2339,6 +2610,9 @@ function VoiceNotesPanel({ onClose, token, uiLang = "en", voiceLang = "en-IN" }:
   const [transcript, setTranscript] = useState("");
   const [saving, setSaving] = useState(false);
   const [voiceNoteError, setVoiceNoteError] = useState<string | null>(null);
+  const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [uploadDocError, setUploadDocError] = useState<string | null>(null);
+  const docFileRef = useRef<HTMLInputElement | null>(null);
   const mediaRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -2526,6 +2800,61 @@ function VoiceNotesPanel({ onClose, token, uiLang = "en", voiceLang = "en-IN" }:
             </button>
           </div>
         )}
+
+        {/* Document upload button */}
+        <button
+          data-testid="button-upload-document"
+          disabled={uploadingDoc || isRecording}
+          onClick={() => { setUploadDocError(null); docFileRef.current?.click(); }}
+          className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-[12px] font-semibold transition-all border border-dashed border-indigo-200 dark:border-indigo-800 text-indigo-500 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-900/10 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 disabled:opacity-50"
+        >
+          {uploadingDoc ? <><Loader2 className="w-3 h-3 animate-spin" /> Reading document…</> : <>📎 Upload Document or Image</>}
+        </button>
+        <input
+          ref={docFileRef}
+          type="file"
+          accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.docx"
+          className="hidden"
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            e.target.value = "";
+            if (!file || !token) return;
+            setUploadingDoc(true);
+            setUploadDocError(null);
+            try {
+              const b64 = await new Promise<string>((resolve, reject) => {
+                const fr = new FileReader();
+                fr.onload = () => resolve((fr.result as string).split(",")[1]);
+                fr.onerror = reject;
+                fr.readAsDataURL(file);
+              });
+              const res = await fetch("/api/arya/notes/upload-doc", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "x-user-token": token },
+                body: JSON.stringify({ data: b64, mimeType: file.type, filename: file.name }),
+              });
+              if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.error || "Upload failed");
+              }
+              queryClient.invalidateQueries({ queryKey: ["/api/user/voice-notes"] });
+              // Poll to pick up background extraction results
+              setTimeout(() => queryClient.invalidateQueries({ queryKey: ["/api/user/voice-notes"] }), 8000);
+              setTimeout(() => queryClient.invalidateQueries({ queryKey: ["/api/user/voice-notes"] }), 18000);
+            } catch (err: any) {
+              setUploadDocError(err.message || "Upload failed. Please try again.");
+            } finally {
+              setUploadingDoc(false);
+            }
+          }}
+        />
+        {uploadDocError && (
+          <div className="flex items-start gap-1.5 px-2 py-1.5 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+            <span className="text-red-500 text-[10px] flex-1">{uploadDocError}</span>
+            <button onClick={() => setUploadDocError(null)} className="text-red-400 hover:text-red-600 flex-shrink-0"><X className="w-3 h-3" /></button>
+          </div>
+        )}
+
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-300" />
           <input
@@ -2564,7 +2893,26 @@ function VoiceNotesPanel({ onClose, token, uiLang = "en", voiceLang = "en-IN" }:
               </div>
             </div>
           )
-        ) : notes.map((note) => (
+        ) : notes.map((note) => note.sourceType === "document" ? (
+          <DocumentNoteCard
+            key={note.id}
+            note={note}
+            token={token}
+            deleteNote={deleteNote}
+            formatDate={formatDate}
+            isEditMode={editModeNotes}
+            isSelected={selectedNotes.has(String(note.id))}
+            onAskArya={onAskArya}
+            onSelect={() => {
+              setSelectedNotes(prev => {
+                const next = new Set(prev);
+                const id = String(note.id);
+                if (next.has(id)) next.delete(id); else next.add(id);
+                return next;
+              });
+            }}
+          />
+        ) : (
           <NoteCard
             key={note.id}
             note={note}
@@ -2574,6 +2922,7 @@ function VoiceNotesPanel({ onClose, token, uiLang = "en", voiceLang = "en-IN" }:
             formatDur={formatDur}
             isEditMode={editModeNotes}
             isSelected={selectedNotes.has(String(note.id))}
+            onAskArya={onAskArya}
             onSelect={() => {
               setSelectedNotes(prev => {
                 const next = new Set(prev);
@@ -5463,7 +5812,7 @@ export default function AryaChat() {
                 transition={{ type: "tween", duration: 0.22 }}
                 className="relative z-10 h-full w-full sm:w-96"
               >
-                <VoiceNotesPanel onClose={() => setShowNotes(false)} token={token} uiLang={uiLanguage} voiceLang={selectedLanguage} />
+                <VoiceNotesPanel onClose={() => setShowNotes(false)} token={token} uiLang={uiLanguage} voiceLang={selectedLanguage} onAskArya={(text) => { setShowNotes(false); setInput(text); setTimeout(() => document.querySelector<HTMLTextAreaElement>('textarea[data-testid="chat-input"]')?.focus(), 100); }} />
               </motion.div>
             </motion.div>
           )}
