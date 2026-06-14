@@ -87,6 +87,7 @@ import { useTheme } from "@/lib/theme";
 import RemindersPanel from "@/components/RemindersPanel";
 import PricingModal from "@/components/PricingModal";
 import ThinkingModeSelector, { THINKING_MODES_CLIENT } from "@/components/ThinkingModeSelector";
+import { UpgradePrompt, type UpgradePromptConfig, UPGRADE_PROMPTS } from "@/components/UpgradePrompt";
 import { requestNotificationPermission } from "@/lib/push-notifications";
 import { playARYASound, playAlarmSound, stopAlarmSound } from "@/utils/reminderSound";
 
@@ -2010,6 +2011,11 @@ function DocumentNoteCard({ note, token, deleteNote, formatDate, isEditMode, isS
   onAskArya?: (text: string) => void;
 }) {
   const qc = useQueryClient();
+  const { user } = useUserAuth();
+  const userPlan: string = (user as any)?.plan || "free";
+  const isFree = userPlan === "free";
+  const isCore = userPlan === "core";
+  const [upgradePrompt, setUpgradePrompt] = useState<UpgradePromptConfig | null>(null);
   const [savedGoalIdx, setSavedGoalIdx] = useState<Set<number>>(new Set());
   const [savingGoal, setSavingGoal] = useState<number | null>(null);
   const [allGoalsSaved, setAllGoalsSaved] = useState(!!note.tasksSavedToGoals);
@@ -2037,6 +2043,7 @@ function DocumentNoteCard({ note, token, deleteNote, formatDate, isEditMode, isS
 
   async function saveGoal(task: string, i: number) {
     if (!token || savedGoalIdx.has(i)) return;
+    if (isFree) { setUpgradePrompt(UPGRADE_PROMPTS.docSaveTask()); return; }
     setSavingGoal(i);
     try {
       const r = await fetch(`/api/user/voice-notes/${note.id}/save-doc-goal`, {
@@ -2049,6 +2056,7 @@ function DocumentNoteCard({ note, token, deleteNote, formatDate, isEditMode, isS
 
   async function saveAllGoals() {
     if (!token || allGoalsSaved || savingAllGoals) return;
+    if (isFree) { setUpgradePrompt(UPGRADE_PROMPTS.docSaveTask()); return; }
     setSavingAllGoals(true);
     try {
       const r = await fetch(`/api/user/voice-notes/${note.id}/save-all-doc-goals`, {
@@ -2060,6 +2068,7 @@ function DocumentNoteCard({ note, token, deleteNote, formatDate, isEditMode, isS
 
   async function setReminder(date: { label: string; dateText: string; isoDate?: string }, i: number) {
     if (!token || savedReminderIdx.has(i)) return;
+    if (isFree) { setUpgradePrompt(UPGRADE_PROMPTS.docSetReminder()); return; }
     setSavingReminder(i);
     try {
       const r = await fetch(`/api/user/voice-notes/${note.id}/set-doc-reminder`, {
@@ -2072,6 +2081,7 @@ function DocumentNoteCard({ note, token, deleteNote, formatDate, isEditMode, isS
 
   async function setAllReminders() {
     if (!token || allRemindersSaved || savingAllReminders) return;
+    if (isFree) { setUpgradePrompt(UPGRADE_PROMPTS.docSetReminder()); return; }
     setSavingAllReminders(true);
     try {
       const r = await fetch(`/api/user/voice-notes/${note.id}/set-all-doc-reminders`, {
@@ -2261,7 +2271,12 @@ function DocumentNoteCard({ note, token, deleteNote, formatDate, isEditMode, isS
             {copied ? "✓ Copied" : "📋 Copy"}
           </button>
           {note.isStudyContent && onAskArya && (
-            <button onClick={e => { e.stopPropagation(); onAskArya(`Can you make a PPT outline for "${note.title?.replace(/\.[^.]+$/, "") || "this document"}"?`); }}
+            <button
+              onClick={e => {
+                e.stopPropagation();
+                if (isFree) { setUpgradePrompt(UPGRADE_PROMPTS.docPPT()); return; }
+                onAskArya(`Can you make a PPT outline for "${note.title?.replace(/\.[^.]+$/, "") || "this document"}"?`);
+              }}
               data-testid={`button-ppt-doc-${note.id}`}
               className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium border bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-all">
               📊 PPT
@@ -2269,6 +2284,8 @@ function DocumentNoteCard({ note, token, deleteNote, formatDate, isEditMode, isS
           )}
         </div>
       )}
+
+      <UpgradePrompt config={upgradePrompt} onDismiss={() => setUpgradePrompt(null)} />
     </div>
   );
 }

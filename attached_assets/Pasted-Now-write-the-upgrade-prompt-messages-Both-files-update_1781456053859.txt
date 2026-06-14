@@ -1,0 +1,109 @@
+Now write the upgrade prompt messages:
+
+Both files updated and delivered. Here's the complete picture:
+
+---
+
+## What Was Updated
+
+### Feature Guide — Plans Table Rebuilt
+
+Now matches your actual pricing page exactly:
+
+```
+Free:   20 conversations · 3 goals · daily memory reset
+        Document scan (read + explain only)
+
+Core:   Unlimited conversations · 10 goals · 30-day memory
+        Document Intelligence: 10/day · 15MB
+        Tasks → Goals ✅  Dates → Reminders ✅
+
+Pro:    1-year memory · unlimited goals · 500 min voice
+        Document Intelligence: Unlimited · 25MB
+        PPT generation ✅  Multi-file upload ✅
+
+Elite:  Lifetime memory · unlimited everything
+        Document Intelligence: Unlimited · 50MB
+        Document history ✅  Drishya ✅
+```
+
+---
+
+### Upgrade Prompts — 18 Messages Written
+
+Every gate in the app now has an exact message:
+
+| Trigger | Shows |
+|---------|-------|
+| Free → save task from doc | "₹249/month" |
+| Free → set reminder from doc | "₹249/month" |
+| Free → save exam questions | "₹249/month" |
+| Core → generate PPT | "₹499/month" |
+| Core → 11th document | "₹499/month" |
+| Any → file too large | Size-specific message |
+| Free → open microphone | "₹249/month" |
+| Core → voice minutes out | "₹499 or ₹999" |
+| Free → memory resets | "₹249/month" |
+| Free → 4th goal | "₹249/month" |
+| Core → 11th goal | "₹499/month" |
+| Free → Drishya | "₹999/month" |
+| Free → Niti | "₹499/month" |
+| Free → Weekly Review | "₹249/month" |
+| Free → 21st conversation | "₹249/month" |
+| Beta users → Razorpay live | "₹149/month founding price" |
+
+---
+
+## The Most Important Ones
+
+```
+Highest expected to convert:
+
+1. Document Intelligence gate
+   User already saw ARYA read the document.
+   Now they want to save the tasks.
+   That's the perfect moment to ask.
+   → Expected conversion: high
+
+2. Memory reset gate
+   User comes back the next day.
+   ARYA doesn't remember them.
+   That's frustrating enough to pay to fix.
+   → Expected conversion: high
+
+3. Voice gate
+   User taps mic on Free.
+   Wants to speak instead of type.
+   One tap to see the ask.
+   → Expected conversion: medium-high
+
+4. Conversation limit
+   Power users hit 20/day fast.
+   They're already engaged.
+   They will pay.
+   → Expected conversion: high
+```
+
+---
+
+## Tell Developer
+
+```
+arya-upgrade-prompts.md has all 18 messages.
+
+For each — build a bottom sheet component:
+  UpgradePrompt({
+    title,
+    body,
+    primaryLabel,   // "Upgrade to Core →"
+    primaryAction,  // navigate('/pricing?plan=core')
+    secondaryLabel, // "Stay on Free"
+    secondaryAction // dismiss
+  })
+
+One component. 18 uses.
+
+Log every show + every convert.
+Track which prompts drive the most revenue.
+That data tells you what to build next.
+```

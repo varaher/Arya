@@ -1,0 +1,495 @@
+# ARYA — Upgrade Prompt Messages
+## Exact copy for every plan gate in the app
+
+---
+
+## The Design Principle
+
+Every upgrade prompt follows the same structure:
+
+```
+1. Acknowledge what they just tried to do
+2. Tell them what they need (plan name + price)
+3. One line on why it's worth it
+4. Two buttons: upgrade or continue on free
+```
+
+Never shame. Never alarm. Never pressure.
+Just: here's what you tried, here's how to get it.
+
+---
+
+## Document Intelligence Gates
+
+### When Free user tries to save a task as a goal
+
+```
+Title: Save tasks from documents 📌
+
+Body:
+ARYA found tasks in your document —
+but saving them directly to your Goals
+is available on Core and above.
+
+On Free, you can read and ask questions
+about any document. To turn what you find
+into goals and reminders — upgrade to Core.
+
+₹249/month. Less than one coffee a week.
+
+[Upgrade to Core →]     [Stay on Free]
+```
+
+---
+
+### When Free user tries to set a reminder from a document date
+
+```
+Title: Set reminders from documents ⏰
+
+Body:
+ARYA found a date in your document.
+Setting it as a reminder automatically
+is available on Core and above.
+
+You can still note it down manually —
+or upgrade to let ARYA handle it.
+
+₹249/month.
+
+[Upgrade to Core →]     [Stay on Free]
+```
+
+---
+
+### When Free user tries to save exam questions
+
+```
+Title: Save exam questions to Notes 📚
+
+Body:
+ARYA generated exam questions from
+your document — but saving them to
+your Notes is available on Core and above.
+
+You can read them here.
+To keep them in your Notes for revision
+anytime — upgrade to Core.
+
+₹249/month.
+
+[Upgrade to Core →]     [Stay on Free]
+```
+
+---
+
+### When Core user tries to generate a PPT
+
+```
+Title: Download as PowerPoint 📊
+
+Body:
+PPT generation — downloading a real
+.pptx file — is available on Pro and above.
+
+You already have the full outline here.
+To turn it into a file you can open in
+PowerPoint or Google Slides — upgrade to Pro.
+
+₹499/month.
+
+[Upgrade to Pro →]     [Keep outline only]
+```
+
+---
+
+### When Core user tries to upload an 11th document in a day
+
+```
+Title: Document limit reached 📄
+
+Body:
+You've uploaded 10 documents today —
+that's the Core plan limit.
+
+Limit resets at midnight.
+
+For unlimited document uploads —
+upgrade to Pro.
+
+₹499/month.
+
+[Upgrade to Pro →]     [Come back tomorrow]
+```
+
+---
+
+### When Core or Pro user tries to upload a file over size limit
+
+```
+Title: File too large
+
+Body:
+This file is [X]MB.
+Core plan supports up to 15MB per file.
+Pro plan supports up to 25MB per file.
+
+For files up to 50MB — upgrade to Elite.
+
+₹999/month.
+
+[Upgrade to Elite →]     [Upload a smaller file]
+```
+
+---
+
+### When Pro user tries multi-file upload beyond 10
+
+```
+Title: Upload limit reached
+
+Body:
+You can upload up to 10 files at once
+on Pro.
+
+For unlimited file uploads at once —
+upgrade to Elite.
+
+₹999/month.
+
+[Upgrade to Elite →]     [Upload in batches]
+```
+
+---
+
+## Voice Gates
+
+### When Free user taps the microphone
+
+```
+Title: Talk to ARYA 🎤
+
+Body:
+Voice input is available on Core and above.
+
+On Free, you can type to ARYA in any language.
+To speak — and have ARYA listen and reply
+in your language — upgrade to Core.
+
+₹249/month.
+
+[Upgrade to Core →]     [Type instead]
+```
+
+---
+
+### When Core user runs out of voice minutes
+
+```
+Title: Voice minutes used up 🎤
+
+Body:
+You've used your 150 voice minutes
+for this month.
+
+Voice resets on [reset date].
+
+For 500 minutes/month — upgrade to Pro.
+For unlimited voice — upgrade to Elite.
+
+[Upgrade to Pro — ₹499]
+[Upgrade to Elite — ₹999]
+[Type instead for now]
+```
+
+---
+
+## Memory Gates
+
+### When Free user's memory resets
+
+```
+Title: Fresh start today 🌅
+
+Body:
+On Free, ARYA's memory resets each day —
+so every conversation starts fresh.
+
+To have ARYA remember your goals,
+patterns, and conversations across days —
+upgrade to Core for 30-day memory.
+
+₹249/month.
+
+[Upgrade to Core →]     [Continue on Free]
+```
+
+---
+
+### When Core user references something from 31+ days ago
+
+```
+Title: Memory limit reached
+
+Body:
+Core plan keeps 30 days of memory.
+That conversation was from [X] days ago —
+just beyond what ARYA can recall.
+
+For 1-year memory — upgrade to Pro.
+For lifetime memory — upgrade to Elite.
+
+[Upgrade to Pro — ₹499]
+[Upgrade to Elite — ₹999]
+[That's okay, tell me again]
+```
+
+---
+
+## Goal Gates
+
+### When Free user tries to add a 4th goal
+
+```
+Title: Goal limit reached 🎯
+
+Body:
+Free plan supports 3 active goals.
+
+You already have 3. To add more —
+either complete or remove one,
+or upgrade to Core for 10 goals.
+
+₹249/month.
+
+[Upgrade to Core →]     [Manage my goals]
+```
+
+---
+
+### When Core user tries to add an 11th goal
+
+```
+Title: Goal limit reached 🎯
+
+Body:
+Core plan supports 10 active goals.
+
+For unlimited goals — upgrade to Pro.
+
+₹499/month.
+
+[Upgrade to Pro →]     [Manage my goals]
+```
+
+---
+
+## Feature Gates
+
+### When Free user tries to open Drishya
+
+```
+Title: Stories that find you 📖
+
+Body:
+Drishya — ARYA's personal story experience —
+is available on Elite.
+
+Describe what you need. A feeling.
+A situation. A character.
+ARYA generates a complete story
+from India's ancient tradition —
+for your exact moment.
+
+₹999/month.
+
+[Upgrade to Elite →]     [Maybe later]
+```
+
+---
+
+### When Free user tries to open Niti
+
+```
+Title: Business thinking partner ⚖️
+
+Body:
+Niti — ARYA's dedicated space for
+business decisions and market thinking —
+is available on Pro and above.
+
+₹499/month.
+
+[Upgrade to Pro →]     [Use chat instead]
+```
+
+---
+
+### When Free user tries to open Weekly Review
+
+```
+Title: Your Sunday letter 📖
+
+Body:
+Weekly Review — a narrative reflection
+of your week that reads like a letter
+from someone paying close attention —
+is available on Core and above.
+
+₹249/month.
+
+[Upgrade to Core →]     [Maybe later]
+```
+
+---
+
+### When Free user tries to set Morning Briefing
+
+```
+Title: Start every morning with ARYA ☀️
+
+Body:
+Morning Briefing — your goals,
+the news, one line to carry through the day,
+arriving before you open anything else —
+is available on Core and above.
+
+₹249/month.
+
+[Upgrade to Core →]     [Maybe later]
+```
+
+---
+
+### When Free or Core user tries to use thinking modes beyond the 2 free ones
+
+```
+Title: More ways to think 🧠
+
+Body:
+Free plan includes 2 thinking modes.
+All 7 — including Founder, Devil's Advocate,
+First Principles, Therapist, Contrarian,
+and Full Chain — are available on Core.
+
+₹249/month.
+
+[Upgrade to Core →]     [Use a free mode]
+```
+
+---
+
+## Conversation Gate
+
+### When Free user hits 20 conversation limit
+
+```
+Title: Daily limit reached 💬
+
+Body:
+Free plan includes 20 conversations per day.
+You've reached today's limit.
+
+Resets at midnight.
+
+For unlimited conversations — upgrade to Core.
+
+₹249/month.
+
+[Upgrade to Core →]     [Come back tomorrow]
+```
+
+---
+
+## General Upgrade Prompt (fallback)
+
+Used when the specific prompt isn't available:
+
+```
+Title: Available on [Plan Name]
+
+Body:
+This feature is available on [Plan] and above.
+
+[Upgrade to [Plan] — ₹[Price]/mo]     [Stay on Free]
+```
+
+---
+
+## The Founding Member Prompt
+
+For your 312 beta users — shown once when Razorpay activates:
+
+```
+Title: You built ARYA with us 🌿
+
+Body:
+You've been with ARYA since the beginning.
+Your feedback shaped everything you see today.
+
+As a thank you — Core plan at ₹149/month.
+Forever.
+
+That's your founding member price.
+It never changes. It never increases.
+
+First 50 who claim it get it locked in.
+
+[Claim ₹149/mo founding price →]
+
+[Maybe later]
+```
+
+---
+
+## Design Notes for Developer
+
+```
+All upgrade prompts:
+→ Bottom sheet (slides up from bottom)
+→ Dark background overlay
+→ Two buttons always:
+   Primary: upgrade (green, full width)
+   Secondary: continue/dismiss (ghost button)
+→ Never full-screen modal (too aggressive)
+→ Dismissable with back swipe
+→ Never shown more than once per session
+   for the same trigger
+
+Timing:
+→ Show immediately when limit hit
+→ Not on a delay — instant feedback
+
+Tone:
+→ Never: "You need to upgrade to access this"
+→ Always: "This is available on Core — ₹249/month"
+→ The difference is subtle but important.
+   One sounds like a wall. One sounds like an option.
+```
+
+---
+
+## Tracking — What To Log
+
+```
+For each upgrade prompt shown:
+→ Log: prompt_type, user_id, plan_at_time, timestamp
+
+For each upgrade prompt that converted:
+→ Log: prompt_type, user_id, converted_to_plan, timestamp
+
+This tells you:
+Which features drive the most upgrades?
+Which prompts convert best?
+Where are users hitting walls most often?
+
+Highest expected converters:
+1. Document Intelligence (tasks → goals)
+2. Voice input
+3. Memory reset (frustrating to lose context)
+4. Conversation limit
+5. Weekly Review
+
+Track this from day 1.
+The data will tell you where to invest next.
+```

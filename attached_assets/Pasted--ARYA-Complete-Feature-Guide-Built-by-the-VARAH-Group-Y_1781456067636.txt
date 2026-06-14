@@ -1,0 +1,295 @@
+# ARYA — Complete Feature Guide
+
+**Built by the VARAH Group**
+*Your thinking partner — in your language, every day.*
+
+aryaai.in
+
+---
+
+## 🧠 ARYA Core — Your Personal Thinking & Growth Assistant
+
+### Think Through Anything
+Bring any decision, dilemma, or problem. ARYA gives you a direct answer first, then depth. It won't hedge everything or ask clarifying questions instead of answering. It thinks with you, not at you.
+
+### Goals & Progress Tracking
+Set goals, break them into steps, track progress. ARYA checks in when a goal has gone quiet — curious, not judgmental. Goals 21+ days untouched get a gentle hygiene prompt: Keep it · Pause it · Let it go.
+
+### Memory Across Sessions
+ARYA remembers what matters — your goals, your patterns, things you've shared — and weaves them into every conversation naturally. No "I remember you said..." announcements. It just knows.
+
+---
+
+## 🧠 Thinking Modes — 7 Ways ARYA Thinks With You
+
+Not all problems need the same kind of thinking. One tap before any conversation changes how ARYA shows up:
+
+| Mode | What changes |
+|------|-------------|
+| 🤝 **ARYA** | Default — warm, curious, honest. Thinks with you. |
+| 🔥 **Founder** | Uncomfortable truth first. Stops being helpful. Starts being honest. Best for: business decisions, strategy, pricing, go-to-market. |
+| 😈 **Devil's Advocate** | Destroys your idea before your customers do. Ruthless. Then rebuilds. Best for: idea validation, pitch prep, product decisions. |
+| 🔬 **First Principles** | Strips everything back to what is actually true. Questions every assumption. Best for: innovation, root cause analysis, contrarian thinking. |
+| 🧠 **Therapist** | Bad decisions aren't bad strategy — they're bad psychology. Finds what's blocking you. Best for: stuck decisions, fear of launching, burnout. |
+| ⚡ **Contrarian** | Every great opportunity looks like a bad idea to most people. Finds what everyone else misses. Best for: spotting trends, market positioning. |
+| 🔗 **Full Chain** | Runs your decision through all 5 lenses in sequence. 10 minutes. Complete picture. Best for: irreversible choices, major bets, strategic pivots. |
+
+**Confidence tagging:** ARYA labels its own certainty — [Certain] [Likely] [Guessing] — so you always know what to act on and what to verify first.
+
+Modes reset on every new conversation. One tap to activate.
+
+---
+
+## 🎭 Hard Conversation Rehearsal
+
+Rehearse before any difficult conversation. ARYA plays the other person — your manager, colleague, parent, investor, administrator. Three difficulty levels:
+
+- 🙂 **Realistic** — firm but fair
+- 😤 **Tougher** — sharp, direct, asks about liability and cost immediately
+- 😠 **Hardest** — already against you; you have to genuinely change their mind
+
+Ends with specific coaching: what landed, what to sharpen, the one thing to carry into the real conversation.
+
+---
+
+## 📋 Voice Notes & Study Notes
+
+**Voice Notes:** Record thoughts on the go. ARYA transcribes in your language, summarises into bullet points, extracts tasks, names, and deadlines automatically. Save action items directly as goals in one tap.
+
+**Study Notes:** When you're studying or preparing a presentation, ARYA auto-saves structured notes from your conversation — including likely exam questions. Ask for a PPT outline and ARYA gives you the full slide structure, ready to use.
+
+---
+
+## 📄 Document Intelligence — Upload, Understand, Act
+
+Upload any document — or point your camera at one. ARYA reads it, explains it in plain language, and turns it into action.
+
+**What you can upload:**
+PDF · PowerPoint · Word document · Image · Handwritten notes · Printed text in any Indian language
+
+**What ARYA does with it:**
+
+- **Summarises** the document in clear bullet points — no jargon
+- **Extracts tasks** found in the document → save as goals in one tap
+- **Finds dates and deadlines** → set reminders in one tap
+- **Generates exam questions** from study material (NCERT, coaching notes, lecture slides)
+- **Pulls out key terms** and definitions
+- **Answers your questions** about the document — from the document, not from general knowledge
+- **Creates a PPT** from any document or study topic — downloadable .pptx file
+
+**Works in any Indian language.** Upload a Malayalam prescription, a Hindi legal notice, a Tamil medical report. ARYA reads it and explains it in plain English — or in the same language.
+
+**Everything connects:**
+Tasks from the document → Goals panel
+Dates from the document → Reminders panel
+Key points from the document → Notes panel
+Questions about the document → Ask ARYA in chat
+
+Like a knowledgeable friend who read it for you, pulled out what matters, and is ready to explain the rest.
+
+---
+
+## ⚖️ Indian Legal Knowledge
+
+BNS 2023 · BNSS 2023 · RTI Act · Consumer Rights · Labour Law · Property Law · Family Law · Cyber Law · Banking Rights · Traffic Rules · Women's Safety · Fundamental Rights
+
+Explained in plain language. Not legal advice. Honest guidance from structured knowledge — not hallucinated summaries.
+
+---
+
+## 🗣️ Voice in 11 Indian Languages
+
+Hindi, Malayalam, Tamil, Telugu, Kannada, Bengali, Gujarati, Punjabi, Odia, Marathi, English.
+
+Continuous voice loop — ARYA listens, thinks, speaks back. Hands-free. Switch languages mid-conversation. Mix languages. ARYA follows without being asked. Powered by Sarvam AI for Indian languages.
+
+---
+
+## ☀️ Morning Briefing
+
+Personalised daily briefing at your chosen time. Your active goals and where they stand. Relevant news. One line to carry through the day. Arrives before you open any other app.
+
+---
+
+## 📖 Weekly Review
+
+Every Sunday, a narrative reflection of your week — not a dashboard, not a report. A letter. Your goals — what moved, what didn't. Something ARYA noticed. A voice note you recorded weeks ago that is suddenly relevant now. One question to sit with. Reads like a letter from someone paying close attention.
+
+---
+
+## 😊 Mood & Energy Check-in
+
+10 seconds a day. Five emojis. One energy level. Over time, ARYA notices patterns — the weeks you're low, what lifts you, what drains you — and brings them into conversation naturally. Not to analyse you. To help you understand yourself.
+
+---
+
+## 📅 Google Calendar
+
+Connect your calendar. ARYA sees what's ahead and factors it into advice, reminders, and goal planning — without you having to explain your week every time.
+
+---
+
+## 💡 Image Prompt Engineering
+
+Ask ARYA for a Midjourney / DALL-E / Canva AI / Adobe Firefly prompt. ARYA writes the complete prompt — personalised to your profession, location, goals, and context. Not an explanation of how to write one. The actual prompt, ready to paste.
+
+ARYA knows the syntax for each platform. Offers refinements: mood, style, composition, Indian context, colour palette.
+
+---
+
+## ⚖️ Niti — Business Thinking Partner
+
+A separate dark-mode space built for business decisions and market thinking. Two modes:
+
+### Decisions
+Bring your real business situation — a decision you're wrestling with, a plan you want stress-tested, a people situation, or a need to think out loud. ARYA works through it using structured thinking. After each response: one push question to go deeper + three follow-up chips. Every session is saved as a **Thinking Journal** entry — a written record of what you wrestled with and what emerged.
+
+### Market Lens
+- Live indicative indices — NIFTY, SENSEX, Bank Nifty, Nifty IT — with sparkline charts
+- Rotating news cards with market impact tags — tap "What does this mean for me?" for ARYA's analysis
+- **Portfolio Journal** — log your holdings, ARYA asks honest Socratic questions about each one. Never gives buy/sell advice. Helps you think.
+- Think with ARYA — 4 pre-loaded market questions + open input
+
+---
+
+## 📖 Drishya — Stories That Find You
+
+A story experience unlike anything else. You describe what you're looking for — a feeling, a situation, a character, a scene — and ARYA generates a complete story, delivered whole. Drawn from India's 5,000-year tradition: Panchatantra, Jataka tales, Mahabharata, Upanishads, regional folk wisdom — retold for your exact moment.
+
+Three modes:
+- **Night Stories** — for the end of a long day
+- **Film Scenes** — cinematic, character-driven
+- **Everyday** — stories that meet ordinary moments
+
+Stories can be listened to in voice, saved, or simply read. No sources. No citations. Just the story.
+
+---
+
+## 🌙 KAAL — Cosmic Timing & Cycles
+
+A personal timing companion. Set up once using what you know — your Western star sign, your Vedic Rashi (Moon sign), or just your birth date. Three views:
+
+- **Today** — what kind of day it is energetically, your best window, what to handle with care
+- **This Week** — the rhythm of the week ahead, day by day
+- **Your Chapter** — the longer arc you're moving through
+
+Includes your Cosmic Profile and Venus Cycle tracking. Used not as prediction, but as a lens for self-awareness and timing decisions. Based on Brihat Parashara Hora Shastra, Phaladeepika, Saravali, and Thirukkural.
+
+---
+
+## 💪 Prana — Health Companion
+
+Your personal health coach. Build your profile — height, weight, sex, activity level. Prana tracks what matters:
+
+- BMI and BMR calculated personally — not generic charts
+- Heart rate, blood oxygen (SpO2), steps, stress, calories, weight
+- Sleep tracking with 7-day chart
+- Blood pressure and blood glucose monitoring
+
+ARYA coaches you based on your actual numbers, not population averages. Asks the questions a good doctor would ask before giving advice. Wearable sync with Apple Health, Google Fit, boAt and Noise — coming soon.
+
+*ARYA is not a medical device and does not give medical advice. For any health concern, see a doctor.*
+
+---
+
+## 👥 Community
+
+Weekly shared challenges — running, reflection, focus, gratitude. See how others in the ARYA community are doing. React, comment, stay accountable together — without the noise of social media.
+
+---
+
+## 🔔 Reminders & Alarms
+
+**Reminders** — gentle push notifications for tasks, goals, and check-ins.
+
+**Alarms** — urgent, cannot-be-missed alerts. Stays on screen until dismissed. Snooze in 5 or 10 minutes with one tap. Full alarm sound when app is open.
+
+---
+
+## 🔒 Privacy & Your Data
+
+Full **DPDP Act 2023** compliance. You are always in control:
+
+- Delete specific categories of data (conversations, goals, health, memory, voice notes)
+- Delete everything from a date range
+- Full account deletion — permanent, complete, confirmed
+- Every deletion is audited — not what was deleted, only that it happened
+- Your data is never sold. Never shared with advertisers. Never used to train AI models without your consent.
+
+---
+
+## Plans
+
+|  | **Free** | **Core ₹249/mo** | **Pro ₹499/mo** | **Elite ₹999/mo** |
+|--|---------|-----------------|----------------|------------------|
+| Conversations | 20/day | Unlimited | Unlimited | Unlimited |
+| Memory | Resets daily | 30 days | 1 year | Lifetime |
+| Goals | 3 | 10 | Unlimited | Unlimited |
+| Core chat | ✅ | ✅ | ✅ | ✅ |
+| Hard conversation rehearsal | ✅ | ✅ | ✅ | ✅ |
+| Thinking modes | 2 modes | All 7 | All 7 | All 7 |
+| KAAL & Prana | ✅ | ✅ | ✅ | ✅ |
+| Drishya stories | — | — | — | ✅ |
+| Voice minutes/month | — | 150 min | 500 min | Unlimited |
+| Voice Notes | — | ✅ | ✅ | ✅ |
+| Weekly Review | — | ✅ | ✅ | ✅ |
+| Morning Briefing | — | ✅ | ✅ | ✅ |
+| Document scan (read + explain) | ✅ | ✅ | ✅ | ✅ |
+| Document Intelligence — extract tasks, dates, exam questions, save to Notes | — | ✅ 10/day · 15MB | ✅ Unlimited · 25MB | ✅ Unlimited · 50MB |
+| PPT generation (.pptx download) | — | — | ✅ | ✅ |
+| Multi-file upload (up to 10 at once) | — | — | ✅ | ✅ |
+| Document history across sessions | — | — | — | ✅ |
+| Niti — Business thinking | — | — | ✅ | ✅ |
+| Market Lens | — | — | ✅ | ✅ |
+| Priority response speed | — | — | — | ✅ |
+| Monthly life review session | — | — | — | ✅ |
+| Annual saving | — | ₹207/mo | ₹416/mo | ₹833/mo |
+
+**45-day full trial** — all Pro features, no credit card required. Explore everything before choosing a plan.
+
+---
+
+## The 45-Day Discovery Journey
+
+ARYA has 9 major sections. A guided notification sequence introduces one section at a time — so you discover the full product at your own pace:
+
+| Day | What you discover |
+|-----|------------------|
+| 1 | Core chat — think through anything |
+| 3 | Goals — set one, watch ARYA follow through |
+| 5 | Voice Notes — speak a thought, ARYA captures it |
+| 7 | Weekly Review — your first Sunday letter |
+| 8 | Thinking Modes — 7 ways ARYA thinks with you |
+| 10 | Voice in your language — hands-free conversation |
+| 12 | Document Intelligence — upload anything, ARYA reads it |
+| 14 | Prana — your health, personally coached |
+| 17 | KAAL — today's timing and the week ahead |
+| 20 | Niti — bring your real business situation |
+| 23 | Market Lens — indices, news, your portfolio |
+| 26 | Drishya — a story for tonight |
+| 30 | Hard Conversation Rehearsal — practise before you go in |
+| 33 | Community — others on the same journey |
+| 37 | Morning Briefing — set it up for tomorrow |
+| 40 | Upgrade nudge — personalised summary of your 40 days |
+| 45 | Choose your plan — or stay on free |
+
+---
+
+## For New Users
+
+**45 days. All features. No credit card.**
+Open aryaai.in on your phone → tap Add to Home Screen → ARYA installs like a native app.
+
+No app store needed.
+
+---
+
+## For Beta Users
+
+You have been with ARYA since the beginning. Your feedback shaped everything in this guide. When subscriptions open — founding member pricing will be available for the first 50 who upgrade.
+
+---
+
+*ARYA is built by the VARAH Group. It is not a diagnostic tool, a medical advisor, or a legal counsel. It is a thinking partner — one that knows you, speaks your language, and shows up every day.*
+
+*aryaai.in*

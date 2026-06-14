@@ -1,0 +1,192 @@
+Good question. Let me think through this properly using the plan logic you've laid out.
+
+---
+
+## The Honest Answer
+
+```
+Basic scan (camera → read text → explain):
+→ Free ✅ — this is already there
+
+Full Document Intelligence
+(extract tasks → goals, dates → reminders,
+exam questions, PPT generation):
+→ Core and above
+```
+
+Here's why:
+
+---
+
+## The Logic — First Principles
+
+```
+Free plan is designed to say:
+"Try ARYA. See what it feels like."
+
+Memory resets daily.
+3 goals only.
+20 conversations.
+
+The free plan gives a taste —
+not the full experience.
+
+Full Document Intelligence is
+NOT a taste feature.
+It's a workflow feature.
+
+Saving tasks as goals,
+setting reminders from dates,
+generating exam questions,
+downloading a PPT —
+
+These are things you do repeatedly.
+Daily. As a professional or student.
+This is Core behaviour, not Free behaviour.
+```
+
+---
+
+## Exactly Where Each Feature Lives
+
+```
+FREE:
+📸 Scan a document or image
+   → ARYA reads it
+   → Explains it in plain language
+   → Answers questions about it
+   That's it. No extraction. No saving.
+   Good enough to show the magic.
+
+CORE ₹249:
+📄 Full Document Intelligence
+   → Upload PDF, PPT, DOCX
+   → Summary saved to Notes
+   → Tasks found → [Save as Goals]
+   → Dates found → [Set Reminders]
+   → Exam questions generated
+   → Key terms extracted
+   → 10 documents/day · 15MB per file
+   → Ask ARYA about the document in chat
+
+PRO ₹499:
+📄 Document Intelligence — More
+   → PPT generation (download .pptx)
+   → Unlimited documents/day
+   → 25MB per file
+   → Multi-file upload (up to 10 at once)
+
+ELITE ₹999:
+📄 Document Intelligence — Full
+   → Unlimited documents
+   → 50MB per file
+   → Bulk upload (unlimited files)
+   → Document history (saved across sessions)
+   → Priority processing (faster extraction)
+```
+
+---
+
+## Updated Plans Table
+
+Here's the clean version for your pricing page:
+
+| Feature | Free | Core ₹249 | Pro ₹499 | Elite ₹999 |
+|---------|------|-----------|---------|-----------|
+| Conversations | 20/day | ∞ | ∞ | ∞ |
+| Memory | Resets daily | 30 days | 1 year | Lifetime |
+| Goals | 3 | 10 | ∞ | ∞ |
+| Voice | ❌ | 150 min | 500 min | ∞ |
+| Voice Notes | ❌ | ✅ | ✅ | ✅ |
+| Document scan (explain only) | ✅ | ✅ | ✅ | ✅ |
+| Document Intelligence (extract + save) | ❌ | ✅ 10/day | ✅ Unlimited | ✅ Unlimited |
+| PPT generation | ❌ | ❌ | ✅ | ✅ |
+| Multi-file upload | ❌ | ❌ | ✅ up to 10 | ✅ Unlimited |
+| Document history | ❌ | ❌ | ❌ | ✅ |
+| Niti / Business | ❌ | ❌ | ✅ | ✅ |
+| Drishya | ❌ | ❌ | ❌ | ✅ |
+| Price | Free | ₹249 | ₹499 | ₹999 |
+
+---
+
+## Why PPT Generation Goes to Pro
+
+```
+PPT generation is a professional tool.
+Students preparing for board exams
+don't need a downloaded .pptx file.
+They need the exam questions and summary.
+→ Core is enough for students.
+
+Professionals making presentations
+for clients, investors, hospital boards —
+they need a real downloadable file.
+→ They're already on Pro or considering it.
+→ PPT generation gives them a reason to upgrade.
+
+Cost of PPT generation is also slightly higher
+(server-side python-pptx processing).
+Keeping it Pro+ makes sense financially.
+```
+
+---
+
+## The Upgrade Conversation
+
+```
+Free user scans a document.
+ARYA explains it. User is impressed.
+
+User tries to save a task as a goal.
+ARYA says:
+
+"Saving tasks from documents
+ is available on Core and above.
+
+ You're on Free — you can read and
+ ask questions about any document.
+
+ To save tasks as goals and set
+ reminders from dates found in
+ your documents — upgrade to Core.
+
+ ₹249/month. Less than one meal out.
+
+ [Upgrade to Core →]  [Stay on Free]"
+
+That's a conversion moment.
+The user already saw the value
+(ARYA read and explained the document).
+Now they want more.
+That's the right time to ask.
+```
+
+---
+
+## Summary — Clean Answer
+
+```
+Scan + explain:         FREE for everyone
+                        (show the magic)
+
+Extract + save:         CORE ₹249
+(tasks → goals,         (first real upgrade reason
+dates → reminders,       for document users)
+exam questions,
+notes saved)
+
+PPT generation:         PRO ₹499
+Multi-file upload:      (professional use case)
+
+Document history:       ELITE ₹999
+Bulk upload:            (power users)
+Priority processing:
+
+This creates a natural
+upgrade ladder within
+the document feature alone —
+Free → Core → Pro → Elite
+each step adds something real.
+```
+
+Want me to update the complete feature guide and write the exact upgrade prompt message ARYA shows when a free user tries to extract tasks?

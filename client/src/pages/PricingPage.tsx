@@ -54,9 +54,12 @@ const PLANS = [
     features: [
       "20 conversations per day",
       "Up to 3 goals",
+      "2 thinking modes",
+      "Hard conversation rehearsal",
       "Mood check-ins",
       "All 11 Indian languages",
-      "Document & image scan",
+      "KAAL & Prana",
+      "Document scan — read & explain",
     ],
   },
   {
@@ -74,12 +77,13 @@ const PLANS = [
       "Unlimited conversations",
       "Voice in 11 Indian languages — 150 min/month",
       "10 goals with smart check-ins",
+      "All 7 thinking modes",
       "Voice Notes — speak, ARYA summarises",
       "30-day memory",
       "Weekly Review letter",
-      "Morning KAAL briefing",
+      "Morning briefing",
       "Health tracking (Prana)",
-      "Document & image scan",
+      "Document Intelligence — 10 docs/day · 15MB",
     ],
   },
   {
@@ -99,9 +103,11 @@ const PLANS = [
       "Unlimited goals",
       "1-year memory",
       "Niti — Business thinking + Decision Records",
-      "7 Thinking Modes (Founder, Devil's Advocate…)",
       "Market Lens",
       "KAAL full 3-tab dashboard",
+      "Document Intelligence — Unlimited · 25MB",
+      "PPT generation (.pptx download)",
+      "Multi-file upload (up to 10 at once)",
       "Early access to new features",
     ],
   },
@@ -124,31 +130,40 @@ const PLANS = [
       "Priority response speed",
       "KAAL Full Vedic experience",
       "Monthly life review session",
+      "Document Intelligence — Unlimited · 50MB",
+      "Document history across sessions",
     ],
   },
 ];
 
 const FEATURES: Array<{ label: string; free: string | boolean; core: string | boolean; pro: string | boolean; elite: string | boolean; note?: string }> = [
-  { label: "Daily conversations",   free: "20/day",      core: "Unlimited",     pro: "Unlimited",      elite: "Unlimited"       },
-  { label: "Memory",                free: "Resets daily",core: "30 days",       pro: "1 year",         elite: "Lifetime"        },
-  { label: "Goals",                 free: "3",           core: "10 + check-ins",pro: "Unlimited",      elite: "Unlimited"       },
-  { label: "Voice input",           free: false,         core: "150 min/month", pro: "500 min/month",  elite: "Unlimited",      note: "Above 500 min on Pro: ₹2/min (India). Capped at ₹200/month extra." },
-  { label: "Voice Notes",           free: false,         core: true,            pro: true,             elite: true              },
-  { label: "Document & image scan", free: true,          core: true,            pro: true,             elite: true              },
-  { label: "25 languages",          free: true,          core: true,            pro: true,             elite: true              },
-  { label: "KAAL",                  free: false,         core: "Morning briefing",pro: "Full 3-tab",   elite: "Full + Vedic"    },
-  { label: "Niti — Business Mind",  free: false,         core: false,           pro: true,             elite: true              },
-  { label: "Market Lens",           free: false,         core: false,           pro: true,             elite: true              },
-  { label: "7 Thinking Modes",      free: false,         core: false,           pro: true,             elite: true              },
-  { label: "Weekly Review",         free: false,         core: true,            pro: true,             elite: true              },
-  { label: "Health tracking (Prana)",free: false,        core: true,            pro: true,             elite: true              },
-  { label: "Drishya stories",       free: false,         core: false,           pro: false,            elite: true              },
-  { label: "Priority response",     free: false,         core: false,           pro: false,            elite: true              },
-  { label: "Monthly life review",   free: false,         core: false,           pro: false,            elite: true              },
-  { label: "Early access",          free: false,         core: false,           pro: true,             elite: true              },
+  { label: "Daily conversations",              free: "20/day",      core: "Unlimited",      pro: "Unlimited",         elite: "Unlimited"         },
+  { label: "Memory",                           free: "Resets daily",core: "30 days",        pro: "1 year",            elite: "Lifetime"          },
+  { label: "Goals",                            free: "3",           core: "10 + check-ins", pro: "Unlimited",         elite: "Unlimited"         },
+  { label: "Hard conversation rehearsal",      free: true,          core: true,             pro: true,                elite: true                },
+  { label: "Thinking modes",                   free: "2 modes",     core: "All 7",          pro: "All 7",             elite: "All 7"             },
+  { label: "KAAL & Prana",                     free: true,          core: true,             pro: true,                elite: true                },
+  { label: "Voice input",                      free: false,         core: "150 min/month",  pro: "500 min/month",     elite: "Unlimited",        note: "Above 500 min on Pro: ₹2/min (India). Capped at ₹200/month extra." },
+  { label: "Voice Notes",                      free: false,         core: true,             pro: true,                elite: true                },
+  { label: "Weekly Review",                    free: false,         core: true,             pro: true,                elite: true                },
+  { label: "Morning Briefing",                 free: false,         core: true,             pro: true,                elite: true                },
+  { label: "25 languages",                     free: true,          core: true,             pro: true,                elite: true                },
+  { label: "Document scan (read + explain)",   free: true,          core: true,             pro: true,                elite: true                },
+  { label: "Document Intelligence",            free: false,         core: "10/day · 15MB",  pro: "Unlimited · 25MB",  elite: "Unlimited · 50MB", note: "Extract tasks → Goals · Dates → Reminders · Exam questions · Key terms" },
+  { label: "PPT generation (.pptx)",           free: false,         core: false,            pro: true,                elite: true                },
+  { label: "Multi-file upload",                free: false,         core: false,            pro: "Up to 10",          elite: "Unlimited"         },
+  { label: "Document history",                 free: false,         core: false,            pro: false,               elite: true                },
+  { label: "Niti — Business Mind",             free: false,         core: false,            pro: true,                elite: true                },
+  { label: "Market Lens",                      free: false,         core: false,            pro: true,                elite: true                },
+  { label: "Drishya stories",                  free: false,         core: false,            pro: false,               elite: true                },
+  { label: "Priority response",                free: false,         core: false,            pro: false,               elite: true                },
+  { label: "Monthly life review",              free: false,         core: false,            pro: false,               elite: true                },
+  { label: "Early access",                     free: false,         core: false,            pro: true,                elite: true                },
 ];
 
 const FAQS = [
+  { q: "What is Document Intelligence?",
+    a: "Document Intelligence is ARYA's ability to read any document you upload — PDF, image, handwritten notes, printed text in any Indian language — and turn it into action. ARYA extracts tasks (save as goals in one tap), finds dates (set reminders in one tap), generates exam questions from study material, and pulls out key terms. Free plan gets read + explain only. Core and above get the full extraction and saving features." },
   { q: "What is voice metering on Pro?",
     a: "Pro includes 500 voice minutes per month — enough for most users. If you go over, you're charged ₹2/minute (India) only for the extra minutes, capped at ₹200/month. Core includes 150 minutes. Most users never exceed either limit." },
   { q: "Can I switch between India and international billing?",
@@ -529,6 +544,39 @@ export default function PricingPage() {
                 <strong>{region === INDIA ? "₹2" : "$0.02"} per extra minute</strong>, capped at{" "}
                 <strong>{region === INDIA ? "₹200" : "$2.40"} extra per month</strong> — so your bill never doubles.
                 Elite gets unlimited voice with no metering at all.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Document Intelligence callout */}
+        <div className="mb-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/40 p-5">
+          <div className="flex gap-3 items-start">
+            <span className="text-2xl flex-shrink-0">📄</span>
+            <div>
+              <p className="text-sm font-semibold text-indigo-800 dark:text-indigo-300 mb-1">How Document Intelligence works</p>
+              <p className="text-sm text-indigo-700 dark:text-indigo-400 leading-relaxed mb-2">
+                Upload any document — PDF, image, handwritten notes, printed text in any Indian language.
+                ARYA reads it, summarises it, and turns it into action.
+              </p>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-indigo-700 dark:text-indigo-400">
+                {[
+                  ["📌", "Tasks found → save as Goals"],
+                  ["⏰", "Dates found → set as Reminders"],
+                  ["❓", "Exam questions generated"],
+                  ["🔑", "Key terms extracted"],
+                  ["💬", "Ask ARYA about the document"],
+                  ["📊", "PPT outline (Pro+)"],
+                ].map(([icon, text]) => (
+                  <div key={text} className="flex items-center gap-1.5">
+                    <span>{icon}</span>
+                    <span>{text}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-indigo-500 dark:text-indigo-500 mt-2">
+                Free plan: read & explain only.{" "}
+                <span className="font-semibold">Core and above: full extraction and saving.</span>
               </p>
             </div>
           </div>
