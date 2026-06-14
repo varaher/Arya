@@ -929,7 +929,7 @@ function BriefingScreen({ briefing, loading, error, onHome, onRetry, path, profi
                   else if (hour >= 16 && hour < 20) q = `Looking at my KAAL for today — what should I close out before the day ends?`;
                   else q = `Based on my KAAL — today's energy has passed. What should I carry into tomorrow?`;
                   localStorage.setItem("arya_prefill", q);
-                  setLocation("/");
+                  onHome();
                 }}
                 style={{
                   width: "100%", padding: "16px 20px", borderRadius: 16, cursor: "pointer",
