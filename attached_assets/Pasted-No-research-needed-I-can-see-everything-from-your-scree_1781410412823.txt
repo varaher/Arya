@@ -1,0 +1,139 @@
+No research needed — I can see everything from your screenshot and the fix log.
+
+---
+
+## What I See
+
+The screenshot shows KAAL is working beautifully:
+```
+✅ Handle With Care card
+✅ Money & decisions
+✅ Relationships  
+✅ Body & energy
+✅ "Ask ARYA about today" button
+✅ "ARYA already knows your timing for today"
+✅ "Back to ARYA" button below it
+```
+
+And your developer found and fixed the `window` variable shadowing bug.
+
+---
+
+## But It's Still Not Working
+
+The bug fix was correct — renaming `window` to `win` so `window.dispatchEvent()` works. But there's likely a second issue.
+
+The button fires a **custom browser event**. The chat needs to be **listening for that event**. If the listener isn't set up, the event fires into nothing.
+
+---
+
+## Check These Two Things
+
+### Thing 1 — Is the event listener in AryaChat.tsx?
+
+```typescript
+// This MUST exist in AryaChat.tsx:
+
+useEffect(() => {
+  function handleKaalMessage(e: CustomEvent) {
+    const message = e.detail?.message;
+    if (message) {
+      setInput(message);
+      // Also need to navigate to Home tab:
+      setActiveTab('home'); // or however home is activated
+      setTimeout(() => inputRef.current?.focus(), 400);
+    }
+  }
+
+  window.addEventListener('arya-kaal-ask', handleKaalMessage);
+  return () => {
+    window.removeEventListener('arya-kaal-ask', handleKaalMessage);
+  };
+}, []);
+```
+
+If this listener doesn't exist — the event fires but nobody receives it.
+
+### Thing 2 — Is the event name matching?
+
+```typescript
+// In VedicLensPage.tsx (the fixed version):
+window.dispatchEvent(new CustomEvent('arya-kaal-ask', {
+  detail: { message: prefilledMessage }
+}));
+
+// In AryaChat.tsx listener:
+window.addEventListener('arya-kaal-ask', ...)
+
+// ← Both must use EXACT same event name
+//   'arya-kaal-ask' — check for typos
+```
+
+---
+
+## Most Likely Issue
+
+The developer fixed the dispatch side but forgot the **listener side** in AryaChat.tsx. Or the listener exists but uses a different event name.
+
+---
+
+## Tell Developer — 3 Things To Check
+
+```
+1. Search AryaChat.tsx for:
+   window.addEventListener('arya-kaal-ask'
+   
+   If not found → add the useEffect listener
+   from above. This is the missing piece.
+
+2. Confirm event names match exactly:
+   VedicLensPage.tsx → dispatchEvent name
+   AryaChat.tsx → addEventListener name
+   Must be identical strings.
+
+3. After listener receives the event:
+   Must also switch to Home tab.
+   Setting input alone isn't enough
+   if KAAL is still showing on top.
+   
+   setInput(message) + navigate to home
+   both needed in the listener.
+
+Also: Add a console.log inside the
+dispatchEvent call to confirm it fires:
+  console.log('KAAL event fired:', message);
+
+And inside the listener:
+  console.log('KAAL event received:', e.detail);
+
+If first log shows but second doesn't →
+listener is missing or wrong event name.
+If neither shows → fix didn't save properly.
+```
+
+---
+
+## The Flow That Should Work
+
+```
+User taps "Ask ARYA about today"
+         ↓
+VedicLensPage fires:
+window.dispatchEvent(new CustomEvent(
+  'arya-kaal-ask',
+  { detail: { message: "My peak is 10:15..." } }
+))
+         ↓
+AryaChat.tsx listener receives event
+         ↓
+setInput("My peak is 10:15...")
+setActiveTab('home') or navigate('/')
+         ↓
+KAAL closes / Home appears
+Chat input pre-filled
+User taps send
+         ↓
+ARYA responds with timing advice
+```
+
+The fix was half done. The dispatch side is fixed. The receive side likely needs to be added.

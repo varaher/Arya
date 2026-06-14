@@ -3463,6 +3463,17 @@ export default function AryaChat() {
     return () => window.removeEventListener("arya-prefill", handler);
   }, []);
 
+  // Pick up prefill written to localStorage by cross-route navigators (e.g. KAAL page)
+  useEffect(() => {
+    const pending = localStorage.getItem("arya_prefill");
+    if (pending) {
+      localStorage.removeItem("arya_prefill");
+      setInput(pending);
+      setActiveConversation(null);
+      setTimeout(() => inputRef.current?.focus(), 350);
+    }
+  }, []);
+
   useEffect(() => {
     const handler = () => { setActiveConversation(null); };
     window.addEventListener("arya:go-home", handler);
