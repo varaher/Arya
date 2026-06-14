@@ -2960,24 +2960,44 @@ Note: """${(transcript as string).trim()}"""`,
       const tasks: Array<{ task: string; deadline?: string | null }> =
         Array.isArray(note.extractedTasks) ? (note.extractedTasks as any) : [];
 
+      if (tasks.length === 0) {
+        return res.json({ success: true, tasksCreated: 0 });
+      }
+
+      const today = new Date();
+      today.setHours(23, 59, 59, 0); // end of today so isToday() matches
+
+      let created = 0;
       for (const t of tasks) {
-        await db.insert(aryaGoals).values({
-          userId,
-          tenantId: "default",
-          title: t.task,
-          description: `From voice note recorded on ${new Date(note.createdAt).toLocaleDateString()}`,
-          priority: "medium",
-          status: "active",
-          goalType: "task",
-          isCompleted: false,
-          reminderFired: false,
-          sourceNoteId: note.id,
-          dueDate: t.deadline ? new Date(t.deadline) : null,
-        } as any).catch(() => {});
+        // Parse deadline — fall back to today so the task shows in Today tab
+        let dueDate: Date = today;
+        if (t.deadline) {
+          const parsed = new Date(t.deadline);
+          if (!isNaN(parsed.getTime())) dueDate = parsed;
+          // if deadline is natural language like "September" and parses as invalid, keep today
+        }
+        try {
+          await db.insert(aryaGoals).values({
+            userId,
+            tenantId: "default",
+            title: t.task,
+            description: `From voice note recorded on ${new Date(note.createdAt).toLocaleDateString()}`,
+            priority: "medium",
+            status: "active",
+            goalType: "task",
+            isCompleted: false,
+            reminderFired: false,
+            sourceNoteId: note.id,
+            dueDate,
+          } as any);
+          created++;
+        } catch (insertErr: any) {
+          console.error("[SAVE-TASKS] Insert failed for task:", t.task, insertErr?.message);
+        }
       }
 
       await db.update(aryaVoiceNotes).set({ tasksSavedToGoals: true, tasksSavedAt: new Date() } as any).where(eq(aryaVoiceNotes.id, id));
-      res.json({ success: true, tasksCreated: tasks.length });
+      res.json({ success: true, tasksCreated: created });
     } catch (err: any) {
       res.status(500).json({ error: "Failed to save tasks" });
     }

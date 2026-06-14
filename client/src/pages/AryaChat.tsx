@@ -2031,13 +2031,17 @@ function NoteCard({ note, token, deleteNote, formatDate, formatDur, isEditMode, 
     if (!token || tasksSaved) return;
     setSavingTasks(true);
     try {
-      await fetch(`/api/user/voice-notes/${note.id}/save-tasks`, {
+      const res = await fetch(`/api/user/voice-notes/${note.id}/save-tasks`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-user-token": token },
       });
-      setTasksSaved(true);
-      qc.invalidateQueries({ queryKey: ["/api/user/goals"] });
-    } catch { /* silent */ } finally {
+      if (res.ok) {
+        setTasksSaved(true);
+        // Invalidate both query keys used across different pages
+        qc.invalidateQueries({ queryKey: ["user-goals"] });
+        qc.invalidateQueries({ queryKey: ["/api/user/goals"] });
+      }
+    } catch { /* network error */ } finally {
       setSavingTasks(false);
     }
   }
