@@ -1,0 +1,163 @@
+Good observation. Let me read what's on screen carefully.
+
+---
+
+## What's On The Home Screen Right Now
+
+```
+1. ARYA logo + tagline
+2. Today's Reflection card
+3. "Talk to ARYA" card + Start button
+4. Mood check-in row (emojis)
+5. 🌙 KAAL window card + "Ask ARYA →"
+6. Chips: Goals · Memory · Notes · Reminders
+7. "Get inspired" button
+8. Chat input at bottom
+```
+
+That's **7 elements** before the user has even typed anything. You're right — it's congested.
+
+---
+
+## The Real Problem
+
+```
+Home screen is trying to do too much:
+
+→ Be a dashboard (reflection, KAAL, mood)
+→ Be a launcher (chips, Talk to ARYA)
+→ Be a chat (input at bottom)
+
+These three purposes fight each other.
+```
+
+---
+
+## What Should Stay on Home
+
+The home screen should have **one job** — get the user into conversation as fast as possible.
+
+Everything else is secondary.
+
+```
+Essential (keep):
+✅ Chat input — this is the core
+✅ "Talk to ARYA" voice start
+✅ Quick chips (Goals, Notes etc)
+✅ Today's Reflection — one line, sets tone
+
+Secondary (can move):
+⚠️  KAAL card → move to KAAL tab
+⚠️  Mood check-in → collapses after done
+⚠️  "Get inspired" → inside chat suggestions
+```
+
+---
+
+## The KAAL Card Specifically
+
+Your question is right — the KAAL window card with "Ask ARYA →" on the home screen is the one most worth reconsidering.
+
+**Option A — Keep it, make it smaller:**
+```
+🌙 10:15–11:45 AM  [Ask ARYA →]
+```
+One line. Minimal. Doesn't dominate.
+
+**Option B — Move to KAAL tab only:**
+```
+Home screen: no KAAL card
+KAAL tab: full dashboard + Ask ARYA button
+           (but fix the button navigation bug)
+```
+
+**Option C — Collapse into the chip row:**
+```
+Goals · Memory · Notes · Reminders · 🌙 KAAL
+                                     ↑
+                               Tap → opens
+                               KAAL summary
+                               as bottom sheet
+```
+
+---
+
+## My Recommendation — Simplified Home
+
+```
+┌─────────────────────────────────────┐
+│  ARYA                               │
+│  Think clearly. Feel less alone.    │
+│                                     │
+│  "The quiet moments you resist..."  │
+│  — ARYA · TODAY'S REFLECTION        │
+│                                     │
+│  😔 😐 😊 😄 How are you today?     │
+│  (dismisses after selection)        │
+│                                     │
+│  [Goals] [Notes] [Memory] [More]    │
+│                                     │
+│                                     │
+│                                     │
+│  ________________________           │
+│  Ask ARYA anything...    🎤  →      │
+└─────────────────────────────────────┘
+```
+
+Clean. One purpose. The chat input is the hero.
+
+KAAL lives in the KAAL tab — where it belongs. The "Ask ARYA" button in KAAL navigates correctly to home + pre-fills the chat.
+
+---
+
+## What To Remove / Move
+
+```
+Remove from Home:
+→ The large KAAL dark card
+   (move to KAAL tab — it's already there)
+
+Shrink on Home:
+→ "Talk to ARYA" card
+   Reduce to a small icon button
+   next to the chat input
+
+→ Mood check-in
+   Collapses after user selects once per day
+   Don't show again until tomorrow
+
+Keep as is:
+→ Today's Reflection (one card, good)
+→ Quick chips (compact, useful)
+→ Chat input (must stay prominent)
+→ "Get inspired" (can stay, low priority)
+```
+
+---
+
+## Tell Developer — 2 Changes
+
+```
+Change 1: Remove KAAL card from Home
+  AryaChat.tsx — find the KAAL window
+  card and remove it from home render.
+  It already lives fully in VedicLensPage.
+  Fix the "Ask ARYA" button navigation
+  instead (the bug we identified).
+
+Change 2: Auto-dismiss mood check-in
+  After user taps any emoji:
+  → Save mood
+  → Animate card away
+  → Don't show again until midnight
+  → localStorage: arya_mood_done_${date}
+  
+  Currently it stays visible all day
+  even after selection — taking up space.
+
+Result: Home screen loses 2 cards.
+        Feels open. Chat input is the focus.
+        30 minutes of work.
+```
+
+The home screen should feel like opening a notebook to a blank page — not a dashboard with 7 things happening.

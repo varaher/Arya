@@ -2971,24 +2971,20 @@ function MoodCheckInCard({ token, onComplete, uiLang = "en" }: { token: string; 
     { value: 5, emoji: "😊", label: tl("mood_great") },
   ];
 
-  const handleMoodSelect = (value: number) => {
+  const handleMoodSelect = async (value: number) => {
+    if (saving) return;
     setMood(value);
-    setExpanded(true);
-  };
-
-  const handleSave = async () => {
-    if (!mood) return;
     setSaving(true);
     try {
       await fetch("/api/user/mood", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-user-token": token },
-        body: JSON.stringify({ mood, energy }),
+        body: JSON.stringify({ mood: value, energy }),
       });
       localStorage.setItem("arya_mood_date", new Date().toDateString());
-      onComplete();
-    } catch { }
+    } catch {}
     setSaving(false);
+    setTimeout(onComplete, 600);
   };
 
   return (
@@ -3028,41 +3024,17 @@ function MoodCheckInCard({ token, onComplete, uiLang = "en" }: { token: string; 
         </button>
       </div>
 
-      {/* ── Expanded: energy slider + save — only after a mood is picked ── */}
-      <AnimatePresence initial={false}>
-        {expanded && (
+      {/* Saved confirmation flash */}
+      <AnimatePresence>
+        {saving && mood && (
           <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            style={{ overflow: "hidden" }}
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.15 }}
+            className="px-3 pb-2 text-center text-[11px] text-amber-600 dark:text-amber-400 font-medium"
           >
-            <div className="px-3 pb-2.5 border-t border-amber-200/60 dark:border-amber-800/40 pt-2 space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] text-gray-400 dark:text-gray-500 flex items-center gap-0.5 flex-shrink-0">
-                  <Zap className="w-2.5 h-2.5 text-amber-500" /> {tl("energy_level")}
-                </span>
-                <input
-                  type="range" min={1} max={5} value={energy}
-                  onChange={e => setEnergy(Number(e.target.value))}
-                  data-testid="slider-energy"
-                  className="flex-1 accent-amber-500 h-1 rounded"
-                />
-                <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 flex-shrink-0 w-14 text-right">
-                  {["", tl("energy_drained"), tl("energy_low"), tl("energy_okay"), tl("energy_good"), tl("energy_energized")][energy]}
-                </span>
-              </div>
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                data-testid="button-save-checkin"
-                className="w-full py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-400 text-white text-xs font-semibold hover:from-amber-400 hover:to-orange-300 disabled:opacity-50 transition-all flex items-center justify-center gap-1.5"
-              >
-                {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
-                {saving ? "Saving…" : tl("save_checkin")}
-              </button>
-            </div>
+            ✓ Saved
           </motion.div>
         )}
       </AnimatePresence>
@@ -5577,48 +5549,6 @@ export default function AryaChat() {
                   uiLang={uiLanguage}
                 />
               </div>
-            )}
-
-            {/* ── KAAL chip — shows today's window + Ask ARYA button ── */}
-            {isLoggedIn && kaalBriefing?.muhurat?.startTime && (
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.28 }}
-                className="w-full mb-2 rounded-2xl overflow-hidden"
-                style={{ background: "linear-gradient(135deg, rgba(13,30,20,0.96) 0%, rgba(20,45,30,0.94) 100%)", border: "1px solid rgba(74,222,128,0.15)" }}
-              >
-                <div className="flex items-center justify-between px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <span className="text-lg">🌙</span>
-                    <div className="text-left">
-                      <div className="text-[10px] tracking-widest uppercase text-emerald-400/60 mb-0.5">Today's best window</div>
-                      <div className="text-[13px] font-semibold text-emerald-300">
-                        {kaalBriefing.muhurat.startTime} – {kaalBriefing.muhurat.endTime}
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    data-testid="button-kaal-ask-arya-home"
-                    onClick={() => {
-                      const hour = new Date().getHours();
-                      const win = `${kaalBriefing.muhurat.startTime} – ${kaalBriefing.muhurat.endTime}`;
-                      let q: string;
-                      if (hour < 9) q = `My KAAL peak today is ${win}. How should I plan my morning around it?`;
-                      else if (hour < 12) q = `I'm in my KAAL peak window right now (${win}). What's the most important thing to do?`;
-                      else if (hour < 16) q = `My KAAL peak has passed today. Based on my timing — what's the best use of my afternoon?`;
-                      else if (hour < 20) q = `Looking at my KAAL for today — what should I close out before the day ends?`;
-                      else q = `Based on my KAAL today — what should I carry into tomorrow?`;
-                      setInput(q);
-                      setTimeout(() => inputRef.current?.focus(), 100);
-                    }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
-                    style={{ background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.25)", color: "#4ade80" }}
-                  >
-                    Ask ARYA <span className="text-[11px]">→</span>
-                  </button>
-                </div>
-              </motion.div>
             )}
 
             {/* ── Quick Access (horizontal scrollable pills) ── */}
