@@ -832,7 +832,7 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
             </button>
 
             {/* Morning Briefing */}
-            <button data-testid="toggle-morning-briefing" type="button" onClick={() => setMorningBriefing(v => !v)}
+            <button data-testid="toggle-morning-briefing" type="button" onClick={() => { if (isMainFree && !morningBriefing) { setMainUpgradePrompt(UPGRADE_PROMPTS.morningBriefing()); return; } setMorningBriefing(v => !v); }}
               className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg border transition-all ${morningBriefing ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-300 dark:border-emerald-700" : "bg-gray-100 dark:bg-slate-700 border-transparent"}`}
             >
               <div className="flex items-center gap-2">
@@ -848,7 +848,7 @@ function CustomizePanel({ onClose, token }: { onClose: () => void; token: string
             </button>
 
             {/* Weekly Review */}
-            <button data-testid="toggle-weekly-review" type="button" onClick={() => setWeeklyReview(v => !v)}
+            <button data-testid="toggle-weekly-review" type="button" onClick={() => { if (isMainFree && !weeklyReview) { setMainUpgradePrompt(UPGRADE_PROMPTS.weeklyReview()); return; } setWeeklyReview(v => !v); }}
               className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg border transition-all ${weeklyReview ? "bg-purple-50 dark:bg-purple-900/20 border-purple-300 dark:border-purple-700" : "bg-gray-100 dark:bg-slate-700 border-transparent"}`}
             >
               <div className="flex items-center gap-2">
@@ -1556,7 +1556,12 @@ function CalendarPanel({ onClose, token }: { onClose: () => void; token: string 
 
 function GoalsPanel({ onClose }: { onClose: () => void }) {
   const queryClient = useQueryClient();
-  const { token, isLoggedIn } = useUserAuth();
+  const { token, isLoggedIn, user: goalUser } = useUserAuth();
+  const goalUserPlan: string = (goalUser as any)?.plan || "free";
+  const isGoalFree = goalUserPlan === "free";
+  const isGoalCore = goalUserPlan === "core";
+  const goalLimit = isGoalFree ? 3 : isGoalCore ? 10 : Infinity;
+  const [goalUpgradePrompt, setGoalUpgradePrompt] = useState<UpgradePromptConfig | null>(null);
   const [newGoalTitle, setNewGoalTitle] = useState("");
   const [newGoalSteps, setNewGoalSteps] = useState("");
   const [editModeGoals, setEditModeGoals] = useState(false);
@@ -1720,13 +1725,22 @@ function GoalsPanel({ onClose }: { onClose: () => void }) {
         />
         <Button
           data-testid="button-create-goal"
-          onClick={() => newGoalTitle.trim() && createGoalMutation.mutate()}
+          onClick={() => {
+            if (!newGoalTitle.trim()) return;
+            const activeCount = (goals || []).filter((g: any) => g.status === "active").length;
+            if (activeCount >= goalLimit) {
+              setGoalUpgradePrompt(isGoalFree ? UPGRADE_PROMPTS.goal4th() : UPGRADE_PROMPTS.goal11th());
+              return;
+            }
+            createGoalMutation.mutate();
+          }}
           disabled={!newGoalTitle.trim()}
           size="sm"
           className="w-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 hover:bg-amber-200 border border-amber-200 dark:border-amber-800 text-xs"
         >
           <Plus className="w-3 h-3 mr-1" /> Add Goal
         </Button>
+        <UpgradePrompt config={goalUpgradePrompt} onDismiss={() => setGoalUpgradePrompt(null)} />
       </div>
 
       <div className="flex-1 overflow-y-auto p-3 space-y-3">
@@ -3655,6 +3669,10 @@ export default function AryaChat() {
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [showVoiceMode, setShowVoiceMode] = useState(false);
+  const [mainUpgradePrompt, setMainUpgradePrompt] = useState<UpgradePromptConfig | null>(null);
+  const mainUserPlan: string = (user as any)?.plan || "free";
+  const isMainFree = mainUserPlan === "free";
+  const THINKING_FREE_MODES = new Set(["default", "therapist"]);
   const [activeConversation, setActiveConversation] = useState<number | null>(null);
   const [thinkingMode, setThinkingMode] = useState("default");
   const [input, setInput] = useState(() => {
@@ -5385,7 +5403,7 @@ export default function AryaChat() {
                     </button>
                     <button
                       data-testid="button-niti-sidebar"
-                      onClick={() => { setShowUserMenu(false); setLocation("/niti"); }}
+                      onClick={() => { setShowUserMenu(false); if (isMainFree) { setMainUpgradePrompt(UPGRADE_PROMPTS.niti()); return; } setLocation("/niti"); }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                     >
                       <Briefcase className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-500 shrink-0" />
@@ -5401,7 +5419,7 @@ export default function AryaChat() {
                     </button>
                     <button
                       data-testid="button-drishya-sidebar"
-                      onClick={() => { setShowUserMenu(false); setLocation("/drishya"); }}
+                      onClick={() => { setShowUserMenu(false); if (isMainFree) { setMainUpgradePrompt(UPGRADE_PROMPTS.drishya()); return; } setLocation("/drishya"); }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                     >
                       <span className="text-violet-500 shrink-0 text-sm">🎭</span>
@@ -5618,7 +5636,7 @@ export default function AryaChat() {
                       </button>
                       <button
                         data-testid="button-niti"
-                        onClick={() => { setShowUserMenu(false); setLocation("/niti"); }}
+                        onClick={() => { setShowUserMenu(false); if (isMainFree) { setMainUpgradePrompt(UPGRADE_PROMPTS.niti()); return; } setLocation("/niti"); }}
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                       >
                         <Briefcase className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-500 shrink-0" />
@@ -5918,7 +5936,10 @@ export default function AryaChat() {
               )}
             </div>
             <TalkToARYACard
-              onStart={() => setShowVoiceMode(true)}
+              onStart={() => {
+                if (isMainFree) { setMainUpgradePrompt(UPGRADE_PROMPTS.voiceGate()); return; }
+                setShowVoiceMode(true);
+              }}
               uiLang={uiLanguage}
             />
 
@@ -6136,7 +6157,7 @@ export default function AryaChat() {
               {/* Talk to ARYA — full-width featured card */}
               <motion.button
                 data-testid="button-suggestion-talk"
-                onClick={() => setShowVoiceMode(true)}
+                onClick={() => { if (isMainFree) { setMainUpgradePrompt(UPGRADE_PROMPTS.voiceGate()); return; } setShowVoiceMode(true); }}
                 className="col-span-1 sm:col-span-2 text-left px-4 py-3 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-gradient-to-r from-emerald-50/80 to-green-50/60 dark:from-emerald-950/40 dark:to-green-950/30 hover:from-emerald-50 hover:to-green-50 dark:hover:from-emerald-950/60 dark:hover:to-green-950/50 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all group"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -6600,7 +6621,13 @@ export default function AryaChat() {
                     {/* Thinking mode selector */}
                     <ThinkingModeSelector
                       activeMode={thinkingMode}
-                      onChange={setThinkingMode}
+                      onChange={(modeId) => {
+                        if (isMainFree && !THINKING_FREE_MODES.has(modeId)) {
+                          setMainUpgradePrompt(UPGRADE_PROMPTS.thinkingModes());
+                          return;
+                        }
+                        setThinkingMode(modeId);
+                      }}
                       lang={uiLanguage as any}
                       className="mr-1"
                     />
@@ -6668,7 +6695,7 @@ export default function AryaChat() {
                           </button>
                           {/* Live voice */}
                           <button data-testid="button-voice-chat"
-                            onClick={() => { setShowVoiceMode(true); setShowToolMore(false); }}
+                            onClick={() => { if (isMainFree) { setShowToolMore(false); setMainUpgradePrompt(UPGRADE_PROMPTS.voiceGate()); return; } setShowVoiceMode(true); setShowToolMore(false); }}
                             disabled={isStreaming || isRecording}
                             className="w-full text-left px-3 py-2.5 text-sm flex items-center gap-2.5 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 disabled:opacity-50 transition-colors rounded-b-xl"
                           >
@@ -6821,6 +6848,8 @@ export default function AryaChat() {
           document.body
         )}
       </AnimatePresence>
+
+      <UpgradePrompt config={mainUpgradePrompt} onDismiss={() => setMainUpgradePrompt(null)} />
 
       {showVoiceMode && createPortal(
         <VoiceConversationMode
