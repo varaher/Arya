@@ -59,7 +59,7 @@ export const PLAN_CONFIG = {
     paddlePriceIdAnnual: process.env.PADDLE_PRICE_ID_PRO_ANNUAL || "",
     // Limits
     chatsPerDay: 9999,
-    voiceMinutesPerMonth: 50,
+    voiceMinutesPerMonth: 500,
     voiceOveragePerMinuteInr: 2,
     voiceOveragePerMinuteUsd: 0.02,
     voiceOverageCapInr: 200,
