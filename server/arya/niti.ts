@@ -99,6 +99,249 @@ export function selectPhilosopher(
   return "chanakya";
 }
 
+// ── Niti Conversational Mode ──────────────────────────────────────────────────
+
+const NITI_CONVERSATION_PROMPT = `You are ARYA in Niti mode — the thinking partner for serious business minds.
+
+Your job is not to give answers. Your job is to improve the quality of the user's thinking.
+
+You do this by:
+- Asking the one question that gets underneath the surface
+- Identifying the assumption they haven't examined
+- Reflecting back what they actually said — not what they wish they'd said
+- Knowing when to push harder and when to let them think
+
+THINKING LENSES — you detect which lens applies from the user's message and shift accordingly:
+- DECISION LENS: A choice between clear options. Surface the hidden trade-off. Make the stakes real.
+- PEOPLE LENS: Trust, team dynamics, partnership conflict, hiring. Focus on character signals and incentive alignment.
+- MARKET LENS: Competition, macro conditions, industry trends. Ground them in what's actually true vs what they want to believe.
+- STRESS-TEST LENS: Push back on the plan. Find the weakest assumption. Play devil's advocate without being destructive.
+- STUCK LENS: Identify whether they're stuck on information, courage, clarity, or fear of being wrong. Different problems, different unlocks.
+- FULL-CHAIN LENS: Strategic thinking, product-market fit, execution, team, capital. Walk the entire chain.
+- OPEN LENS: No clear category. Reflect back what they said, ask one open question, let them lead.
+
+CONVERSATION ARC:
+1. RECEIVE — hear the full picture before you respond
+2. IDENTIFY — name what's really at stake (often different from what they said)
+3. SURFACE — the question, assumption, or tension underneath
+4. ADVANCE — don't let the conversation circle. Push it forward.
+
+STYLE:
+- Never say: "great question", "I understand", "absolutely", "certainly", "of course"
+- Never validate before responding — start with the substance
+- Direct. Not harsh. Think: trusted senior colleague who has no ego in the outcome.
+- Maximum 100 words for main response — tight, specific, no filler
+- Push question: one italic line underneath. The question that keeps them up at night.
+- Follow-ups: 3 branches, 8-14 words each, meaningfully different directions
+
+FIRST RESPONSE RULE:
+On the very first message — do not give a full response. Do not launch into the analysis. Instead:
+Ask one clarifying question that helps you understand the real situation before you start thinking with them.
+This question should feel like the conversation just got more serious. Not "tell me more" — something specific.
+
+Return ONLY valid JSON:
+{
+  "content": "Direct response — specific, tight",
+  "pushQuestion": "The question underneath",
+  "followUps": ["Branch 1 (8-14 words)", "Branch 2 (8-14 words)", "Branch 3 (8-14 words)"]
+}`;
+
+export const NITI_JOURNAL_PROMPT = `You are ARYA — create a thinking journal entry from this conversation.
+
+A thinking journal entry captures:
+1. What was actually at stake (1-2 sentences — often different from the stated topic)
+2. The key tension or assumption that was surfaced
+3. What the thinking revealed (not a summary — what emerged that wasn't obvious at the start)
+4. The open question that remains
+
+Format:
+- 4 sections, each 1-3 sentences
+- Write in second person ("You came in thinking X. What emerged was Y.")
+- No headers, no bullet points — flowing prose
+- Should feel like something worth keeping
+
+Keep it under 200 words.`;
+
+export type NitiLens =
+  | "decision"
+  | "people"
+  | "market"
+  | "stress_test"
+  | "stuck"
+  | "full_chain"
+  | "open";
+
+export function detectNitiMode(message: string): NitiLens {
+  const m = message.toLowerCase();
+
+  if (
+    m.includes("should i") ||
+    m.includes("whether to") ||
+    m.includes("choosing between") ||
+    m.includes("deciding") ||
+    m.includes("or not") ||
+    m.includes("go with") ||
+    m.includes("pick") ||
+    m.includes("option")
+  ) return "decision";
+
+  if (
+    m.includes("co-founder") ||
+    m.includes("partner") ||
+    m.includes("team") ||
+    m.includes("hire") ||
+    m.includes("fire ") ||
+    m.includes("fired") ||
+    m.includes("trust") ||
+    m.includes("conflict") ||
+    m.includes("colleague")
+  ) return "people";
+
+  if (
+    m.includes("market") ||
+    m.includes("competition") ||
+    m.includes("industry") ||
+    m.includes("macro") ||
+    m.includes("trend") ||
+    m.includes("customer") ||
+    m.includes("demand")
+  ) return "market";
+
+  if (
+    m.includes("stress-test") ||
+    m.includes("push back") ||
+    m.includes("devil's advocate") ||
+    m.includes("weakness") ||
+    m.includes("flaw") ||
+    m.includes("wrong about")
+  ) return "stress_test";
+
+  if (
+    m.includes("stuck") ||
+    m.includes("going in circles") ||
+    m.includes("can't figure out") ||
+    m.includes("don't know what") ||
+    m.includes("paralysed") ||
+    m.includes("paralyzed") ||
+    m.includes("overwhelmed")
+  ) return "stuck";
+
+  if (
+    m.includes("full picture") ||
+    m.includes("entire") ||
+    m.includes("whole") ||
+    m.includes("everything") ||
+    m.includes("all of it") ||
+    m.includes("complete analysis")
+  ) return "full_chain";
+
+  return "open";
+}
+
+function lensToPhilosopher(lens: NitiLens): Philosopher {
+  if (lens === "people") return "vidura";
+  if (lens === "stuck") return "krishna";
+  if (lens === "full_chain") return "chanakya";
+  return "chanakya";
+}
+
+// ── Conversation Mode Response Generator ──────────────────────────────────────
+
+async function generateNitiConversationResponse(
+  sessionId: number,
+  userMessage: string,
+  userId: string,
+  isOpening: boolean,
+): Promise<NitiResponse> {
+  const [[user], liveCtx] = await Promise.all([
+    db.select({
+      name: aryaUsers.name,
+      businessType: aryaUsers.businessType,
+      businessStage: aryaUsers.businessStage,
+      businessRole: aryaUsers.businessRole,
+      businessChallenge: aryaUsers.businessChallenge,
+      businessFocusAreas: aryaUsers.businessFocusAreas,
+    })
+    .from(aryaUsers)
+    .where(eq(aryaUsers.id, userId))
+    .limit(1),
+    buildLightContext(userId).catch(() => null),
+  ]);
+
+  let historyContext = "";
+  if (!isOpening) {
+    const history = await db
+      .select({ role: aryaNitiMessages.role, content: aryaNitiMessages.content })
+      .from(aryaNitiMessages)
+      .where(eq(aryaNitiMessages.sessionId, sessionId))
+      .orderBy(desc(aryaNitiMessages.createdAt))
+      .limit(10);
+    historyContext = history
+      .reverse()
+      .map(m => `${m.role === "arya" ? "ARYA" : "User"}: ${m.content}`)
+      .join("\n");
+  }
+
+  const lens = detectNitiMode(userMessage || "");
+  const philosopher = lensToPhilosopher(lens);
+
+  const userContext = `User context:
+- Name: ${user?.name || "the user"}
+- Business type: ${user?.businessType || "not specified"}
+- Stage: ${user?.businessStage || "not specified"}
+- Role: ${user?.businessRole || "not specified"}
+- Challenge: ${user?.businessChallenge || "not specified"}
+${liveCtx?.topGoals.length ? `- Active goals: ${liveCtx.topGoals.join(", ")}` : ""}
+${liveCtx?.moodScore ? `- Mood today: ${["","awful","low","okay","good","great"][liveCtx.moodScore] || "unknown"} (${liveCtx.moodScore}/5)` : ""}`;
+
+  const systemPrompt = `${NITI_CONVERSATION_PROMPT}
+
+${userContext}
+
+${historyContext ? `Conversation so far:\n${historyContext}\n` : ""}
+
+${isOpening
+  ? `User's first message: "${userMessage}"\n\nApply the FIRST RESPONSE RULE — ask one clarifying question that makes the conversation feel more serious. Not "tell me more" — something specific that gets underneath the surface.`
+  : `User just said: "${userMessage}"\n\nApply the CONVERSATION ARC. Detected lens: ${lens}. Push the conversation forward — don't let it circle.`
+}`;
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [{ role: "user", content: systemPrompt }],
+      response_format: { type: "json_object" } as any,
+      max_tokens: 600,
+      temperature: 0.75,
+    } as any);
+
+    const raw = (response as any).choices[0].message.content || "{}";
+    const parsed = JSON.parse(raw);
+
+    return {
+      content: parsed.content || "What's the real decision you're avoiding here?",
+      pushQuestion: parsed.pushQuestion || "What are you not saying yet?",
+      followUps: Array.isArray(parsed.followUps) ? parsed.followUps.slice(0, 3) : [],
+      source: "Niti Conversation",
+      philosopher,
+    };
+  } catch (err) {
+    console.error("[Niti] Conversation GPT error:", err);
+    return {
+      content: "Let me push on that. What's the real decision you're avoiding here?",
+      pushQuestion: "What would you do if you already knew the answer?",
+      followUps: [
+        "Tell me more about what's holding me back",
+        "What's the worst realistic outcome if I'm wrong?",
+        "Who else is affected by this decision?",
+      ],
+      source: "Niti Conversation",
+      philosopher,
+    };
+  }
+}
+
+// ── Structured Mode Response Generator ───────────────────────────────────────
+
 export interface NitiResponse {
   content: string;
   pushQuestion: string;
@@ -114,6 +357,10 @@ export async function generateNitiResponse(
   sessionType: string,
   isOpening: boolean = false,
 ): Promise<NitiResponse> {
+  if (sessionType === "conversation") {
+    return generateNitiConversationResponse(sessionId, userMessage, userId, isOpening);
+  }
+
   const [[user], liveCtx] = await Promise.all([
     db.select({
       name: aryaUsers.name,
@@ -286,4 +533,43 @@ export async function addNitiMessage(
     .where(eq(aryaNitiSessions.id, sessionId));
 
   return response;
+}
+
+// ── Journal entry generator ───────────────────────────────────────────────────
+
+export async function generateNitiJournalEntry(
+  sessionId: number,
+  userId: string,
+): Promise<string> {
+  const messages = await db
+    .select({ role: aryaNitiMessages.role, content: aryaNitiMessages.content })
+    .from(aryaNitiMessages)
+    .where(eq(aryaNitiMessages.sessionId, sessionId))
+    .orderBy(aryaNitiMessages.createdAt);
+
+  if (messages.length < 2) {
+    return "Session too short to generate a journal entry.";
+  }
+
+  const transcript = messages
+    .map(m => `${m.role === "arya" ? "ARYA" : "User"}: ${m.content}`)
+    .join("\n");
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "user",
+          content: `${NITI_JOURNAL_PROMPT}\n\nConversation transcript:\n${transcript}`,
+        },
+      ],
+      max_tokens: 400,
+      temperature: 0.6,
+    } as any);
+    return (response as any).choices[0].message.content?.trim() || "";
+  } catch (err) {
+    console.error("[Niti] Journal GPT error:", err);
+    return "";
+  }
 }

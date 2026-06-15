@@ -8,6 +8,7 @@ import {
 import { useUserAuth } from "@/lib/user-auth";
 import { useLanguage } from "@/lib/language-context";
 import BottomNav from "@/components/BottomNav";
+import NitiOpenScreen from "@/components/NitiOpenScreen";
 
 // ── Palette ──────────────────────────────────────────────────
 const N = {
@@ -192,6 +193,7 @@ export default function NitiPage() {
 
   // Home tab
   const [activeTab, setActiveTab] = useState<"decisions" | "market" | "journal">("decisions");
+  const [showStructuredModes, setShowStructuredModes] = useState(false);
 
   // Session setup (Reform 1 & 3)
   const [selectedSessionKey, setSelectedSessionKey] = useState<string>("");
@@ -471,9 +473,11 @@ export default function NitiPage() {
     if (screen === "session") {
       if (currentSession) generateRecord(currentSession.id);
       setScreen("home");
+      setShowStructuredModes(false);
       loadSessions();
     } else if (screen === "session_setup") {
       setScreen("home");
+      setShowStructuredModes(true);
     } else {
       setLocation("/");
     }
@@ -885,88 +889,133 @@ export default function NitiPage() {
     </div>
   );
 
-  // Decisions content
-  const DecisionsContent = (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 19, color: N.cream, fontWeight: 700 }}>{t("niti_dealing_with")}</div>
-          {bizChallenge && (
-            <div style={{ fontSize: 13, color: N.steel, marginTop: 6, lineHeight: 1.5, fontStyle: "italic", borderLeft: `2px solid ${N.goldDim}`, paddingLeft: 10 }}>
-              "{bizChallenge}"
-            </div>
-          )}
-        </div>
-        <button onClick={() => setScreen("context")} title="Edit business profile"
-          style={{ padding: 8, borderRadius: 8, border: `1px solid ${N.border2}`, background: "transparent", color: N.muted, cursor: "pointer", flexShrink: 0 }}>
-          <Settings size={14} />
-        </button>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        {SESSION_TYPES.map(({ key, Icon, philKey }) => {
-          const phil = PHILOSOPHER_META[philKey];
+  // ── Recent sessions list (shared between both views) ────────
+  const RecentSessionsList = sessions.length > 0 ? (
+    <div>
+      <Label text={t("niti_recent_sessions")} />
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {sessions.slice(0, 8).map(s => {
+          const sType = SESSION_TYPES.find(st => st.key === s.sessionType);
+          const phil  = s.philosopher ? PHILOSOPHER_META[s.philosopher] : null;
+          const ts    = new Date(s.updatedAt || s.createdAt);
+          const dateStr = ts.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+          const timeStr = ts.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+          const isConv  = s.sessionType === "conversation";
           return (
-            <button key={key}
-              onClick={() => { setSelectedSessionKey(key); setSessionMindText(""); setScreen("session_setup"); }}
-              data-testid={`session-type-${key}`}
-              style={{ background: N.surface2, border: `1px solid ${N.border}`, borderTop: `3px solid ${phil.color}`, borderRadius: 14, padding: 16, textAlign: "left" as const, cursor: "pointer", transition: "all 0.2s", display: "flex", flexDirection: "column", gap: 8 }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = N.gold; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = N.border; }}>
-              <Icon size={20} color={phil.color} />
-              <div style={{ fontSize: 13, color: N.cream, fontWeight: 600, lineHeight: 1.3 }}>{t(`niti_${key}`)}</div>
-              <div style={{ fontSize: 11, color: N.steel, lineHeight: 1.4 }}>{t(`niti_${key}_sub`)}</div>
+            <button
+              key={s.id}
+              data-testid={`session-card-${s.id}`}
+              onClick={() => resumeSession(s)}
+              style={{
+                background: N.surface2, border: `1px solid ${N.border}`, borderRadius: 10,
+                padding: "12px 16px", display: "flex", alignItems: "center", gap: 12,
+                cursor: "pointer", width: "100%", textAlign: "left",
+                transition: "border-color 0.15s, background 0.15s",
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = N.gold; (e.currentTarget as HTMLButtonElement).style.background = "rgba(212,168,83,0.06)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = N.border; (e.currentTarget as HTMLButtonElement).style.background = N.surface2; }}
+            >
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, color: N.cream, fontWeight: 500 }}>
+                  {s.title || (isConv ? "Thinking session" : (sType ? t(`niti_${sType.key}`) : s.sessionType))}
+                </div>
+                <div style={{ fontSize: 11, color: N.steel, marginTop: 3, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" as const }}>
+                  <span>{dateStr} · {timeStr}</span>
+                  {isConv && <span style={{ color: "rgba(124,58,237,0.8)" }}>◈ Open thinking</span>}
+                  {!isConv && phil && <span style={{ color: phil.color }}>{phil.emoji} {phil.domain}</span>}
+                </div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                <div style={{ padding: "3px 8px", borderRadius: 20, background: s.status === "resolved" ? "rgba(74,157,122,0.15)" : "rgba(212,168,83,0.1)", color: s.status === "resolved" ? N.green : N.gold, fontSize: 10 }}>
+                  {s.status === "resolved" ? t("niti_resolved") : t("niti_active_label")}
+                </div>
+                <ChevronRight size={14} color={N.steel} />
+              </div>
             </button>
           );
         })}
       </div>
-      {isLoading && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, color: N.steel, fontSize: 13 }}>
-          <Loader2 size={14} style={{ animation: "spin 0.8s linear infinite" }} />
-          {t("niti_opening_session")}
-        </div>
-      )}
-      {sessions.length > 0 && (
-        <div>
-          <Label text={t("niti_recent_sessions")} />
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {sessions.slice(0, 8).map(s => {
-              const sType = SESSION_TYPES.find(st => st.key === s.sessionType);
-              const phil  = s.philosopher ? PHILOSOPHER_META[s.philosopher] : null;
-              const ts    = new Date(s.updatedAt || s.createdAt);
-              const dateStr = ts.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
-              const timeStr = ts.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+    </div>
+  ) : null;
+
+  // Decisions content — open thinking screen by default; structured modes behind button
+  const DecisionsContent = (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {!showStructuredModes ? (
+        <>
+          {isLoading ? (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: "60px 0", color: N.steel }}>
+              <Loader2 size={22} style={{ animation: "spin 0.8s linear infinite" }} />
+              <div style={{ fontSize: 13 }}>Opening your thinking session…</div>
+            </div>
+          ) : (
+            <NitiOpenScreen
+              onStart={(message, mode) => {
+                if (mode === "conversation") {
+                  startSession("conversation", message);
+                } else {
+                  setShowStructuredModes(true);
+                }
+              }}
+              onVoiceTranscript={() => {}}
+            />
+          )}
+          {RecentSessionsList}
+        </>
+      ) : (
+        <>
+          {/* Back to open mode */}
+          <button
+            onClick={() => setShowStructuredModes(false)}
+            data-testid="niti-back-to-open"
+            style={{ display: "flex", alignItems: "center", gap: 8, background: "transparent", border: "none", color: N.steel, fontSize: 13, cursor: "pointer", padding: "4px 0", fontFamily: "Inter, sans-serif" }}
+          >
+            <ArrowLeft size={14} />
+            Back to open thinking
+          </button>
+
+          {/* Header */}
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 17, color: N.cream, fontWeight: 700 }}>{t("niti_dealing_with")}</div>
+              {bizChallenge && (
+                <div style={{ fontSize: 13, color: N.steel, marginTop: 6, lineHeight: 1.5, fontStyle: "italic", borderLeft: `2px solid ${N.goldDim}`, paddingLeft: 10 }}>
+                  "{bizChallenge}"
+                </div>
+              )}
+            </div>
+            <button onClick={() => setScreen("context")} title="Edit business profile"
+              style={{ padding: 8, borderRadius: 8, border: `1px solid ${N.border2}`, background: "transparent", color: N.muted, cursor: "pointer", flexShrink: 0 }}>
+              <Settings size={14} />
+            </button>
+          </div>
+
+          {/* 4-card structured session picker */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            {SESSION_TYPES.map(({ key, Icon, philKey }) => {
+              const phil = PHILOSOPHER_META[philKey];
               return (
-                <button
-                  key={s.id}
-                  data-testid={`session-card-${s.id}`}
-                  onClick={() => resumeSession(s)}
-                  style={{
-                    background: N.surface2, border: `1px solid ${N.border}`, borderRadius: 10,
-                    padding: "12px 16px", display: "flex", alignItems: "center", gap: 12,
-                    cursor: "pointer", width: "100%", textAlign: "left",
-                    transition: "border-color 0.15s, background 0.15s",
-                  }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = N.gold; (e.currentTarget as HTMLButtonElement).style.background = "rgba(212,168,83,0.06)"; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = N.border; (e.currentTarget as HTMLButtonElement).style.background = N.surface2; }}
-                >
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, color: N.cream, fontWeight: 500 }}>{s.title || (sType ? t(`niti_${sType.key}`) : s.sessionType)}</div>
-                    <div style={{ fontSize: 11, color: N.steel, marginTop: 3, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" as const }}>
-                      <span>{dateStr} · {timeStr}</span>
-                      {phil && <span style={{ color: phil.color }}>{phil.emoji} {phil.name}</span>}
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                    <div style={{ padding: "3px 8px", borderRadius: 20, background: s.status === "resolved" ? "rgba(74,157,122,0.15)" : "rgba(212,168,83,0.1)", color: s.status === "resolved" ? N.green : N.gold, fontSize: 10 }}>
-                      {s.status === "resolved" ? t("niti_resolved") : t("niti_active_label")}
-                    </div>
-                    <ChevronRight size={14} color={N.steel} />
-                  </div>
+                <button key={key}
+                  onClick={() => { setSelectedSessionKey(key); setSessionMindText(""); setScreen("session_setup"); }}
+                  data-testid={`session-type-${key}`}
+                  style={{ background: N.surface2, border: `1px solid ${N.border}`, borderTop: `3px solid ${phil.color}`, borderRadius: 14, padding: 16, textAlign: "left" as const, cursor: "pointer", transition: "all 0.2s", display: "flex", flexDirection: "column", gap: 8 }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = N.gold; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = N.border; }}>
+                  <Icon size={20} color={phil.color} />
+                  <div style={{ fontSize: 13, color: N.cream, fontWeight: 600, lineHeight: 1.3 }}>{t(`niti_${key}`)}</div>
+                  <div style={{ fontSize: 11, color: N.steel, lineHeight: 1.4 }}>{t(`niti_${key}_sub`)}</div>
                 </button>
               );
             })}
           </div>
-        </div>
+          {isLoading && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, color: N.steel, fontSize: 13 }}>
+              <Loader2 size={14} style={{ animation: "spin 0.8s linear infinite" }} />
+              {t("niti_opening_session")}
+            </div>
+          )}
+          {RecentSessionsList}
+        </>
       )}
     </div>
   );

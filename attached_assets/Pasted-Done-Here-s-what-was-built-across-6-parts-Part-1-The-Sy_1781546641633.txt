@@ -1,0 +1,124 @@
+Done. Here's what was built across 6 parts:
+
+---
+
+## Part 1 — The System Prompt
+
+The most important piece. What makes Niti different from every other AI business tool.
+
+The key rules baked in:
+
+```
+THE FIRST RESPONSE RULE:
+Never give advice in your first response.
+Never give a framework.
+Ask ONE question.
+
+Not: "What are your options?"
+Yes: "Is the audit deadline a real
+      constraint — or a reason to delay
+      something that feels risky?"
+
+The first question is everything.
+It tells them you're paying attention.
+It tells them this isn't a form.
+```
+
+---
+
+## Part 2 — The Opening Screen
+
+```
+What's on your mind?
+─────────────────────
+Tell Niti what you're working through.
+No structure needed — just talk.
+
+[5-line textarea — autofocused]
+
+[🎤 Talk instead]  [Start thinking →]
+
+Jump straight in:
+💥 Stress-test an idea
+🧭 Stuck on a decision
+📈 Think through the market
+👥 People situation
+🔗 Full analysis
+
+────── or use structured modes ──────
+⚡ Quick modes — Decision · Market · People
+```
+
+Clean. Open. The textarea is the hero. Everything else is secondary.
+
+---
+
+## Part 3 — Auto-Detection
+
+```
+Niti reads the first message
+and picks the right lens automatically.
+
+"Should I expand..."     → Decision mode
+"My partner isn't..."   → Therapist first
+"What's happening in..." → Contrarian + Market
+"Stress-test this"      → Devil's Advocate
+"I'm stuck..."          → Therapist + First Principles
+"Think through completely" → Full Chain
+
+User never picks a mode.
+Niti figures it out.
+```
+
+---
+
+## Part 4 — Styles
+
+Purple scheme throughout — distinct from ARYA (green) and KAAL (amber). Quick start chips slide right on hover. Textarea focuses purple on selection.
+
+---
+
+## Part 5 — Thinking Journal Entry
+
+At the end of every session, user can save a journal entry. Niti writes it in second person — not a transcript, a narrative:
+
+```
+WHAT YOU CAME IN WITH:
+You were deciding whether to open a second
+clinic. The doctor was the catalyst but
+the decision had been building for a year...
+
+WHAT YOU FIGURED OUT:
+The audit isn't the real constraint.
+The question underneath is whether you
+trust the partnership enough to build
+something long-term with this person...
+
+THE ONE THING TO CARRY FORWARD:
+Don't decide about the clinic.
+Decide about the doctor.
+
+— Niti, June 15, 2026
+```
+
+---
+
+## Tell Developer
+
+```
+6 parts. 4-5 hours.
+
+1. NitiOpenScreen.tsx — new component
+2. NITI_CONVERSATION_PROMPT — system prompt
+3. detectNitiMode() — auto-detects lens
+4. NITI_JOURNAL_PROMPT — journal builder
+5. Wire into NitiPage.tsx
+6. Add NITI_OPEN_STYLES to CSS
+
+Keep existing structured modes —
+"⚡ Quick modes" button at the bottom.
+Nothing removed. Just deprioritised.
+
+The conversation mode is the default.
+The form is the fallback.
+```
