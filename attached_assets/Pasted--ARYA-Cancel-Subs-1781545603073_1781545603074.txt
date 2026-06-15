@@ -1,0 +1,696 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// ARYA — Cancel Subscription Button
+// Complete implementation
+//
+// Backend route already exists: POST /api/subscription/cancel
+// This is purely frontend — one component + one menu item
+//
+// Add to: client/src/components/CancelSubscription.tsx (NEW FILE)
+// Wire in: wherever the user account menu / profile settings lives
+// ═══════════════════════════════════════════════════════════════════════════
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PART 1: CancelSubscription.tsx — the complete component
+// ─────────────────────────────────────────────────────────────────────────────
+
+/*
+import { useState } from 'react';
+
+interface Props {
+  planName: string;       // "Core" | "Pro" | "Elite"
+  renewsOn: string;       // "July 15, 2026"
+  onCancelled: () => void;
+  onClose: () => void;
+}
+
+type Step = 'confirm' | 'reason' | 'cancelling' | 'done';
+
+const CANCEL_REASONS = [
+  "I'm not using it enough",
+  "Too expensive for me right now",
+  "Missing a feature I need",
+  "Switching to another app",
+  "Just taking a break",
+  "Other",
+];
+
+export default function CancelSubscription({
+  planName,
+  renewsOn,
+  onCancelled,
+  onClose,
+}: Props) {
+  const [step, setStep] = useState<Step>('confirm');
+  const [selectedReason, setSelectedReason] = useState('');
+  const [error, setError] = useState('');
+
+  async function handleCancel() {
+    setStep('cancelling');
+    setError('');
+
+    try {
+      const res = await fetch('/api/subscription/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: selectedReason }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Cancellation failed');
+      }
+
+      setStep('done');
+      setTimeout(() => {
+        onCancelled(); // refresh plan state in parent
+      }, 2000);
+
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong. Try again.');
+      setStep('reason'); // go back to reason step on error
+    }
+  }
+
+  // ── Step 1: Confirm ────────────────────────────────────────────────────
+  if (step === 'confirm') {
+    return (
+      <div className="cancel-sheet">
+        <div className="cancel-handle" />
+
+        <div className="cancel-icon">💔</div>
+
+        <h2 className="cancel-title">
+          Cancel {planName} plan?
+        </h2>
+
+        <p className="cancel-body">
+          You're on{' '}
+          <span className="cancel-plan-name">{planName}</span>.
+          If you cancel, you'll keep full access until{' '}
+          <span className="cancel-date">{renewsOn}</span>.
+          After that, you'll move to the Free plan.
+        </p>
+
+        <div className="cancel-what-you-lose">
+          <p className="cancel-lose-label">You'll lose access to:</p>
+          <ul className="cancel-lose-list">
+            {planName === 'Core' && <>
+              <li>Unlimited conversations</li>
+              <li>30-day memory</li>
+              <li>Voice Notes + 150 min/month</li>
+              <li>All 7 Thinking Modes</li>
+              <li>Document Intelligence</li>
+              <li>Weekly Review + Morning Briefing</li>
+            </>}
+            {planName === 'Pro' && <>
+              <li>500 voice min/month</li>
+              <li>1-year memory</li>
+              <li>Niti + Market Lens</li>
+              <li>PPT generation</li>
+              <li>Unlimited goals + documents</li>
+            </>}
+            {planName === 'Elite' && <>
+              <li>Lifetime memory</li>
+              <li>Unlimited voice</li>
+              <li>Drishya stories</li>
+              <li>Document history</li>
+              <li>Monthly life review session</li>
+            </>}
+          </ul>
+        </div>
+
+        <div className="cancel-actions">
+          <button
+            className="cancel-btn-keep"
+            onClick={onClose}
+          >
+            Keep my {planName} plan
+          </button>
+          <button
+            className="cancel-btn-proceed"
+            onClick={() => setStep('reason')}
+          >
+            Continue to cancel
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Step 2: Reason ────────────────────────────────────────────────────
+  if (step === 'reason') {
+    return (
+      <div className="cancel-sheet">
+        <div className="cancel-handle" />
+
+        <h2 className="cancel-title">
+          One quick question
+        </h2>
+
+        <p className="cancel-body">
+          Why are you cancelling?
+          This genuinely helps ARYA improve.
+        </p>
+
+        <div className="cancel-reasons">
+          {CANCEL_REASONS.map(reason => (
+            <button
+              key={reason}
+              className={`cancel-reason-btn ${
+                selectedReason === reason ? 'selected' : ''
+              }`}
+              onClick={() => setSelectedReason(reason)}
+            >
+              {selectedReason === reason && (
+                <span className="cancel-reason-check">✓ </span>
+              )}
+              {reason}
+            </button>
+          ))}
+        </div>
+
+        {error && (
+          <p className="cancel-error">{error}</p>
+        )}
+
+        <div className="cancel-actions">
+          <button
+            className="cancel-btn-keep"
+            onClick={onClose}
+          >
+            Actually, keep my plan
+          </button>
+          <button
+            className={`cancel-btn-confirm ${
+              !selectedReason ? 'disabled' : ''
+            }`}
+            onClick={handleCancel}
+            disabled={!selectedReason}
+          >
+            Cancel my subscription
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Step 3: Cancelling ────────────────────────────────────────────────
+  if (step === 'cancelling') {
+    return (
+      <div className="cancel-sheet cancel-loading">
+        <div className="cancel-handle" />
+        <div className="cancel-spinner" />
+        <p className="cancel-loading-text">Cancelling your subscription...</p>
+      </div>
+    );
+  }
+
+  // ── Step 4: Done ──────────────────────────────────────────────────────
+  return (
+    <div className="cancel-sheet cancel-done">
+      <div className="cancel-handle" />
+
+      <div className="cancel-done-icon">🌿</div>
+
+      <h2 className="cancel-title">Subscription cancelled</h2>
+
+      <p className="cancel-body">
+        You'll keep full {planName} access until{' '}
+        <span className="cancel-date">{renewsOn}</span>.
+        After that — Free plan, no charges.
+      </p>
+
+      <p className="cancel-comeback">
+        ARYA will be here when you're ready to come back.
+        Your goals, notes, and memory stay with you.
+      </p>
+    </div>
+  );
+}
+*/
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PART 2: How to wire it — wherever the user menu / profile is
+// ─────────────────────────────────────────────────────────────────────────────
+
+/*
+In ProfilePage.tsx or AccountMenu.tsx or wherever
+user settings are shown:
+
+─── Add state ───────────────────────────────────────────
+
+const [showCancelSheet, setShowCancelSheet] = useState(false);
+
+─── Add menu item (only show if on paid plan) ───────────
+
+{user.subscriptionPlan && user.subscriptionPlan !== 'free' && (
+  <button
+    className="account-menu-item cancel-item"
+    onClick={() => setShowCancelSheet(true)}
+  >
+    <span className="menu-item-icon">⚠️</span>
+    <span className="menu-item-label">Cancel subscription</span>
+    <span className="menu-item-arrow">›</span>
+  </button>
+)}
+
+─── Render the bottom sheet ─────────────────────────────
+
+{showCancelSheet && createPortal(
+  <>
+    <div
+      className="cancel-overlay"
+      onClick={() => setShowCancelSheet(false)}
+    />
+    <CancelSubscription
+      planName={
+        user.subscriptionPlan === 'core' ? 'Core' :
+        user.subscriptionPlan === 'pro'  ? 'Pro' :
+        'Elite'
+      }
+      renewsOn={
+        user.subscriptionRenewsAt
+          ? new Date(user.subscriptionRenewsAt)
+              .toLocaleDateString('en-IN', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+              })
+          : 'your next billing date'
+      }
+      onCancelled={() => {
+        setShowCancelSheet(false);
+        refetchUser(); // refresh plan state
+      }}
+      onClose={() => setShowCancelSheet(false)}
+    />
+  </>,
+  document.body
+)}
+*/
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PART 3: Styles
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const CANCEL_STYLES = `
+/* ── Overlay ────────────────────────────────────────────────────────── */
+.cancel-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 9998;
+  animation: fadeIn 0.2s ease;
+}
+
+/* ── Sheet ──────────────────────────────────────────────────────────── */
+.cancel-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  background: #0f1923;
+  border-radius: 24px 24px 0 0;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding: 12px 24px 40px;
+  animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Handle ─────────────────────────────────────────────────────────── */
+.cancel-handle {
+  width: 40px;
+  height: 4px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 2px;
+  margin: 0 auto 24px;
+}
+
+/* ── Icon ───────────────────────────────────────────────────────────── */
+.cancel-icon,
+.cancel-done-icon {
+  font-size: 40px;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+/* ── Title ──────────────────────────────────────────────────────────── */
+.cancel-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.9);
+  font-family: 'DM Sans', sans-serif;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+/* ── Body text ──────────────────────────────────────────────────────── */
+.cancel-body {
+  font-size: 15px;
+  color: rgba(255,255,255,0.55);
+  line-height: 1.6;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.cancel-plan-name {
+  color: #4ade80;
+  font-weight: 600;
+}
+
+.cancel-date {
+  color: #fbbf24;
+  font-weight: 600;
+}
+
+/* ── What you lose ──────────────────────────────────────────────────── */
+.cancel-what-you-lose {
+  background: rgba(239,68,68,0.06);
+  border: 1px solid rgba(239,68,68,0.12);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.cancel-lose-label {
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(239,68,68,0.7);
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.cancel-lose-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.cancel-lose-list li {
+  font-size: 14px;
+  color: rgba(255,255,255,0.6);
+  padding: 4px 0 4px 18px;
+  position: relative;
+  line-height: 1.5;
+}
+
+.cancel-lose-list li::before {
+  content: '×';
+  position: absolute;
+  left: 0;
+  color: rgba(239,68,68,0.6);
+  font-weight: 700;
+}
+
+/* ── Reason buttons ─────────────────────────────────────────────────── */
+.cancel-reasons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.cancel-reason-btn {
+  width: 100%;
+  padding: 14px 16px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  color: rgba(255,255,255,0.65);
+  font-size: 14px;
+  font-family: 'DM Sans', sans-serif;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.cancel-reason-btn:hover {
+  background: rgba(255,255,255,0.07);
+  color: rgba(255,255,255,0.85);
+}
+
+.cancel-reason-btn.selected {
+  background: rgba(74,222,128,0.08);
+  border-color: rgba(74,222,128,0.25);
+  color: rgba(255,255,255,0.9);
+}
+
+.cancel-reason-check {
+  color: #4ade80;
+  font-weight: 700;
+}
+
+/* ── Error message ──────────────────────────────────────────────────── */
+.cancel-error {
+  font-size: 13px;
+  color: #f87171;
+  text-align: center;
+  margin-bottom: 12px;
+  padding: 10px;
+  background: rgba(239,68,68,0.08);
+  border-radius: 8px;
+}
+
+/* ── Action buttons ─────────────────────────────────────────────────── */
+.cancel-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Keep plan — primary (green) */
+.cancel-btn-keep {
+  width: 100%;
+  padding: 16px;
+  background: #22c55e;
+  border: none;
+  border-radius: 14px;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancel-btn-keep:hover {
+  background: #16a34a;
+}
+
+/* Continue to cancel — ghost */
+.cancel-btn-proceed {
+  width: 100%;
+  padding: 14px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 14px;
+  color: rgba(255,255,255,0.4);
+  font-size: 14px;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancel-btn-proceed:hover {
+  border-color: rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.6);
+}
+
+/* Confirm cancel — red */
+.cancel-btn-confirm {
+  width: 100%;
+  padding: 14px;
+  background: rgba(239,68,68,0.12);
+  border: 1px solid rgba(239,68,68,0.25);
+  border-radius: 14px;
+  color: #f87171;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancel-btn-confirm:hover {
+  background: rgba(239,68,68,0.2);
+}
+
+.cancel-btn-confirm.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Loading state ──────────────────────────────────────────────────── */
+.cancel-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 24px;
+  gap: 20px;
+}
+
+.cancel-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(255,255,255,0.1);
+  border-top-color: #4ade80;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.cancel-loading-text {
+  font-size: 15px;
+  color: rgba(255,255,255,0.4);
+}
+
+/* ── Done state ─────────────────────────────────────────────────────── */
+.cancel-done {
+  text-align: center;
+}
+
+.cancel-comeback {
+  font-size: 14px;
+  color: rgba(255,255,255,0.35);
+  line-height: 1.6;
+  margin-top: 8px;
+  font-style: italic;
+  text-align: center;
+}
+
+/* ── Menu item in account settings ──────────────────────────────────── */
+.cancel-item {
+  color: rgba(239,68,68,0.7) !important;
+}
+
+.cancel-item:hover {
+  color: #f87171 !important;
+  background: rgba(239,68,68,0.05) !important;
+}
+`;
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PART 4: Reason tracking — save to DB on cancel
+// Add to backend POST /api/subscription/cancel
+// ─────────────────────────────────────────────────────────────────────────────
+
+/*
+The existing cancel route probably does:
+  → Cancel Razorpay subscription
+  → Update user plan to 'free'
+
+ADD: also save the cancellation reason:
+
+// In POST /api/subscription/cancel:
+const { reason } = req.body;
+
+// After cancelling subscription:
+await db.insert(arya_subscription_events).values({
+  userId,
+  eventType: 'cancelled',
+  planName: user.subscriptionPlan,
+  reason: reason || 'not provided',
+  createdAt: new Date(),
+});
+
+// This tells you WHY people cancel.
+// After 10 cancellations you'll see patterns.
+// "Too expensive" → consider lower price or annual plan
+// "Missing feature" → build it
+// "Not using enough" → improve onboarding + engagement
+// "Taking a break" → add a Pause option later
+*/
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PART 5: The Pause Option (future — don't build now)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/*
+When "Just taking a break" is selected as reason:
+
+Show an additional option:
+
+"Instead of cancelling —
+ pause your subscription for 1 month?
+ You won't be charged. Your data stays.
+ Resumes automatically after 30 days."
+
+[Pause for 1 month →]  [Still cancel]
+
+This is a retention tool — pausing reduces
+cancellations significantly.
+
+Razorpay supports subscription pausing.
+Don't build now — but this is worth adding
+in the first month after launch
+if cancellation rates are high.
+*/
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WIRING CHECKLIST — 30 minutes total
+// ─────────────────────────────────────────────────────────────────────────────
+
+/*
+□ 1. Create client/src/components/CancelSubscription.tsx
+     Copy the component from PART 1
+
+□ 2. Add CANCEL_STYLES to global CSS
+
+□ 3. In ProfilePage.tsx or AccountMenu.tsx:
+     Import CancelSubscription
+     Import createPortal
+     Add showCancelSheet state
+     Add menu item (only if paid plan)
+     Render bottom sheet via createPortal
+
+□ 4. Backend POST /api/subscription/cancel:
+     Add reason to request body
+     Save cancellation reason to DB
+     (create arya_subscription_events table if needed)
+
+□ 5. Test:
+     Login as Core user
+     Open account/profile menu
+     See "Cancel subscription" item in red
+     Tap → sheet slides up
+     See plan details + what you'll lose
+     Tap "Continue to cancel"
+     See reason selection
+     Pick a reason
+     Tap "Cancel my subscription"
+     Loading spinner
+     Confirm: done state shows
+     Confirm: plan changes to Free in DB
+     Confirm: Razorpay subscription cancelled
+
+□ 6. Test error state:
+     Disconnect network mid-cancel
+     Should show error message
+     Should go back to reason step
+     Should NOT show done state
+
+Total: 30 minutes
+This is the last thing before launch.
+*/

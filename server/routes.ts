@@ -4589,7 +4589,16 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
   app.post("/api/subscription/cancel", requireUser, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).userId;
+      const { reason } = req.body;
+      const [userRow] = await db.select({ plan: (aryaUsers as any).plan, name: aryaUsers.name }).from(aryaUsers).where(eq(aryaUsers.id, userId)).limit(1);
       await cancelUserSubscription(userId);
+      console.log(`[SUBSCRIPTION] Cancelled | user=${userId} | plan=${(userRow as any)?.plan || "?"} | reason="${reason || "not provided"}"`);
+      await db.insert(aryaUserFeedback).values({
+        userId,
+        category: "other",
+        description: `Cancellation reason: ${reason || "not provided"} (was on ${(userRow as any)?.plan || "?"} plan)`,
+        page: "subscription",
+      } as any);
       res.json({ success: true, message: "Subscription cancelled. You'll stay on your plan until the end of the billing period." });
     } catch (error: any) {
       console.error("[SUBSCRIPTION] Cancel error:", error.message);

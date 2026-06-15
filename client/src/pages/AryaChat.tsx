@@ -88,6 +88,7 @@ import RemindersPanel from "@/components/RemindersPanel";
 import PricingModal from "@/components/PricingModal";
 import ThinkingModeSelector, { THINKING_MODES_CLIENT } from "@/components/ThinkingModeSelector";
 import { UpgradePrompt, type UpgradePromptConfig, UPGRADE_PROMPTS } from "@/components/UpgradePrompt";
+import CancelSubscription from "@/components/CancelSubscription";
 import { requestNotificationPermission } from "@/lib/push-notifications";
 import { playARYASound, playAlarmSound, stopAlarmSound } from "@/utils/reminderSound";
 
@@ -3670,6 +3671,7 @@ export default function AryaChat() {
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [showVoiceMode, setShowVoiceMode] = useState(false);
   const [mainUpgradePrompt, setMainUpgradePrompt] = useState<UpgradePromptConfig | null>(null);
+  const [showCancelSheet, setShowCancelSheet] = useState(false);
   const mainUserPlan: string = (user as any)?.plan || "free";
   const isMainFree = mainUserPlan === "free";
   const THINKING_FREE_MODES = new Set(["default", "therapist"]);
@@ -5467,6 +5469,15 @@ export default function AryaChat() {
                     >
                       <Shield className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" /> {t("menu_privacy")}
                     </button>
+                    {!isMainFree && (
+                      <button
+                        data-testid="button-cancel-subscription-sidebar"
+                        onClick={() => { setShowUserMenu(false); setShowCancelSheet(true); }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-400/70 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
+                      >
+                        <span className="w-3.5 h-3.5 flex items-center justify-center text-red-400/70">⚠</span> Cancel subscription
+                      </button>
+                    )}
                     <button
                       data-testid="button-user-logout-sidebar"
                       onClick={() => { setShowUserMenu(false); userLogout(); }}
@@ -5692,6 +5703,15 @@ export default function AryaChat() {
                       >
                         <Shield className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" /> {t("menu_privacy")}
                       </button>
+                      {!isMainFree && (
+                        <button
+                          data-testid="button-cancel-subscription"
+                          onClick={() => { setShowUserMenu(false); setShowCancelSheet(true); }}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-400/70 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
+                        >
+                          <span className="w-3.5 h-3.5 flex items-center justify-center text-red-400/70">⚠</span> Cancel subscription
+                        </button>
+                      )}
                       <button
                         data-testid="button-user-logout"
                         onClick={() => { setShowUserMenu(false); userLogout(); }}
@@ -6850,6 +6870,13 @@ export default function AryaChat() {
       </AnimatePresence>
 
       <UpgradePrompt config={mainUpgradePrompt} onDismiss={() => setMainUpgradePrompt(null)} />
+
+      {showCancelSheet && (
+        <CancelSubscription
+          onCancelled={() => { setShowCancelSheet(false); refreshUser(); }}
+          onClose={() => setShowCancelSheet(false)}
+        />
+      )}
 
       {showVoiceMode && createPortal(
         <VoiceConversationMode
