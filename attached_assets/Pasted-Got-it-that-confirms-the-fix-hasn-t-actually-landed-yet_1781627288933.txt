@@ -1,0 +1,73 @@
+Got it — that confirms the fix hasn't actually landed yet, despite the publish going through. Let's not guess further; this needs your developer to verify directly.
+
+---
+
+## What This Tells Us
+
+```
+"Showing upgrade" = still on Free plan
+The startup reconciliation either:
+a) Didn't run in production, or
+b) Ran but failed silently, or
+c) The deploy that went through didn't
+   actually include those code changes
+```
+
+---
+
+## What To Tell Your Developer Now — Exactly This
+
+```
+"The app published, but my plan still shows
+ 'Upgrade' — meaning I'm still on Free.
+
+ Please check production logs right now and
+ tell me specifically:
+
+ 1. Does the log show:
+    '✅ Activated core plan'
+    or
+    'Subscription sub_T2JdnBsOaQJv6W not found — skipping'
+    or nothing related to this at all?
+
+ 2. Query the production database directly:
+    SELECT subscription_plan, subscription_status
+    FROM users WHERE id = '021f2eef-574c-4d71-be82-1d23013091f4';
+    
+    What does it show right now?
+
+ 3. Confirm: did this specific publish actually
+    include the startup reconciliation code,
+    or did something get reverted/skipped
+    during the build?
+
+ If the reconciliation script didn't run or
+ failed — just manually run this update directly
+ on production right now so I'm unblocked:
+
+ UPDATE users
+ SET subscription_plan = 'core',
+     subscription_status = 'active',
+     subscription_renews_at = NOW() + INTERVAL '30 days'
+ WHERE id = '021f2eef-574c-4d71-be82-1d23013091f4';
+
+ Then separately figure out why the automated
+ fix didn't work, so it's reliable for the
+ next person who pays."
+```
+
+---
+
+## Why Ask For Both
+
+```
+Manual fix → unblocks you immediately,
+             you stop being the test case
+             for an unresolved bug
+
+Root cause check → makes sure this doesn't
+                   happen to your next 5
+                   paying beta users
+```
+
+Send your developer that exact message. Once they respond with what the logs/DB actually show, paste it here and I'll help interpret it precisely rather than guessing again.
