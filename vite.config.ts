@@ -39,6 +39,9 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    sourcemap: false,
+    minify: "esbuild",
+    chunkSizeWarningLimit: 2000,
   },
   server: {
     host: "0.0.0.0",
