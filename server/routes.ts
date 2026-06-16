@@ -4607,21 +4607,27 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
   });
 
   const handleRazorpayWebhook = async (req: Request, res: Response) => {
+    // Respond immediately so Razorpay doesn't retry due to timeout
+    res.json({ received: true });
     try {
       const signature = req.headers["x-razorpay-signature"] as string;
-      const rawBody = JSON.stringify(req.body);
+      // Use the raw body buffer (captured in express.json verify callback) for signature verification
+      const rawBody = (req as any).rawBody
+        ? ((req as any).rawBody as Buffer).toString("utf8")
+        : JSON.stringify(req.body);
+
+      console.log(`[RAZORPAY WEBHOOK] Received event=${req.body?.event} sig=${signature ? "present" : "missing"}`);
+
       if (process.env.RAZORPAY_WEBHOOK_SECRET) {
         if (!signature || !verifyWebhookSignature(rawBody, signature)) {
-          console.warn("[RAZORPAY WEBHOOK] Invalid signature");
-          return res.status(400).json({ error: "Invalid webhook signature" });
+          console.warn("[RAZORPAY WEBHOOK] Invalid signature — rejecting");
+          return;
         }
       }
       const event = req.body?.event;
       await handleWebhookEvent(event, req.body);
-      res.json({ received: true });
     } catch (error: any) {
       console.error("[RAZORPAY WEBHOOK] Error:", error.message);
-      res.status(500).json({ error: "Webhook processing failed" });
     }
   };
 
@@ -4636,6 +4642,34 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
       res.json({ subscriptions: subs, total: subs.length });
     } catch (error: any) {
       res.status(500).json({ error: "Failed to fetch subscriptions" });
+    }
+  });
+
+  // Manual plan activation — for cases where payment succeeded but verify/webhook failed
+  app.post("/api/admin/activate-plan", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { userId, plan, razorpaySubscriptionId } = req.body;
+      if (!userId || !plan || !["core", "pro", "elite"].includes(plan)) {
+        return res.status(400).json({ error: "userId and valid plan required" });
+      }
+      const [user] = await db.select({ id: aryaUsers.id, name: aryaUsers.name })
+        .from(aryaUsers).where(eq(aryaUsers.id, userId)).limit(1);
+      if (!user) return res.status(404).json({ error: "User not found" });
+
+      const subId = razorpaySubscriptionId || `manual_${Date.now()}`;
+      await activateUserPlan(userId, plan as any, subId);
+
+      if (razorpaySubscriptionId) {
+        await db.update(aryaSubscriptions)
+          .set({ status: "active", updatedAt: new Date() } as any)
+          .where(eq(aryaSubscriptions.razorpaySubscriptionId, razorpaySubscriptionId));
+      }
+
+      console.log(`[ADMIN] Manual plan activation: user=${userId} (${user.name}) plan=${plan} sub=${subId}`);
+      res.json({ success: true, message: `${plan} activated for ${user.name}`, userId, plan });
+    } catch (error: any) {
+      console.error("[ADMIN] activate-plan error:", error.message);
+      res.status(500).json({ error: error.message });
     }
   });
 

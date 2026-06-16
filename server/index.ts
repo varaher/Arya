@@ -6,6 +6,10 @@ import { createServer } from "http";
 import { rateLimit, ipKeyGenerator } from "express-rate-limit";
 import crypto from "crypto";
 import { initVapidKeys, startReminderScheduler } from "./arya/reminder-scheduler";
+import { activateUserPlan } from "./arya/razorpay-service";
+import { db } from "./db";
+import { aryaSubscriptions } from "../shared/schema";
+import { eq, and } from "drizzle-orm";
 
 // Global crash guards — log and survive instead of dying
 process.on("uncaughtException", (err) => {
@@ -110,9 +114,59 @@ app.use((req, res, next) => {
   next();
 });
 
+// One-time idempotent fix: activate plan for users whose payment succeeded
+// but verify/webhook was never received (e.g. UPI AutoPay UX glitch).
+async function runStartupPaymentReconciliation() {
+  try {
+    const pendingFixes = [
+      // Neeraj Akkarachittoor — paid ₹249 Core via PhonePe UPI AutoPay on 2026-06-16
+      // sub created, payment deducted, but Razorpay UI showed error → verify never called
+      {
+        userId: "021f2eef-574c-4d71-be82-1d23013091f4",
+        plan: "core" as const,
+        subscriptionId: "sub_T2JdnBsOaQJv6W",
+      },
+    ];
+
+    for (const fix of pendingFixes) {
+      const [row] = await db
+        .select({ status: aryaSubscriptions.status })
+        .from(aryaSubscriptions)
+        .where(
+          and(
+            eq(aryaSubscriptions.razorpaySubscriptionId, fix.subscriptionId),
+            eq(aryaSubscriptions.userId, fix.userId)
+          )
+        )
+        .limit(1);
+
+      if (!row) {
+        console.log(`[STARTUP-FIX] Subscription ${fix.subscriptionId} not found — skipping`);
+        continue;
+      }
+      if (row.status === "active") {
+        console.log(`[STARTUP-FIX] ${fix.subscriptionId} already active — no action needed`);
+        continue;
+      }
+
+      // Status is 'created' or similar — payment confirmed, activate now
+      await activateUserPlan(fix.userId, fix.plan, fix.subscriptionId);
+      await db
+        .update(aryaSubscriptions)
+        .set({ status: "active", updatedAt: new Date() } as any)
+        .where(eq(aryaSubscriptions.razorpaySubscriptionId, fix.subscriptionId));
+
+      console.log(`[STARTUP-FIX] ✅ Activated ${fix.plan} plan for user ${fix.userId} (sub ${fix.subscriptionId})`);
+    }
+  } catch (err: any) {
+    console.error("[STARTUP-FIX] Reconciliation error:", err.message);
+  }
+}
+
 (async () => {
   await initVapidKeys();
   startReminderScheduler();
+  await runStartupPaymentReconciliation();
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {

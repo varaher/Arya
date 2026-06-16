@@ -194,22 +194,46 @@ export async function activateUserPlan(userId: string, plan: SubscriptionPlan, r
 }
 
 export async function handleWebhookEvent(event: string, payload: any): Promise<void> {
-  const subEntity = payload?.subscription?.entity || payload?.payload?.subscription?.entity;
+  const subEntity = payload?.payload?.subscription?.entity || payload?.subscription?.entity;
   const paymentEntity = payload?.payload?.payment?.entity;
   const subscriptionId = subEntity?.id;
   const paymentId = paymentEntity?.id;
   const notes = subEntity?.notes || {};
-  const userId = notes?.userId;
-  const plan = notes?.plan as SubscriptionPlan;
+  let userId = notes?.userId as string | undefined;
+  let plan = notes?.plan as SubscriptionPlan | undefined;
 
-  if (!subscriptionId) return;
-  console.log(`[RAZORPAY WEBHOOK] ${event} | sub=${subscriptionId} | user=${userId}`);
+  if (!subscriptionId) {
+    console.warn(`[RAZORPAY WEBHOOK] No subscriptionId in payload for event=${event}`);
+    return;
+  }
 
-  if ((event === "subscription.charged" || event === "subscription.activated") && userId && plan) {
+  // If notes didn't carry userId/plan, look up from our DB by subscriptionId
+  if (!userId || !plan) {
+    const [dbRow] = await db
+      .select({ userId: aryaSubscriptions.userId, plan: aryaSubscriptions.plan })
+      .from(aryaSubscriptions)
+      .where(eq(aryaSubscriptions.razorpaySubscriptionId, subscriptionId))
+      .limit(1);
+    if (dbRow) {
+      userId = dbRow.userId;
+      plan = dbRow.plan as SubscriptionPlan;
+    }
+  }
+
+  console.log(`[RAZORPAY WEBHOOK] ${event} | sub=${subscriptionId} | user=${userId} | plan=${plan}`);
+
+  const activationEvents = [
+    "subscription.charged",
+    "subscription.activated",
+    "subscription.pending",  // UPI AutoPay mandate setup
+  ];
+
+  if (activationEvents.includes(event) && userId && plan) {
     await activateUserPlan(userId, plan, subscriptionId);
     await db.update(aryaSubscriptions)
-      .set({ razorpayPaymentId: paymentId, status: "active", updatedAt: new Date() } as any)
+      .set({ razorpayPaymentId: paymentId || null, status: "active", updatedAt: new Date() } as any)
       .where(eq(aryaSubscriptions.razorpaySubscriptionId, subscriptionId));
+    console.log(`[RAZORPAY WEBHOOK] ✅ Plan activated: user=${userId} plan=${plan}`);
   } else if (event === "subscription.halted" || event === "subscription.cancelled") {
     await db.update(aryaSubscriptions)
       .set({ status: event === "subscription.halted" ? "halted" : "cancelled", updatedAt: new Date() } as any)
@@ -218,7 +242,10 @@ export async function handleWebhookEvent(event: string, payload: any): Promise<v
       await db.update(aryaUsers)
         .set({ plan: "free", planExpiresAt: null } as any)
         .where(eq(aryaUsers.id, userId));
+      console.log(`[RAZORPAY WEBHOOK] Plan reverted to free: user=${userId}`);
     }
+  } else {
+    console.log(`[RAZORPAY WEBHOOK] Unhandled or incomplete event=${event} userId=${userId} plan=${plan}`);
   }
 }
 
