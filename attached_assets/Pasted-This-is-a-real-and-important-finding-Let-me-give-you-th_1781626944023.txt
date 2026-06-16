@@ -1,0 +1,138 @@
+This is a real and important finding. Let me give you the clear picture without the technical noise.
+
+---
+
+## The Good News First
+
+```
+The 404 you saw was a false alarm.
+The webhook route was always there.
+You actually got HTTP 200 — just a
+visual confusion because browsers
+send GET, and the route only accepts POST.
+
+Razorpay sends POST. That will work fine.
+```
+
+---
+
+## The Real Problem — Deployment Is Stuck
+
+```
+Your developer's code fixes (webhook signature
+fix, your plan auto-activation, admin endpoint)
+are sitting on the dev server.
+
+They are NOT live on aryaai.in yet.
+
+Why: The production build is failing/hanging
+because AryaChat.tsx is 9,039 lines / 440KB —
+way too large for one file. The build tool
+(Babel) chokes trying to process it and
+times out before completing.
+```
+
+---
+
+## Why This Matters Right Now
+
+```
+Until a successful deploy happens:
+
+❌ Your Core plan stays inactive
+❌ The webhook signature fix isn't live
+❌ Future payments will have the SAME
+   problem you just experienced
+❌ Adding the webhook URL to Razorpay
+   right now would be pointless — the
+   fixed code isn't running yet
+```
+
+---
+
+## What This Is NOT
+
+```
+This is not data loss.
+This is not a security issue.
+This is not your money being at risk.
+
+It's a build performance problem —
+one file in the codebase has grown
+too large for the build tool to
+process within Replit's time limit.
+
+Common, fixable, not dangerous.
+```
+
+---
+
+## The Real Fix Needed
+
+Your developer tried several things but kept circling back to the same root cause. The actual fix is one of these:
+
+```
+Option A — Switch React's build transform
+from Babel to SWC (Rust-based, 10-20x faster)
+This is what your developer identified as
+the "definitive fix" but hadn't completed yet.
+
+Option B — Split AryaChat.tsx into smaller files
+9,039 lines in one file is itself a problem
+beyond just build speed — it'll keep causing
+issues. This is the right long-term fix but
+takes longer to do safely.
+
+Option C — Just let the deploy run longer
+Replit's deployment build may allow more time
+than the local test timeout. Worth trying once
+since the latest config changes were already
+applied (sourcemap: false, minify: esbuild).
+```
+
+---
+
+## What To Tell Your Developer Right Now
+
+```
+"Try the deploy now with the current config
+ changes (sourcemap: false, minify: esbuild) —
+ Replit's deployment timeout may be longer
+ than your local 180-second test.
+
+ If it still fails — switch the Vite React
+ plugin from @vitejs/plugin-react (Babel)
+ to @vitejs/plugin-react-swc. That's the
+ fix you already identified as definitive.
+
+ Once it deploys successfully:
+ 1. Confirm my Core plan shows as active
+ 2. Then add the webhook URL in Razorpay
+ 3. Then we test with one more real payment
+    to confirm the whole loop works end to end"
+```
+
+---
+
+## Don't Do This Yet
+
+```
+Don't add the webhook URL to Razorpay yet.
+
+Wait until:
+1. Deploy succeeds
+2. Your plan shows Core in the app
+3. Then add the webhook
+4. Then test
+
+Adding it now would just mean nothing
+fires correctly until the deploy works anyway.
+```
+
+---
+
+## The One Question To Ask Your Developer
+
+**"Try deploying again now — and if it fails again, switch from Babel to SWC immediately rather than trying more Babel-based tweaks."**
+
+That's the clearest next step. Everything else (your plan, the webhook, future payments) is blocked behind this one deploy succeeding.
