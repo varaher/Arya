@@ -89,6 +89,7 @@ import PricingModal from "@/components/PricingModal";
 import ThinkingModeSelector, { THINKING_MODES_CLIENT } from "@/components/ThinkingModeSelector";
 import { UpgradePrompt, type UpgradePromptConfig, UPGRADE_PROMPTS } from "@/components/UpgradePrompt";
 import CancelSubscription from "@/components/CancelSubscription";
+import PlanStatusBadge from "@/components/PlanStatusBadge";
 import { requestNotificationPermission } from "@/lib/push-notifications";
 import { playARYASound, playAlarmSound, stopAlarmSound } from "@/utils/reminderSound";
 
@@ -1124,6 +1125,9 @@ function UserProfileModal({ token, onClose, userName }: { token: string; onClose
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+          {/* Plan status — always visible at top */}
+          <PlanStatusBadge token={token} />
+
           {isLoading ? (
             <div className="flex justify-center py-10">
               <Loader2 className="w-5 h-5 animate-spin text-cyan-500" />

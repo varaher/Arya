@@ -1,0 +1,442 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// ARYA — Plan Status Badge
+// Shows at the very top of the Profile/Account area
+// Makes plan status and days-left immediately visible
+// No more guessing whether a payment activated
+//
+// Add to: client/src/pages/ProfilePage.tsx (or wherever account/profile lives)
+// ═══════════════════════════════════════════════════════════════════════════
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PART 1: PlanStatusBadge.tsx — the component
+// ─────────────────────────────────────────────────────────────────────────────
+
+/*
+import { useQuery } from '@tanstack/react-query';
+
+interface PlanStatus {
+  plan: 'free' | 'core' | 'pro' | 'elite';
+  status: 'active' | 'trial' | 'expired' | 'cancelled';
+  renewsAt: string | null;       // ISO date
+  daysLeft: number | null;
+  isFoundingMember: boolean;
+  trialDaysLeft: number | null;  // if on 45-day trial
+}
+
+const PLAN_CONFIG = {
+  free:  { label: 'Free',  color: '#6b7280', bg: 'rgba(107,114,128,0.08)', emoji: '🌱' },
+  core:  { label: 'Core',  color: '#4ade80', bg: 'rgba(74,222,128,0.08)',  emoji: '⭐' },
+  pro:   { label: 'Pro',   color: '#818cf8', bg: 'rgba(129,140,248,0.08)', emoji: '👑' },
+  elite: { label: 'Elite', color: '#fbbf24', bg: 'rgba(251,191,36,0.08)',  emoji: '💎' },
+};
+
+export default function PlanStatusBadge() {
+  const { data: planStatus, isLoading } = useQuery<PlanStatus>({
+    queryKey: ['plan-status'],
+    queryFn: () =>
+      fetch('/api/user/plan-status').then(r => r.json()),
+    staleTime: 30 * 1000,       // refresh every 30s
+    refetchOnWindowFocus: true, // refresh when user comes back to app
+                                 // (catches it right after a payment)
+  });
+
+  if (isLoading || !planStatus) {
+    return (
+      <div className="plan-badge plan-badge-loading">
+        <div className="plan-badge-shimmer" />
+      </div>
+    );
+  }
+
+  const config = PLAN_CONFIG[planStatus.plan];
+
+  // ── Trial state ──────────────────────────────────────────────────────
+  if (planStatus.status === 'trial' && planStatus.trialDaysLeft !== null) {
+    return (
+      <div
+        className="plan-badge plan-badge-trial"
+        style={{ background: config.bg, borderColor: `${config.color}33` }}
+      >
+        <span className="plan-badge-emoji">⏳</span>
+        <div className="plan-badge-info">
+          <p className="plan-badge-label">
+            Free Trial — Full Access
+          </p>
+          <p className="plan-badge-sub">
+            {planStatus.trialDaysLeft} day{planStatus.trialDaysLeft !== 1 ? 's' : ''} left
+          </p>
+        </div>
+        <button className="plan-badge-action" onClick={() => window.location.href = '/pricing'}>
+          See plans
+        </button>
+      </div>
+    );
+  }
+
+  // ── Active paid plan ─────────────────────────────────────────────────
+  if (planStatus.status === 'active' && planStatus.plan !== 'free') {
+    return (
+      <div
+        className="plan-badge plan-badge-active"
+        style={{ background: config.bg, borderColor: `${config.color}33` }}
+      >
+        <span className="plan-badge-emoji">{config.emoji}</span>
+        <div className="plan-badge-info">
+          <p className="plan-badge-label" style={{ color: config.color }}>
+            {config.label} Plan
+            {planStatus.isFoundingMember && (
+              <span className="plan-badge-founding"> · Founding Member</span>
+            )}
+          </p>
+          <p className="plan-badge-sub">
+            {planStatus.daysLeft !== null
+              ? `Renews in ${planStatus.daysLeft} day${planStatus.daysLeft !== 1 ? 's' : ''}`
+              : 'Active'}
+          </p>
+        </div>
+        <span className="plan-badge-check">✓</span>
+      </div>
+    );
+  }
+
+  // ── Expired ──────────────────────────────────────────────────────────
+  if (planStatus.status === 'expired') {
+    return (
+      <div className="plan-badge plan-badge-expired">
+        <span className="plan-badge-emoji">⚠️</span>
+        <div className="plan-badge-info">
+          <p className="plan-badge-label">Plan expired</p>
+          <p className="plan-badge-sub">Renew to keep your features</p>
+        </div>
+        <button className="plan-badge-action" onClick={() => window.location.href = '/pricing'}>
+          Renew
+        </button>
+      </div>
+    );
+  }
+
+  // ── Free plan (default) ─────────────────────────────────────────────
+  return (
+    <div className="plan-badge plan-badge-free">
+      <span className="plan-badge-emoji">{config.emoji}</span>
+      <div className="plan-badge-info">
+        <p className="plan-badge-label">Free Plan</p>
+        <p className="plan-badge-sub">Upgrade for more</p>
+      </div>
+      <button className="plan-badge-action" onClick={() => window.location.href = '/pricing'}>
+        Upgrade
+      </button>
+    </div>
+  );
+}
+*/
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PART 2: Backend route — GET /api/user/plan-status
+// Add to: routes.ts
+// ─────────────────────────────────────────────────────────────────────────────
+
+/*
+app.get('/api/user/plan-status', requireAuth, async (req, res) => {
+  const userId = req.user.id;
+
+  const [user] = await db
+    .select()
+    .from(arya_users)  // or `users` — match your actual table name
+    .where(eq(arya_users.id, userId))
+    .limit(1);
+
+  if (!user) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+
+  const now = new Date();
+
+  // Check if on trial
+  const isOnTrial = user.trialStatus === 'active' &&
+    user.trialEndsAt &&
+    new Date(user.trialEndsAt) > now;
+
+  if (isOnTrial) {
+    const trialDaysLeft = Math.ceil(
+      (new Date(user.trialEndsAt).getTime() - now.getTime()) /
+      (1000 * 60 * 60 * 24)
+    );
+
+    return res.json({
+      plan: 'pro',          // trial = full pro access
+      status: 'trial',
+      renewsAt: null,
+      daysLeft: null,
+      isFoundingMember: user.isFoundingMember || false,
+      trialDaysLeft,
+    });
+  }
+
+  // Check paid plan status
+  const plan = user.plan || 'free';
+  const planExpiresAt = user.planExpiresAt ? new Date(user.planExpiresAt) : null;
+
+  let status: 'active' | 'expired' | 'cancelled' = 'active';
+  let daysLeft: number | null = null;
+
+  if (plan !== 'free') {
+    if (!planExpiresAt) {
+      status = 'active'; // no expiry set — treat as active
+    } else if (planExpiresAt < now) {
+      status = 'expired';
+    } else {
+      status = 'active';
+      daysLeft = Math.ceil(
+        (planExpiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+      );
+    }
+  }
+
+  res.json({
+    plan,
+    status: plan === 'free' ? 'active' : status,
+    renewsAt: planExpiresAt?.toISOString() || null,
+    daysLeft,
+    isFoundingMember: user.isFoundingMember || false,
+    trialDaysLeft: null,
+  });
+});
+*/
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PART 3: Where to place it — top of Profile page
+// ─────────────────────────────────────────────────────────────────────────────
+
+/*
+In ProfilePage.tsx (or AccountPage.tsx — wherever
+the user's profile/account screen lives):
+
+import PlanStatusBadge from '@/components/PlanStatusBadge';
+
+export default function ProfilePage() {
+  return (
+    <div className="profile-page">
+
+      {// ← ADD THIS AS THE VERY FIRST THING //}
+      <PlanStatusBadge />
+
+      {// ... rest of existing profile content
+           (name, email, settings, etc.) ... //}
+
+    </div>
+  );
+}
+
+It should be the FIRST thing the user sees
+when they open their profile — before their
+name, before settings, before anything else.
+
+This is the single most important piece of
+information for someone who just paid.
+*/
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PART 4: Bonus — show it right after Razorpay checkout closes
+// This catches the exact moment of payment, not just on profile visit
+// ─────────────────────────────────────────────────────────────────────────────
+
+/*
+In wherever Razorpay checkout is triggered
+(PricingPage.tsx or similar):
+
+razorpay.on('payment.success', async (response) => {
+  // existing verify call...
+
+  // After verification call completes:
+  // Refetch plan status immediately
+  queryClient.invalidateQueries({ queryKey: ['plan-status'] });
+
+  // Show a confirmation toast right away:
+  showToast({
+    title: '🎉 Payment successful!',
+    body: 'Activating your plan...',
+    duration: 3000,
+  });
+
+  // Give the webhook 3-5 seconds to land,
+  // then refetch again to confirm:
+  setTimeout(() => {
+    queryClient.invalidateQueries({ queryKey: ['plan-status'] });
+  }, 4000);
+
+  // Navigate to profile so they SEE the badge update:
+  navigate('/profile');
+});
+*/
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PART 5: Styles
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const PLAN_BADGE_STYLES = `
+/* ── Base badge ─────────────────────────────────────────────────────── */
+.plan-badge {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid;
+  margin: 0 0 20px;
+  animation: badgeSlideIn 0.3s ease;
+}
+
+@keyframes badgeSlideIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Emoji ──────────────────────────────────────────────────────────── */
+.plan-badge-emoji {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+/* ── Info text ──────────────────────────────────────────────────────── */
+.plan-badge-info {
+  flex: 1;
+}
+
+.plan-badge-label {
+  font-size: 16px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.9);
+  font-family: 'DM Sans', sans-serif;
+  margin: 0 0 2px;
+}
+
+.plan-badge-founding {
+  font-size: 12px;
+  font-weight: 600;
+  color: #fbbf24;
+}
+
+.plan-badge-sub {
+  font-size: 13px;
+  color: rgba(255,255,255,0.45);
+  margin: 0;
+}
+
+/* ── Check mark (active plan) ──────────────────────────────────────── */
+.plan-badge-check {
+  font-size: 20px;
+  color: #4ade80;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ── Action button ──────────────────────────────────────────────────── */
+.plan-badge-action {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 10px;
+  color: rgba(255,255,255,0.8);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.plan-badge-action:hover {
+  background: rgba(255,255,255,0.14);
+}
+
+/* ── Expired state — slightly urgent ──────────────────────────────────── */
+.plan-badge-expired {
+  background: rgba(239,68,68,0.06);
+  border-color: rgba(239,68,68,0.2);
+}
+
+.plan-badge-expired .plan-badge-action {
+  background: rgba(239,68,68,0.12);
+  border-color: rgba(239,68,68,0.25);
+  color: #f87171;
+}
+
+.plan-badge-expired .plan-badge-action:hover {
+  background: rgba(239,68,68,0.2);
+}
+
+/* ── Loading shimmer ────────────────────────────────────────────────── */
+.plan-badge-loading {
+  height: 64px;
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.06);
+  overflow: hidden;
+  position: relative;
+}
+
+.plan-badge-shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255,255,255,0.06),
+    transparent
+  );
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(100%); }
+}
+`;
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPLETE WIRING CHECKLIST
+// ─────────────────────────────────────────────────────────────────────────────
+
+/*
+□ 1. Backend: GET /api/user/plan-status
+     Add route to routes.ts (PART 2)
+     Returns: plan, status, daysLeft, renewsAt,
+              isFoundingMember, trialDaysLeft
+
+□ 2. Frontend: PlanStatusBadge.tsx
+     New component (PART 1)
+     Uses react-query, refetches on window focus
+     — this means if you switch back to the app
+     right after paying, it auto-refreshes
+
+□ 3. Place at TOP of ProfilePage.tsx (PART 3)
+     First thing visible. No scrolling needed.
+
+□ 4. Optional but valuable: PART 4
+     Trigger refetch immediately after Razorpay
+     checkout success — don't wait for the user
+     to manually navigate to profile
+
+□ 5. Add PLAN_BADGE_STYLES to global CSS
+
+TEST:
+□ Free user → badge shows "Free Plan · Upgrade"
+□ Trial user → badge shows "Trial · X days left"
+□ Core user → badge shows "⭐ Core Plan · Renews in X days · ✓"
+□ Founding member → shows "· Founding Member" tag
+□ Expired → shows "⚠️ Plan expired · Renew"
+□ Make a test payment → within 5 seconds of
+  returning to app, badge updates automatically
+  without manual refresh needed
+
+TOTAL: 2-3 hours
+RESULT: No more guessing whether a payment
+        activated. It's the first thing you see.
+*/

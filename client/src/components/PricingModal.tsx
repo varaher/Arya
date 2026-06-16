@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Check, Zap, Star, Crown, Gem, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
+import { useQueryClient } from "@tanstack/react-query";
 
 declare global {
   interface Window { Razorpay: any; }
@@ -127,6 +128,7 @@ export default function PricingModal({ onClose, token, currentPlan = "free", onU
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
 
   const handleSubscribe = async (planId: string) => {
     if (planId === "free" || planId === currentPlan) return;
@@ -169,6 +171,12 @@ export default function PricingModal({ onClose, token, currentPlan = "free", onU
             if (!verifyRes.ok) throw new Error(verifyData.error || "Payment verification failed");
             setSuccess(plan);
             onUpgradeSuccess?.(plan);
+            queryClient.invalidateQueries({ queryKey: ["/api/user/plan-status"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/user/trial-status"] });
+            setTimeout(() => {
+              queryClient.invalidateQueries({ queryKey: ["/api/user/plan-status"] });
+              queryClient.invalidateQueries({ queryKey: ["/api/user/trial-status"] });
+            }, 4000);
           } catch (e: any) {
             setError(e.message || "Payment verification failed. Contact support.");
           } finally {

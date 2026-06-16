@@ -5557,6 +5557,54 @@ Be honest. Be brief. No padding. Write like someone who was present in the room.
   });
 
   // ── Trial status ──────────────────────────────────────────────────────
+  app.get("/api/user/plan-status", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const [u] = await db.select().from(aryaUsers).where(eq(aryaUsers.id, userId)).limit(1);
+      if (!u) return res.status(404).json({ error: "User not found" });
+
+      const now = new Date();
+      const trialEnds = u.trialEndsAt ? new Date(u.trialEndsAt) : null;
+      const onTrial = u.trialStatus === "active" && trialEnds && trialEnds > now;
+
+      if (onTrial) {
+        const trialDaysLeft = Math.ceil((trialEnds!.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        return res.json({
+          plan: u.plan || "free",
+          status: "trial",
+          renewsAt: null,
+          daysLeft: null,
+          isFoundingMember: u.isFoundingMember || false,
+          trialDaysLeft,
+        });
+      }
+
+      const plan = u.plan || "free";
+      const planExpiresAt = u.planExpiresAt ? new Date(u.planExpiresAt) : null;
+      let status: "active" | "expired" = "active";
+      let daysLeft: number | null = null;
+
+      if (plan !== "free" && planExpiresAt) {
+        if (planExpiresAt < now) {
+          status = "expired";
+        } else {
+          daysLeft = Math.ceil((planExpiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        }
+      }
+
+      res.json({
+        plan,
+        status,
+        renewsAt: planExpiresAt?.toISOString() ?? null,
+        daysLeft,
+        isFoundingMember: u.isFoundingMember || false,
+        trialDaysLeft: null,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to fetch plan status" });
+    }
+  });
+
   app.get("/api/user/trial-status", requireUser, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).userId;
