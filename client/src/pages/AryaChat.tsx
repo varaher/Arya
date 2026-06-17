@@ -3715,10 +3715,12 @@ export default function AryaChat() {
     "ru-RU": "Russian", "tr-TR": "Turkish", "sw-KE": "Swahili",
   };
 
+  const GRADUATED_LANGS = new Set(["hi-IN", "ta-IN", "ml-IN"]);
+
   const handleLanguageChange = (newLangCode: string) => {
     setSelectedLanguage(newLangCode);
     try { localStorage.setItem("arya_lang", newLangCode); } catch {}
-    if (newLangCode === "en-IN") return;
+    if (newLangCode === "en-IN" || GRADUATED_LANGS.has(newLangCode)) return;
     const displayName = LANG_NAMES[newLangCode] || newLangCode;
     const seenKey = `arya_lang_beta_v2_${newLangCode}`;
     try { if (localStorage.getItem(seenKey)) return; } catch {}
@@ -6801,7 +6803,7 @@ export default function AryaChat() {
                   <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>{lang.name}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  {lang.code !== "en-IN" && (
+                  {lang.code !== "en-IN" && !GRADUATED_LANGS.has(lang.code) && (
                     <span className="text-[9px] font-bold tracking-widest px-1.5 py-0.5 rounded" style={{ color: "#fbbf24", background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.2)" }}>BETA</span>
                   )}
                   {selectedLanguage === lang.code && <span className="text-base font-semibold" style={{ color: "#4ade80" }}>✓</span>}
@@ -6822,7 +6824,9 @@ export default function AryaChat() {
                   <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>{lang.name}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[9px] font-bold tracking-widest px-1.5 py-0.5 rounded" style={{ color: "#fbbf24", background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.2)" }}>BETA</span>
+                  {!GRADUATED_LANGS.has(lang.code) && (
+                    <span className="text-[9px] font-bold tracking-widest px-1.5 py-0.5 rounded" style={{ color: "#fbbf24", background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.2)" }}>BETA</span>
+                  )}
                   {selectedLanguage === lang.code && <span className="text-base font-semibold" style={{ color: "#4ade80" }}>✓</span>}
                 </div>
               </button>

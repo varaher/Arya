@@ -1,7 +1,7 @@
 import { google } from "googleapis";
 import { db } from "../db";
 import { aryaUsers } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 const SCOPES = [
   "https://www.googleapis.com/auth/calendar.readonly",
@@ -54,28 +54,34 @@ export async function handleCalendarCallback(code: string, userId: string): Prom
 }
 
 async function getAuthenticatedCalendar(userId: string) {
-  const [user] = await db.select({
-    accessToken: (aryaUsers as any).google_calendar_access_token,
-    refreshToken: (aryaUsers as any).google_calendar_refresh_token,
-  }).from(aryaUsers).where(eq(aryaUsers.id, userId)).limit(1);
+  try {
+    const rows = await db.execute(
+      sql`SELECT google_calendar_access_token, google_calendar_refresh_token FROM arya_users WHERE id = ${userId} LIMIT 1`
+    );
+    const user = (rows as any)?.[0] ?? (rows as any)?.rows?.[0];
+    const accessToken: string | null = user?.google_calendar_access_token ?? null;
+    const refreshToken: string | null = user?.google_calendar_refresh_token ?? null;
 
-  if (!user?.refreshToken && !user?.accessToken) return null;
+    if (!accessToken && !refreshToken) return null;
 
-  const oauth2Client = createOAuthClient();
-  oauth2Client.setCredentials({
-    access_token: user.accessToken,
-    refresh_token: user.refreshToken,
-  });
+    const oauth2Client = createOAuthClient();
+    oauth2Client.setCredentials({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
 
-  oauth2Client.on("tokens", async (tokens) => {
-    if (tokens.access_token) {
-      await db.update(aryaUsers).set({
-        google_calendar_access_token: tokens.access_token,
-      } as any).where(eq(aryaUsers.id, userId)).catch(() => {});
-    }
-  });
+    oauth2Client.on("tokens", async (tokens) => {
+      if (tokens.access_token) {
+        await db.update(aryaUsers).set({
+          google_calendar_access_token: tokens.access_token,
+        } as any).where(eq(aryaUsers.id, userId)).catch(() => {});
+      }
+    });
 
-  return google.calendar({ version: "v3", auth: oauth2Client });
+    return google.calendar({ version: "v3", auth: oauth2Client });
+  } catch {
+    return null;
+  }
 }
 
 export async function getTodayEvents(userId: string): Promise<CalendarEvent[]> {
