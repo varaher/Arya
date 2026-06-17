@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLanguage } from "@/lib/language-context";
 
 // ── Palette (matches PranaPage dark-green theme) ───────────────────────────
 const G = {
