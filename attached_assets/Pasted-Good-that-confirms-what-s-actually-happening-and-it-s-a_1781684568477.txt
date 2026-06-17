@@ -1,0 +1,121 @@
+Good — that confirms what's actually happening, and it's a fixable mismatch, not a Play Protect false alarm on your real PWA install.
+
+---
+
+## What's Actually Going On
+
+```
+There are TWO different install paths
+that can both be triggered on a phone:
+
+Path A — Browser's native PWA install prompt
+  (the "beforeinstallprompt" event)
+  → Installs cleanly as a PWA
+  → No Play Protect warning
+  → This is what SHOULD be happening
+
+Path B — A custom "Install" button you built
+  inside ARYA that's pointing to a downloaded
+  .apk file (from one of those PWA→APK
+  converter tools mentioned earlier)
+  → THIS triggers Play Protect
+  → This is likely what's happening
+```
+
+The fact that the warning appears specifically when the user taps your in-app "Install" button — not when they use Chrome's menu — means **your button is linked to an APK file somewhere**, not to the browser's real PWA install flow.
+
+---
+
+## What To Check Right Now
+
+```
+Ask your developer directly:
+
+"When the user taps the Install button
+ inside ARYA — what does that button
+ actually do? Does it:
+
+ a) Call the browser's native
+    beforeinstallprompt.prompt() — 
+    the correct PWA install method
+
+ OR
+
+ b) Link to/download a .apk file
+    hosted somewhere — which would
+    explain the Play Protect warning"
+```
+
+---
+
+## The Correct Fix — Native PWA Install Prompt
+
+If the button is currently linking to an APK, it needs to be replaced with the proper browser API:
+
+```javascript
+// This is the CORRECT way to trigger PWA install
+// No APK. No Play Protect warning. No side-loading.
+
+let deferredPrompt;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // Now show your custom "Install ARYA" button
+  showInstallButton();
+});
+
+// When user taps YOUR install button:
+installButton.addEventListener('click', async () => {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();  // ← triggers native install
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(outcome); // 'accepted' or 'dismissed'
+    deferredPrompt = null;
+  }
+});
+```
+
+This is fundamentally different from downloading an APK — it tells Chrome/Android to install the PWA directly, the same as "Add to Home Screen," but triggered by your own in-app button instead of the browser menu.
+
+---
+
+## Tell Your Developer Exactly This
+
+```
+"The Install button inside ARYA is
+ triggering a Play Protect warning.
+
+ Please confirm: is that button currently
+ pointing to a .apk file, or is it using
+ the browser's beforeinstallprompt API?
+
+ If it's pointing to an APK — replace it
+ with the proper beforeinstallprompt flow
+ (standard PWA install, no APK involved).
+
+ This should remove the Play Protect
+ warning completely, since it won't be
+ side-loading anything anymore — it'll
+ just be the standard 'Add to Home Screen'
+ mechanism, triggered by our own button
+ instead of Chrome's menu."
+```
+
+---
+
+## Why This Matters Before Launch
+
+```
+If users are hitting a security warning
+the FIRST time they try to install ARYA —
+that's the worst possible first impression.
+
+Most people will not push past a
+"this app may be unsafe" warning,
+no matter how much they trust you
+personally. Fix this before sending
+the founding member message.
+```
+
+Ask your developer to check what that Install button actually links to, and report back what they find.
