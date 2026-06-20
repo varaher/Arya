@@ -32,10 +32,10 @@ const PRICES: Record<Region, Record<PlanId, PlanPrice>> = {
     elite: { monthly: 999, annual: 9990,   annualMonthly: 833,  currency: "INR", symbol: "₹" },
   },
   intl: {
-    free:  { monthly: 0,    annual: 0,   annualMonthly: 0,    currency: "USD", symbol: "$" },
-    core:  { monthly: 3.99, annual: 32,  annualMonthly: 2.67, currency: "USD", symbol: "$" },
-    pro:   { monthly: 7.99, annual: 64,  annualMonthly: 5.33, currency: "USD", symbol: "$" },
-    elite: { monthly: 14.99,annual: 119, annualMonthly: 9.92, currency: "USD", symbol: "$" },
+    free:  { monthly: 0,    annual: 0,     annualMonthly: 0,    currency: "USD", symbol: "$" },
+    core:  { monthly: 4.99, annual: 39.99, annualMonthly: 3.33, currency: "USD", symbol: "$" },
+    pro:   { monthly: 7.99, annual: 64,    annualMonthly: 5.33, currency: "USD", symbol: "$" },
+    elite: { monthly: 14.99,annual: 119,   annualMonthly: 9.92, currency: "USD", symbol: "$" },
   },
 };
 
@@ -169,7 +169,7 @@ const FAQS = [
   { q: "Can I switch between India and international billing?",
     a: "India billing is in INR via Razorpay. International billing is in USD via Paddle. If you move countries, contact support and we'll migrate your subscription." },
   { q: "What's the difference between monthly and annual?",
-    a: "Annual gives you 2 months free (about 16% off). You're charged once upfront. Annual subscribers also have significantly lower churn — it's our way of rewarding long-term commitment." },
+    a: "Annual billing saves you 33% compared to paying monthly (India plans get 2 months free — same saving). You're charged once upfront. Annual subscribers also have significantly lower churn — it's our way of rewarding long-term commitment." },
   { q: "What is the Elite monthly life review?",
     a: "Once a month, ARYA generates a deep personal report — goals, mood patterns, key decisions, wins and misses — all woven into a narrative you can read and reflect on. It's the kind of review a personal coach would prepare." },
   { q: "Can I cancel anytime?",
@@ -400,7 +400,7 @@ export default function PricingPage() {
           <span className={`text-sm font-medium ${billing === "annual" ? "text-gray-900 dark:text-white" : "text-gray-400"}`}>
             Annual
             <span className="ml-1.5 text-xs bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full font-semibold">
-              2 months free
+              {region === INDIA ? "2 months free" : "Save 33%"}
             </span>
           </span>
         </div>
@@ -473,7 +473,7 @@ export default function PricingPage() {
                       <div className="text-xs text-muted-foreground mt-0.5">
                         {p.symbol}{p.annual} billed annually
                         <span className="ml-1 text-emerald-600 dark:text-emerald-400 font-semibold">
-                          (save {p.symbol}{Math.round(p.monthly * 12 - p.annual)})
+                          ({region === INDIA ? "2 months free" : `Save ${Math.round((1 - p.annual / (p.monthly * 12)) * 100)}%`})
                         </span>
                       </div>
                     )}
@@ -621,7 +621,7 @@ export default function PricingPage() {
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
             className="mb-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40 p-5 text-center">
             <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300 mb-1">
-              Switch to annual — get 2 months free
+              {region === INDIA ? "Switch to annual — get 2 months free" : "Switch to annual — save 33%"}
             </p>
             <p className="text-sm text-emerald-700 dark:text-emerald-400 mb-3">
               Annual subscribers have 3–5× lower churn. It's our way of rewarding long-term commitment.
