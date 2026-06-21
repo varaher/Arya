@@ -80,6 +80,14 @@ import {
   Pin,
   PinOff,
   Pencil,
+  Play,
+  Pause,
+  RotateCcw,
+  Wind,
+  Waves,
+  Coffee,
+  Music2,
+  Maximize2,
 } from "lucide-react";
 import { getTranslation, getStoredUiLanguage, LANGUAGE_OPTIONS, type UiLanguage } from "@/lib/i18n";
 import { useLanguage } from "@/lib/language-context";
@@ -3772,6 +3780,7 @@ export default function AryaChat() {
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [showVoiceMode, setShowVoiceMode] = useState(false);
+  const [showSerenityMode, setShowSerenityMode] = useState(false);
   const [mainUpgradePrompt, setMainUpgradePrompt] = useState<UpgradePromptConfig | null>(null);
   const [showCancelSheet, setShowCancelSheet] = useState(false);
   const mainUserPlan: string = (user as any)?.plan || "free";
@@ -6893,10 +6902,21 @@ export default function AryaChat() {
                           <button data-testid="button-voice-chat"
                             onClick={() => { if (isMainFree) { setShowToolMore(false); setMainUpgradePrompt(UPGRADE_PROMPTS.voiceGate()); return; } setShowVoiceMode(true); setShowToolMore(false); }}
                             disabled={isStreaming || isRecording}
-                            className="w-full text-left px-3 py-2.5 text-sm flex items-center gap-2.5 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 disabled:opacity-50 transition-colors rounded-b-xl"
+                            className="w-full text-left px-3 py-2.5 text-sm flex items-center gap-2.5 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 disabled:opacity-50 transition-colors"
                           >
                             <Headphones className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 flex-shrink-0" />
                             <span className="font-medium">{t("toolbar_live_voice")}</span>
+                          </button>
+                          {/* Serenity Mode */}
+                          <button data-testid="button-serenity-mode"
+                            onClick={() => { setShowSerenityMode(true); setShowToolMore(false); }}
+                            className="w-full text-left px-3 py-2.5 text-sm flex items-center gap-2.5 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 transition-colors rounded-b-xl"
+                          >
+                            <Moon className="w-3.5 h-3.5 text-violet-500 dark:text-violet-400 flex-shrink-0" />
+                            <div className="flex flex-col min-w-0">
+                              <span className="font-medium leading-tight">Serenity Mode</span>
+                              <span className="text-[11px] text-muted-foreground leading-tight">Focus timer · ambient sounds</span>
+                            </div>
                           </button>
                         </div>
                       )}
@@ -7054,6 +7074,15 @@ export default function AryaChat() {
           onCancelled={() => { setShowCancelSheet(false); refreshUser(); }}
           onClose={() => setShowCancelSheet(false)}
         />
+      )}
+
+      {showSerenityMode && token && createPortal(
+        <SerenityMode
+          token={token}
+          conversationId={activeConversation}
+          onExit={() => setShowSerenityMode(false)}
+        />,
+        document.body
       )}
 
       {showVoiceMode && createPortal(
@@ -7492,6 +7521,330 @@ export default function AryaChat() {
     </div>
   );
 }
+
+// ─── Serenity Mode ───────────────────────────────────────────────────────────
+
+const SERENITY_QUOTES = [
+  "One breath. One moment. You are here.",
+  "The mind is like water — disturbed, it cannot reflect. Still, it sees clearly.",
+  "Deep work is the superpower of our distracted age.",
+  "You don't need more time. You need more stillness.",
+  "This hour belongs only to you.",
+  "Focus is not a state — it is a practice.",
+  "Clarity arrives when noise departs.",
+  "What you create in silence outlasts everything created in noise.",
+  "Each minute of deep focus is a gift to your future self.",
+  "Begin. The rest follows.",
+];
+
+const TIMER_PRESETS = [
+  { label: "25 min", seconds: 25 * 60 },
+  { label: "45 min", seconds: 45 * 60 },
+  { label: "60 min", seconds: 60 * 60 },
+  { label: "90 min", seconds: 90 * 60 },
+];
+
+type AmbientSound = "none" | "white" | "brown" | "432hz";
+
+function useAmbientAudio() {
+  const ctxRef = useRef<AudioContext | null>(null);
+  const gainRef = useRef<GainNode | null>(null);
+  const sourceRef = useRef<AudioBufferSourceNode | OscillatorNode | null>(null);
+
+  const stop = useCallback(() => {
+    try {
+      if (sourceRef.current) {
+        (sourceRef.current as any).stop?.();
+        sourceRef.current.disconnect();
+        sourceRef.current = null;
+      }
+      if (gainRef.current) { gainRef.current.disconnect(); gainRef.current = null; }
+    } catch {}
+  }, []);
+
+  const play = useCallback((type: AmbientSound) => {
+    stop();
+    if (type === "none") return;
+    const ctx = ctxRef.current || new AudioContext();
+    ctxRef.current = ctx;
+    if (ctx.state === "suspended") ctx.resume();
+    const gain = ctx.createGain();
+    gainRef.current = gain;
+    gain.connect(ctx.destination);
+
+    if (type === "white" || type === "brown") {
+      const bufSize = ctx.sampleRate * 4;
+      const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      if (type === "white") {
+        for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+        gain.gain.value = 0.12;
+      } else {
+        let last = 0;
+        for (let i = 0; i < bufSize; i++) {
+          const w = Math.random() * 2 - 1;
+          data[i] = (last + 0.02 * w) / 1.02;
+          last = data[i];
+          data[i] *= 3.5;
+        }
+        gain.gain.value = 0.18;
+      }
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.loop = true;
+      src.connect(gain);
+      src.start();
+      sourceRef.current = src;
+    } else if (type === "432hz") {
+      const osc = ctx.createOscillator();
+      osc.type = "sine";
+      osc.frequency.value = 432;
+      gain.gain.value = 0.06;
+      osc.connect(gain);
+      osc.start();
+      sourceRef.current = osc;
+    }
+  }, [stop]);
+
+  const cleanup = useCallback(() => {
+    stop();
+    try { ctxRef.current?.close(); } catch {}
+    ctxRef.current = null;
+  }, [stop]);
+
+  return { play, stop, cleanup };
+}
+
+function SerenityMode({ token, conversationId, onExit }: {
+  token: string;
+  conversationId: number | null;
+  onExit: () => void;
+}) {
+  const [preset, setPreset] = useState(TIMER_PRESETS[0]);
+  const [timeLeft, setTimeLeft] = useState(TIMER_PRESETS[0].seconds);
+  const [running, setRunning] = useState(false);
+  const [done, setDone] = useState(false);
+  const [ambient, setAmbient] = useState<AmbientSound>("none");
+  const [quoteIdx, setQuoteIdx] = useState(() => Math.floor(Math.random() * SERENITY_QUOTES.length));
+  const [input, setInput] = useState("");
+  const [response, setResponse] = useState("");
+  const [streaming, setStreaming] = useState(false);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const { play, stop, cleanup } = useAmbientAudio();
+
+  // Rotate quote every 45 s
+  useEffect(() => {
+    const id = setInterval(() => setQuoteIdx(i => (i + 1) % SERENITY_QUOTES.length), 45000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Timer
+  useEffect(() => {
+    if (!running) return;
+    const id = setInterval(() => {
+      setTimeLeft(t => {
+        if (t <= 1) { setRunning(false); setDone(true); return 0; }
+        return t - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [running]);
+
+  // Ambient sound
+  useEffect(() => { play(ambient); }, [ambient]);
+
+  // Cleanup on unmount
+  useEffect(() => () => cleanup(), []);
+
+  // Reset timer when preset changes (only if not running)
+  const selectPreset = (p: typeof TIMER_PRESETS[0]) => {
+    if (running) return;
+    setPreset(p); setTimeLeft(p.seconds); setDone(false);
+  };
+
+  const resetTimer = () => { setRunning(false); setTimeLeft(preset.seconds); setDone(false); };
+
+  const fmt = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+
+  const sendToArya = async () => {
+    const text = input.trim();
+    if (!text || streaming || !conversationId) return;
+    setInput(""); setResponse(""); setStreaming(true);
+    try {
+      const res = await fetch(`/api/arya/conversations/${conversationId}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-user-token": token },
+        body: JSON.stringify({ message: text, language: "en-IN" }),
+      });
+      if (!res.body) { setStreaming(false); return; }
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let buf = "";
+      let full = "";
+      while (true) {
+        const { done: d, value } = await reader.read();
+        if (d) break;
+        buf += dec.decode(value, { stream: true });
+        const lines = buf.split("\n");
+        buf = lines.pop() || "";
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const raw = line.slice(6).trim();
+            if (raw === "[DONE]") break;
+            try {
+              const j = JSON.parse(raw);
+              if (j.token) { full += j.token; setResponse(full); }
+            } catch {}
+          }
+        }
+      }
+    } catch {}
+    setStreaming(false);
+  };
+
+  const AMBIENT_OPTIONS: { key: AmbientSound; icon: React.ReactNode; label: string }[] = [
+    { key: "none", icon: <VolumeX className="w-4 h-4" />, label: "Silence" },
+    { key: "white", icon: <Wind className="w-4 h-4" />, label: "White noise" },
+    { key: "brown", icon: <Waves className="w-4 h-4" />, label: "Brown noise" },
+    { key: "432hz", icon: <Music2 className="w-4 h-4" />, label: "432 Hz tone" },
+  ];
+
+  return (
+    <div className="fixed inset-0 z-[200] flex flex-col bg-white dark:bg-slate-950 overflow-hidden" data-testid="serenity-mode">
+      {/* Top bar */}
+      <div className="flex items-center justify-between px-6 pt-5 pb-2 flex-shrink-0">
+        <div className="flex items-center gap-2 text-violet-500 dark:text-violet-400">
+          <Moon className="w-4 h-4" />
+          <span className="text-xs font-semibold tracking-widest uppercase">Serenity</span>
+        </div>
+        <button
+          data-testid="button-exit-serenity"
+          onClick={onExit}
+          className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 flex items-center gap-1.5 transition-colors"
+        >
+          <X className="w-3.5 h-3.5" />
+          <span>Exit</span>
+        </button>
+      </div>
+
+      {/* Main area — timer + response */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6 gap-8 overflow-hidden">
+        {/* Timer */}
+        <div className="text-center select-none">
+          <div
+            className="font-mono text-[clamp(4rem,15vw,7rem)] leading-none font-light tracking-tight transition-colors"
+            style={{ color: done ? "#a855f7" : running ? "#059669" : "#9ca3af" }}
+          >
+            {fmt(timeLeft)}
+          </div>
+          {done && (
+            <p className="text-sm text-violet-500 dark:text-violet-400 font-medium mt-3 animate-pulse">
+              Session complete ✦
+            </p>
+          )}
+          {/* Preset selector */}
+          {!running && !done && (
+            <div className="flex items-center gap-2 justify-center mt-4">
+              {TIMER_PRESETS.map(p => (
+                <button
+                  key={p.label}
+                  onClick={() => selectPreset(p)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-all border ${
+                    preset.seconds === p.seconds
+                      ? "bg-violet-100 dark:bg-violet-900/40 border-violet-300 dark:border-violet-700 text-violet-700 dark:text-violet-300"
+                      : "border-gray-200 dark:border-slate-700 text-gray-400 dark:text-gray-500 hover:border-gray-300 dark:hover:border-slate-600"
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          )}
+          {/* Timer controls */}
+          <div className="flex items-center gap-4 justify-center mt-4">
+            <button
+              onClick={() => { setRunning(r => !r); setDone(false); }}
+              className="flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold bg-violet-500 hover:bg-violet-600 text-white transition-all shadow-md shadow-violet-200 dark:shadow-violet-900/30"
+            >
+              {running ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+              {running ? "Pause" : done ? "Restart" : "Start"}
+            </button>
+            {(running || timeLeft !== preset.seconds) && (
+              <button onClick={resetTimer} className="p-2 rounded-full text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">
+                <RotateCcw className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* ARYA response area */}
+        {(response || streaming) && (
+          <div className="w-full max-w-lg rounded-2xl bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-800 px-5 py-4 max-h-48 overflow-y-auto">
+            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+              {response}
+              {streaming && <span className="inline-block w-1.5 h-4 ml-0.5 bg-violet-400 animate-pulse rounded-sm align-middle" />}
+            </p>
+          </div>
+        )}
+
+        {/* Real Moment quote */}
+        {!response && !streaming && (
+          <p className="text-sm italic text-gray-400 dark:text-gray-500 text-center max-w-xs leading-relaxed transition-all">
+            {SERENITY_QUOTES[quoteIdx]}
+          </p>
+        )}
+      </div>
+
+      {/* Bottom — ambient + ARYA input */}
+      <div className="flex-shrink-0 px-6 pb-8 space-y-4">
+        {/* Ambient sound row */}
+        <div className="flex items-center justify-center gap-2">
+          {AMBIENT_OPTIONS.map(opt => (
+            <button
+              key={opt.key}
+              onClick={() => setAmbient(a => a === opt.key ? "none" : opt.key)}
+              title={opt.label}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
+                ambient === opt.key
+                  ? "bg-violet-100 dark:bg-violet-900/40 border-violet-300 dark:border-violet-700 text-violet-600 dark:text-violet-300"
+                  : "border-gray-200 dark:border-slate-700 text-gray-400 dark:text-gray-500 hover:border-gray-300 dark:hover:border-slate-600"
+              }`}
+            >
+              {opt.icon}
+              <span className="hidden sm:inline">{opt.label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* ARYA input */}
+        {conversationId ? (
+          <div className="flex items-end gap-2 max-w-lg mx-auto">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendToArya(); } }}
+              placeholder="Ask ARYA anything…"
+              rows={1}
+              className="flex-1 resize-none bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl text-sm text-gray-800 dark:text-gray-200 px-4 py-3 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:border-violet-300 dark:focus:border-violet-700 transition-colors"
+            />
+            <button
+              onClick={sendToArya}
+              disabled={!input.trim() || streaming}
+              className="w-10 h-10 rounded-full bg-violet-500 hover:bg-violet-600 disabled:opacity-40 flex items-center justify-center text-white transition-all flex-shrink-0"
+            >
+              {streaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            </button>
+          </div>
+        ) : (
+          <p className="text-xs text-gray-400 dark:text-gray-600 text-center">Start a chat first to talk with ARYA in Serenity mode.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 type VoicePhase = "idle" | "listening" | "processing" | "speaking";
 
