@@ -8587,7 +8587,7 @@ function UserAuthModal({ onClose }: { onClose: () => void }) {
           <Button
             data-testid="modal-button-submit"
             type="submit"
-            disabled={loading || !phone || !password}
+            disabled={loading || (mode === "login" ? !loginIdentifier : !phone) || !password}
             className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-medium py-2.5 rounded-xl"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : mode === "login" ? "Sign In" : "Create Account"}
