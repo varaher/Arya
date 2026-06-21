@@ -142,7 +142,7 @@ export default function PricingModal({ onClose, token, currentPlan = "free", onU
       const res = await fetch("/api/subscription/create", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-user-token": token },
-        body: JSON.stringify({ plan: planId }),
+        body: JSON.stringify({ plan: planId, billing: "monthly" }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to create subscription");
@@ -165,6 +165,7 @@ export default function PricingModal({ onClose, token, currentPlan = "free", onU
                 razorpay_subscription_id: response.razorpay_subscription_id,
                 razorpay_signature: response.razorpay_signature,
                 plan,
+                billing: "monthly",
               }),
             });
             const verifyData = await verifyRes.json();

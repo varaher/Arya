@@ -24,7 +24,8 @@ export const PLAN_CONFIG = {
     // India (Razorpay / INR)
     amountInr: 249,
     amountInrAnnual: 2490,
-    razorpayPlanId: process.env.RAZORPAY_PLAN_ID_CORE || "",
+    razorpayPlanId:       process.env.RAZORPAY_PLAN_ID_CORE        || "",
+    razorpayPlanIdAnnual: process.env.RAZORPAY_PLAN_ID_CORE_ANNUAL || "",
     // International (Paddle / USD)
     amountUsd: 3.99,
     amountUsdAnnual: 32,
@@ -51,7 +52,8 @@ export const PLAN_CONFIG = {
     // India (Razorpay / INR)
     amountInr: 499,
     amountInrAnnual: 4990,
-    razorpayPlanId: process.env.RAZORPAY_PLAN_ID_PRO || "",
+    razorpayPlanId:       process.env.RAZORPAY_PLAN_ID_PRO        || "",
+    razorpayPlanIdAnnual: process.env.RAZORPAY_PLAN_ID_PRO_ANNUAL || "",
     // International (Paddle / USD)
     amountUsd: 7.99,
     amountUsdAnnual: 64,
@@ -81,7 +83,8 @@ export const PLAN_CONFIG = {
     // India (Razorpay / INR)
     amountInr: 999,
     amountInrAnnual: 9990,
-    razorpayPlanId: process.env.RAZORPAY_PLAN_ID_ELITE || "",
+    razorpayPlanId:       process.env.RAZORPAY_PLAN_ID_ELITE        || "",
+    razorpayPlanIdAnnual: process.env.RAZORPAY_PLAN_ID_ELITE_ANNUAL || "",
     // International (Paddle / USD)
     amountUsd: 14.99,
     amountUsdAnnual: 119,
@@ -111,23 +114,33 @@ export function getRazorpayKeyId(): string {
   return process.env.RAZORPAY_KEY_ID || "";
 }
 
+export type BillingCycle = "monthly" | "annual";
+
 export async function createSubscription(
   plan: SubscriptionPlan,
   userId: string,
   userName?: string,
   userEmail?: string,
+  billing: BillingCycle = "monthly",
 ): Promise<any> {
   const config = PLAN_CONFIG[plan];
-  if (!config.razorpayPlanId) {
-    throw new Error(`Razorpay plan ID for "${plan}" not configured. Set RAZORPAY_PLAN_ID_${plan.toUpperCase()} env var.`);
+  const isAnnual = billing === "annual";
+  const planId = isAnnual ? config.razorpayPlanIdAnnual : config.razorpayPlanId;
+
+  if (!planId) {
+    const envKey = isAnnual
+      ? `RAZORPAY_PLAN_ID_${plan.toUpperCase()}_ANNUAL`
+      : `RAZORPAY_PLAN_ID_${plan.toUpperCase()}`;
+    throw new Error(`Razorpay ${billing} plan ID for "${plan}" not configured. Set ${envKey} env var.`);
   }
 
   const subscription = await (getRazorpay().subscriptions as any).create({
-    plan_id: config.razorpayPlanId,
-    total_count: 12,
+    plan_id: planId,
+    // annual = 1 charge upfront; monthly = 12 recurring charges
+    total_count: isAnnual ? 1 : 12,
     quantity: 1,
     customer_notify: 1,
-    notes: { userId, plan, userName: userName || "", userEmail: userEmail || "" },
+    notes: { userId, plan, billing, userName: userName || "", userEmail: userEmail || "" },
   });
 
   await db.insert(aryaSubscriptions).values({
@@ -135,7 +148,7 @@ export async function createSubscription(
     plan,
     status: "created",
     razorpaySubscriptionId: subscription.id,
-    amountInr: config.amountInr,
+    amountInr: isAnnual ? config.amountInrAnnual : config.amountInr,
   } as any);
 
   return subscription;
@@ -182,9 +195,18 @@ export function verifyWebhookSignature(body: string, signature: string): boolean
   return expected === signature;
 }
 
-export async function activateUserPlan(userId: string, plan: SubscriptionPlan, razorpaySubscriptionId: string): Promise<void> {
+export async function activateUserPlan(
+  userId: string,
+  plan: SubscriptionPlan,
+  razorpaySubscriptionId: string,
+  billing: BillingCycle = "monthly",
+): Promise<void> {
   const planExpiresAt = new Date();
-  planExpiresAt.setMonth(planExpiresAt.getMonth() + 1);
+  if (billing === "annual") {
+    planExpiresAt.setFullYear(planExpiresAt.getFullYear() + 1);
+  } else {
+    planExpiresAt.setMonth(planExpiresAt.getMonth() + 1);
+  }
   await db.update(aryaUsers)
     .set({ plan, planExpiresAt, razorpaySubscriptionId } as any)
     .where(eq(aryaUsers.id, userId));

@@ -54,6 +54,9 @@ GOOGLE_CALENDAR_REDIRECT_URI = "https://aryaai.in/api/calendar/callback"
 RAZORPAY_PLAN_ID_CORE = "plan_T0fnn35ua7yT6N"
 RAZORPAY_PLAN_ID_PRO = "plan_T0fp7nnyhofjgd"
 RAZORPAY_PLAN_ID_ELITE = "plan_T0fpdhtZSdr85E"
+RAZORPAY_PLAN_ID_CORE_ANNUAL = "plan_T4CRPOUhF4V1L3"
+RAZORPAY_PLAN_ID_PRO_ANNUAL = "plan_T4CTXgeywqYId7"
+RAZORPAY_PLAN_ID_ELITE_ANNUAL = "plan_T4CVbKjZiyyeOg"
 
 [postMerge]
 path = "scripts/post-merge.sh"

@@ -4611,18 +4611,22 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
   app.post("/api/subscription/create", requireUser, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).userId;
-      const { plan } = req.body;
+      const { plan, billing = "monthly" } = req.body;
       if (!plan || !["core", "pro", "elite"].includes(plan)) {
         return res.status(400).json({ error: "Invalid plan. Choose 'core', 'pro', or 'elite'." });
+      }
+      if (!["monthly", "annual"].includes(billing)) {
+        return res.status(400).json({ error: "Invalid billing cycle. Choose 'monthly' or 'annual'." });
       }
       if (!isRazorpayConfigured()) {
         return res.status(503).json({ error: "Payment gateway not configured. Contact support." });
       }
       const [user] = await db.select().from(aryaUsers).where(eq(aryaUsers.id, userId)).limit(1);
-      const subscription = await createRazorpaySubscription(plan, userId, user?.name, user?.email || undefined);
+      const subscription = await createRazorpaySubscription(plan, userId, user?.name, user?.email || undefined, billing);
       res.json({
         subscriptionId: subscription.id,
         plan,
+        billing,
         keyId: getRazorpayKeyId(),
         status: subscription.status,
       });
@@ -4635,7 +4639,7 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
   app.post("/api/subscription/verify", requireUser, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).userId;
-      const { razorpay_payment_id, razorpay_subscription_id, razorpay_signature, plan } = req.body;
+      const { razorpay_payment_id, razorpay_subscription_id, razorpay_signature, plan, billing = "monthly" } = req.body;
       if (!razorpay_payment_id || !razorpay_subscription_id || !razorpay_signature) {
         return res.status(400).json({ error: "Missing payment details" });
       }
@@ -4646,7 +4650,7 @@ Respond ONLY with valid JSON: {"quote": "..."}`;
       if (!valid) {
         return res.status(400).json({ error: "Payment verification failed. Contact support." });
       }
-      await activateUserPlan(userId, plan, razorpay_subscription_id);
+      await activateUserPlan(userId, plan, razorpay_subscription_id, billing);
       res.json({ success: true, plan, message: `ARYA ${plan.charAt(0).toUpperCase() + plan.slice(1)} activated!` });
     } catch (error: any) {
       console.error("[SUBSCRIPTION] Verify error:", error.message);
