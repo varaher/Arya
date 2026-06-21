@@ -5397,12 +5397,23 @@ export default function AryaChat() {
                       <button
                         data-testid="button-upgrade-plan-sidebar"
                         onClick={() => { setShowUserMenu(false); setShowPricing(true); }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 font-medium"
+                        className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium ${
+                          trialStatus?.isPaidSubscriber
+                            ? "text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                            : "text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+                        }`}
                       >
-                        <Crown className="w-3.5 h-3.5" />
-                        {(user as any)?.plan && (user as any).plan !== "free"
-                          ? `ARYA ${((user as any).plan as string).charAt(0).toUpperCase() + ((user as any).plan as string).slice(1)} — Active`
-                          : "Upgrade Plan"}
+                        {trialStatus?.isPaidSubscriber ? (
+                          <>
+                            <span className="text-emerald-500">✓</span>
+                            {`ARYA ${(trialStatus.effectivePlan || "core").charAt(0).toUpperCase() + (trialStatus.effectivePlan || "core").slice(1)} Plan`}
+                          </>
+                        ) : (
+                          <>
+                            <Crown className="w-3.5 h-3.5" />
+                            Upgrade Plan
+                          </>
+                        )}
                       </button>
                     )}
                     <div className="border-t border-gray-100 dark:border-slate-700 my-1" />
@@ -5658,12 +5669,23 @@ export default function AryaChat() {
                       <button
                         data-testid="button-upgrade-plan"
                         onClick={() => { setShowUserMenu(false); setShowPricing(true); }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 font-medium"
+                        className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium ${
+                          trialStatus?.isPaidSubscriber
+                            ? "text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                            : "text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+                        }`}
                       >
-                        <Crown className="w-3.5 h-3.5" />
-                        {(user as any)?.plan && (user as any).plan !== "free"
-                          ? `ARYA ${((user as any).plan as string).charAt(0).toUpperCase() + ((user as any).plan as string).slice(1)} — Active`
-                          : "Upgrade Plan"}
+                        {trialStatus?.isPaidSubscriber ? (
+                          <>
+                            <span className="text-emerald-500">✓</span>
+                            {`ARYA ${(trialStatus.effectivePlan || "core").charAt(0).toUpperCase() + (trialStatus.effectivePlan || "core").slice(1)} Plan`}
+                          </>
+                        ) : (
+                          <>
+                            <Crown className="w-3.5 h-3.5" />
+                            Upgrade Plan
+                          </>
+                        )}
                       </button>
                       <div className="border-t border-gray-100 dark:border-slate-700 my-1" />
                       <button
