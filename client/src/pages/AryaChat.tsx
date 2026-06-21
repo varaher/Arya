@@ -1007,6 +1007,31 @@ function UserProfileModal({ token, onClose, userName }: { token: string; onClose
   const [saved, setSaved] = useState(false);
   const [interestInput, setInterestInput] = useState("");
 
+  // Password change state
+  const [pwForm, setPwForm] = useState({ current: "", next: "", confirm: "" });
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwError, setPwError] = useState("");
+  const [pwSuccess, setPwSuccess] = useState("");
+  const [showPwSection, setShowPwSection] = useState(false);
+
+  const handleChangePassword = async (hasPassword: boolean) => {
+    setPwError(""); setPwSuccess("");
+    if (pwForm.next.length < 6) { setPwError("Password must be at least 6 characters."); return; }
+    if (pwForm.next !== pwForm.confirm) { setPwError("Passwords don't match."); return; }
+    setPwSaving(true);
+    try {
+      const res = await fetch("/api/user/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-user-token": token },
+        body: JSON.stringify({ currentPassword: pwForm.current || undefined, newPassword: pwForm.next }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setPwError(data.error || "Failed to update password."); }
+      else { setPwSuccess(data.message || "Password updated."); setPwForm({ current: "", next: "", confirm: "" }); setTimeout(() => setShowPwSection(false), 2000); }
+    } catch { setPwError("Something went wrong. Try again."); }
+    setPwSaving(false);
+  };
+
   const [form, setForm] = useState({
     name: "",
     phone: "",
@@ -1173,6 +1198,79 @@ function UserProfileModal({ token, onClose, userName }: { token: string; onClose
                     />
                   </div>
                 </div>
+              </div>
+
+              {/* Password section */}
+              <div className="border-t border-gray-100 dark:border-slate-700" />
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                    {profile?.hasPassword ? "Password" : "Set a Password"}
+                  </div>
+                  <button
+                    data-testid="button-toggle-password-section"
+                    onClick={() => { setShowPwSection(s => !s); setPwError(""); setPwSuccess(""); setPwForm({ current: "", next: "", confirm: "" }); }}
+                    className="text-xs text-cyan-600 dark:text-cyan-400 hover:underline font-medium"
+                  >
+                    {showPwSection ? "Cancel" : profile?.hasPassword ? "Change" : "Set up"}
+                  </button>
+                </div>
+                {!showPwSection && (
+                  <p className="text-xs text-muted-foreground">
+                    {profile?.isGoogleUser && !profile?.hasPassword
+                      ? "You signed in with Google. Set a password to also log in with your phone number."
+                      : "Manage your login password."}
+                  </p>
+                )}
+                {showPwSection && (
+                  <div className="space-y-2.5">
+                    {profile?.hasPassword && (
+                      <div>
+                        <label className="block text-xs text-muted-foreground mb-1.5">Current password</label>
+                        <input
+                          data-testid="input-current-password"
+                          type="password"
+                          placeholder="Enter current password"
+                          value={pwForm.current}
+                          onChange={e => setPwForm(f => ({ ...f, current: e.target.value }))}
+                          className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl text-sm px-3 py-2.5 focus:outline-none focus:border-cyan-300 dark:focus:border-cyan-700"
+                        />
+                      </div>
+                    )}
+                    <div>
+                      <label className="block text-xs text-muted-foreground mb-1.5">New password</label>
+                      <input
+                        data-testid="input-new-password"
+                        type="password"
+                        placeholder="Min 6 characters"
+                        value={pwForm.next}
+                        onChange={e => setPwForm(f => ({ ...f, next: e.target.value }))}
+                        className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl text-sm px-3 py-2.5 focus:outline-none focus:border-cyan-300 dark:focus:border-cyan-700"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-muted-foreground mb-1.5">Confirm new password</label>
+                      <input
+                        data-testid="input-confirm-password"
+                        type="password"
+                        placeholder="Repeat new password"
+                        value={pwForm.confirm}
+                        onChange={e => setPwForm(f => ({ ...f, confirm: e.target.value }))}
+                        className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl text-sm px-3 py-2.5 focus:outline-none focus:border-cyan-300 dark:focus:border-cyan-700"
+                      />
+                    </div>
+                    {pwError && <p className="text-xs text-red-500">{pwError}</p>}
+                    {pwSuccess && <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">{pwSuccess}</p>}
+                    <button
+                      data-testid="button-save-password"
+                      onClick={() => handleChangePassword(!!profile?.hasPassword)}
+                      disabled={pwSaving || !pwForm.next || !pwForm.confirm}
+                      className="w-full py-2.5 rounded-xl text-sm font-semibold bg-cyan-500 hover:bg-cyan-600 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {pwSaving ? "Saving…" : profile?.hasPassword ? "Update Password" : "Set Password"}
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className="border-t border-gray-100 dark:border-slate-700" />

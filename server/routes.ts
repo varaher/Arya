@@ -679,11 +679,56 @@ export async function registerRoutes(
         currentChallenges: (aryaUsers as any).currentChallenges,
         workingStyle: (aryaUsers as any).workingStyle,
         currentWork: aryaUsers.currentWork,
+        passwordHash: aryaUsers.passwordHash,
+        googleId: aryaUsers.googleId,
       }).from(aryaUsers).where(eq(aryaUsers.id, userId)).limit(1);
       if (!user) return res.status(404).json({ error: "User not found" });
-      res.json(user);
+      // Never send password hash to client — just expose flags
+      const { passwordHash, googleId, ...safe } = user as any;
+      res.json({
+        ...safe,
+        hasPassword: !!passwordHash,
+        isGoogleUser: !!googleId,
+      });
     } catch (error: any) {
       res.status(500).json({ error: "Failed to get profile" });
+    }
+  });
+
+  app.post("/api/user/change-password", requireUser, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).userId;
+      const { currentPassword, newPassword } = req.body;
+      if (!newPassword || newPassword.length < 6) {
+        return res.status(400).json({ error: "New password must be at least 6 characters." });
+      }
+
+      const [user] = await db.select().from(aryaUsers).where(eq(aryaUsers.id, userId)).limit(1);
+      if (!user) return res.status(404).json({ error: "User not found" });
+
+      const hasPassword = !!user.passwordHash;
+
+      if (hasPassword) {
+        // Existing password users must provide their current password
+        if (!currentPassword) {
+          return res.status(400).json({ error: "Please enter your current password." });
+        }
+        const bcrypt = await import("bcryptjs");
+        const valid = await bcrypt.compare(currentPassword, user.passwordHash!);
+        if (!valid) {
+          return res.status(401).json({ error: "Current password is incorrect." });
+        }
+      }
+      // Google-only users: no current password needed — they're setting one for the first time
+
+      const bcryptMod = await import("bcryptjs");
+      const hash = await bcryptMod.hash(newPassword, 10);
+      await db.update(aryaUsers).set({ passwordHash: hash } as any).where(eq(aryaUsers.id, userId));
+
+      res.json({ success: true, message: hasPassword ? "Password updated." : "Password set successfully. You can now log in with your phone and this password." });
+    } catch (err: any) {
+      console.error("[CHANGE-PASSWORD]", err.message);
+      res.status(500).json({ error: "Failed to update password." });
     }
   });
 
