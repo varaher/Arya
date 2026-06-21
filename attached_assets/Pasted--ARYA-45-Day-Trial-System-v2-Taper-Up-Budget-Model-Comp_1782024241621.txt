@@ -1,0 +1,640 @@
+# ARYA — 45-Day Trial System (v2)
+## Taper-Up Budget Model — Complete Developer Specification
+
+---
+
+## What Changed From v1
+
+```
+v1 (original spec):
+  45 days of fully UNLIMITED Pro access.
+  No usage tracking. No cost ceiling.
+  Worst-case exposure: ~₹1,548 per highly
+  engaged user, with no upper bound if a
+  user is exceptionally active.
+
+v2 (this spec):
+  45 days of EVERY feature unlocked, but
+  conversations and voice minutes follow a
+  TAPER-UP budget — starts modest, increases
+  as the user proves engagement, caps at the
+  same level as the permanent Free tier.
+
+  Worst-case exposure: ₹740 per user, guaranteed.
+  Realistic expected cost: ₹213 per user, based
+  on normal trial drop-off patterns.
+
+Nothing else about the trial changes — all 9
+sections remain fully unlocked from Day 1
+(Niti, Drishya, KAAL, Prana, Document Intelligence,
+all 7 Thinking Modes, Weekly Review, Morning
+Briefing). Only the PER-USE cost drivers
+(conversations, voice) are budgeted.
+```
+
+---
+
+## The Taper-Up Schedule
+
+```
+CONVERSATIONS PER DAY:
+  Day 1-10:    5 conversations/day
+  Day 11-25:  12 conversations/day
+  Day 26-45:  20 conversations/day
+
+VOICE MINUTES PER DAY:
+  Day 1-10:    2 minutes/day
+  Day 11-25:   5 minutes/day
+  Day 26-45:   8 minutes/day
+
+FREE TIER (Day 46 onward, no subscription):
+  20 conversations/day — permanent
+  Voice: not available on Free (Core+ only,
+  per existing plan structure)
+```
+
+**Why this shape:** Day 1-10 is when you have the least signal about whether a new signup will convert — keeping the ceiling low here controls cost during the highest-risk window. By Day 26, only genuinely engaged users are still active, and they're rewarded with the same generous 20/day they'll keep forever if they convert (or even if they don't — see Free tier note below). The conversation limit never drops between trial and Free tier — only voice and the specialised sections (Niti, Drishya, etc.) become paid-only after Day 45.
+
+---
+
+## 1. Database Changes
+
+### 1A — Add taper tracking columns to users table
+
+```sql
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS trial_started_at   TIMESTAMP,
+  ADD COLUMN IF NOT EXISTS trial_ends_at      TIMESTAMP,
+  ADD COLUMN IF NOT EXISTS trial_status       TEXT DEFAULT 'active',
+  ADD COLUMN IF NOT EXISTS is_founding_member BOOLEAN DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS founding_price     INTEGER;
+```
+
+### 1B — Create daily usage tracking table
+
+```sql
+CREATE TABLE IF NOT EXISTS arya_trial_daily_usage (
+  id                  SERIAL PRIMARY KEY,
+  user_id             INTEGER NOT NULL REFERENCES users(id),
+  usage_date          DATE NOT NULL,
+  conversations_used  INTEGER NOT NULL DEFAULT 0,
+  voice_minutes_used  NUMERIC(6,2) NOT NULL DEFAULT 0,
+  created_at          TIMESTAMP DEFAULT NOW(),
+  UNIQUE(user_id, usage_date)
+);
+
+CREATE INDEX idx_trial_usage_user_date
+  ON arya_trial_daily_usage(user_id, usage_date);
+```
+
+### 1C — Trial notifications tracking table (unchanged from v1)
+
+```sql
+CREATE TABLE IF NOT EXISTS arya_trial_notifications (
+  id              SERIAL PRIMARY KEY,
+  user_id         INTEGER NOT NULL REFERENCES users(id),
+  day_number      INTEGER NOT NULL,
+  notification_type TEXT NOT NULL,
+  title           TEXT NOT NULL,
+  body            TEXT NOT NULL,
+  scheduled_at    TIMESTAMP NOT NULL,
+  sent_at         TIMESTAMP,
+  opened_at       TIMESTAMP,
+  converted       BOOLEAN DEFAULT FALSE,
+  created_at      TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_trial_notif_user ON arya_trial_notifications(user_id);
+CREATE INDEX idx_trial_notif_scheduled ON arya_trial_notifications(scheduled_at);
+```
+
+### 1D — Update schema.ts (Drizzle)
+
+```typescript
+trialStartedAt:    timestamp('trial_started_at'),
+trialEndsAt:       timestamp('trial_ends_at'),
+trialStatus:       text('trial_status').default('active'),
+isFoundingMember:  boolean('is_founding_member').default(false),
+foundingPrice:     integer('founding_price'),
+
+export const arya_trial_daily_usage = pgTable('arya_trial_daily_usage', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id),
+  usageDate: date('usage_date').notNull(),
+  conversationsUsed: integer('conversations_used').notNull().default(0),
+  voiceMinutesUsed: numeric('voice_minutes_used', { precision: 6, scale: 2 }).notNull().default('0'),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+```
+
+---
+
+## 2. The Taper Schedule — Core Logic
+
+```typescript
+// server/arya/trial-budget.ts (NEW FILE)
+
+interface TaperLimits {
+  conversationsPerDay: number;
+  voiceMinutesPerDay: number;
+}
+
+export function getTaperLimits(trialDay: number): TaperLimits {
+  if (trialDay <= 10) {
+    return { conversationsPerDay: 5, voiceMinutesPerDay: 2 };
+  }
+  if (trialDay <= 25) {
+    return { conversationsPerDay: 12, voiceMinutesPerDay: 5 };
+  }
+  return { conversationsPerDay: 20, voiceMinutesPerDay: 8 };
+}
+
+export function getTrialDay(trialStartedAt: Date | null): number | null {
+  if (!trialStartedAt) return null;
+  const msPerDay = 1000 * 60 * 60 * 24;
+  const elapsed = Date.now() - trialStartedAt.getTime();
+  return Math.floor(elapsed / msPerDay) + 1;
+}
+```
+
+---
+
+## 3. Budget Enforcement Middleware
+
+```typescript
+// server/middleware/trial-budget-check.ts (NEW FILE)
+
+import { db } from '../db';
+import { users, arya_trial_daily_usage } from '../../shared/schema';
+import { eq, and, sql } from 'drizzle-orm';
+import { getTaperLimits, getTrialDay } from '../arya/trial-budget';
+
+interface BudgetCheckResult {
+  allowed: boolean;
+  reason?: 'trial_conversation_limit' | 'trial_voice_limit';
+  limit?: number;
+  used?: number;
+  resetsAt?: Date;
+}
+
+export async function checkTrialConversationBudget(
+  userId: number
+): Promise<BudgetCheckResult> {
+  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (!user || user.trialStatus !== 'active' || !user.trialStartedAt) {
+    return { allowed: true };
+  }
+
+  const trialDay = getTrialDay(new Date(user.trialStartedAt));
+  if (trialDay === null || trialDay > 45) {
+    return { allowed: true };
+  }
+
+  const limits = getTaperLimits(trialDay);
+  const today = new Date().toISOString().split('T')[0];
+
+  const [usage] = await db
+    .select()
+    .from(arya_trial_daily_usage)
+    .where(and(
+      eq(arya_trial_daily_usage.userId, userId),
+      eq(arya_trial_daily_usage.usageDate, today)
+    ))
+    .limit(1);
+
+  const used = usage?.conversationsUsed || 0;
+
+  if (used >= limits.conversationsPerDay) {
+    const resetsAt = new Date();
+    resetsAt.setHours(24, 0, 0, 0);
+    return {
+      allowed: false,
+      reason: 'trial_conversation_limit',
+      limit: limits.conversationsPerDay,
+      used,
+      resetsAt,
+    };
+  }
+
+  return { allowed: true };
+}
+
+export async function checkTrialVoiceBudget(
+  userId: number,
+  requestedMinutes: number = 1
+): Promise<BudgetCheckResult> {
+  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (!user || user.trialStatus !== 'active' || !user.trialStartedAt) {
+    return { allowed: true };
+  }
+
+  const trialDay = getTrialDay(new Date(user.trialStartedAt));
+  if (trialDay === null || trialDay > 45) {
+    return { allowed: true };
+  }
+
+  const limits = getTaperLimits(trialDay);
+  const today = new Date().toISOString().split('T')[0];
+
+  const [usage] = await db
+    .select()
+    .from(arya_trial_daily_usage)
+    .where(and(
+      eq(arya_trial_daily_usage.userId, userId),
+      eq(arya_trial_daily_usage.usageDate, today)
+    ))
+    .limit(1);
+
+  const used = Number(usage?.voiceMinutesUsed || 0);
+
+  if (used + requestedMinutes > limits.voiceMinutesPerDay) {
+    const resetsAt = new Date();
+    resetsAt.setHours(24, 0, 0, 0);
+    return {
+      allowed: false,
+      reason: 'trial_voice_limit',
+      limit: limits.voiceMinutesPerDay,
+      used,
+      resetsAt,
+    };
+  }
+
+  return { allowed: true };
+}
+
+export async function recordTrialUsage(
+  userId: number,
+  type: 'conversation' | 'voice',
+  amount: number = 1
+): Promise<void> {
+  const today = new Date().toISOString().split('T')[0];
+
+  await db
+    .insert(arya_trial_daily_usage)
+    .values({
+      userId,
+      usageDate: today,
+      conversationsUsed: type === 'conversation' ? amount : 0,
+      voiceMinutesUsed: type === 'voice' ? amount.toString() : '0',
+    })
+    .onConflictDoUpdate({
+      target: [arya_trial_daily_usage.userId, arya_trial_daily_usage.usageDate],
+      set: type === 'conversation'
+        ? { conversationsUsed: sql`${arya_trial_daily_usage.conversationsUsed} + ${amount}` }
+        : { voiceMinutesUsed: sql`${arya_trial_daily_usage.voiceMinutesUsed} + ${amount}` },
+    });
+}
+```
+
+---
+
+## 4. Wiring Into the Chat Route
+
+```typescript
+// In routes.ts — POST /api/arya/conversations/:id/chat
+
+app.post('/api/arya/conversations/:id/chat', requireAuth, async (req, res) => {
+  const userId = req.user.id;
+
+  const budgetCheck = await checkTrialConversationBudget(userId);
+  if (!budgetCheck.allowed) {
+    return res.status(429).json({
+      error: 'trial_limit_reached',
+      reason: budgetCheck.reason,
+      limit: budgetCheck.limit,
+      used: budgetCheck.used,
+      resetsAt: budgetCheck.resetsAt,
+      message: buildLimitReachedMessage(budgetCheck),
+    });
+  }
+
+  // ... existing chat streaming logic unchanged ...
+
+  await recordTrialUsage(userId, 'conversation', 1);
+});
+
+function buildLimitReachedMessage(check: BudgetCheckResult): string {
+  const hoursUntilReset = check.resetsAt
+    ? Math.ceil((check.resetsAt.getTime() - Date.now()) / (1000 * 60 * 60))
+    : 24;
+
+  return `You've used today's ${check.limit} conversations during your trial. ` +
+         `More unlocks in ${hoursUntilReset} hours — or upgrade anytime for unlimited access.`;
+}
+```
+
+Same pattern applies to the voice route (`POST /api/arya/voice`) using `checkTrialVoiceBudget()` and `recordTrialUsage(userId, 'voice', minutesUsed)`.
+
+---
+
+## 5. Frontend — Showing the Limit Gracefully
+
+```tsx
+if (response.status === 429 && data.reason === 'trial_conversation_limit') {
+  showTrialLimitCard({
+    used: data.used,
+    limit: data.limit,
+    resetsAt: data.resetsAt,
+    message: data.message,
+  });
+  return;
+}
+
+/*
+TrialLimitCard — warm, not punitive:
+
+  You've made the most of today
+
+  ${used}/${limit} conversations used —
+  more unlock in ${hoursLeft}h
+
+  Your trial gives you more access as
+  you go — by day 26 you'll have 20/day,
+  same as a full subscription.
+
+  [See plans →]    [I'll wait]
+*/
+```
+
+Tone matters here. This is not an error state — it's progress framing. The message should make the taper feel like a reward system ("more unlocks as you go"), not a punishment.
+
+---
+
+## 6. The 18 Discovery Notifications (Unchanged Structure, Two Additions)
+
+Reuse the existing `TRIAL_NOTIFICATIONS` array, `scheduleTrialNotifications()`, `processTrialNotifications()`, and `getNotificationUrl()` exactly as already built. Add two new entries:
+
+### 6A — Day 11 "more conversations unlocked"
+
+```typescript
+{
+  dayNumber: 11,
+  type: 'discovery',
+  title: 'You have unlocked more',
+  body: 'You have been here 10 days — your daily conversations just increased to 12/day. Keep going, it gets better.',
+  sendHour: 9,
+},
+```
+
+### 6B — Day 26 "full access unlocked"
+
+```typescript
+{
+  dayNumber: 26,
+  type: 'discovery',
+  title: 'Full daily access, unlocked',
+  body: 'You have made it to day 26. You are now at 20 conversations a day — the same access you would have on a paid plan. This is what ARYA feels like at full speed.',
+  sendHour: 9,
+},
+```
+
+Insert Day 11 between the existing Day 10 and Day 12 entries. Day 26 coincides with the existing Drishya notification — either send both, or merge into one message that day.
+
+---
+
+## 7. Dynamic Day 40 Message (Updated Framing)
+
+```typescript
+async function buildDay40Body(userId: number): Promise<string> {
+  const [convCount] = await db.select({ count: count() }).from(arya_conversations)
+    .where(eq(arya_conversations.userId, userId));
+  const [goalCount] = await db.select({ count: count() }).from(arya_goals)
+    .where(eq(arya_goals.userId, userId));
+  const [completedCount] = await db.select({ count: count() }).from(arya_goals)
+    .where(and(eq(arya_goals.userId, userId), eq(arya_goals.status, 'completed')));
+  const [noteCount] = await db.select({ count: count() }).from(arya_voice_notes)
+    .where(eq(arya_voice_notes.userId, userId));
+
+  const conversations = convCount?.count || 0;
+  const goals = goalCount?.count || 0;
+  const completed = completedCount?.count || 0;
+  const notes = noteCount?.count || 0;
+
+  return `You have been with ARYA for 40 days.
+
+${conversations} conversations.
+${goals} goals set${completed > 0 ? `, ${completed} completed` : ''}.
+${notes > 0 ? `${notes} voice notes recorded.` : ''}
+
+You are at full access now — 20 conversations a day.
+5 more days of trial — then choose how you continue.
+
+Core ₹249/month keeps everything exactly as it is today.`;
+}
+```
+
+---
+
+## 8. Trial Status API — Now Reports Budget Too
+
+```typescript
+app.get('/api/user/trial-status', requireAuth, async (req, res) => {
+  const userId = req.user.id;
+  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+
+  const now = new Date();
+  const trialEnds = user.trialEndsAt ? new Date(user.trialEndsAt) : null;
+  const daysLeft = trialEnds
+    ? Math.max(0, Math.ceil((trialEnds.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+    : 0;
+
+  const trialDay = user.trialStartedAt ? getTrialDay(new Date(user.trialStartedAt)) : null;
+  const limits = trialDay ? getTaperLimits(trialDay) : null;
+
+  let todayUsage = { conversationsUsed: 0, voiceMinutesUsed: 0 };
+  if (trialDay && trialDay <= 45) {
+    const today = new Date().toISOString().split('T')[0];
+    const [usage] = await db.select().from(arya_trial_daily_usage)
+      .where(and(eq(arya_trial_daily_usage.userId, userId), eq(arya_trial_daily_usage.usageDate, today)))
+      .limit(1);
+    if (usage) {
+      todayUsage = {
+        conversationsUsed: usage.conversationsUsed,
+        voiceMinutesUsed: Number(usage.voiceMinutesUsed),
+      };
+    }
+  }
+
+  const effectivePlan = await getEffectivePlan(userId);
+
+  res.json({
+    trialStatus: user.trialStatus,
+    trialStartedAt: user.trialStartedAt,
+    trialEndsAt: user.trialEndsAt,
+    daysLeft,
+    trialDay,
+    todaysLimits: limits,
+    todaysUsage: todayUsage,
+    effectivePlan,
+    isFoundingMember: user.isFoundingMember,
+    foundingPrice: user.foundingPrice,
+    isPaidSubscriber: user.subscriptionStatus === 'active',
+  });
+});
+```
+
+---
+
+## 9. getEffectivePlan() — What It Still Controls
+
+`getEffectivePlan()` is unchanged from v1 and still governs FEATURE access (Niti, Drishya, Thinking Modes, Document Intelligence, KAAL, Prana, Weekly Review, Morning Briefing). Trial users still get full `'pro'`-level feature access throughout all 45 days. The new budget middleware is a separate, independent layer that only governs *how many* conversations/voice minutes per day — not *which features* are visible.
+
+```typescript
+export async function getEffectivePlan(userId: number): Promise<string> {
+  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (!user) return 'free';
+
+  if (user.subscriptionPlan && user.subscriptionStatus === 'active') {
+    return user.subscriptionPlan;
+  }
+
+  if (user.trialStatus === 'active' && user.trialEndsAt) {
+    if (new Date() < new Date(user.trialEndsAt)) {
+      return 'pro';
+    } else {
+      await db.update(users).set({ trialStatus: 'expired' }).where(eq(users.id, userId));
+      return 'free';
+    }
+  }
+
+  return 'free';
+}
+```
+
+**The key distinction:** `getEffectivePlan()` answers "can this user see Niti at all?" — still yes, throughout the trial. The budget middleware answers "how many conversations can they have today?" — that's the taper. These are two independent layers, which is exactly why the trial can stay "every feature unlocked" while still controlling cost.
+
+---
+
+## 10. Trial Banner — Frontend (Shows Taper Progress)
+
+```tsx
+const { data: trialStatus } = useQuery({
+  queryKey: ['trial-status'],
+  queryFn: () => fetch('/api/user/trial-status').then(r => r.json()),
+  staleTime: 15 * 60 * 1000,
+});
+
+{trialStatus?.trialStatus === 'active' && trialStatus?.daysLeft > 0 && (
+  <div className="trial-banner">
+    <span className="trial-banner-text">
+      {trialStatus.trialDay <= 25
+        ? `Day ${trialStatus.trialDay} of 45 — ${trialStatus.todaysUsage.conversationsUsed}/${trialStatus.todaysLimits.conversationsPerDay} today, more unlocks soon`
+        : `Day ${trialStatus.trialDay} of 45 — full access, ${trialStatus.todaysUsage.conversationsUsed}/${trialStatus.todaysLimits.conversationsPerDay} today`}
+    </span>
+    <button className="trial-banner-cta" onClick={() => navigate('/pricing')}>
+      See plans →
+    </button>
+  </div>
+)}
+```
+
+---
+
+## 11. Beta Users — Founding Member Flow
+
+```typescript
+export async function markFoundingMembers(): Promise<void> {
+  const launchDate = new Date('2026-06-16');
+
+  const earlyUsers = await db.select().from(users).where(lt(users.createdAt, launchDate));
+
+  for (const user of earlyUsers) {
+    await db.update(users).set({
+      isFoundingMember: true,
+      foundingPrice: 14900,
+      trialStatus: 'active',
+      trialEndsAt: addDays(new Date(), 30),
+      trialStartedAt: new Date(),
+    }).where(eq(users.id, user.id));
+  }
+
+  console.log(`Marked ${earlyUsers.length} founding members`);
+}
+```
+
+**Note:** as written, founding members restarting their trial clock also restart at the taper's Day 1 (5 conversations/day). See Open Decision #2 below — likely worth giving them a flat 20/day immediately instead, since they are already proven, loyal users rather than unknowns.
+
+---
+
+## 12. Cost Model — Final Numbers
+
+```
+WORST-CASE CEILING (every user maxes every day):
+  Conversations: 630 total over 45 days, approx $5.04
+  Voice: 255 total minutes, approx $3.57
+  Per-user ceiling: approx $8.61 (Rs 740)
+  For all 312 existing users: Rs 231,024 absolute maximum
+
+REALISTIC EXPECTED COST (normal trial drop-off curve):
+  Blended average: approx $2.47/user (Rs 213)
+  For all 312 existing users: approx Rs 66,400
+
+COST RECOVERY (conservative 10 percent conversion assumption):
+  31 users convert, blended Rs 320/mo avg revenue, approx Rs 10,100/month
+  Recovers full realistic trial cost in approx 6.6 months
+  Every month after that is net positive
+```
+
+Do not plan around high conversion assumptions (60%+). Typical consumer subscription trial-to-paid conversion ranges roughly 8-25%; even the low end of that range makes this trial model sustainable. Treat any number above 30% as a pleasant surprise, not a baseline expectation — replace all of these estimates with real data once the first 100-200 trial users have run through the full 45 days.
+
+---
+
+## 13. Complete Wiring Checklist
+
+```
+[ ] 1. DB migration — Section 1A, 1B, 1C
+[ ] 2. schema.ts — add new fields + new table (Section 1D)
+[ ] 3. server/arya/trial-budget.ts (NEW)
+       getTaperLimits(), getTrialDay()
+[ ] 4. server/middleware/trial-budget-check.ts (NEW)
+       checkTrialConversationBudget(), checkTrialVoiceBudget(), recordTrialUsage()
+[ ] 5. server/arya/trial-notifications.ts
+       Reuse existing array, add Day 11 + Day 26 entries
+       Update buildDay40Body() framing
+[ ] 6. routes.ts — POST /api/arya/conversations/:id/chat
+       Add budget check before streaming, record usage after
+[ ] 7. routes.ts — POST /api/arya/voice
+       Add voice budget check, record usage after
+[ ] 8. routes.ts — GET /api/user/trial-status
+       Extend response with todaysLimits + todaysUsage
+[ ] 9. server/middleware/trial-check.ts
+       getEffectivePlan() — unchanged, still governs feature access
+[ ] 10. AryaChat.tsx
+        TrialLimitCard component + updated trial banner
+[ ] 11. reminder-scheduler.ts
+        processTrialNotifications interval — unchanged
+[ ] 12. server/arya/founding-members.ts
+        markFoundingMembers() — review Open Decision #2
+[ ] 13. Razorpay Dashboard
+        Founding plan secret — unchanged from v1
+[ ] 14. Test complete flow end to end (see below)
+```
+
+### Test checklist
+
+```
+[ ] New signup, Day 1 — confirm 5 conversations/day enforced
+[ ] Fast-forward test DB to Day 11 — confirm 12/day
+[ ] Fast-forward to Day 26 — confirm 20/day
+[ ] Hit the daily limit — confirm graceful message, not a hard error
+[ ] Confirm voice budget enforced independently of conversation budget
+[ ] Confirm Niti/Drishya/etc. remain accessible regardless of
+    conversation budget state
+[ ] Day 45 to Day 46 transition — confirm Free tier lands at
+    20 conv/day with no jarring drop
+```
+
+---
+
+## 14. Open Decisions — Need Your Input
+
+**1. Voice on Free tier.** Current Free tier spec has no voice at all (Core+ only). Confirm this stays true — trial users who relied on voice during the trial lose it completely on Day 46 unless they subscribe, even though conversations stay smooth. Likely fine since it matches the existing plan structure, but worth confirming explicitly — it's the one real cliff remaining in the whole model.
+
+**2. Founding members and the taper.** Section 11 restarts founding members at Day 1 of the taper during their 30-day grace period. Given they are already proven, loyal users, consider giving them a flat 20/day immediately instead of re-running them through the taper. Slightly more cost per founding member, but matches the "thank you" framing of that notification better than making them re-earn access they already had.
+
+**3. Time-gated vs. engagement-gated taper.** This spec uses pure time gating — Day 11 and Day 26 thresholds apply regardless of activity. A user who signs up and never returns still "reaches" 20/day on paper by Day 26, though they will not use it. Simpler to build, and the cost difference is negligible since inactive users do not consume budget regardless of their ceiling. Recommend keeping time-gated for v1; revisit only if real usage data shows otherwise.
+
+---
+
+*ARYA — Think clearly. Feel less alone.*
+*aryaai.in*

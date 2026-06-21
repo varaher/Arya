@@ -3904,7 +3904,14 @@ export default function AryaChat() {
   const { language: uiLanguage, t, setLanguage: setGlobalLanguage } = useLanguage();
 
   const { data: trialStatus } = useQuery<{
-    trialStatus: string; daysLeft: number; isFoundingMember: boolean; isPaidSubscriber: boolean;
+    trialStatus: string;
+    daysLeft: number;
+    isFoundingMember: boolean;
+    isPaidSubscriber: boolean;
+    effectivePlan: string;
+    trialDay: number | null;
+    todaysLimits: { conversationsPerDay: number; voiceMinutesPerDay: number } | null;
+    todaysUsage: { conversationsUsed: number; voiceMinutesUsed: number } | null;
   }>({
     queryKey: ["trial-status"],
     queryFn: async () => {
@@ -3914,7 +3921,7 @@ export default function AryaChat() {
       return res.json();
     },
     enabled: !!token && isLoggedIn,
-    staleTime: 60 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: kaalBriefing } = useQuery<any>({
@@ -4423,9 +4430,34 @@ export default function AryaChat() {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: "Something went wrong" }));
         if (errorData.upgradeAvailable) {
-        setShowPricing(true);
-      }
-      if (errorData.betaRestricted) {
+          setShowPricing(true);
+        }
+        if (errorData.error === "trial_limit_reached") {
+          const resetsIn = errorData.resetsAt
+            ? Math.ceil((new Date(errorData.resetsAt).getTime() - Date.now()) / (1000 * 60 * 60))
+            : 24;
+          const limitMsg = errorData.message || `You've used today's ${errorData.limit} conversations. More in ${resetsIn}h — or upgrade for unlimited access.`;
+          queryClient.setQueryData(
+            ["/api/arya/conversations", convId],
+            (old: any) => ({
+              ...old,
+              messages: [
+                ...(old?.messages || []),
+                {
+                  id: Date.now() + 1,
+                  conversationId: convId,
+                  role: "assistant",
+                  content: `**Daily limit reached**\n\n${limitMsg}\n\n[See plans →](/pricing)`,
+                  createdAt: new Date().toISOString(),
+                },
+              ],
+            })
+          );
+          queryClient.invalidateQueries({ queryKey: ["trial-status"] });
+          setIsStreaming(false);
+          return;
+        }
+        if (errorData.betaRestricted) {
           setBetaRestricted(true);
           fetch(`/api/arya/conversations/${convId}`, { method: "DELETE" }).catch(() => {});
           setActiveConversation(null);
@@ -5509,19 +5541,37 @@ export default function AryaChat() {
       </div>
 
       <div className="flex-1 flex flex-col min-w-0 relative">
-        {/* Trial countdown banner — shown when ≤10 days left */}
-        {isLoggedIn && trialStatus?.trialStatus === "active" && (trialStatus?.daysLeft ?? 99) <= 10 && (trialStatus?.daysLeft ?? 0) > 0 && (
+        {/* Trial activity banner — shown always during trial for context, urgent styling when ≤10 days left */}
+        {isLoggedIn && trialStatus?.trialStatus === "active" && !trialStatus?.isPaidSubscriber && (trialStatus?.daysLeft ?? 0) > 0 && trialStatus?.trialDay && (
           <div
             className="flex items-center justify-between px-4 py-2 text-xs"
-            style={{ background: "rgba(251,191,36,0.08)", borderBottom: "1px solid rgba(251,191,36,0.18)" }}
+            style={{
+              background: (trialStatus?.daysLeft ?? 99) <= 10 ? "rgba(251,191,36,0.10)" : "rgba(99,102,241,0.06)",
+              borderBottom: (trialStatus?.daysLeft ?? 99) <= 10 ? "1px solid rgba(251,191,36,0.22)" : "1px solid rgba(99,102,241,0.14)",
+            }}
           >
-            <span style={{ color: "#d97706", fontWeight: 500 }}>
-              {trialStatus.daysLeft === 1 ? "Last day of full access" : `${trialStatus.daysLeft} days of full access left`}
+            <span style={{ color: (trialStatus?.daysLeft ?? 99) <= 10 ? "#d97706" : "#6366f1", fontWeight: 500 }}>
+              {trialStatus.todaysLimits && trialStatus.todaysUsage ? (
+                <>
+                  Day {trialStatus.trialDay} of 45
+                  {" · "}
+                  {trialStatus.todaysUsage.conversationsUsed}/{trialStatus.todaysLimits.conversationsPerDay} conversations today
+                  {(trialStatus?.daysLeft ?? 99) <= 10 && ` · ${trialStatus.daysLeft === 1 ? "last day" : `${trialStatus.daysLeft} days left`}`}
+                </>
+              ) : (
+                (trialStatus?.daysLeft ?? 99) <= 10
+                  ? (trialStatus.daysLeft === 1 ? "Last day of full access" : `${trialStatus.daysLeft} days of full access left`)
+                  : `Day ${trialStatus.trialDay} of 45`
+              )}
             </span>
             <button
               onClick={() => setLocation("/pricing")}
-              className="ml-3 rounded-lg px-3 py-1 text-xs font-semibold transition-opacity hover:opacity-80"
-              style={{ background: "rgba(251,191,36,0.14)", border: "1px solid rgba(251,191,36,0.30)", color: "#d97706" }}
+              className="ml-3 rounded-lg px-3 py-1 text-xs font-semibold transition-opacity hover:opacity-80 whitespace-nowrap"
+              style={{
+                background: (trialStatus?.daysLeft ?? 99) <= 10 ? "rgba(251,191,36,0.14)" : "rgba(99,102,241,0.10)",
+                border: (trialStatus?.daysLeft ?? 99) <= 10 ? "1px solid rgba(251,191,36,0.30)" : "1px solid rgba(99,102,241,0.20)",
+                color: (trialStatus?.daysLeft ?? 99) <= 10 ? "#d97706" : "#6366f1",
+              }}
             >
               See plans →
             </button>

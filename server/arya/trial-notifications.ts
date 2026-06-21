@@ -73,6 +73,13 @@ const TRIAL_NOTIFICATIONS: TrialNotifDef[] = [
     sendHour: 10,
   },
   {
+    dayNumber: 11,
+    type: "discovery",
+    title: "You've unlocked more today 🔓",
+    body: "You've been here 10 days — your daily conversations just increased to 12/day. Keep going, it gets better.",
+    sendHour: 9,
+  },
+  {
     dayNumber: 12,
     type: "discovery",
     title: "Got a document you don't understand? 📸",
@@ -114,9 +121,9 @@ const TRIAL_NOTIFICATIONS: TrialNotifDef[] = [
   {
     dayNumber: 26,
     type: "discovery",
-    title: "ARYA wants to tell you a story 📖",
-    body: "Open Drishya. Describe what you need — a feeling, a situation. ARYA generates a complete story from India's ancient tradition. For your exact moment tonight.",
-    sendHour: 21,
+    title: "Full access unlocked — and a story tonight 📖",
+    body: "Day 26. You now have 20 conversations a day — the same as a paid plan. That's what ARYA feels like at full speed. Tonight: open Drishya, describe a feeling or a situation. ARYA writes a story just for you.",
+    sendHour: 9,
   },
   {
     dayNumber: 30,

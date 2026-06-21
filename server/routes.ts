@@ -101,6 +101,16 @@ import { createNitiSession, addNitiMessage } from "./arya/niti";
 import { detectStudyIntent, buildNoteTitle, extractBulletsFromResponse, buildStudyNotesPromptAddition } from "./arya/study-notes-extractor";
 import { scheduleTrialNotifications, getEffectivePlan } from "./arya/trial-notifications";
 import { markFoundingMembers } from "./arya/founding-members";
+import {
+  checkTrialConversationBudget,
+  checkTrialVoiceBudget,
+  recordTrialUsage,
+  getTodayUsage,
+  getTaperLimits,
+  getTrialDay,
+  buildLimitMessage,
+} from "./arya/trial-budget";
+import { aryaTrialDailyUsage } from "@shared/schema";
 
 const retriever = new KnowledgeRetriever();
 const medicalEngine = new MedicalEngine();
@@ -2124,6 +2134,23 @@ export async function registerRoutes(
         return res.status(429).json({ error: budgetCheck.reason, upgradeAvailable: budgetCheck.upgradeAvailable });
       }
 
+      // Trial taper-up budget check (independent layer — only limits HOW MANY, not WHICH features)
+      if (userId) {
+        const trialCheck = await checkTrialConversationBudget(userId);
+        if (!trialCheck.allowed) {
+          return res.status(429).json({
+            error: "trial_limit_reached",
+            reason: trialCheck.reason,
+            limit: trialCheck.limit,
+            used: trialCheck.used,
+            resetsAt: trialCheck.resetsAt,
+            trialDay: trialCheck.trialDay,
+            todaysLimits: trialCheck.todaysLimits,
+            message: buildLimitMessage(trialCheck),
+          });
+        }
+      }
+
       await chatStorage.createMessage(conversationId, "user", content);
 
       const existingMessages = await chatStorage.getMessagesByConversation(conversationId);
@@ -2261,6 +2288,9 @@ export async function registerRoutes(
 
       res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
       res.end();
+
+      // Record trial conversation usage (fire-and-forget, after stream completes)
+      if (userId) recordTrialUsage(userId, "conversation", 1).catch(() => {});
     } catch (error: any) {
       console.error("[CHAT ERROR]", error.message || "Unknown error");
       const userMessage = "I'm having difficulty right now. Please try again in a moment.";
@@ -2303,6 +2333,21 @@ export async function registerRoutes(
       const budgetCheck = await checkAndRecordBudget(userId, 'voice', 0, voiceUserPlan);
       if (!budgetCheck.allowed) {
         return res.status(429).json({ error: budgetCheck.reason, upgradeAvailable: budgetCheck.upgradeAvailable });
+      }
+
+      // Trial voice taper budget check
+      if (userId) {
+        const trialVoiceCheck = await checkTrialVoiceBudget(userId, 1);
+        if (!trialVoiceCheck.allowed) {
+          return res.status(429).json({
+            error: "trial_limit_reached",
+            reason: trialVoiceCheck.reason,
+            limit: trialVoiceCheck.limit,
+            used: trialVoiceCheck.used,
+            resetsAt: trialVoiceCheck.resetsAt,
+            message: buildLimitMessage(trialVoiceCheck),
+          });
+        }
       }
 
       const rawBuffer = Buffer.from(audio, "base64");
@@ -2528,6 +2573,9 @@ export async function registerRoutes(
 
       res.write(`data: ${JSON.stringify({ type: "done", logId: voiceLogId })}\n\n`);
       res.end();
+
+      // Record trial voice usage (fire-and-forget)
+      if (voiceUserId) recordTrialUsage(voiceUserId, "voice", 1).catch(() => {});
     } catch (error: any) {
       console.error("[VOICE ERROR]", error.message || "Unknown error");
       const userMessage = "I'm having difficulty right now. Please try again in a moment.";
@@ -5569,10 +5617,18 @@ Be honest. Be brief. No padding. Write like someone who was present in the room.
 
       if (onTrial) {
         const trialDaysLeft = Math.ceil((trialEnds!.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        // Even during trial, if the user has an active paid sub, show that plan
+        const hasPaidSub =
+          u.plan && u.plan !== "free" &&
+          (u.razorpaySubscriptionId
+            ? true
+            : u.planExpiresAt
+            ? new Date(u.planExpiresAt) > now
+            : false);
         return res.json({
-          plan: u.plan || "free",
+          plan: hasPaidSub ? (u.plan || "free") : "free",
           status: "trial",
-          renewsAt: null,
+          renewsAt: hasPaidSub && u.planExpiresAt ? new Date(u.planExpiresAt).toISOString() : null,
           daysLeft: null,
           isFoundingMember: u.isFoundingMember || false,
           trialDaysLeft,
@@ -5617,17 +5673,33 @@ Be honest. Be brief. No padding. Write like someone who was present in the room.
         ? Math.max(0, Math.ceil((trialEnds.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
         : 0;
 
+      const isPaidSubscriber =
+        u.plan !== "free" &&
+        (u.razorpaySubscriptionId
+          ? true
+          : u.planExpiresAt
+          ? new Date(u.planExpiresAt) > now
+          : false);
+
       const effectivePlan = await getEffectivePlan(userId);
 
+      // Taper-up budget info
+      const trialDay    = u.trialStartedAt ? getTrialDay(new Date(u.trialStartedAt)) : null;
+      const todaysLimits = trialDay !== null ? getTaperLimits(trialDay, u.isFoundingMember ?? false) : null;
+      const todaysUsage  = trialDay !== null ? await getTodayUsage(userId) : null;
+
       res.json({
-        trialStatus: u.trialStatus,
+        trialStatus:    u.trialStatus,
         trialStartedAt: u.trialStartedAt,
-        trialEndsAt: u.trialEndsAt,
+        trialEndsAt:    u.trialEndsAt,
         daysLeft,
+        trialDay,
+        todaysLimits,
+        todaysUsage,
         effectivePlan,
         isFoundingMember: u.isFoundingMember,
-        foundingPrice: u.foundingPrice,
-        isPaidSubscriber: u.plan !== "free" && u.planExpiresAt ? new Date(u.planExpiresAt) > now : false,
+        foundingPrice:    u.foundingPrice,
+        isPaidSubscriber,
       });
     } catch (err: any) {
       res.status(500).json({ error: "Failed to fetch trial status" });

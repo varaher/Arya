@@ -1067,6 +1067,19 @@ export type InsertAryaDrishyaStory = z.infer<typeof insertAryaDrishyaStorySchema
 export type AryaDrishyaStory = typeof aryaDrishyaStories.$inferSelect;
 
 // =============================================
+// TRIAL DAILY USAGE (taper-up budget)
+// =============================================
+
+export const aryaTrialDailyUsage = pgTable("arya_trial_daily_usage", {
+  id:                serial("id").primaryKey(),
+  userId:            varchar("user_id", { length: 36 }).notNull().references(() => aryaUsers.id, { onDelete: "cascade" }),
+  usageDate:         date("usage_date").notNull(),
+  conversationsUsed: integer("conversations_used").notNull().default(0),
+  voiceMinutesUsed:  decimal("voice_minutes_used", { precision: 6, scale: 2 }).notNull().default("0"),
+  createdAt:         timestamp("created_at").defaultNow(),
+});
+
+// =============================================
 // TRIAL NOTIFICATIONS
 // =============================================
 

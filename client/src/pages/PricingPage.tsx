@@ -220,7 +220,7 @@ export default function PricingPage() {
     staleTime: 60 * 60 * 1000,
   });
 
-  const currentPlan = (user as any)?.plan || "free";
+  const currentPlan = trialStatus?.effectivePlan || (user as any)?.plan || "free";
   const prices = PRICES[region];
 
   const fmt = (p: PlanPrice, billing: Billing) => {
