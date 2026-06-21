@@ -8375,6 +8375,7 @@ function UserAuthModal({ onClose }: { onClose: () => void }) {
   const { login, signup, loginWithGoogle } = useUserAuth();
   const [mode, setMode] = useState<"login" | "signup">("signup");
   const [phone, setPhone] = useState("");
+  const [loginIdentifier, setLoginIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [signupLang, setSignupLang] = useState("hi");
@@ -8442,7 +8443,7 @@ function UserAuthModal({ onClose }: { onClose: () => void }) {
     setLoading(true);
     try {
       if (mode === "login") {
-        const r = await login(phone, password);
+        const r = await login(loginIdentifier, password);
         if (!r.success) setError(r.error || "Login failed");
         else onClose();
       } else {
@@ -8502,7 +8503,7 @@ function UserAuthModal({ onClose }: { onClose: () => void }) {
             )}
             <div className="flex items-center gap-3 mt-4 mb-1">
               <div className="flex-1 h-px bg-gray-200 dark:bg-slate-700" />
-              <span className="text-[11px] text-muted-foreground">or sign in with phone</span>
+              <span className="text-[11px] text-muted-foreground">or sign in with phone or email</span>
               <div className="flex-1 h-px bg-gray-200 dark:bg-slate-700" />
             </div>
           </div>
@@ -8549,15 +8550,26 @@ function UserAuthModal({ onClose }: { onClose: () => void }) {
               </div>
             </>
           )}
-          <input
-            data-testid="modal-input-phone"
-            type="tel"
-            placeholder="+91 98765 43210"
-            value={phone}
-            onChange={e => setPhone(e.target.value)}
-            className="w-full bg-background/50 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white text-sm px-3 py-2.5 placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
-            autoFocus={mode === "login"}
-          />
+          {mode === "login" ? (
+            <input
+              data-testid="modal-input-identifier"
+              type="text"
+              placeholder="Phone number or email"
+              value={loginIdentifier}
+              onChange={e => setLoginIdentifier(e.target.value)}
+              className="w-full bg-background/50 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white text-sm px-3 py-2.5 placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
+              autoFocus
+            />
+          ) : (
+            <input
+              data-testid="modal-input-phone"
+              type="tel"
+              placeholder="+91 98765 43210"
+              value={phone}
+              onChange={e => setPhone(e.target.value)}
+              className="w-full bg-background/50 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white text-sm px-3 py-2.5 placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
+            />
+          )}
           <div className="relative">
             <input
               data-testid="modal-input-password"

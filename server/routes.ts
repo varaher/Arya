@@ -325,15 +325,17 @@ export async function registerRoutes(
 
   app.post("/api/user/login", async (req: Request, res: Response) => {
     try {
-      const { phone, password } = req.body;
-      if (!phone || !password) {
-        return res.status(400).json({ error: "Phone and password are required" });
+      const { phone, identifier, password } = req.body;
+      const loginId = identifier || phone;
+      if (!loginId || !password) {
+        return res.status(400).json({ error: "Phone/email and password are required" });
       }
-      const result = await loginUser(phone, password);
+      const result = await loginUser(loginId, password);
       res.json(result);
     } catch (error: any) {
       const knownErrors = [
         "Invalid phone number or password",
+        "Invalid phone/email or password",
         "Account is deactivated",
         "This account uses Google sign-in. Please sign in with Google.",
       ];

@@ -79,12 +79,12 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
     });
   }, [verifyToken]);
 
-  const login = useCallback(async (phone: string, password: string) => {
+  const login = useCallback(async (identifier: string, password: string) => {
     try {
       const res = await fetch("/api/user/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, password }),
+        body: JSON.stringify({ identifier, password }),
       });
       const data = await res.json();
       if (res.ok && data.token) {

@@ -64,15 +64,17 @@ export async function signupUser(
   };
 }
 
-export async function loginUser(phone: string, password: string) {
+export async function loginUser(identifier: string, password: string) {
+  // Accept either phone number or email address
+  const isEmail = identifier.includes("@");
   const [user] = await db
     .select()
     .from(aryaUsers)
-    .where(eq(aryaUsers.phone, phone))
+    .where(isEmail ? eq(aryaUsers.email, identifier) : eq(aryaUsers.phone, identifier))
     .limit(1);
 
   if (!user) {
-    throw new Error("Invalid phone number or password");
+    throw new Error("Invalid phone/email or password");
   }
 
   if (!user.isActive) {
@@ -85,7 +87,7 @@ export async function loginUser(phone: string, password: string) {
 
   const valid = await bcrypt.compare(password, user.passwordHash);
   if (!valid) {
-    throw new Error("Invalid phone number or password");
+    throw new Error("Invalid phone/email or password");
   }
 
   const token = uuidv4();
