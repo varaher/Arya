@@ -21,10 +21,9 @@ export interface TaperLimits {
   voiceMinutesPerDay: number;
 }
 
-export function getTaperLimits(trialDay: number, isFoundingMember = false): TaperLimits {
-  if (isFoundingMember) {
-    return { conversationsPerDay: 20, voiceMinutesPerDay: 8 };
-  }
+export function getTaperLimits(trialDay: number, _isFoundingMember = false): TaperLimits {
+  // Everyone starts at 5/day and earns more as they engage.
+  // Founding member benefit = locked pricing, NOT a budget skip.
   if (trialDay <= 10) return { conversationsPerDay: 5,  voiceMinutesPerDay: 2 };
   if (trialDay <= 25) return { conversationsPerDay: 12, voiceMinutesPerDay: 5 };
   return                      { conversationsPerDay: 20, voiceMinutesPerDay: 8 };
