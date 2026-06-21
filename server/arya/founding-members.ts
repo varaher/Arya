@@ -1,63 +1,61 @@
 // ═══════════════════════════════════════════════════════════════════════
-// ARYA — Founding Member One-Time Setup
+// ARYA — Founding Member Definition & One-Time Setup
 // server/arya/founding-members.ts
 //
-// Run once on launch day to:
-//   1. Mark all pre-launch users as founding members
-//   2. Give them 30 more days of Pro access
-//   3. Send them the founding member notification
+// FOUNDING MEMBER DEFINITION:
+//   Anyone who signs up on or before 25 June 2026.
+//   Benefit: Core plan locked at ₹179/month, forever.
+//   (Price never increases, even when public pricing goes up.)
 //
-// Call from admin route: POST /api/admin/mark-founding-members
+// Auto-applied at signup. Also callable as a one-time admin backfill.
 // ═══════════════════════════════════════════════════════════════════════
 
 import { db } from "../db";
 import { aryaUsers, aryaNotifications } from "@shared/schema";
-import { eq, lt } from "drizzle-orm";
+import { eq, lte } from "drizzle-orm";
 
+// Cutoff: anyone who joined on or before this date is a founding member
+export const FOUNDING_CUTOFF = new Date("2026-06-25T23:59:59+05:30"); // midnight IST 25 Jun 2026
+export const FOUNDING_PRICE_PAISE = 17900; // ₹179/month in paise
+
+/** Returns true if a given signup date qualifies for founding member status */
+export function isFoundingSignup(signedUpAt: Date): boolean {
+  return signedUpAt <= FOUNDING_CUTOFF;
+}
+
+/** One-time admin backfill: marks all qualifying users as founding members */
 export async function markFoundingMembers(
   sendPush: (
     userId: string,
     title: string,
     body: string,
     icon: string
-  ) => Promise<void>,
-  launchDate: Date = new Date("2026-06-16")
+  ) => Promise<void>
 ): Promise<{ marked: number }> {
-  const earlyUsers = await db
-    .select()
-    .from(aryaUsers)
-    .where(lt(aryaUsers.createdAt, launchDate));
-
+  const allUsers = await db.select().from(aryaUsers);
   let marked = 0;
 
-  for (const user of earlyUsers) {
-    // Skip users who are already marked
+  for (const user of allUsers) {
     if (user.isFoundingMember) continue;
 
-    const trialEndsAt = new Date();
-    trialEndsAt.setDate(trialEndsAt.getDate() + 30);
+    const signupDate = user.createdAt ? new Date(user.createdAt) : new Date();
+    if (!isFoundingSignup(signupDate)) continue;
 
     await db
       .update(aryaUsers)
       .set({
         isFoundingMember: true,
-        foundingPrice: 14900, // ₹149 in paise
-        trialStatus: "active",
-        trialEndsAt,
+        foundingPrice: FOUNDING_PRICE_PAISE,
       })
       .where(eq(aryaUsers.id, user.id));
 
     const body = `You've been with ARYA since the beginning.
 
-You have 30 more days of full access.
+Core plan locked at ₹179/month — forever.
+Even when pricing changes for everyone else, yours stays.
 
-When you're ready — Core plan at ₹149/month.
-Forever. As a thank you.
+That's your founding member price. It never increases.`;
 
-That's your founding member price.
-It never increases.`;
-
-    // In-app notification
     await db.insert(aryaNotifications).values({
       userId: user.id,
       type: "welcome",
@@ -65,7 +63,6 @@ It never increases.`;
       message: body,
     });
 
-    // Push notification
     try {
       await sendPush(
         user.id,

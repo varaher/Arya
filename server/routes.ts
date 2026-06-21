@@ -284,10 +284,30 @@ export async function registerRoutes(
         const trialStartedAt = new Date();
         const trialEndsAt = new Date(trialStartedAt);
         trialEndsAt.setDate(trialEndsAt.getDate() + 45);
+
+        // Auto-founding-member: anyone signing up on or before 25 Jun 2026
+        const { isFoundingSignup, FOUNDING_PRICE_PAISE } = await import("./arya/founding-members");
+        const isFounder = isFoundingSignup(trialStartedAt);
+
         await db
           .update(aryaUsers)
-          .set({ trialStartedAt, trialEndsAt, trialStatus: "active" })
+          .set({
+            trialStartedAt,
+            trialEndsAt,
+            trialStatus: "active",
+            ...(isFounder ? { isFoundingMember: true, foundingPrice: FOUNDING_PRICE_PAISE } : {}),
+          })
           .where(eq(aryaUsers.id, result.user.id));
+
+        if (isFounder) {
+          await db.insert(aryaNotifications).values({
+            userId: result.user.id,
+            type: "welcome",
+            title: "You built ARYA with us 🌿",
+            message: `Welcome, founding member.\n\nCore plan locked at ₹179/month — forever. Even when pricing changes for everyone else, yours stays.\n\nThat's your founding member price. It never increases.`,
+          });
+        }
+
         await scheduleTrialNotifications(result.user.id, trialStartedAt);
       } catch (trialErr: any) {
         console.error("[TRIAL] Failed to activate trial for new user:", trialErr.message);
