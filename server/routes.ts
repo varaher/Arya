@@ -5599,6 +5599,7 @@ Be honest. Be brief. No padding. Write like someone who was present in the room.
 
   // Generate a story (SSE streaming)
   app.post("/api/drishya/story", optionalUser, async (req: Request, res: Response) => {
+    const userId = (req as any).userId as string | undefined;
     const { world, request: userRequest, language } = req.body as { world: string; request: string; language?: string };
     if (!userRequest?.trim()) return res.status(400).json({ error: "Request is required" });
     const validWorlds = ["night", "film", "everyday"];
