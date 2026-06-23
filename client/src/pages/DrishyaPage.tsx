@@ -701,11 +701,10 @@ function DrishyaCinematicViewer({
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const afRef = useRef<number>(0);
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const mediaDestRef = useRef<MediaStreamAudioDestinationNode | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const particlesRef = useRef<Particle[]>([]);
+  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // Render state shared with RAF via refs
   const textRef = useRef("");
@@ -833,57 +832,77 @@ function DrishyaCinematicViewer({
     return () => cancelAnimationFrame(afRef.current);
   }, [world, cfg]);
 
-  // MediaRecorder setup
+  // MediaRecorder setup — video-only (audio plays via <audio> element, reliable on mobile)
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    if (typeof (canvas as any).captureStream !== "function") {
+    if (!canvas || typeof (canvas as any).captureStream !== "function") {
       setCanRecord(false);
       return;
     }
 
     try {
-      const audioCtx = new AudioContext();
-      audioCtxRef.current = audioCtx;
-      const mediaDest = audioCtx.createMediaStreamDestination();
-      mediaDestRef.current = mediaDest;
+      const videoStream: MediaStream = (canvas as any).captureStream(15);
+      const mime = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
+        ? "video/webm;codecs=vp9"
+        : MediaRecorder.isTypeSupported("video/webm")
+        ? "video/webm"
+        : "";
+      if (!mime) { setCanRecord(false); return; }
 
-      const videoStream: MediaStream = (canvas as any).captureStream(30);
-      const combined = new MediaStream([
-        ...videoStream.getVideoTracks(),
-        ...mediaDest.stream.getAudioTracks(),
-      ]);
-
-      const mime = MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus")
-        ? "video/webm;codecs=vp9,opus"
-        : "video/webm";
-      const recorder = new MediaRecorder(combined, { mimeType: mime });
+      const recorder = new MediaRecorder(videoStream, { mimeType: mime });
       recorderRef.current = recorder;
       chunksRef.current = [];
 
       recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
       recorder.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: "video/webm" });
-        setDownloadUrl(URL.createObjectURL(blob));
+        if (blob.size > 1000) setDownloadUrl(URL.createObjectURL(blob));
       };
+      recorder.onerror = () => setCanRecord(false);
 
-      recorder.start(200);
+      recorder.start(500);
       setCanRecord(true);
     } catch {
       setCanRecord(false);
     }
   }, []);
 
-  // TTS sequencer
+  // TTS sequencer — uses <audio> element for speaker (works on mobile after user tap)
   useEffect(() => {
     let cancelled = false;
 
-    async function runSequence() {
-      const audioCtx = audioCtxRef.current;
-      const mediaDest = mediaDestRef.current;
+    async function playTTS(sentence: string): Promise<boolean> {
+      try {
+        const res = await fetch("/api/arya/tts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: sentence, language: "en-IN" }),
+        });
+        if (!res.ok) return false;
+        const blob = await res.blob();
+        const audioUrl = URL.createObjectURL(blob);
+        const audio = new Audio(audioUrl);
+        currentAudioRef.current = audio;
+        return new Promise<boolean>((resolve) => {
+          const cleanup = () => {
+            URL.revokeObjectURL(audioUrl);
+            currentAudioRef.current = null;
+            resolve(true);
+          };
+          audio.onended = cleanup;
+          audio.onerror = () => { URL.revokeObjectURL(audioUrl); currentAudioRef.current = null; resolve(false); };
+          const p = audio.play();
+          if (p) p.catch(() => { URL.revokeObjectURL(audioUrl); currentAudioRef.current = null; resolve(false); });
+          // Safety timeout — 3× estimated word-count duration
+          setTimeout(() => { audio.pause(); cleanup(); }, Math.max(15000, sentence.split(" ").length * 600));
+        });
+      } catch {
+        return false;
+      }
+    }
 
-      await cSleep(1800); // opening pause
+    async function runSequence() {
+      await cSleep(1600);
 
       for (let i = 0; i < sentences.length; i++) {
         if (cancelled) break;
@@ -893,57 +912,42 @@ function DrishyaCinematicViewer({
         progressRef.current.cur = i;
         setSentenceDisplay(i + 1);
 
-        await cSleep(550); // fade-in time
+        await cSleep(500); // fade-in
 
         if (cancelled) break;
 
-        // Fetch + play TTS
-        let played = false;
-        try {
-          const res = await fetch("/api/arya/tts", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text: sentence, language: "en-IN" }),
-          });
-          if (res.ok && audioCtx && mediaDest) {
-            const arrayBuf = await res.arrayBuffer();
-            const audioBuf = await audioCtx.decodeAudioData(arrayBuf);
-            const src = audioCtx.createBufferSource();
-            src.buffer = audioBuf;
-            src.connect(audioCtx.destination);
-            src.connect(mediaDest);
-            src.start();
-            played = true;
-            await new Promise<void>((resolve) => {
-              src.onended = () => resolve();
-              setTimeout(resolve, (audioBuf.duration + 0.8) * 1000);
-            });
-          }
-        } catch { /* fall through to reading-time wait */ }
-
-        if (!played) {
-          await cSleep(Math.max(2200, sentence.split(" ").length * 320));
+        const spoke = await playTTS(sentence);
+        if (!spoke && !cancelled) {
+          // Fallback: reading-time wait
+          await cSleep(Math.max(2500, sentence.split(" ").length * 340));
         }
 
         if (cancelled) break;
 
         targetOpRef.current = 0;
-        await cSleep(600); // fade-out
-        await cSleep(350); // inter-sentence pause
+        await cSleep(550); // fade-out
+        await cSleep(300); // pause between sentences
       }
 
       if (!cancelled) {
         progressRef.current.cur = sentences.length;
         textRef.current = "";
         targetOpRef.current = 0;
-        await cSleep(2000);
+        await cSleep(1800);
         if (recorderRef.current?.state === "recording") recorderRef.current.stop();
         setPhase("done");
       }
     }
 
     runSequence();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      // Stop any playing audio immediately
+      if (currentAudioRef.current) {
+        currentAudioRef.current.pause();
+        currentAudioRef.current = null;
+      }
+    };
   }, [sentences]);
 
   // Cleanup on unmount
@@ -951,7 +955,7 @@ function DrishyaCinematicViewer({
     return () => {
       cancelAnimationFrame(afRef.current);
       if (recorderRef.current?.state === "recording") recorderRef.current.stop();
-      if (audioCtxRef.current?.state !== "closed") audioCtxRef.current?.close().catch(() => {});
+      if (currentAudioRef.current) { currentAudioRef.current.pause(); currentAudioRef.current = null; }
     };
   }, []);
 
@@ -960,13 +964,15 @@ function DrishyaCinematicViewer({
     const a = document.createElement("a");
     a.href = downloadUrl;
     a.download = `drishya-${world}-${Date.now()}.webm`;
+    document.body.appendChild(a);
     a.click();
+    setTimeout(() => { try { document.body.removeChild(a); } catch {} }, 300);
   }
 
   function handleClose() {
+    if (currentAudioRef.current) { currentAudioRef.current.pause(); currentAudioRef.current = null; }
     if (recorderRef.current?.state === "recording") recorderRef.current.stop();
-    if (audioCtxRef.current?.state !== "closed") audioCtxRef.current?.close().catch(() => {});
-    if (downloadUrl) URL.revokeObjectURL(downloadUrl);
+    // Don't revoke downloadUrl here — user may still want to download after closing
     onClose();
   }
 
