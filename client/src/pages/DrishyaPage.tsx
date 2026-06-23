@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Volume2, VolumeX, Bookmark, BookmarkCheck, Trash2, Plus, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, Volume2, VolumeX, Bookmark, BookmarkCheck, Trash2, Plus, Loader2, ChevronDown, ChevronUp, Film, Download } from "lucide-react";
 import { useUserAuth } from "@/lib/user-auth";
 import { useLanguage } from "@/lib/language-context";
 
@@ -42,6 +42,7 @@ export default function DrishyaPage() {
   const [isSaved, setIsSaved] = useState(false);
   const [isNarrating, setIsNarrating] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
+  const [showCinema, setShowCinema] = useState(false);
   const [error, setError] = useState("");
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -396,6 +397,21 @@ export default function DrishyaPage() {
                   )}
 
                   <button
+                    onClick={() => setShowCinema(true)}
+                    data-testid="button-drishya-watch"
+                    style={{
+                      display: "flex", alignItems: "center", gap: 7,
+                      padding: "10px 16px", borderRadius: 12,
+                      border: `1px solid ${activeWorld.color}66`,
+                      background: activeWorld.bg,
+                      color: activeWorld.color,
+                      fontSize: 13, fontWeight: 600, cursor: "pointer",
+                    }}
+                  >
+                    <Film size={14} /> Watch as movie
+                  </button>
+
+                  <button
                     onClick={resetForNewStory}
                     data-testid="button-drishya-new"
                     style={{
@@ -592,6 +608,468 @@ export default function DrishyaPage() {
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
+
+      {/* Cinematic Movie Viewer */}
+      {showCinema && story && (
+        <DrishyaCinematicViewer
+          story={story}
+          world={world}
+          onClose={() => setShowCinema(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── helpers ──────────────────────────────────────────────────────────────────
+
+function cSleep(ms: number) {
+  return new Promise<void>((r) => setTimeout(r, ms));
+}
+
+function splitSentences(text: string): string[] {
+  const raw = text.match(/[^.!?।\n]+(?:[.!?।]+|\n+)|[^.!?।\n]+$/g) || [];
+  return raw.map((s) => s.trim()).filter((s) => s.length > 5);
+}
+
+function wrapCanvasText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+): string[] {
+  const words = text.split(" ");
+  const lines: string[] = [];
+  let line = "";
+  for (const w of words) {
+    const test = line ? `${line} ${w}` : w;
+    if (ctx.measureText(test).width > maxWidth && line) {
+      lines.push(line);
+      line = w;
+    } else {
+      line = test;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+// ── DrishyaCinematicViewer ───────────────────────────────────────────────────
+
+const CW = 720;
+const CH = 1280;
+
+const CINEMA_CFG: Record<DrishyaWorld, {
+  bg: [string, string, string];
+  text: string;
+  accent: string;
+  label: string;
+  emoji: string;
+}> = {
+  night: {
+    bg: ["#080618", "#18124a", "#0a0820"],
+    text: "rgba(240,235,224,0.95)",
+    accent: "#a78bfa",
+    label: "Night World",
+    emoji: "🌙",
+  },
+  film: {
+    bg: ["#1c0500", "#3d1200", "#220a00"],
+    text: "rgba(255,242,210,0.95)",
+    accent: "#f87171",
+    label: "Film World",
+    emoji: "🎬",
+  },
+  everyday: {
+    bg: ["#1a1000", "#3d2800", "#251800"],
+    text: "rgba(255,245,228,0.95)",
+    accent: "#fbbf24",
+    label: "Everyday World",
+    emoji: "✨",
+  },
+};
+
+interface Particle { x: number; y: number; r: number; vy: number; alpha: number; }
+
+function DrishyaCinematicViewer({
+  story,
+  world,
+  onClose,
+}: {
+  story: string;
+  world: DrishyaWorld;
+  onClose: () => void;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const afRef = useRef<number>(0);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const mediaDestRef = useRef<MediaStreamAudioDestinationNode | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const particlesRef = useRef<Particle[]>([]);
+
+  // Render state shared with RAF via refs
+  const textRef = useRef("");
+  const opacityRef = useRef(0);
+  const targetOpRef = useRef(0);
+  const progressRef = useRef({ cur: 0, total: 0 });
+
+  const [phase, setPhase] = useState<"playing" | "done" | "error">("playing");
+  const [sentenceDisplay, setSentenceDisplay] = useState(0);
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [canRecord, setCanRecord] = useState(false);
+
+  const cfg = CINEMA_CFG[world];
+  const sentences = useMemo(() => splitSentences(story), [story]);
+
+  // Init particles
+  useEffect(() => {
+    particlesRef.current = Array.from({ length: world === "night" ? 90 : 45 }, () => ({
+      x: Math.random() * CW,
+      y: Math.random() * CH,
+      r: world === "night" ? Math.random() * 1.5 + 0.3 : Math.random() * 2.5 + 0.5,
+      vy: world === "night" ? -(Math.random() * 0.15 + 0.05) : Math.random() * 0.35 + 0.1,
+      alpha: Math.random() * 0.6 + 0.2,
+    }));
+    progressRef.current = { cur: 0, total: sentences.length };
+  }, [world, sentences.length]);
+
+  // RAF canvas loop
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d")!;
+
+    function frame() {
+      // Lerp opacity
+      opacityRef.current += (targetOpRef.current - opacityRef.current) * 0.07;
+
+      ctx.clearRect(0, 0, CW, CH);
+
+      // Background
+      const grad = ctx.createLinearGradient(0, 0, 0, CH);
+      grad.addColorStop(0, cfg.bg[0]);
+      grad.addColorStop(0.55, cfg.bg[1]);
+      grad.addColorStop(1, cfg.bg[2]);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, CW, CH);
+
+      // Particles
+      ctx.save();
+      for (const p of particlesRef.current) {
+        p.y += p.vy;
+        if (world === "night") { if (p.y < 0) p.y = CH; }
+        else { if (p.y > CH) { p.y = 0; p.x = Math.random() * CW; } }
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = cfg.accent;
+        ctx.globalAlpha = p.alpha * 0.45;
+        ctx.fill();
+      }
+      ctx.restore();
+
+      // Vignette
+      const vig = ctx.createRadialGradient(CW / 2, CH / 2, CH * 0.28, CW / 2, CH / 2, CH * 0.78);
+      vig.addColorStop(0, "rgba(0,0,0,0)");
+      vig.addColorStop(1, "rgba(0,0,0,0.65)");
+      ctx.fillStyle = vig;
+      ctx.fillRect(0, 0, CW, CH);
+
+      // World label
+      ctx.save();
+      ctx.font = "600 24px Inter, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillStyle = cfg.accent;
+      ctx.globalAlpha = 0.55;
+      ctx.fillText(`${cfg.emoji}  ${cfg.label}`, CW / 2, 84);
+      ctx.restore();
+
+      // Main sentence text
+      const op = opacityRef.current;
+      if (op > 0.02 && textRef.current) {
+        ctx.save();
+        ctx.globalAlpha = op;
+        ctx.font = "bold 50px Georgia, 'Times New Roman', serif";
+        ctx.textAlign = "center";
+        ctx.fillStyle = cfg.text;
+        ctx.shadowColor = cfg.accent;
+        ctx.shadowBlur = 28;
+        const pad = 90;
+        const lines = wrapCanvasText(ctx, textRef.current, CW - pad * 2);
+        const lh = 70;
+        const totalH = lines.length * lh;
+        const sy = CH / 2 - totalH / 2 + lh * 0.6;
+        lines.forEach((ln, i) => ctx.fillText(ln, CW / 2, sy + i * lh));
+        ctx.restore();
+      }
+
+      // Progress dots
+      const { cur, total } = progressRef.current;
+      if (total > 0) {
+        const dotR = Math.max(4, Math.min(8, (CW - 100) / total / 2 - 3));
+        const spacing = dotR * 2 + 7;
+        const startX = CW / 2 - (total * spacing) / 2 + spacing / 2;
+        for (let i = 0; i < total; i++) {
+          ctx.beginPath();
+          ctx.arc(startX + i * spacing, CH - 96, dotR, 0, Math.PI * 2);
+          ctx.fillStyle = i < cur ? cfg.accent : "rgba(255,255,255,0.18)";
+          ctx.globalAlpha = i < cur ? 0.9 : 0.4;
+          ctx.fill();
+          ctx.globalAlpha = 1;
+        }
+      }
+
+      // ARYA watermark
+      ctx.save();
+      ctx.font = "500 21px 'Space Grotesk', Inter, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillStyle = "rgba(255,255,255,0.13)";
+      ctx.fillText("ARYA · Drishya", CW / 2, CH - 44);
+      ctx.restore();
+
+      afRef.current = requestAnimationFrame(frame);
+    }
+
+    frame();
+    return () => cancelAnimationFrame(afRef.current);
+  }, [world, cfg]);
+
+  // MediaRecorder setup
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    if (typeof (canvas as any).captureStream !== "function") {
+      setCanRecord(false);
+      return;
+    }
+
+    try {
+      const audioCtx = new AudioContext();
+      audioCtxRef.current = audioCtx;
+      const mediaDest = audioCtx.createMediaStreamDestination();
+      mediaDestRef.current = mediaDest;
+
+      const videoStream: MediaStream = (canvas as any).captureStream(30);
+      const combined = new MediaStream([
+        ...videoStream.getVideoTracks(),
+        ...mediaDest.stream.getAudioTracks(),
+      ]);
+
+      const mime = MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus")
+        ? "video/webm;codecs=vp9,opus"
+        : "video/webm";
+      const recorder = new MediaRecorder(combined, { mimeType: mime });
+      recorderRef.current = recorder;
+      chunksRef.current = [];
+
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      recorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: "video/webm" });
+        setDownloadUrl(URL.createObjectURL(blob));
+      };
+
+      recorder.start(200);
+      setCanRecord(true);
+    } catch {
+      setCanRecord(false);
+    }
+  }, []);
+
+  // TTS sequencer
+  useEffect(() => {
+    let cancelled = false;
+
+    async function runSequence() {
+      const audioCtx = audioCtxRef.current;
+      const mediaDest = mediaDestRef.current;
+
+      await cSleep(1800); // opening pause
+
+      for (let i = 0; i < sentences.length; i++) {
+        if (cancelled) break;
+        const sentence = sentences[i];
+        textRef.current = sentence;
+        targetOpRef.current = 1;
+        progressRef.current.cur = i;
+        setSentenceDisplay(i + 1);
+
+        await cSleep(550); // fade-in time
+
+        if (cancelled) break;
+
+        // Fetch + play TTS
+        let played = false;
+        try {
+          const res = await fetch("/api/arya/tts", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: sentence, language: "en-IN" }),
+          });
+          if (res.ok && audioCtx && mediaDest) {
+            const arrayBuf = await res.arrayBuffer();
+            const audioBuf = await audioCtx.decodeAudioData(arrayBuf);
+            const src = audioCtx.createBufferSource();
+            src.buffer = audioBuf;
+            src.connect(audioCtx.destination);
+            src.connect(mediaDest);
+            src.start();
+            played = true;
+            await new Promise<void>((resolve) => {
+              src.onended = () => resolve();
+              setTimeout(resolve, (audioBuf.duration + 0.8) * 1000);
+            });
+          }
+        } catch { /* fall through to reading-time wait */ }
+
+        if (!played) {
+          await cSleep(Math.max(2200, sentence.split(" ").length * 320));
+        }
+
+        if (cancelled) break;
+
+        targetOpRef.current = 0;
+        await cSleep(600); // fade-out
+        await cSleep(350); // inter-sentence pause
+      }
+
+      if (!cancelled) {
+        progressRef.current.cur = sentences.length;
+        textRef.current = "";
+        targetOpRef.current = 0;
+        await cSleep(2000);
+        if (recorderRef.current?.state === "recording") recorderRef.current.stop();
+        setPhase("done");
+      }
+    }
+
+    runSequence();
+    return () => { cancelled = true; };
+  }, [sentences]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      cancelAnimationFrame(afRef.current);
+      if (recorderRef.current?.state === "recording") recorderRef.current.stop();
+      if (audioCtxRef.current?.state !== "closed") audioCtxRef.current?.close().catch(() => {});
+    };
+  }, []);
+
+  function handleDownload() {
+    if (!downloadUrl) return;
+    const a = document.createElement("a");
+    a.href = downloadUrl;
+    a.download = `drishya-${world}-${Date.now()}.webm`;
+    a.click();
+  }
+
+  function handleClose() {
+    if (recorderRef.current?.state === "recording") recorderRef.current.stop();
+    if (audioCtxRef.current?.state !== "closed") audioCtxRef.current?.close().catch(() => {});
+    if (downloadUrl) URL.revokeObjectURL(downloadUrl);
+    onClose();
+  }
+
+  return (
+    <div
+      data-testid="overlay-drishya-cinema"
+      style={{
+        position: "fixed", inset: 0, zIndex: 300,
+        background: "#000",
+        display: "flex", flexDirection: "column",
+        alignItems: "center", justifyContent: "center",
+      }}
+    >
+      {/* Canvas */}
+      <canvas
+        ref={canvasRef}
+        width={CW}
+        height={CH}
+        style={{
+          maxHeight: "calc(100dvh - 110px)",
+          width: "auto",
+          borderRadius: 10,
+          display: "block",
+        }}
+      />
+
+      {/* Bottom controls */}
+      <div style={{
+        position: "absolute", bottom: 0, left: 0, right: 0,
+        display: "flex", flexDirection: "column", alignItems: "center", gap: 10,
+        padding: "16px 20px 28px",
+        background: "linear-gradient(to top, rgba(0,0,0,0.92) 0%, transparent 100%)",
+      }}>
+        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", letterSpacing: "0.12em" }}>
+          {phase === "playing"
+            ? `${sentenceDisplay} / ${sentences.length}  ·  ${canRecord ? "● Recording" : "Playing"}`
+            : "Finished"}
+        </div>
+
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <button
+            onClick={handleClose}
+            data-testid="button-cinema-close"
+            style={{
+              padding: "9px 18px", borderRadius: 10,
+              border: "1px solid rgba(255,255,255,0.14)",
+              background: "rgba(255,255,255,0.07)",
+              color: "rgba(255,255,255,0.65)", fontSize: 13, cursor: "pointer",
+            }}
+          >
+            ✕  Close
+          </button>
+
+          {phase === "done" && downloadUrl ? (
+            <button
+              onClick={handleDownload}
+              data-testid="button-cinema-download"
+              style={{
+                display: "flex", alignItems: "center", gap: 7,
+                padding: "9px 20px", borderRadius: 10,
+                border: `1px solid ${cfg.accent}88`,
+                background: cfg.accent + "22",
+                color: cfg.accent, fontSize: 13, fontWeight: 600, cursor: "pointer",
+              }}
+            >
+              <Download size={14} /> Save video
+            </button>
+          ) : phase === "done" && !canRecord ? (
+            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}>
+              Video export not supported in this browser
+            </span>
+          ) : phase === "playing" && canRecord ? (
+            <span style={{
+              display: "flex", alignItems: "center", gap: 6,
+              padding: "9px 14px", borderRadius: 10,
+              background: "rgba(239,68,68,0.12)",
+              border: "1px solid rgba(239,68,68,0.25)",
+              color: "rgba(239,68,68,0.8)", fontSize: 12,
+            }}>
+              <span style={{
+                width: 7, height: 7, borderRadius: "50%", background: "#ef4444",
+                animation: "blink 1s step-end infinite", display: "inline-block",
+              }} />
+              Recording…
+            </span>
+          ) : null}
+        </div>
+      </div>
+
+      {/* Top-right close */}
+      <button
+        onClick={handleClose}
+        style={{
+          position: "absolute", top: 14, right: 16,
+          width: 34, height: 34, borderRadius: "50%",
+          background: "rgba(255,255,255,0.08)",
+          border: "1px solid rgba(255,255,255,0.13)",
+          color: "rgba(255,255,255,0.6)", fontSize: 15,
+          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+        }}
+      >
+        ✕
+      </button>
     </div>
   );
 }
