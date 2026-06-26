@@ -3774,8 +3774,6 @@ export default function AryaChat() {
   const [showVoiceMode, setShowVoiceMode] = useState(false);
   const [mainUpgradePrompt, setMainUpgradePrompt] = useState<UpgradePromptConfig | null>(null);
   const [showCancelSheet, setShowCancelSheet] = useState(false);
-  const mainUserPlan: string = trialStatus?.effectivePlan || (user as any)?.plan || "free";
-  const isMainFree = mainUserPlan === "free";
   const THINKING_FREE_MODES = new Set(["default", "therapist"]);
   const [activeConversation, setActiveConversation] = useState<number | null>(null);
   const [thinkingMode, setThinkingMode] = useState("default");
@@ -4021,6 +4019,8 @@ export default function AryaChat() {
     enabled: !!token && isLoggedIn,
     staleTime: 5 * 60 * 1000,
   });
+  const mainUserPlan: string = trialStatus?.effectivePlan || (user as any)?.plan || "free";
+  const isMainFree = mainUserPlan === "free";
 
   const { data: kaalBriefing } = useQuery<any>({
     queryKey: ["kaal-briefing-home"],
@@ -4977,6 +4977,26 @@ export default function AryaChat() {
       }
     }
   }, [selectedLanguage, sendMessage]);
+
+  const cancelRecording = useCallback(() => {
+    if (isWebSpeechModeRef.current && speechRecognitionRef.current) {
+      speechRecognitionRef.current.abort();
+      speechRecognitionRef.current = null;
+      isWebSpeechModeRef.current = false;
+    }
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state === "recording") {
+      recorder.onstop = () => { recorder.stream.getTracks().forEach(t => t.stop()); };
+      recorder.stop();
+      chunksRef.current = [];
+    }
+    setIsRecording(false);
+    setRecordingTime(0);
+  }, []);
 
   const stopRecording = useCallback(async () => {
     if (isWebSpeechModeRef.current && speechRecognitionRef.current) {
@@ -6694,60 +6714,86 @@ export default function AryaChat() {
                 data-testid="input-camera-capture"
               />
 
-              {/* Mic — only button outside the pill */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    data-testid="button-dictate"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => isRecording ? stopRecording() : startRecording()}
-                    disabled={isStreaming || isScanningDoc}
-                    className={`flex-shrink-0 rounded-full h-10 w-10 border transition-all ${
-                      isRecording
-                        ? "bg-red-500/20 text-red-500 dark:text-red-400 border-red-400 dark:border-red-600 animate-pulse"
-                        : "bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 text-emerald-600 dark:text-emerald-400 hover:from-emerald-500/30 hover:to-emerald-600/20 border-emerald-200 dark:border-emerald-800"
-                    }`}
-                  >
-                    {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-5 h-5" />}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="text-xs">
-                  {isRecording ? "Stop — send to ARYA" : "Speak — ARYA replies in chat"}
-                </TooltipContent>
-              </Tooltip>
+              {/* Mic — only shown when NOT recording */}
+              {!isRecording && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      data-testid="button-dictate"
+                      variant="ghost"
+                      size="icon"
+                      onClick={startRecording}
+                      disabled={isStreaming || isScanningDoc}
+                      className="flex-shrink-0 rounded-full h-10 w-10 border transition-all bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 text-emerald-600 dark:text-emerald-400 hover:from-emerald-500/30 hover:to-emerald-600/20 border-emerald-200 dark:border-emerald-800"
+                    >
+                      <Mic className="w-5 h-5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs">
+                    Speak — ARYA replies in chat
+                  </TooltipContent>
+                </Tooltip>
+              )}
 
               {isRecording ? (
-                <div className="flex-1 flex items-center gap-2 md:gap-3 py-2 px-3 rounded-[22px] border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/10">
-                  <div className="flex gap-0.5 flex-shrink-0 items-end h-5">
-                    {[...Array(5)].map((_, i) => (
-                      <div
-                        key={i}
-                        className="w-1 bg-red-400 rounded-full animate-pulse"
-                        style={{
-                          height: `${10 + Math.random() * 10}px`,
-                          animationDelay: `${i * 0.15}s`,
-                        }}
-                      />
-                    ))}
+                /* ── WhatsApp-style recording bar ── */
+                <motion.div
+                  key="recording-bar"
+                  initial={{ opacity: 0, scale: 0.97, y: 6 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.97, y: 6 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex-1 flex items-center gap-3 rounded-[22px] border border-red-200 dark:border-red-700 bg-white dark:bg-slate-900 shadow-lg px-2 py-2"
+                  data-testid="recording-bar"
+                >
+                  {/* Delete / Cancel — big red */}
+                  <button
+                    data-testid="button-cancel-recording"
+                    onClick={cancelRecording}
+                    className="flex-shrink-0 flex flex-col items-center justify-center w-14 h-14 rounded-full bg-red-50 dark:bg-red-900/30 border-2 border-red-300 dark:border-red-700 text-red-500 dark:text-red-400 active:scale-95 transition-transform"
+                    aria-label="Discard recording"
+                  >
+                    <Trash2 className="w-6 h-6" />
+                    <span className="text-[10px] font-semibold mt-0.5">Delete</span>
+                  </button>
+
+                  {/* Centre — waveform + timer + label */}
+                  <div className="flex-1 flex flex-col items-center gap-1 min-w-0">
+                    {/* Waveform bars */}
+                    <div className="flex gap-[3px] items-end h-7">
+                      {[...Array(9)].map((_, i) => (
+                        <div
+                          key={i}
+                          className="w-[3px] bg-red-400 dark:bg-red-500 rounded-full"
+                          style={{
+                            height: `${8 + (i % 3) * 8 + (i % 2) * 4}px`,
+                            animation: `pulse 0.8s ease-in-out ${i * 0.1}s infinite alternate`,
+                          }}
+                        />
+                      ))}
+                    </div>
+                    {/* Timer — big and bold */}
+                    <span className="text-2xl font-mono font-bold text-red-500 dark:text-red-400 tabular-nums leading-none">
+                      {formatTime(recordingTime)}
+                    </span>
+                    <span className="text-[11px] text-muted-foreground truncate max-w-full px-1">
+                      {isGlobalVoiceLang(selectedLanguage)
+                        ? `Listening in ${currentLang?.name}…`
+                        : `Recording${selectedLanguage !== "en-IN" ? ` · ${currentLang?.name}` : ""}…`}
+                    </span>
                   </div>
-                  <span className="text-sm text-red-500 dark:text-red-400 font-mono flex-shrink-0">
-                    {formatTime(recordingTime)}
-                  </span>
-                  <span className="text-xs text-muted-foreground hidden sm:inline flex-1 truncate">
-                    {isGlobalVoiceLang(selectedLanguage)
-                      ? `Listening in ${currentLang?.name}… speak, then pause to send`
-                      : `Recording${selectedLanguage !== "en-IN" ? ` in ${currentLang?.name}` : ""}…`}
-                  </span>
+
+                  {/* Send — big green */}
                   <button
                     data-testid="button-stop-recording"
                     onClick={stopRecording}
-                    className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white text-xs font-bold rounded-full transition-colors"
+                    className="flex-shrink-0 flex flex-col items-center justify-center w-14 h-14 rounded-full bg-emerald-500 dark:bg-emerald-600 border-2 border-emerald-600 dark:border-emerald-500 text-white active:scale-95 transition-transform shadow-md"
+                    aria-label="Send recording"
                   >
-                    <span>⏹</span>
-                    <span>{t("voice_stop")}</span>
+                    <Send className="w-6 h-6" />
+                    <span className="text-[10px] font-semibold mt-0.5">Send</span>
                   </button>
-                </div>
+                </motion.div>
               ) : (
                 /* ── Pill: takes all remaining width, contains textarea + icon footer ── */
                 <div className="chat-input-pill flex-1 flex flex-col min-w-0 rounded-[22px] border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/60 transition-colors overflow-visible">
