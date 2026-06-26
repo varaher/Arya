@@ -15,6 +15,7 @@ import {
   Mic,
   Paperclip,
   Camera,
+  Video,
   ScanText,
   MoreHorizontal,
   Plus,
@@ -3997,6 +3998,7 @@ export default function AryaChat() {
   const [isScanningDoc, setIsScanningDoc] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
   const { language: uiLanguage, t, setLanguage: setGlobalLanguage } = useLanguage();
 
   const { data: trialStatus } = useQuery<{
@@ -6713,6 +6715,16 @@ export default function AryaChat() {
                 onChange={handleImageSelect}
                 data-testid="input-camera-capture"
               />
+              {/* Video capture input */}
+              <input
+                ref={videoInputRef}
+                type="file"
+                accept="video/*"
+                capture="environment"
+                className="hidden"
+                onChange={handleImageSelect}
+                data-testid="input-video-capture"
+              />
 
               {/* Mic — only shown when NOT recording */}
               {!isRecording && (
@@ -6886,68 +6898,88 @@ export default function AryaChat() {
                     >
                       {speakerOn ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
                     </button>
-                    {/* More — language, attach, live voice */}
-                    <div className="relative" ref={toolMoreRef}>
+                  </div>
+                </div>
+              )}
+
+              {/* ··· More — moved to right side, bigger, only when NOT recording */}
+              {!isRecording && (
+                <div className="relative flex-shrink-0" ref={toolMoreRef}>
+                  <button
+                    data-testid="button-toolbar-more"
+                    onClick={() => setShowToolMore(v => !v)}
+                    title={t("toolbar_more")}
+                    className={`flex-shrink-0 rounded-full h-10 w-10 border flex items-center justify-center transition-all ${
+                      showToolMore || selectedLanguage !== "en-IN"
+                        ? "bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-700"
+                        : "bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 border-gray-200 dark:border-slate-700"
+                    }`}
+                  >
+                    <MoreHorizontal className="w-5 h-5" />
+                  </button>
+                  {showToolMore && (
+                    <div className="absolute bottom-full right-0 mb-2 w-52 bg-card border border-gray-200 dark:border-slate-700 rounded-2xl shadow-2xl z-50 py-1.5 overflow-hidden">
+                      {/* Voice language */}
                       <button
-                        data-testid="button-toolbar-more"
-                        onClick={() => setShowToolMore(v => !v)}
-                        title={t("toolbar_more")}
-                        className={`p-1.5 rounded-full transition-colors ${
-                          showToolMore || selectedLanguage !== "en-IN"
-                            ? "text-amber-600 dark:text-amber-400"
-                            : "text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                        data-testid="button-language-select"
+                        onClick={() => { setShowToolMore(false); setShowLanguageMenu(true); }}
+                        className={`w-full text-left px-4 py-3 text-sm flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors ${
+                          selectedLanguage !== "en-IN" ? "text-amber-600 dark:text-amber-400" : "text-gray-700 dark:text-gray-200"
                         }`}
                       >
-                        <MoreHorizontal className="w-3.5 h-3.5" />
+                        <Globe className="w-4 h-4 flex-shrink-0" />
+                        <span className="flex-1 font-medium">{t("toolbar_lang")}</span>
+                        {selectedLanguage !== "en-IN" && <span className="text-[11px] opacity-75">{currentLang?.native}</span>}
                       </button>
-                      {showToolMore && (
-                        <div className="absolute bottom-full left-0 mb-2 w-48 bg-card border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl z-50 py-1">
-                          {/* Voice language */}
-                          <button
-                            data-testid="button-language-select"
-                            onClick={() => { setShowToolMore(false); setShowLanguageMenu(true); }}
-                            className={`w-full text-left px-3 py-2.5 text-sm flex items-center gap-2.5 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors rounded-t-xl ${
-                              selectedLanguage !== "en-IN" ? "text-amber-600 dark:text-amber-400" : "text-gray-700 dark:text-gray-200"
-                            }`}
-                          >
-                            <Globe className="w-3.5 h-3.5 flex-shrink-0" />
-                            <span className="flex-1 font-medium">{t("toolbar_lang")}</span>
-                            {selectedLanguage !== "en-IN" && <span className="text-[11px] opacity-75">{currentLang?.native}</span>}
-                          </button>
-                          {/* Scan document via camera (OCR) */}
-                          <button data-testid="button-scan-document"
-                            onClick={() => { cameraInputRef.current?.click(); setShowToolMore(false); }}
-                            disabled={isStreaming || isScanningDoc}
-                            className="w-full text-left px-3 py-2.5 text-sm flex items-center gap-2.5 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 disabled:opacity-50 transition-colors"
-                          >
-                            <ScanText className="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400 flex-shrink-0" />
-                            <div className="flex flex-col min-w-0">
-                              <span className="font-medium leading-tight">Scan document</span>
-                              <span className="text-[11px] text-muted-foreground leading-tight">Camera → ARYA reads &amp; explains</span>
-                            </div>
-                          </button>
-                          {/* Attach */}
-                          <button data-testid="button-attach-image"
-                            onClick={() => { imageInputRef.current?.click(); setShowToolMore(false); }}
-                            disabled={isStreaming || isScanningDoc}
-                            className="w-full text-left px-3 py-2.5 text-sm flex items-center gap-2.5 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 disabled:opacity-50 transition-colors"
-                          >
-                            <Paperclip className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400 flex-shrink-0" />
-                            <span className="font-medium">{t("toolbar_attach")}</span>
-                          </button>
-                          {/* Live voice */}
-                          <button data-testid="button-voice-chat"
-                            onClick={() => { if (isMainFree) { setShowToolMore(false); setMainUpgradePrompt(UPGRADE_PROMPTS.voiceGate()); return; } setShowVoiceMode(true); setShowToolMore(false); }}
-                            disabled={isStreaming || isRecording}
-                            className="w-full text-left px-3 py-2.5 text-sm flex items-center gap-2.5 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 disabled:opacity-50 transition-colors rounded-b-xl"
-                          >
-                            <Headphones className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 flex-shrink-0" />
-                            <span className="font-medium">{t("toolbar_live_voice")}</span>
-                          </button>
+                      {/* Divider */}
+                      <div className="h-px bg-gray-100 dark:bg-slate-700 mx-2 my-0.5" />
+                      {/* Attach — header row */}
+                      <div className="px-4 pt-2 pb-1">
+                        <span className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Attach</span>
+                      </div>
+                      {/* Camera */}
+                      <button data-testid="button-attach-camera"
+                        onClick={() => { cameraInputRef.current?.click(); setShowToolMore(false); }}
+                        disabled={isStreaming || isScanningDoc}
+                        className="w-full text-left px-4 py-3 text-sm flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 disabled:opacity-50 transition-colors"
+                      >
+                        <Camera className="w-4 h-4 text-cyan-500 dark:text-cyan-400 flex-shrink-0" />
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-medium leading-tight">Camera</span>
+                          <span className="text-[11px] text-muted-foreground leading-tight">Photo → ARYA reads &amp; explains</span>
                         </div>
-                      )}
+                      </button>
+                      {/* Video */}
+                      <button data-testid="button-attach-video"
+                        onClick={() => { videoInputRef.current?.click(); setShowToolMore(false); }}
+                        disabled={isStreaming || isScanningDoc}
+                        className="w-full text-left px-4 py-3 text-sm flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 disabled:opacity-50 transition-colors"
+                      >
+                        <Video className="w-4 h-4 text-violet-500 dark:text-violet-400 flex-shrink-0" />
+                        <span className="font-medium">Video</span>
+                      </button>
+                      {/* Files */}
+                      <button data-testid="button-attach-files"
+                        onClick={() => { imageInputRef.current?.click(); setShowToolMore(false); }}
+                        disabled={isStreaming || isScanningDoc}
+                        className="w-full text-left px-4 py-3 text-sm flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 disabled:opacity-50 transition-colors"
+                      >
+                        <Paperclip className="w-4 h-4 text-purple-500 dark:text-purple-400 flex-shrink-0" />
+                        <span className="font-medium">Files &amp; Images</span>
+                      </button>
+                      {/* Divider */}
+                      <div className="h-px bg-gray-100 dark:bg-slate-700 mx-2 my-0.5" />
+                      {/* Live voice */}
+                      <button data-testid="button-voice-chat"
+                        onClick={() => { if (isMainFree) { setShowToolMore(false); setMainUpgradePrompt(UPGRADE_PROMPTS.voiceGate()); return; } setShowVoiceMode(true); setShowToolMore(false); }}
+                        disabled={isStreaming || isRecording}
+                        className="w-full text-left px-4 py-3 text-sm flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 disabled:opacity-50 transition-colors"
+                      >
+                        <Headphones className="w-4 h-4 text-indigo-500 dark:text-indigo-400 flex-shrink-0" />
+                        <span className="font-medium">{t("toolbar_live_voice")}</span>
+                      </button>
                     </div>
-                  </div>
+                  )}
                 </div>
               )}
 
