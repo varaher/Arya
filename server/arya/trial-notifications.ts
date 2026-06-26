@@ -350,9 +350,27 @@ export async function getEffectivePlan(userId: string): Promise<string> {
 
     if (!u) return "free";
 
-    // Paid subscriber — use their plan
+    // Paid subscriber via arya_users fields
     if (u.plan && u.plan !== "free" && u.planExpiresAt && new Date(u.planExpiresAt) > new Date()) {
       return u.plan;
+    }
+
+    // Fallback: check arya_subscriptions directly (covers cases where arya_users.plan update stalled)
+    const { aryaSubscriptions } = await import("../../shared/schema");
+    const { and } = await import("drizzle-orm");
+    const [activeSub] = await db
+      .select({ plan: aryaSubscriptions.plan })
+      .from(aryaSubscriptions)
+      .where(and(eq(aryaSubscriptions.userId, userId), eq(aryaSubscriptions.status, "active")))
+      .limit(1);
+    if (activeSub?.plan && activeSub.plan !== "free") {
+      // Heal the arya_users record while we're here
+      const healExpiry = new Date();
+      healExpiry.setMonth(healExpiry.getMonth() + 1);
+      await db.update(aryaUsers)
+        .set({ plan: activeSub.plan as any, planExpiresAt: healExpiry } as any)
+        .where(eq(aryaUsers.id, userId));
+      return activeSub.plan;
     }
 
     // Active trial — full Pro access

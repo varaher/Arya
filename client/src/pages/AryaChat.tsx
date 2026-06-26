@@ -3774,7 +3774,7 @@ export default function AryaChat() {
   const [showVoiceMode, setShowVoiceMode] = useState(false);
   const [mainUpgradePrompt, setMainUpgradePrompt] = useState<UpgradePromptConfig | null>(null);
   const [showCancelSheet, setShowCancelSheet] = useState(false);
-  const mainUserPlan: string = (user as any)?.plan || "free";
+  const mainUserPlan: string = trialStatus?.effectivePlan || (user as any)?.plan || "free";
   const isMainFree = mainUserPlan === "free";
   const THINKING_FREE_MODES = new Set(["default", "therapist"]);
   const [activeConversation, setActiveConversation] = useState<number | null>(null);

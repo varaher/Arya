@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { Check, X, Zap, Star, Crown, Gem, ChevronDown, ChevronUp, ArrowLeft } from "lucide-react";
 import { useUserAuth } from "@/lib/user-auth";
+import { useQueryClient } from "@tanstack/react-query";
 import { useQuery } from "@tanstack/react-query";
 
 
@@ -195,7 +196,8 @@ function FeatureCell({ value }: { value: string | boolean }) {
 
 export default function PricingPage() {
   const [, setLocation] = useLocation();
-  const { user, token } = useUserAuth();
+  const { user, token, refreshUser } = useUserAuth();
+  const queryClient = useQueryClient();
 
   const [region,  setRegion]  = useState<Region>(INDIA);
   const [billing, setBilling] = useState<Billing>("monthly");
@@ -277,6 +279,9 @@ export default function PricingPage() {
             const vd = await vr.json();
             if (!vr.ok) throw new Error(vd.error || "Payment verification failed");
             setSuccess(planId);
+            await refreshUser();
+            queryClient.invalidateQueries({ queryKey: ["trial-status"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/user/plan-status"] });
           } catch (e: any) {
             setError(e.message || "Payment verification failed. Contact support.");
           } finally { setLoading(null); }

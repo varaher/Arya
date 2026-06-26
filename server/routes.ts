@@ -5745,13 +5745,21 @@ Be honest. Be brief. No padding. Write like someone who was present in the room.
         ? Math.max(0, Math.ceil((trialEnds.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
         : 0;
 
+      // Check arya_subscriptions directly — most reliable source
+      const [activeSub] = await db
+        .select({ plan: aryaSubscriptions.plan })
+        .from(aryaSubscriptions)
+        .where(and(eq(aryaSubscriptions.userId, userId), eq(aryaSubscriptions.status, "active")))
+        .limit(1);
+
       const isPaidSubscriber =
-        u.plan !== "free" &&
-        (u.razorpaySubscriptionId
-          ? true
-          : u.planExpiresAt
-          ? new Date(u.planExpiresAt) > now
-          : false);
+        !!activeSub ||
+        (u.plan !== "free" &&
+          (u.razorpaySubscriptionId
+            ? true
+            : u.planExpiresAt
+            ? new Date(u.planExpiresAt) > now
+            : false));
 
       const effectivePlan = await getEffectivePlan(userId);
 
