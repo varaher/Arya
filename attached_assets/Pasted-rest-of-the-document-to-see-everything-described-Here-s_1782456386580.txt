@@ -1,0 +1,45 @@
+rest of the document to see everything described:
+
+Here's an honest comparison of what this document planned vs what's actually built:
+
+✅ Built (we did this)
+
+Feature	Where
+Animated canvas backgrounds per world (stars/particles/dust)	Inside DrishyaCinematicViewer (fullscreen overlay)
+Sentence-by-sentence TTS narration	Inside DrishyaCinematicViewer
+Downloadable .webm video	DrishyaCinematicViewer
+❌ Not built yet (the doc planned these, we skipped them)
+
+Feature	What it is
+DrishyaBackground.tsx	Animated canvas behind the main Drishya page (not just the viewer) — so stars/dust are always visible while you read
+DrishyaAmbient.ts	Ambient soundscape — crickets for Night, rain for Film, chai shop for Everyday — plays softly while story streams
+CinematicReader.tsx	Replaces the plain streaming text with a line-by-line fade-in as the story arrives — the main page reading experience
+drishya-immersive.css	Ink-wash enter animation, scroll hint, closing question reveal
+Ambient toggle button 🔊	Fixed bottom-right button to mute/unmute the ambient sound
+Audio files in /public/audio/	3 CC0 mp3 files — one per world
+In short: We built the fullscreen "Watch as movie" experience well. But the main reading experience — the page you land on when a story streams in — still shows plain text with no animated background, no ambient sound, and no cinematic line-by-line reveal.
+
+The document's biggest value is in that reading experience, not just the video export.
+
+Want me to build all of this now? The ambient audio needs 3 small mp3 files sourced from Freesound.org — I can handle everything else (background, reader, CSS, wiring) without any new API costs.
+
+Optimized Agent memory
+Yes
+
+1 minute ago
+All 10 tasks in that plan are already fully built. This appears to be an old session plan from earlier in ARYA's development. Let me give you the current status:
+
+Task	Status	Evidence
+T001 — Schema (mood, voice notes, user columns)	✅ Done	arya_mood_checkins, arya_voice_notes tables exist; morningBriefingEnabled, uiLanguage, etc. are on arya_users
+T002 — Morning Briefing + Weekly Review services	✅ Done	server/arya/morning-briefing.ts, weekly-review.ts wired into scheduler
+T003 — Document & Image Analysis	✅ Done	POST /api/arya/conversations/:id/scan with Sarvam OCR + GPT-4o vision fallback
+T004 — Mood + Voice Notes APIs	✅ Done	All 4 routes live in server/routes.ts
+T005 — Document upload in chat	✅ Done	"Scan document" button in ··· toolbar, camera capture, OCR pipeline
+T006 — Mood Check-in UI	✅ Done	MoodCheckInCard in welcome screen, shows once daily
+T007 — Voice Notes panel	✅ Done	VoiceNotesPanel with recording, transcription, summary, save-as-goals
+T008 — Morning Briefing toggle + Language selector	✅ Done	In Customize panel — time picker + toggles
+T009 — Hindi UI	✅ Done	client/src/lib/i18n.ts with full English/Hindi translation map
+T010 — Google Calendar	✅ Done	Full OAuth flow, CalendarPanel in sidebar
+These were all built in earlier sessions. What would you like to work on next?
+
+I'm asking about d

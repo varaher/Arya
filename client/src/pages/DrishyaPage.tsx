@@ -4,6 +4,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Volume2, VolumeX, Bookmark, BookmarkCheck, Trash2, Plus, Loader2, ChevronDown, ChevronUp, Film, Download } from "lucide-react";
 import { useUserAuth } from "@/lib/user-auth";
 import { useLanguage } from "@/lib/language-context";
+import DrishyaBackground from "@/components/drishya/DrishyaBackground";
+import CinematicReader from "@/components/drishya/CinematicReader";
+import { drishyaAmbient } from "@/components/drishya/DrishyaAmbient";
 
 type DrishyaWorld = "night" | "film" | "everyday";
 
@@ -44,6 +47,8 @@ export default function DrishyaPage() {
   const [showSaved, setShowSaved] = useState(false);
   const [showCinema, setShowCinema] = useState(false);
   const [error, setError] = useState("");
+  const [ambientOn, setAmbientOn] = useState(true);
+  const [entered, setEntered] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const storyRef = useRef<HTMLDivElement>(null);
@@ -54,6 +59,16 @@ export default function DrishyaPage() {
   useEffect(() => {
     if (token) fetchSavedStories();
   }, [token]);
+
+  useEffect(() => { setEntered(true); }, []);
+
+  useEffect(() => {
+    if (isGenerating && ambientOn) drishyaAmbient.start(world);
+  }, [isGenerating]);
+
+  useEffect(() => {
+    if (!isGenerating && !isNarrating) drishyaAmbient.stop(true);
+  }, [isGenerating, isNarrating]);
 
   async function fetchSavedStories() {
     try {
@@ -195,16 +210,19 @@ export default function DrishyaPage() {
   const canGenerate = request.trim().length > 3 && !isGenerating;
 
   return (
-    <div style={pageStyle}>
-      {/* Ambient gradient overlay */}
+    <div style={pageStyle} className={entered ? "drishya-ink-enter" : ""}>
+      {/* Animated canvas background */}
+      <DrishyaBackground world={world} active={isGenerating || story.length > 0} />
+
+      {/* Accent colour gradient overlay */}
       <div style={{
-        position: "fixed", inset: 0, zIndex: 0,
+        position: "fixed", inset: 0, zIndex: 1,
         background: BG_GRADIENTS[world],
         transition: "background 0.8s ease",
         pointerEvents: "none",
       }} />
 
-      <div style={{ position: "relative", zIndex: 1, maxWidth: 680, margin: "0 auto", paddingBottom: 100 }}>
+      <div style={{ position: "relative", zIndex: 2, maxWidth: 680, margin: "0 auto", paddingBottom: 100 }}>
 
         {/* ── Top Bar ── */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px 0" }}>
@@ -329,28 +347,14 @@ export default function DrishyaPage() {
                 {request}
               </div>
 
-              {/* Story text */}
-              <div
-                ref={storyRef}
-                data-testid="text-drishya-story"
-                style={{
-                  fontSize: 17, lineHeight: 1.85,
-                  color: "rgba(240,235,224,0.88)",
-                  whiteSpace: "pre-wrap",
-                  fontFamily: "Georgia, 'Times New Roman', serif",
-                  letterSpacing: "0.01em",
-                  minHeight: 120,
-                }}
-              >
-                {story}
-                {isGenerating && (
-                  <span style={{
-                    display: "inline-block", width: 2, height: "1em",
-                    background: activeWorld.color,
-                    animation: "blink 1s step-end infinite",
-                    verticalAlign: "text-bottom", marginLeft: 2,
-                  }} />
-                )}
+              {/* Cinematic line-by-line story reader */}
+              <div ref={storyRef} data-testid="text-drishya-story">
+                <CinematicReader
+                  storyText={story}
+                  isStreaming={isGenerating}
+                  isNarrating={isNarrating}
+                  world={world}
+                />
               </div>
 
               {/* Action bar */}
@@ -603,10 +607,43 @@ export default function DrishyaPage() {
 
       </div>
 
-      {/* Cursor blink + spin keyframes */}
+      {/* Ambient sound toggle */}
+      <button
+        data-testid="button-drishya-ambient"
+        onClick={() => {
+          setAmbientOn((v) => {
+            if (v) { drishyaAmbient.stop(true); }
+            else if (isGenerating || story) { drishyaAmbient.start(world); }
+            return !v;
+          });
+        }}
+        title={ambientOn ? "Mute ambient sound" : "Play ambient sound"}
+        style={{
+          position: "fixed", bottom: 28, right: 20, zIndex: 20,
+          width: 44, height: 44, borderRadius: "50%",
+          border: `1px solid ${ambientOn ? activeWorld.color + "55" : "rgba(255,255,255,0.1)"}`,
+          background: "rgba(0,0,0,0.45)", backdropFilter: "blur(8px)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          cursor: "pointer", fontSize: 18,
+          color: ambientOn ? activeWorld.color : "rgba(255,255,255,0.35)",
+          transition: "all 0.2s",
+        }}
+      >
+        {ambientOn ? "🔊" : "🔇"}
+      </button>
+
+      {/* Keyframes */}
       <style>{`
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
         @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes drishyaPulse { 0%,100%{opacity:0.3} 50%{opacity:1} }
+        @keyframes drishyaInkWash {
+          0%   { opacity: 0; filter: blur(8px) saturate(0); }
+          40%  { opacity: 0.85; filter: blur(2px) saturate(0.4); }
+          100% { opacity: 1; filter: blur(0) saturate(1); }
+        }
+        .drishya-ink-enter { animation: drishyaInkWash 1.1s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+        .drishya-line { will-change: opacity, transform; }
       `}</style>
 
       {/* Cinematic Movie Viewer */}
