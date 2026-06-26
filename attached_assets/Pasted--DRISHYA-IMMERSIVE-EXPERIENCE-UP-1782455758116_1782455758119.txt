@@ -1,0 +1,834 @@
+// ============================================================
+// DRISHYA — IMMERSIVE EXPERIENCE UPGRADE
+// Phase 1: Animated backgrounds + ambient audio + cinematic text
+//
+// What this adds to the existing DrishyaPage.tsx:
+//   1. World-matched animated CSS backgrounds (Night/Film/Everyday)
+//   2. Ambient soundscape player (auto-starts with story, fades out at end)
+//   3. CinematicReader component — line-by-line reveal synced to TTS
+//   4. Ink-wash transition between world selection and story
+//
+// Files to create/modify:
+//   NEW:  client/src/components/drishya/DrishyaBackground.tsx
+//   NEW:  client/src/components/drishya/DrishyaAmbient.ts
+//   NEW:  client/src/components/drishya/CinematicReader.tsx
+//   NEW:  client/src/styles/drishya-immersive.css
+//   EDIT: client/src/pages/DrishyaPage.tsx (wire all three in)
+// ============================================================
+
+
+// ──────────────────────────────────────────────────────────────────────────────
+// FILE 1: client/src/components/drishya/DrishyaBackground.tsx
+// Animated CSS background — no external library, no video files needed
+// ──────────────────────────────────────────────────────────────────────────────
+
+/*
+import { useEffect, useRef } from 'react';
+
+type DrishyaWorld = 'night' | 'film' | 'everyday';
+
+interface Props {
+  world: DrishyaWorld;
+  active: boolean; // true when a story is playing or just started
+}
+
+export default function DrishyaBackground({ world, active }: Props) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // ── Night world: slow star particles + ink bleed ──────────────────────────
+  useEffect(() => {
+    if (world !== 'night') return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d')!;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    interface Star {
+      x: number; y: number;
+      radius: number; opacity: number;
+      speed: number; drift: number;
+    }
+
+    const stars: Star[] = Array.from({ length: 90 }, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      radius: Math.random() * 1.4 + 0.3,
+      opacity: Math.random() * 0.5 + 0.1,
+      speed: Math.random() * 0.15 + 0.02,
+      drift: (Math.random() - 0.5) * 0.08,
+    }));
+
+    let animId: number;
+    let t = 0;
+
+    function draw() {
+      // Deep indigo-to-black gradient base
+      const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      grad.addColorStop(0, '#0a0e1a');
+      grad.addColorStop(0.5, '#0d1425');
+      grad.addColorStop(1, '#070a10');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Subtle ink bloom in center — warm, like a diya
+      const bloom = ctx.createRadialGradient(
+        canvas.width * 0.5, canvas.height * 0.38,
+        0,
+        canvas.width * 0.5, canvas.height * 0.38,
+        canvas.width * 0.45
+      );
+      bloom.addColorStop(0, `rgba(180,130,60,${active ? 0.06 : 0.03})`);
+      bloom.addColorStop(1, 'transparent');
+      ctx.fillStyle = bloom;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Stars — slow drift, gentle twinkle
+      t += 0.012;
+      for (const s of stars) {
+        const twinkle = 0.5 + 0.5 * Math.sin(t * s.speed * 8 + s.x);
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(240,235,210,${s.opacity * twinkle})`;
+        ctx.fill();
+        s.x += s.drift;
+        s.y -= s.speed * 0.3;
+        if (s.y < -2) { s.y = canvas.height + 2; s.x = Math.random() * canvas.width; }
+        if (s.x < -2) s.x = canvas.width + 2;
+        if (s.x > canvas.width + 2) s.x = -2;
+      }
+
+      animId = requestAnimationFrame(draw);
+    }
+
+    draw();
+    return () => cancelAnimationFrame(animId);
+  }, [world, active]);
+
+  // ── Film world: amber light rays + dust motes ─────────────────────────────
+  useEffect(() => {
+    if (world !== 'film') return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d')!;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    interface Mote { x: number; y: number; r: number; vx: number; vy: number; o: number; }
+    const motes: Mote[] = Array.from({ length: 40 }, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      r: Math.random() * 2 + 0.5,
+      vx: (Math.random() - 0.5) * 0.15,
+      vy: -(Math.random() * 0.25 + 0.05),
+      o: Math.random() * 0.18 + 0.04,
+    }));
+
+    let animId: number;
+    let t = 0;
+
+    function draw() {
+      // Rich amber-to-deep-brown gradient
+      const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+      grad.addColorStop(0, '#1a0f05');
+      grad.addColorStop(0.4, '#2a1a08');
+      grad.addColorStop(1, '#0f0a04');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Projection light ray from top-right
+      t += 0.008;
+      const rayOpacity = (active ? 0.12 : 0.06) + 0.03 * Math.sin(t);
+      const rayGrad = ctx.createLinearGradient(
+        canvas.width * 0.85, 0,
+        canvas.width * 0.2, canvas.height * 0.7
+      );
+      rayGrad.addColorStop(0, `rgba(240,180,60,${rayOpacity})`);
+      rayGrad.addColorStop(0.4, `rgba(240,160,40,${rayOpacity * 0.4})`);
+      rayGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = rayGrad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Subtle film grain overlay — random noise pattern
+      for (let i = 0; i < 800; i++) {
+        const gx = Math.random() * canvas.width;
+        const gy = Math.random() * canvas.height;
+        ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.018})`;
+        ctx.fillRect(gx, gy, 1, 1);
+      }
+
+      // Floating dust motes in the light beam
+      for (const m of motes) {
+        ctx.beginPath();
+        ctx.arc(m.x, m.y, m.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(240,200,120,${m.o})`;
+        ctx.fill();
+        m.x += m.vx;
+        m.y += m.vy;
+        if (m.y < -5) { m.y = canvas.height + 5; m.x = Math.random() * canvas.width; }
+      }
+
+      animId = requestAnimationFrame(draw);
+    }
+
+    draw();
+    return () => cancelAnimationFrame(animId);
+  }, [world, active]);
+
+  // ── Everyday world: warm paper + gentle dust ──────────────────────────────
+  useEffect(() => {
+    if (world !== 'everyday') return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d')!;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    interface Dust { x: number; y: number; r: number; vx: number; vy: number; o: number; }
+    const dust: Dust[] = Array.from({ length: 25 }, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      r: Math.random() * 1.8 + 0.4,
+      vx: (Math.random() - 0.5) * 0.1,
+      vy: -(Math.random() * 0.15 + 0.03),
+      o: Math.random() * 0.1 + 0.03,
+    }));
+
+    let animId: number;
+    let t = 0;
+
+    function draw() {
+      // Warm paper texture base
+      const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      grad.addColorStop(0, '#2a1f0f');
+      grad.addColorStop(0.5, '#1f1608');
+      grad.addColorStop(1, '#150f04');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Warm window-light glow from one side
+      t += 0.006;
+      const winGrad = ctx.createRadialGradient(
+        canvas.width * 0.15, canvas.height * 0.3,
+        0,
+        canvas.width * 0.15, canvas.height * 0.3,
+        canvas.width * 0.5
+      );
+      const gOpacity = (active ? 0.1 : 0.05) + 0.02 * Math.sin(t * 0.7);
+      winGrad.addColorStop(0, `rgba(200,150,60,${gOpacity})`);
+      winGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = winGrad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Floating dust
+      for (const d of dust) {
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(220,190,130,${d.o})`;
+        ctx.fill();
+        d.x += d.vx;
+        d.y += d.vy;
+        if (d.y < -5) { d.y = canvas.height + 5; d.x = Math.random() * canvas.width; }
+      }
+
+      animId = requestAnimationFrame(draw);
+    }
+
+    draw();
+    return () => cancelAnimationFrame(animId);
+  }, [world, active]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        width: '100%',
+        height: '100%',
+        zIndex: 0,
+        pointerEvents: 'none',
+      }}
+    />
+  );
+}
+*/
+
+
+// ──────────────────────────────────────────────────────────────────────────────
+// FILE 2: client/src/components/drishya/DrishyaAmbient.ts
+// Ambient soundscape manager — plays looping audio behind the story
+// Audio files: 3 small mp3/ogg files (< 200KB each) placed in /public/audio/
+// ──────────────────────────────────────────────────────────────────────────────
+
+/*
+type DrishyaWorld = 'night' | 'film' | 'everyday';
+
+// Map each world to its ambient audio file
+// Source: Freesound.org (CC0 license — safe for commercial use)
+// Night: crickets + distant owl (search: "night crickets India ambient")
+// Film: city rain + distant traffic (search: "rain window night ambient")
+// Everyday: chai shop background (search: "Indian cafe ambient")
+const AMBIENT_FILES: Record<DrishyaWorld, string> = {
+  night:    '/audio/drishya-night.mp3',
+  film:     '/audio/drishya-film.mp3',
+  everyday: '/audio/drishya-everyday.mp3',
+};
+
+class DrishyaAmbientPlayer {
+  private audio: HTMLAudioElement | null = null;
+  private currentWorld: DrishyaWorld | null = null;
+  private fadeInterval: ReturnType<typeof setInterval> | null = null;
+
+  start(world: DrishyaWorld) {
+    if (this.currentWorld === world && this.audio && !this.audio.paused) return;
+    this.stop(false); // stop previous without fade
+
+    this.currentWorld = world;
+    this.audio = new Audio(AMBIENT_FILES[world]);
+    this.audio.loop = true;
+    this.audio.volume = 0;
+    this.audio.play().catch(() => {
+      // Browser may block autoplay — that's fine, fail silently
+      console.log('[Drishya] Ambient audio blocked by browser — continuing without sound');
+    });
+
+    // Fade in to target volume over 2 seconds
+    this.fadeTo(0.18, 2000);
+  }
+
+  stop(withFade = true) {
+    if (!this.audio) return;
+    if (withFade) {
+      this.fadeTo(0, 1500, () => {
+        this.audio?.pause();
+        this.audio = null;
+        this.currentWorld = null;
+      });
+    } else {
+      if (this.fadeInterval) clearInterval(this.fadeInterval);
+      this.audio.pause();
+      this.audio = null;
+      this.currentWorld = null;
+    }
+  }
+
+  private fadeTo(targetVolume: number, durationMs: number, onComplete?: () => void) {
+    if (!this.audio) return;
+    if (this.fadeInterval) clearInterval(this.fadeInterval);
+
+    const startVolume = this.audio.volume;
+    const steps = 20;
+    const stepDuration = durationMs / steps;
+    const volumeDelta = (targetVolume - startVolume) / steps;
+    let step = 0;
+
+    this.fadeInterval = setInterval(() => {
+      if (!this.audio) { clearInterval(this.fadeInterval!); return; }
+      step++;
+      this.audio.volume = Math.max(0, Math.min(1, startVolume + volumeDelta * step));
+      if (step >= steps) {
+        clearInterval(this.fadeInterval!);
+        this.audio.volume = targetVolume;
+        onComplete?.();
+      }
+    }, stepDuration);
+  }
+}
+
+// Singleton — one ambient player for the whole Drishya experience
+export const drishyaAmbient = new DrishyaAmbientPlayer();
+*/
+
+
+// ──────────────────────────────────────────────────────────────────────────────
+// FILE 3: client/src/components/drishya/CinematicReader.tsx
+// Line-by-line story reveal, fading in as TTS speaks each sentence
+// Replaces the standard streaming text display in DrishyaPage
+// ──────────────────────────────────────────────────────────────────────────────
+
+/*
+import { useEffect, useRef, useState } from 'react';
+
+interface Props {
+  storyText: string;         // Full story text as it streams in
+  isStreaming: boolean;      // True while SSE is still open
+  isNarrating: boolean;      // True while Sarvam TTS is playing
+  world: 'night' | 'film' | 'everyday';
+  onLineReveal?: (lineIndex: number) => void;
+}
+
+export default function CinematicReader({
+  storyText,
+  isStreaming,
+  isNarrating,
+  world,
+  onLineReveal,
+}: Props) {
+  const [revealedLines, setRevealedLines] = useState<number>(0);
+  const [sentences, setSentences] = useState<string[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Split streamed text into sentences as it arrives
+  useEffect(() => {
+    // Split on period/question/exclamation followed by space or end
+    // Keep the punctuation attached to each sentence
+    const split = storyText
+      .split(/(?<=[.!?।])\s+/)
+      .map(s => s.trim())
+      .filter(Boolean);
+    setSentences(split);
+  }, [storyText]);
+
+  // If NOT narrating (user just reading) — reveal on a gentle timer
+  useEffect(() => {
+    if (isNarrating) return; // TTS controls reveal when narrating
+    if (isStreaming) return;  // Wait for streaming to finish first
+
+    // Reveal one line every ~1.8 seconds if just reading
+    const interval = setInterval(() => {
+      setRevealedLines(prev => {
+        if (prev >= sentences.length) {
+          clearInterval(interval);
+          return prev;
+        }
+        onLineReveal?.(prev);
+        return prev + 1;
+      });
+    }, 1800);
+
+    return () => clearInterval(interval);
+  }, [sentences, isStreaming, isNarrating]);
+
+  // If narrating — sync reveal to TTS audio timing
+  // (Approximate: TTS reads roughly 130 words/minute = ~0.46s per word)
+  // This is an approximation — for exact sync you'd need TTS word timestamps
+  useEffect(() => {
+    if (!isNarrating) return;
+
+    // Estimate words in each sentence, calculate duration
+    let cumulativeDelay = 0;
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+    sentences.forEach((sentence, i) => {
+      const wordCount = sentence.split(/\s+/).length;
+      const durationMs = (wordCount / 130) * 60 * 1000; // 130 WPM
+
+      const t = setTimeout(() => {
+        setRevealedLines(i + 1);
+        onLineReveal?.(i);
+      }, cumulativeDelay);
+
+      timeouts.push(t);
+      cumulativeDelay += durationMs;
+    });
+
+    return () => timeouts.forEach(clearTimeout);
+  }, [sentences, isNarrating]);
+
+  // Auto-scroll to the latest revealed line
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const lines = containerRef.current.querySelectorAll('.drishya-line');
+    const lastRevealed = lines[revealedLines - 1];
+    if (lastRevealed) {
+      lastRevealed.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [revealedLines]);
+
+  const worldColors = {
+    night:    { primary: '#e8e0d0', dim: 'rgba(232,224,208,0.35)', accent: '#b8923f' },
+    film:     { primary: '#f0e8d0', dim: 'rgba(240,232,208,0.35)', accent: '#c8783a' },
+    everyday: { primary: '#e0d8c8', dim: 'rgba(224,216,200,0.35)', accent: '#a87a3a' },
+  };
+  const colors = worldColors[world];
+
+  return (
+    <div
+      ref={containerRef}
+      className="cinematic-reader"
+      style={{
+        maxWidth: '620px',
+        margin: '0 auto',
+        padding: '0 24px',
+      }}
+    >
+      {sentences.map((sentence, i) => (
+        <p
+          key={i}
+          className="drishya-line"
+          style={{
+            fontFamily: "'Cormorant Garamond', 'DM Serif Display', Georgia, serif",
+            fontSize: 'clamp(18px, 3.5vw, 23px)',
+            lineHeight: 1.75,
+            letterSpacing: '0.01em',
+            marginBottom: '1.2em',
+            color: i < revealedLines ? colors.primary : 'transparent',
+            opacity: i === revealedLines - 1
+              ? 1
+              : i < revealedLines - 1
+                ? 0.55
+                : 0,
+            transform: i < revealedLines
+              ? 'translateY(0)'
+              : 'translateY(12px)',
+            transition: 'opacity 0.9s ease, transform 0.9s ease, color 0s',
+            fontStyle: 'italic',
+            textAlign: 'center',
+          }}
+        >
+          {sentence}
+        </p>
+      ))}
+
+      {/* Streaming indicator — three dots while text is arriving */}
+      {isStreaming && (
+        <div className="drishya-streaming-indicator" style={{
+          textAlign: 'center',
+          color: colors.accent,
+          fontSize: '28px',
+          letterSpacing: '6px',
+          animation: 'drishyaPulse 1.4s ease infinite',
+        }}>
+          · · ·
+        </div>
+      )}
+    </div>
+  );
+}
+*/
+
+
+// ──────────────────────────────────────────────────────────────────────────────
+// FILE 4: client/src/styles/drishya-immersive.css
+// Animations and utility classes — add to global stylesheet or import in component
+// ──────────────────────────────────────────────────────────────────────────────
+
+export const DRISHYA_IMMERSIVE_CSS = `
+
+/* ── Ink wash transition when entering Drishya ───────────────────────────── */
+.drishya-ink-enter {
+  animation: drishyaInkWash 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes drishyaInkWash {
+  0%   { opacity: 0; filter: blur(8px) saturate(0); transform: scale(0.98); }
+  40%  { opacity: 0.7; filter: blur(2px) saturate(0.3); }
+  100% { opacity: 1; filter: blur(0) saturate(1); transform: scale(1); }
+}
+
+/* ── World selection buttons ─────────────────────────────────────────────── */
+.drishya-world-btn {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.drishya-world-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(255,255,255,0.08), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.drishya-world-btn:hover::after { opacity: 1; }
+.drishya-world-btn:hover { transform: translateY(-2px); }
+
+.drishya-world-btn.active {
+  box-shadow: 0 0 0 1.5px rgba(255,255,255,0.25), 0 4px 24px rgba(0,0,0,0.4);
+}
+
+/* World-specific active colours */
+.drishya-world-btn.night.active  { box-shadow: 0 0 0 1.5px rgba(100,120,200,0.5), 0 4px 24px rgba(10,14,30,0.6); }
+.drishya-world-btn.film.active   { box-shadow: 0 0 0 1.5px rgba(200,120,40,0.5), 0 4px 24px rgba(26,15,5,0.6); }
+.drishya-world-btn.everyday.active { box-shadow: 0 0 0 1.5px rgba(160,120,60,0.5), 0 4px 24px rgba(20,15,4,0.6); }
+
+/* ── Cinematic reader ────────────────────────────────────────────────────── */
+.cinematic-reader {
+  position: relative;
+  z-index: 10;
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-top: 80px;
+  padding-bottom: 120px;
+}
+
+.drishya-line {
+  will-change: opacity, transform;
+}
+
+/* Streaming dots animation */
+@keyframes drishyaPulse {
+  0%, 100% { opacity: 0.3; }
+  50%       { opacity: 1; }
+}
+
+/* ── Ambient toggle button ───────────────────────────────────────────────── */
+.drishya-ambient-toggle {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 20;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 20px;
+}
+
+.drishya-ambient-toggle:hover {
+  background: rgba(0,0,0,0.65);
+  border-color: rgba(255,255,255,0.25);
+  transform: scale(1.05);
+}
+
+.drishya-ambient-toggle.on  { color: #fbbf24; border-color: rgba(251,191,36,0.35); }
+.drishya-ambient-toggle.off { color: rgba(255,255,255,0.4); }
+
+/* ── Scroll hint at page bottom ─────────────────────────────────────────── */
+.drishya-scroll-hint {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.2);
+  animation: drishyaBob 2.5s ease infinite;
+  pointer-events: none;
+  z-index: 15;
+}
+
+@keyframes drishyaBob {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50%       { transform: translateX(-50%) translateY(5px); }
+}
+
+/* ── Story end — quiet question reveal ──────────────────────────────────── */
+.drishya-closing-question {
+  text-align: center;
+  margin-top: 48px;
+  padding: 0 24px;
+  animation: drishyaFadeUp 1.5s ease forwards;
+  opacity: 0;
+}
+
+@keyframes drishyaFadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.drishya-closing-question p {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+  font-size: 18px;
+  color: rgba(255,255,255,0.4);
+  line-height: 1.7;
+}
+`;
+
+
+// ──────────────────────────────────────────────────────────────────────────────
+// FILE 5: How to wire everything into the existing DrishyaPage.tsx
+// ──────────────────────────────────────────────────────────────────────────────
+
+/*
+// ── STEP 1: Import the new components ──────────────────────────────────────
+
+import DrishyaBackground from '../components/drishya/DrishyaBackground';
+import CinematicReader from '../components/drishya/CinematicReader';
+import { drishyaAmbient } from '../components/drishya/DrishyaAmbient';
+
+// ── STEP 2: Add ambient toggle state ───────────────────────────────────────
+
+const [ambientOn, setAmbientOn] = useState(true);
+
+// ── STEP 3: Start/stop ambient when a story begins/ends ────────────────────
+
+// When story starts streaming:
+useEffect(() => {
+  if (isStreaming && ambientOn) {
+    drishyaAmbient.start(selectedWorld); // 'night' | 'film' | 'everyday'
+  }
+}, [isStreaming]);
+
+// When story finishes and TTS ends:
+useEffect(() => {
+  if (!isStreaming && !isNarrating) {
+    drishyaAmbient.stop(true); // fade out
+  }
+}, [isStreaming, isNarrating]);
+
+// ── STEP 4: Replace the existing story text display with CinematicReader ───
+
+// BEFORE (existing DrishyaPage.tsx — look for where storyText renders):
+//   <div style={{ fontStyle: 'italic', ... }}>{storyText}</div>
+
+// AFTER:
+<CinematicReader
+  storyText={storyText}
+  isStreaming={isStreaming}
+  isNarrating={isNarrating}
+  world={selectedWorld}
+/>
+
+// ── STEP 5: Add the animated background behind everything ──────────────────
+
+// At the very top of the DrishyaPage return, BEFORE everything else:
+<DrishyaBackground world={selectedWorld} active={isStreaming || storyText.length > 0} />
+
+// The existing DrishyaPage dark background styles can stay —
+// the canvas renders behind them via z-index: 0.
+// If the existing background is a solid CSS color on the root div,
+// make it semi-transparent so the canvas shows through:
+//   background: 'rgba(8, 5, 15, 0.75)'  // was fully opaque
+//   backdropFilter: 'none'
+
+// ── STEP 6: Add the ambient toggle button ──────────────────────────────────
+
+// Anywhere in the DrishyaPage JSX (fixed position, bottom-right):
+<button
+  className={`drishya-ambient-toggle ${ambientOn ? 'on' : 'off'}`}
+  onClick={() => {
+    setAmbientOn(v => {
+      if (v) drishyaAmbient.stop(true);
+      else if (isStreaming || storyText) drishyaAmbient.start(selectedWorld);
+      return !v;
+    });
+  }}
+  title={ambientOn ? 'Mute ambient sound' : 'Play ambient sound'}
+>
+  {ambientOn ? '🔊' : '🔇'}
+</button>
+
+// ── STEP 7: Add CSS ────────────────────────────────────────────────────────
+
+// In DrishyaPage.tsx or a global CSS file, inject DRISHYA_IMMERSIVE_CSS
+// (imported from drishya-immersive.css or inline via a <style> tag in the component):
+
+import { DRISHYA_IMMERSIVE_CSS } from '../styles/drishya-immersive.css';
+// Then in the component:
+// <style>{DRISHYA_IMMERSIVE_CSS}</style>
+// Or just import the CSS file directly if your bundler supports it.
+
+// ── STEP 8: Add ink-wash enter animation to the page wrapper ───────────────
+
+// The main DrishyaPage container div — add the enter class on mount:
+const [entered, setEntered] = useState(false);
+useEffect(() => { setEntered(true); }, []);
+
+// Then on the wrapper:
+// <div className={entered ? 'drishya-ink-enter' : ''} style={{ ...existingStyles }}>
+*/
+
+
+// ──────────────────────────────────────────────────────────────────────────────
+// AUDIO FILES — What to download and where to put them
+// ──────────────────────────────────────────────────────────────────────────────
+
+/*
+Download these three ambient audio files from Freesound.org
+(all CC0 — safe for commercial use, no attribution required):
+
+1. NIGHT WORLD
+   Search: "cricket night loop" OR "India night ambient"
+   Target: Soft cricket chirps, maybe distant frogs
+   Duration: 2+ minutes (loops seamlessly)
+   Save as: /public/audio/drishya-night.mp3
+   Target file size: < 200KB (compress with Audacity or ffmpeg)
+
+2. FILM WORLD
+   Search: "rain window night" OR "city rain ambient"
+   Target: Gentle rain on glass, very distant traffic
+   Duration: 2+ minutes
+   Save as: /public/audio/drishya-film.mp3
+   Target size: < 200KB
+
+3. EVERYDAY WORLD
+   Search: "Indian cafe ambient" OR "chai shop background"
+   Target: Gentle cups, distant conversation, ceiling fan
+   Duration: 2+ minutes
+   Save as: /public/audio/drishya-everyday.mp3
+   Target size: < 200KB
+
+Compression command (ffmpeg):
+  ffmpeg -i input.mp3 -b:a 48k -ar 44100 output.mp3
+
+Total audio footprint: < 600KB for all three files.
+These are loaded lazily — only when the user enters Drishya.
+*/
+
+
+// ──────────────────────────────────────────────────────────────────────────────
+// WIRING CHECKLIST
+// ──────────────────────────────────────────────────────────────────────────────
+
+/*
+[ ] 1. Create client/src/components/drishya/ folder
+
+[ ] 2. Create DrishyaBackground.tsx
+        Copy canvas animation code from FILE 1 above
+        Remove the outer comment block (it's in /* */ for display only)
+
+[ ] 3. Create DrishyaAmbient.ts
+        Copy audio manager code from FILE 2 above
+
+[ ] 4. Create CinematicReader.tsx
+        Copy cinematic reader code from FILE 3 above
+
+[ ] 5. Create client/src/styles/drishya-immersive.css
+        Copy CSS from DRISHYA_IMMERSIVE_CSS constant in FILE 4
+
+[ ] 6. Download 3 ambient audio files (see AUDIO FILES section)
+        Place in /public/audio/
+        Compress to < 200KB each
+
+[ ] 7. Edit DrishyaPage.tsx — follow STEP 1–8 in FILE 5:
+        Import new components
+        Add ambientOn state
+        Start/stop ambient on story begin/end
+        Replace story text div with CinematicReader
+        Add DrishyaBackground at top of return
+        Make existing background semi-transparent
+        Add ambient toggle button
+        Add ink-wash enter animation
+
+[ ] 8. Test Night world:
+        Enter Drishya, select Night
+        Canvas animates (slow stars, warm bloom)
+        Request a story
+        Ambient audio starts (crickets)
+        Text reveals line by line as TTS speaks
+        Story ends: ambient fades out
+        Toggle button mutes/unmutes correctly
+
+[ ] 9. Test Film world + Everyday world
+        Same flow, different background/audio
+
+[ ] 10. Test without audio (browser blocks autoplay)
+         Story should still work — ambient failure is silent
+         User can tap the ambient button to manually start
+
+[ ] 11. Test on mobile (iPhone Safari + Android Chrome)
+         Canvas should resize correctly on orientation change
+         TTS timing on mobile may differ — cinematic reveal
+         still works gracefully (slight desync is acceptable)
+
+TOTAL ESTIMATE: 1 day of frontend dev work
+NO backend changes needed — all existing routes unchanged
+NO new API costs — pure frontend enhancement
+*/
