@@ -15,7 +15,6 @@ import {
   Mic,
   Paperclip,
   Camera,
-  Video,
   ScanText,
   MoreHorizontal,
   Plus,
@@ -3998,7 +3997,6 @@ export default function AryaChat() {
   const [isScanningDoc, setIsScanningDoc] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
-  const videoInputRef = useRef<HTMLInputElement>(null);
   const { language: uiLanguage, t, setLanguage: setGlobalLanguage } = useLanguage();
 
   const { data: trialStatus } = useQuery<{
@@ -6715,16 +6713,6 @@ export default function AryaChat() {
                 onChange={handleImageSelect}
                 data-testid="input-camera-capture"
               />
-              {/* Video capture input */}
-              <input
-                ref={videoInputRef}
-                type="file"
-                accept="video/*"
-                capture="environment"
-                className="hidden"
-                onChange={handleImageSelect}
-                data-testid="input-video-capture"
-              />
 
               {/* Mic — only shown when NOT recording */}
               {!isRecording && (
@@ -6948,15 +6936,6 @@ export default function AryaChat() {
                           <span className="font-medium leading-tight">Camera</span>
                           <span className="text-[11px] text-muted-foreground leading-tight">Photo → ARYA reads &amp; explains</span>
                         </div>
-                      </button>
-                      {/* Video */}
-                      <button data-testid="button-attach-video"
-                        onClick={() => { videoInputRef.current?.click(); setShowToolMore(false); }}
-                        disabled={isStreaming || isScanningDoc}
-                        className="w-full text-left px-4 py-3 text-sm flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 disabled:opacity-50 transition-colors"
-                      >
-                        <Video className="w-4 h-4 text-violet-500 dark:text-violet-400 flex-shrink-0" />
-                        <span className="font-medium">Video</span>
                       </button>
                       {/* Files */}
                       <button data-testid="button-attach-files"
