@@ -92,6 +92,8 @@ import CancelSubscription from "@/components/CancelSubscription";
 import PlanStatusBadge from "@/components/PlanStatusBadge";
 import { requestNotificationPermission } from "@/lib/push-notifications";
 import { playARYASound, playAlarmSound, stopAlarmSound } from "@/utils/reminderSound";
+import ConversationLimitBanner from "@/components/ConversationLimitBanner";
+import ConversationLimitBlock from "@/components/ConversationLimitBlock";
 
 function CodeBlock({ children, language }: { children: string; language?: string }) {
   const [copied, setCopied] = useState(false);
@@ -4008,6 +4010,11 @@ export default function AryaChat() {
     trialDay: number | null;
     todaysLimits: { conversationsPerDay: number; voiceMinutesPerDay: number } | null;
     todaysUsage: { conversationsUsed: number; voiceMinutesUsed: number } | null;
+    conversationsRemaining: number | null;
+    resetTime: string;
+    resetTimestamp: number;
+    daysToNextPhase: number | null;
+    nextTierLimit: number | null;
   }>({
     queryKey: ["trial-status"],
     queryFn: async () => {
@@ -4021,6 +4028,12 @@ export default function AryaChat() {
   });
   const mainUserPlan: string = trialStatus?.effectivePlan || (user as any)?.plan || "free";
   const isMainFree = mainUserPlan === "free";
+
+  // Conversation limit state — drives banner (1-5 left) and block (0 left)
+  const convRemaining: number | null = trialStatus?.conversationsRemaining ?? null;
+  const isConvLimitHit = convRemaining !== null && convRemaining === 0;
+  const showConvBanner = convRemaining !== null && convRemaining > 0 && convRemaining <= 5 && !trialStatus?.isPaidSubscriber;
+  const isLimitedUser = isLoggedIn && !trialStatus?.isPaidSubscriber && (trialStatus?.trialStatus === "active" || isMainFree);
 
   const { data: kaalBriefing } = useQuery<any>({
     queryKey: ["kaal-briefing-home"],
@@ -6692,8 +6705,33 @@ export default function AryaChat() {
             );
           })()}
 
+          {/* Conversation limit banner — slides in at 1–5 remaining */}
+          {showConvBanner && isLimitedUser && (
+            <ConversationLimitBanner
+              remaining={convRemaining!}
+              resetTime={trialStatus?.resetTime || "12:00 AM"}
+              isTrialUser={trialStatus?.trialStatus === "active"}
+              trialDay={trialStatus?.trialDay}
+              nextTierLimit={trialStatus?.nextTierLimit}
+              daysToNextPhase={trialStatus?.daysToNextPhase}
+            />
+          )}
+
+          {/* Conversation limit block — replaces input at 0 remaining */}
+          {isConvLimitHit && isLimitedUser && (
+            <ConversationLimitBlock
+              resetTime={trialStatus?.resetTime || "12:00 AM"}
+              resetTimestamp={trialStatus?.resetTimestamp || (Date.now() + 3 * 60 * 60 * 1000)}
+              isTrialUser={trialStatus?.trialStatus === "active"}
+              trialDay={trialStatus?.trialDay}
+              nextTierLimit={trialStatus?.nextTierLimit}
+              daysToNextPhase={trialStatus?.daysToNextPhase}
+              onUpgrade={() => setShowPricingModal(true)}
+            />
+          )}
+
           {/* ── Input bar — full width, WhatsApp-style pill ── */}
-          <div className="flex items-end gap-2">
+          <div className={isConvLimitHit && isLimitedUser ? "hidden" : "flex items-end gap-2"}>
               <input
                 ref={imageInputRef}
                 type="file"

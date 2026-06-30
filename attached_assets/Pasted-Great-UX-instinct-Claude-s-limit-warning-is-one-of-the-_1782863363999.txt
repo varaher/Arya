@@ -1,0 +1,90 @@
+Great UX instinct — Claude's limit warning is one of the better-designed ones because it gives you two pieces of information at once: how many you have left AND exactly when more are coming. That removes anxiety instead of just creating it.
+
+Let me spec this out properly for ARYA.
+
+---
+
+## What Claude Does (The Reference Pattern)
+
+```
+At 5 messages remaining:
+→ A banner appears above the input box
+→ Shows: "5 messages remaining"
+→ Shows: "Resets at 2:00 PM" (exact time)
+
+At 0 messages:
+→ Input is disabled
+→ Clear message with the reset time
+→ Option to upgrade
+```
+
+---
+
+## What ARYA Should Do — Better Version
+
+Claude's is functional but a little cold. ARYA's version should feel warmer — consistent with the product's personality.
+
+Here's the full spec:
+
+---
+
+Done — complete spec for both components.
+
+---
+
+## What This Builds
+
+**At 5 conversations remaining** — a soft banner slides in above the input:
+```
+🌿 5 conversations left today · More at 12:00 AM  ✕
+```
+
+**At 2 remaining** — tone shifts slightly warmer:
+```
+🕯️ 2 conversations left today · More at 12:00 AM  ✕
+```
+
+**At 0** — input is replaced entirely with:
+```
+You've made the most of today.
+
+Conversations reset at 12:00 AM — in 3h 22m
+
+     ↺  3h 22m     ← live countdown, ticks every second
+
+Day 12 of 45. Every day you come back,
+your access grows.
+
+        [ Upgrade for unlimited → ]
+```
+
+---
+
+## The Key Difference From Claude's Version
+
+```
+Claude's limit message is functional
+but clinical — "X messages remaining."
+
+ARYA's version:
+→ Warm, not punishing ("made the most of today")
+→ Live countdown in seconds — not just a static time
+→ Context-aware — trial users near a phase change
+  see "In 3 days your limit increases to 12"
+  (reward framing, not restriction framing)
+→ Upgrade CTA present but never aggressive
+→ Auto-recovers at midnight with no page refresh
+```
+
+---
+
+## Dev Effort
+
+```
+Both components:     2–3 hours
+Backend additions:   30 minutes
+Wiring into chat:    1 hour
+Testing all cases:   1 hour
+
+Total: half a day
+```

@@ -5768,6 +5768,27 @@ Be honest. Be brief. No padding. Write like someone who was present in the room.
       const todaysLimits = trialDay !== null ? getTaperLimits(trialDay, u.isFoundingMember ?? false) : null;
       const todaysUsage  = trialDay !== null ? await getTodayUsage(userId) : null;
 
+      // Midnight IST reset (IST = UTC+5:30 → 18:30 UTC = 00:00 IST next day)
+      const midnightIST = new Date();
+      midnightIST.setUTCHours(18, 30, 0, 0);
+      if (midnightIST <= now) midnightIST.setUTCDate(midnightIST.getUTCDate() + 1);
+
+      const getDaysToNextPhase = (day: number): number | null => {
+        if (day <= 10) return 11 - day;
+        if (day <= 25) return 26 - day;
+        return null;
+      };
+      const getNextTierLimit = (day: number): number | null => {
+        if (day <= 10) return 12;
+        if (day <= 25) return 20;
+        return null;
+      };
+
+      const conversationsRemaining =
+        todaysLimits && todaysUsage
+          ? Math.max(0, todaysLimits.conversationsPerDay - todaysUsage.conversationsUsed)
+          : null;
+
       res.json({
         trialStatus:    u.trialStatus,
         trialStartedAt: u.trialStartedAt,
@@ -5780,6 +5801,11 @@ Be honest. Be brief. No padding. Write like someone who was present in the room.
         isFoundingMember: u.isFoundingMember,
         foundingPrice:    u.foundingPrice,
         isPaidSubscriber,
+        conversationsRemaining,
+        resetTime:      "12:00 AM",
+        resetTimestamp: midnightIST.getTime(),
+        daysToNextPhase: trialDay !== null ? getDaysToNextPhase(trialDay) : null,
+        nextTierLimit:   trialDay !== null ? getNextTierLimit(trialDay) : null,
       });
     } catch (err: any) {
       res.status(500).json({ error: "Failed to fetch trial status" });

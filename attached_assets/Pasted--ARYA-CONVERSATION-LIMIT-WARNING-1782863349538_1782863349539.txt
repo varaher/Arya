@@ -1,0 +1,511 @@
+// ============================================================
+// ARYA — CONVERSATION LIMIT WARNING SYSTEM
+// For free users and trial users on daily conversation budgets
+//
+// Behaviour:
+//   → Warning banner appears when 5 conversations remain
+//   → Shows exact reset time (midnight IST)
+//   → At 0 remaining: input disabled, warm message shown
+//   → Upgrade CTA present but never pushy
+//
+// Files to create/modify:
+//   NEW:  client/src/components/ConversationLimitBanner.tsx
+//   NEW:  client/src/components/ConversationLimitBlock.tsx
+//   EDIT: client/src/pages/AryaChat.tsx (wire both in)
+//   EDIT: server/routes.ts (extend /api/user/trial-status response)
+// ============================================================
+
+
+// ──────────────────────────────────────────────────────────────
+// FILE 1: client/src/components/ConversationLimitBanner.tsx
+// Shown when 1–5 conversations remain for the day
+// Sits above the chat input box, dismissible once per day
+// ──────────────────────────────────────────────────────────────
+
+/*
+import { useState, useEffect } from 'react';
+import { X } from 'lucide-react';
+
+interface Props {
+  remaining: number;     // conversations left today
+  resetTime: string;     // e.g. "12:00 AM" or "midnight"
+  isTrialUser: boolean;  // trial vs permanent free tier
+  trialDay?: number;     // which day of the 45-day trial
+  nextTierLimit?: number; // what the limit becomes next trial phase
+}
+
+export default function ConversationLimitBanner({
+  remaining,
+  resetTime,
+  isTrialUser,
+  trialDay,
+  nextTierLimit,
+}: Props) {
+  const [dismissed, setDismissed] = useState(false);
+
+  // Only show when 5 or fewer remain
+  if (remaining > 5 || dismissed) return null;
+
+  // Determine the right message based on context
+  const getMessage = () => {
+    if (isTrialUser && nextTierLimit && trialDay) {
+      // Trial user who will get MORE conversations in the next phase
+      const daysToNextPhase =
+        trialDay <= 10 ? 11 - trialDay :   // phase 1→2
+        trialDay <= 25 ? 26 - trialDay :    // phase 2→3
+        null;
+
+      if (daysToNextPhase !== null && daysToNextPhase <= 5) {
+        return {
+          icon: '🌿',
+          main: `${remaining} conversation${remaining === 1 ? '' : 's'} left today`,
+          sub: `Resets at ${resetTime} · In ${daysToNextPhase} day${daysToNextPhase === 1 ? '' : 's'}, you unlock ${nextTierLimit}/day`,
+          tone: 'encouraging',
+        };
+      }
+    }
+
+    // Standard message
+    return {
+      icon: remaining <= 2 ? '🕯️' : '🌿',
+      main: `${remaining} conversation${remaining === 1 ? '' : 's'} left today`,
+      sub: `More at ${resetTime}`,
+      tone: remaining <= 2 ? 'gentle' : 'neutral',
+    };
+  };
+
+  const msg = getMessage();
+
+  const bannerColors = {
+    encouraging: { bg: '#EAF5EE', border: '#B8D4BE', text: '#1F3A2E', sub: '#4A7A58' },
+    gentle:      { bg: '#FDF6E8', border: '#E8D4A0', text: '#4A3010', sub: '#8A6830' },
+    neutral:     { bg: '#F7F3EA', border: '#E4DCC8', text: '#221F1C', sub: '#5C5448' },
+  };
+
+  const colors = bannerColors[msg.tone as keyof typeof bannerColors];
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '10px',
+        padding: '10px 14px',
+        margin: '0 0 8px 0',
+        borderRadius: '8px',
+        border: `1px solid ${colors.border}`,
+        background: colors.bg,
+        fontSize: '13.5px',
+        lineHeight: '1.4',
+        animation: 'slideDown 0.3s ease',
+      }}
+    >
+      <span style={{ fontSize: '16px', flexShrink: 0 }}>{msg.icon}</span>
+
+      <div style={{ flex: 1 }}>
+        <span style={{ fontWeight: 600, color: colors.text }}>
+          {msg.main}
+        </span>
+        <span style={{ color: colors.sub, marginLeft: '6px' }}>
+          · {msg.sub}
+        </span>
+      </div>
+
+      <button
+        onClick={() => setDismissed(true)}
+        style={{
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          color: colors.sub,
+          padding: '2px',
+          flexShrink: 0,
+          opacity: 0.6,
+        }}
+        aria-label="Dismiss"
+      >
+        <X size={14} />
+      </button>
+    </div>
+  );
+}
+*/
+
+
+// ──────────────────────────────────────────────────────────────
+// FILE 2: client/src/components/ConversationLimitBlock.tsx
+// Shown when 0 conversations remain — replaces the input box
+// Warm, not punishing. Gives exact reset time. Upgrade option.
+// ──────────────────────────────────────────────────────────────
+
+/*
+import { useEffect, useState } from 'react';
+
+interface Props {
+  resetTime: string;        // "12:00 AM" — midnight IST
+  resetTimestamp: number;   // Unix ms — for live countdown
+  isTrialUser: boolean;
+  trialDay?: number;
+  nextTierLimit?: number;   // conversations/day in next trial phase
+  daysToNextPhase?: number; // days until next phase unlocks
+  onUpgrade: () => void;    // open pricing modal
+}
+
+export default function ConversationLimitBlock({
+  resetTime,
+  resetTimestamp,
+  isTrialUser,
+  trialDay,
+  nextTierLimit,
+  daysToNextPhase,
+  onUpgrade,
+}: Props) {
+  const [countdown, setCountdown] = useState('');
+
+  // Live countdown to midnight reset
+  useEffect(() => {
+    const tick = () => {
+      const now = Date.now();
+      const diff = resetTimestamp - now;
+      if (diff <= 0) {
+        setCountdown('now');
+        return;
+      }
+      const h = Math.floor(diff / (1000 * 60 * 60));
+      const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const s = Math.floor((diff % (1000 * 60)) / 1000);
+      setCountdown(
+        h > 0 ? `${h}h ${m}m` : m > 0 ? `${m}m ${s}s` : `${s}s`
+      );
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [resetTimestamp]);
+
+  // Choose the right message for context
+  const getContent = () => {
+    // Trial user who unlocks more conversations soon
+    if (isTrialUser && nextTierLimit && daysToNextPhase && daysToNextPhase <= 7) {
+      return {
+        emoji: '🌱',
+        headline: "You've made the most of today.",
+        body: `Your conversations reset at ${resetTime} — in ${countdown}.`,
+        sub: `In ${daysToNextPhase} day${daysToNextPhase === 1 ? '' : 's'}, your daily limit increases to ${nextTierLimit}. You're earning it.`,
+        showUpgrade: true,
+        upgradeText: 'Get unlimited now →',
+      };
+    }
+
+    // Trial user, not close to phase change
+    if (isTrialUser) {
+      return {
+        emoji: '🌿',
+        headline: "You've made the most of today.",
+        body: `Conversations reset at ${resetTime} — in ${countdown}.`,
+        sub: `Day ${trialDay} of 45. Every day you come back, your access grows.`,
+        showUpgrade: true,
+        upgradeText: 'Upgrade for unlimited →',
+      };
+    }
+
+    // Permanent free tier user
+    return {
+      emoji: '🕯️',
+      headline: "That's today's thinking done.",
+      body: `Your 20 daily conversations reset at ${resetTime} — in ${countdown}.`,
+      sub: 'Upgrade to Core for unlimited conversations, voice, and memory that carries forward.',
+      showUpgrade: true,
+      upgradeText: 'See plans →',
+    };
+  };
+
+  const content = getContent();
+
+  return (
+    <div
+      style={{
+        margin: '12px 16px',
+        padding: '20px 22px',
+        borderRadius: '12px',
+        background: '#F7F3EA',
+        border: '1px solid #E4DCC8',
+        textAlign: 'center',
+      }}
+    >
+      {/* Emoji */}
+      <div style={{ fontSize: '28px', marginBottom: '10px' }}>
+        {content.emoji}
+      </div>
+
+      {/* Headline */}
+      <p style={{
+        fontFamily: "'Fraunces', Georgia, serif",
+        fontStyle: 'italic',
+        fontSize: '17px',
+        color: '#221F1C',
+        marginBottom: '8px',
+        fontWeight: 500,
+      }}>
+        {content.headline}
+      </p>
+
+      {/* Reset time + live countdown */}
+      <p style={{
+        fontSize: '14px',
+        color: '#5C5448',
+        marginBottom: '6px',
+      }}>
+        {content.body}
+      </p>
+
+      {/* Live countdown — prominent */}
+      <div style={{
+        display: 'inline-block',
+        padding: '6px 16px',
+        borderRadius: '20px',
+        background: '#1F3A2E',
+        color: '#BFD4C6',
+        fontFamily: "'IBM Plex Mono', monospace",
+        fontSize: '15px',
+        fontWeight: 600,
+        letterSpacing: '1px',
+        margin: '10px 0',
+      }}>
+        {countdown === 'now' ? 'Refreshing...' : `↺  ${countdown}`}
+      </div>
+
+      {/* Sub-message */}
+      {content.sub && (
+        <p style={{
+          fontSize: '13px',
+          color: '#8A8071',
+          marginTop: '8px',
+          lineHeight: 1.5,
+        }}>
+          {content.sub}
+        </p>
+      )}
+
+      {/* Upgrade CTA — present but not aggressive */}
+      {content.showUpgrade && (
+        <button
+          onClick={onUpgrade}
+          style={{
+            marginTop: '16px',
+            padding: '10px 22px',
+            borderRadius: '6px',
+            border: '1.5px solid #1F3A2E',
+            background: 'transparent',
+            color: '#1F3A2E',
+            fontSize: '13.5px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            fontFamily: "'IBM Plex Sans', sans-serif",
+            transition: 'all 0.2s ease',
+          }}
+          onMouseEnter={e => {
+            (e.target as HTMLButtonElement).style.background = '#1F3A2E';
+            (e.target as HTMLButtonElement).style.color = '#F7F3EA';
+          }}
+          onMouseLeave={e => {
+            (e.target as HTMLButtonElement).style.background = 'transparent';
+            (e.target as HTMLButtonElement).style.color = '#1F3A2E';
+          }}
+        >
+          {content.upgradeText}
+        </button>
+      )}
+    </div>
+  );
+}
+*/
+
+
+// ──────────────────────────────────────────────────────────────
+// FILE 3: Server — extend /api/user/trial-status response
+// Add the fields the frontend needs to drive both components
+// ──────────────────────────────────────────────────────────────
+
+/*
+// In the existing GET /api/user/trial-status handler
+// (already built in the v2 trial spec)
+// Add these fields to the response:
+
+// Calculate midnight IST reset timestamp
+const now = new Date();
+const midnightIST = new Date();
+midnightIST.setHours(24, 0, 0, 0); // midnight local server time
+// If server is UTC, adjust: IST = UTC+5:30
+// midnightIST.setUTCHours(18, 30, 0, 0); // 18:30 UTC = midnight IST next day
+
+// Days to next trial phase
+const getDaysToNextPhase = (trialDay: number): number | null => {
+  if (trialDay <= 10) return 11 - trialDay;
+  if (trialDay <= 25) return 26 - trialDay;
+  return null; // already at final phase
+};
+
+// Next phase limit
+const getNextTierLimit = (trialDay: number): number | null => {
+  if (trialDay <= 10) return 12;  // phase 1→2
+  if (trialDay <= 25) return 20;  // phase 2→3
+  return null; // already at max
+};
+
+// Add to the existing res.json() call:
+res.json({
+  // ... existing fields unchanged ...
+  trialStatus: user.trialStatus,
+  trialStartedAt: user.trialStartedAt,
+  trialEndsAt: user.trialEndsAt,
+  daysLeft,
+  trialDay,
+  todaysLimits: limits,
+  todaysUsage: todayUsage,
+  effectivePlan,
+
+  // NEW FIELDS for limit warning UI:
+  conversationsRemaining: limits
+    ? Math.max(0, limits.conversationsPerDay - todayUsage.conversationsUsed)
+    : null,
+  resetTime: '12:00 AM',           // display string
+  resetTimestamp: midnightIST.getTime(), // for live countdown
+  daysToNextPhase: trialDay ? getDaysToNextPhase(trialDay) : null,
+  nextTierLimit: trialDay ? getNextTierLimit(trialDay) : null,
+});
+*/
+
+
+// ──────────────────────────────────────────────────────────────
+// FILE 4: Wire both components into AryaChat.tsx
+// ──────────────────────────────────────────────────────────────
+
+/*
+// ── STEP 1: Import ────────────────────────────────────────────
+
+import ConversationLimitBanner from '../components/ConversationLimitBanner';
+import ConversationLimitBlock from '../components/ConversationLimitBlock';
+
+// ── STEP 2: Get limit data from the existing trial-status query
+
+const { data: trialStatus } = useQuery({
+  queryKey: ['trial-status'],
+  queryFn: () => fetch('/api/user/trial-status').then(r => r.json()),
+  refetchInterval: 60 * 1000, // refresh every minute
+  staleTime: 30 * 1000,
+});
+
+const remaining = trialStatus?.conversationsRemaining ?? null;
+const isLimitedUser =
+  trialStatus?.trialStatus === 'active' ||
+  trialStatus?.effectivePlan === 'free';
+
+// ── STEP 3: Show the warning banner above the input ───────────
+
+// Find the div that wraps the chat input box.
+// BEFORE the input box, add:
+
+{isLimitedUser && remaining !== null && remaining <= 5 && remaining > 0 && (
+  <ConversationLimitBanner
+    remaining={remaining}
+    resetTime={trialStatus.resetTime}
+    isTrialUser={trialStatus.trialStatus === 'active'}
+    trialDay={trialStatus.trialDay}
+    nextTierLimit={trialStatus.nextTierLimit}
+  />
+)}
+
+// ── STEP 4: Replace input with limit block when at 0 ─────────
+
+// WHERE the input box currently renders, wrap it like this:
+
+{isLimitedUser && remaining === 0 ? (
+  <ConversationLimitBlock
+    resetTime={trialStatus.resetTime}
+    resetTimestamp={trialStatus.resetTimestamp}
+    isTrialUser={trialStatus.trialStatus === 'active'}
+    trialDay={trialStatus.trialDay}
+    nextTierLimit={trialStatus.nextTierLimit}
+    daysToNextPhase={trialStatus.daysToNextPhase}
+    onUpgrade={() => setShowPricingModal(true)}
+  />
+) : (
+  // ... existing input box JSX here, completely unchanged ...
+  <YourExistingInputComponent />
+)}
+
+// ── STEP 5: Add the slideDown animation ──────────────────────
+
+// In your global CSS or inside a <style> tag:
+// @keyframes slideDown {
+//   from { opacity: 0; transform: translateY(-6px); }
+//   to   { opacity: 1; transform: translateY(0); }
+// }
+*/
+
+
+// ──────────────────────────────────────────────────────────────
+// BEHAVIOUR SUMMARY
+// ──────────────────────────────────────────────────────────────
+
+/*
+WHEN USER HAS 5 CONVERSATIONS LEFT:
+  → Green banner slides in above input
+  → "🌿 5 conversations left today · More at 12:00 AM"
+  → Dismissible with X button
+  → Does not block input
+
+WHEN USER HAS 2 CONVERSATIONS LEFT:
+  → Amber banner (slightly warmer tone)
+  → "🕯️ 2 conversations left today · More at 12:00 AM"
+
+WHEN USER HAS 1 CONVERSATION LEFT:
+  → "🕯️ 1 conversation left today · More at 12:00 AM"
+
+WHEN USER HAS 0 CONVERSATIONS LEFT:
+  → Input is replaced by ConversationLimitBlock
+  → "You've made the most of today."
+  → Live countdown: "↺  3h 22m" (ticks every second)
+  → Sub message varies by context (trial phase, free tier)
+  → "See plans →" CTA (not aggressive, just present)
+
+WHEN MIDNIGHT PASSES:
+  → trial-status refetch triggers automatically (60s interval)
+  → remaining jumps back to daily limit
+  → ConversationLimitBlock disappears
+  → Input reappears
+  → No page refresh needed
+
+SPECIAL CASE — TRIAL USER NEAR PHASE CHANGE:
+  → "In 3 days, your daily limit increases to 12.
+     You're earning it."
+  → Frames the taper-up positively — reward language,
+    not restriction language
+*/
+
+
+// ──────────────────────────────────────────────────────────────
+// WIRING CHECKLIST
+// ──────────────────────────────────────────────────────────────
+
+/*
+[ ] 1. Create ConversationLimitBanner.tsx
+[ ] 2. Create ConversationLimitBlock.tsx
+[ ] 3. Extend /api/user/trial-status response with:
+        conversationsRemaining
+        resetTime
+        resetTimestamp
+        daysToNextPhase
+        nextTierLimit
+[ ] 4. Wire banner into AryaChat.tsx (above input, shows at ≤5)
+[ ] 5. Wire block into AryaChat.tsx (replaces input at 0)
+[ ] 6. Add slideDown CSS animation
+[ ] 7. Test: reach exactly 5 remaining → banner appears
+[ ] 8. Test: reach 0 → input disappears, block appears
+[ ] 9. Test: countdown ticks live to midnight
+[ ] 10. Test: after midnight, input reappears automatically
+[ ] 11. Test: trial user at Day 8 sees "3 days until 12/day"
+[ ] 12. Test: free tier user sees "See plans →" CTA
+[ ] 13. Test on mobile — block and banner both readable
+*/
