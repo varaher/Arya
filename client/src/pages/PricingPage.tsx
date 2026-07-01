@@ -323,7 +323,10 @@ export default function PricingPage() {
       {/* Header */}
       <div className="bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 sticky top-0 z-30">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center gap-4">
-          <button onClick={() => setShowExitNudge(true)}
+          <button onClick={() => {
+            if (trialStatus?.isPaidSubscriber) { setLocation("/"); return; }
+            setShowExitNudge(true);
+          }}
             className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 transition-colors">
             <ArrowLeft className="w-4 h-4" />
           </button>
@@ -701,9 +704,9 @@ export default function PricingPage() {
         </p>
       </div>
 
-      {/* Exit intent nudge */}
+      {/* Exit intent nudge — only for non-paying users */}
       <AnimatePresence>
-        {showExitNudge && (
+        {showExitNudge && !trialStatus?.isPaidSubscriber && (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-6"
