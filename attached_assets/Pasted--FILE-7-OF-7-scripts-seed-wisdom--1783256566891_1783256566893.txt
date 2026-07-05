@@ -1,0 +1,442 @@
+// ============================================================
+// FILE 7 OF 7: scripts/seed-wisdom-epic-purana.ts
+//
+// Additional wisdom seeds from:
+//   - Ramayana (Valmiki)
+//   - Mahabharata (Vyasa) — beyond the Gita
+//   - Garuda Purana (safe, positive sections only)
+//
+// Run after the main seed file:
+//   npx tsx scripts/seed-wisdom-knowledge.ts       (run first)
+//   npx tsx scripts/seed-wisdom-epic-purana.ts     (then this)
+//   npx tsx scripts/seed-wisdom-epic-purana.ts translate
+// ============================================================
+
+import { db } from '../server/db';
+import { batchTranslateWisdomEntry } from '../server/arya/wisdom-translator';
+import type { SupportedLanguage } from '../server/arya/wisdom-retriever';
+
+const INDIAN_LANGUAGES: SupportedLanguage[] = [
+  'en', 'hi', 'ml', 'ta', 'te', 'kn', 'bn', 'mr', 'gu', 'pa', 'or'
+];
+
+// ── WISDOM SEEDS ──────────────────────────────────────────────
+
+const EPIC_PURANA_SEEDS = [
+
+  // ════════════════════════════════════════════════════════════
+  // RAMAYANA
+  // ════════════════════════════════════════════════════════════
+
+  {
+    domain: 'storytelling',
+    tradition: 'vedantic',
+    source_text: 'Ramayana — Rama\'s acceptance of exile (Ayodhya Kanda)',
+    source_name: 'Valmiki Ramayana — Ayodhya Kanda',
+    situation_tags: ['duty_vs_desire', 'family_decision', 'career_decision', 'sacrifice', 'life_direction'],
+    emotional_tags: ['grief', 'acceptance', 'courage', 'confusion'],
+    arya_principle: 'There are moments when doing what is right and doing what we want are the same thing. And then there are moments when they are entirely different — and we have to choose. The way someone moves through that second kind of moment says more about who they are than almost anything else.',
+    arya_story_seed: 'A young doctor offered the position she had worked toward for seven years, at the cost of abandoning the rural community she had spent three years serving. She took the night to decide. Not the promotion she chose — what she chose said everything.',
+    rasa: 'vira',
+    guna_relevance: ['rajas', 'mixed'],
+    confidence_level: 'high',
+  },
+
+  {
+    domain: 'storytelling',
+    tradition: 'vedantic',
+    source_text: 'Ramayana — Hanuman and the nature of selfless service (Sundara Kanda)',
+    source_name: 'Valmiki Ramayana — Sundara Kanda',
+    situation_tags: ['meaning_and_purpose', 'ambition_and_purpose', 'burnout', 'friendship_difficulty'],
+    emotional_tags: ['seeking', 'confusion', 'emptiness', 'longing'],
+    arya_principle: 'There is a kind of energy that comes from working entirely for someone or something beyond yourself — not martyrdom, not self-erasure, but genuine devotion to a purpose larger than your own. People who have found this describe it as the opposite of exhaustion, even when the work is hard.',
+    arya_story_seed: 'A nurse who worked double shifts for three weeks during a crisis and said afterward that she had never felt less tired in her life, and could not fully explain why.',
+    rasa: 'vira',
+    guna_relevance: ['rajas', 'sattva'],
+    confidence_level: 'high',
+  },
+
+  {
+    domain: 'storytelling',
+    tradition: 'vedantic',
+    source_text: 'Ramayana — Sita\'s dignity under imprisonment (Sundara Kanda)',
+    source_name: 'Valmiki Ramayana — Sita in Lanka',
+    situation_tags: ['injustice', 'powerlessness', 'identity_confusion', 'anger_and_conflict'],
+    emotional_tags: ['anger', 'grief', 'injustice', 'courage'],
+    arya_principle: 'When someone is in a situation they cannot immediately change, dignity becomes the one thing that cannot be taken from them — only given away. Holding it, in impossible circumstances, is one of the quietest and most powerful forms of resistance there is.',
+    arya_story_seed: 'A patient wrongly admitted to a ward, unable to leave, who maintained such complete composure that the nurses began to question the admission themselves.',
+    rasa: 'vira',
+    guna_relevance: ['tamas', 'rajas'],
+    confidence_level: 'high',
+  },
+
+  {
+    domain: 'storytelling',
+    tradition: 'vedantic',
+    source_text: 'Ramayana — Dasharatha and the cost of a promise (Ayodhya Kanda)',
+    source_name: 'Valmiki Ramayana — Dasharatha',
+    situation_tags: ['family_decision', 'sacrifice', 'grief_and_loss', 'duty_vs_desire'],
+    emotional_tags: ['grief', 'regret', 'love', 'despair'],
+    arya_principle: 'Some words, once spoken, have weight that cannot be lifted. The question is not always how to escape the consequences of a promise — sometimes it is how to live with them fully, with eyes open, understanding what they cost.',
+    arya_story_seed: 'A father who made a promise to his daughter in a careless moment and spent two years honoring it at great personal cost, and was surprised to discover he did not regret it.',
+    rasa: 'karuna',
+    guna_relevance: ['tamas', 'mixed'],
+    confidence_level: 'high',
+  },
+
+  {
+    domain: 'storytelling',
+    tradition: 'vedantic',
+    source_text: 'Ramayana — Lakshmana\'s loyalty (throughout)',
+    source_name: 'Valmiki Ramayana — Lakshmana',
+    situation_tags: ['friendship_difficulty', 'loyalty', 'family_conflict', 'sacrifice'],
+    emotional_tags: ['love', 'courage', 'grief', 'loyalty'],
+    arya_principle: 'Some relationships are defined not by what is said but by who shows up without being asked. The person who chooses, again and again, to be present — not because it is convenient but because the bond means that to them — that is a different kind of relationship entirely.',
+    arya_story_seed: 'Two brothers where one always arrived first at every difficult moment in the other\'s life, not because he was asked, but because that was simply who he was.',
+    rasa: 'shringara',
+    guna_relevance: ['sattva', 'mixed'],
+    confidence_level: 'high',
+  },
+
+  {
+    domain: 'storytelling',
+    tradition: 'vedantic',
+    source_text: 'Ramayana — The long road back and the nature of restoration (Yuddha Kanda)',
+    source_name: 'Valmiki Ramayana — Yuddha Kanda',
+    situation_tags: ['grief_and_loss', 'wanting_to_change', 'resilience', 'hope'],
+    emotional_tags: ['grief', 'hope', 'courage', 'determination'],
+    arya_principle: 'Some things take longer to return to than we expect, and the return is rarely the restoration we imagined. Something different comes back — sometimes smaller, sometimes deeper. The mistake is expecting the original and missing what actually arrived.',
+    arya_story_seed: 'A man who returned to his hometown after fifteen years expecting to feel at home, and found instead something he had not expected: he had become someone who belonged in more than one place.',
+    rasa: 'adbhuta',
+    guna_relevance: ['tamas', 'mixed'],
+    confidence_level: 'high',
+  },
+
+  // ════════════════════════════════════════════════════════════
+  // MAHABHARATA
+  // ════════════════════════════════════════════════════════════
+
+  {
+    domain: 'storytelling',
+    tradition: 'vedantic',
+    source_text: 'Mahabharata — Karna\'s impossible position (throughout)',
+    source_name: 'Mahabharata — Karna',
+    situation_tags: ['loyalty', 'duty_vs_desire', 'identity_confusion', 'betrayal', 'integrity'],
+    emotional_tags: ['grief', 'courage', 'confusion', 'longing'],
+    arya_principle: 'There are situations where every choice has a real cost — where loyalty to one person or value necessarily involves letting down another. These are not puzzles to be solved. They are the hardest things in a life. The question is not how to find a clean option. It is how to make the choice you can live with.',
+    arya_story_seed: 'A manager who knew her colleague was being treated unfairly but also knew that speaking out would expose something about herself that she had kept private. She spent two weeks deciding. What she chose mattered less than how she made peace with it afterward.',
+    rasa: 'karuna',
+    guna_relevance: ['rajas', 'mixed'],
+    confidence_level: 'high',
+  },
+
+  {
+    domain: 'storytelling',
+    tradition: 'vedantic',
+    source_text: 'Mahabharata — Yudhishthira and the question of dharma (throughout)',
+    source_name: 'Mahabharata — Yudhishthira',
+    situation_tags: ['duty_vs_desire', 'moral_confusion', 'seeking_clarity', 'life_direction'],
+    emotional_tags: ['confusion', 'grief', 'seeking', 'anxiety'],
+    arya_principle: 'The hardest decisions are not between good and bad. They are between two goods that cannot both be honored at the same time. The person who has never faced that kind of choice has not yet lived at depth. The person who has faced it and made a choice — even an imperfect one — has learned something that cannot be taught.',
+    arya_story_seed: 'A doctor who had to choose between telling a patient the full truth and protecting the patient\'s already fragile state of mind. There was no clean answer. She chose, and she lived with it carefully.',
+    rasa: 'shanta',
+    guna_relevance: ['rajas', 'sattva'],
+    confidence_level: 'high',
+  },
+
+  {
+    domain: 'storytelling',
+    tradition: 'vedantic',
+    source_text: 'Mahabharata — Draupadi\'s humiliation and dignity (Sabha Parva)',
+    source_name: 'Mahabharata — Sabha Parva',
+    situation_tags: ['injustice', 'anger_and_conflict', 'powerlessness', 'dignity'],
+    emotional_tags: ['anger', 'grief', 'injustice', 'rage'],
+    arya_principle: 'Rage at genuine injustice is not something to manage away. It is information. It tells you what you value and what line has been crossed. The question is what to do with that energy — not whether to feel it.',
+    arya_story_seed: 'A woman who was passed over for a promotion she had clearly earned by someone who had not, and instead of accepting it graciously, filed a formal complaint that changed the company\'s hiring review process.',
+    rasa: 'raudra',
+    guna_relevance: ['rajas'],
+    confidence_level: 'high',
+  },
+
+  {
+    domain: 'storytelling',
+    tradition: 'vedantic',
+    source_text: 'Mahabharata — Vidura\'s counsel (Udyoga Parva)',
+    source_name: 'Mahabharata — Vidura Niti',
+    situation_tags: ['business_decision', 'leadership', 'moral_confusion', 'seeking_clarity'],
+    emotional_tags: ['confusion', 'seeking', 'anxiety', 'fear'],
+    arya_principle: 'The person who tells you only what you want to hear is not your ally. The person who tells you what you need to hear, carefully and with care for you, is — even when what they say is uncomfortable. Knowing the difference between these two people is one of the most useful things in a life.',
+    arya_story_seed: 'A startup founder whose most valuable team member was the only one who ever disagreed with him in meetings, and who he almost fired twice before understanding what was actually happening.',
+    rasa: 'shanta',
+    guna_relevance: ['rajas', 'mixed'],
+    confidence_level: 'high',
+  },
+
+  {
+    domain: 'storytelling',
+    tradition: 'vedantic',
+    source_text: 'Mahabharata — the consequence of accumulated pride (Duryodhana)',
+    source_name: 'Mahabharata — Duryodhana',
+    situation_tags: ['ego', 'anger_and_conflict', 'comparison_trap', 'family_conflict'],
+    emotional_tags: ['anger', 'envy', 'frustration', 'pride'],
+    arya_principle: 'Pride in what has been achieved is reasonable. Pride that cannot tolerate the success of others — that needs someone else to be less — is a different thing entirely. The second kind quietly consumes the relationships and opportunities that would have brought what it was searching for.',
+    arya_story_seed: 'A businessman who spent so much energy preventing his cousin from succeeding that he failed to notice his own business deteriorating. By the time he looked up, both had lost.',
+    rasa: 'bibhatsa',
+    guna_relevance: ['rajas'],
+    confidence_level: 'high',
+  },
+
+  {
+    domain: 'storytelling',
+    tradition: 'vedantic',
+    source_text: 'Mahabharata — Bhishma on the deathbed of arrows (Shanti Parva)',
+    source_name: 'Mahabharata — Shanti Parva',
+    situation_tags: ['mortality_awareness', 'meaning_and_purpose', 'legacy', 'life_direction'],
+    emotional_tags: ['grief', 'wonder', 'seeking', 'acceptance'],
+    arya_principle: 'There is a particular clarity that sometimes comes very late — about what mattered, what was wasted, what was understood only after it could no longer be changed. The value of sitting with that kind of question now, while there is still time to act on what it reveals, is not small.',
+    arya_story_seed: 'An old physician who spent his last weeks in the hospital not reviewing his cases but writing letters to former patients, young doctors he had trained, and one person he had wronged thirty years ago.',
+    rasa: 'shanta',
+    guna_relevance: ['tamas', 'sattva'],
+    confidence_level: 'high',
+  },
+
+  {
+    domain: 'storytelling',
+    tradition: 'vedantic',
+    source_text: 'Mahabharata — the forest exile and what it teaches (Vana Parva)',
+    source_name: 'Mahabharata — Vana Parva',
+    situation_tags: ['failure', 'resilience', 'wanting_to_change', 'grief_and_loss'],
+    emotional_tags: ['grief', 'shame', 'courage', 'confusion'],
+    arya_principle: 'Loss has a way of stripping away what was never really yours — the roles, the status, the things that felt essential but turned out to be decorative. What remains after that stripping is usually more honest, and sometimes more useful, than what was there before.',
+    arya_story_seed: 'An executive who lost his position in a company restructuring and spent six months trying to recover it before realising he had never actually wanted it — only the sense of identity it gave him.',
+    rasa: 'karuna',
+    guna_relevance: ['tamas', 'mixed'],
+    confidence_level: 'high',
+  },
+
+  {
+    domain: 'storytelling',
+    tradition: 'vedantic',
+    source_text: 'Mahabharata — Yaksha Prashna (forest episode where Yudhishthira answers riddles)',
+    source_name: 'Mahabharata — Yaksha Prashna, Vana Parva',
+    situation_tags: ['mortality_awareness', 'meaning_and_purpose', 'seeking_clarity', 'spiritual_questioning'],
+    emotional_tags: ['wonder', 'seeking', 'awe', 'confusion'],
+    arya_principle: 'The strangest thing in the world is that we see people aging and dying around us every day and still live as though we are exceptions. Not in a morbid way. Just — there is a kind of clarity available in genuinely accepting that time is limited, and most of us only access it in moments of shock.',
+    arya_story_seed: 'The question a dying patient asked a young doctor that stayed with the doctor for thirty years: "Do you know what the strangest thing is? I always knew. I just never quite believed it."',
+    rasa: 'adbhuta',
+    guna_relevance: ['tamas', 'rajas', 'mixed'],
+    confidence_level: 'high',
+  },
+
+  // ════════════════════════════════════════════════════════════
+  // GARUDA PURANA
+  // Safe sections only — right living, karma, soul's journey
+  // NOT the afterlife punishment descriptions
+  // ════════════════════════════════════════════════════════════
+
+  {
+    domain: 'philosophy',
+    tradition: 'vedantic',
+    source_text: 'Garuda Purana — Pretaganda on the nature of karma and right action',
+    source_name: 'Garuda Purana — Acharakanda (right living)',
+    situation_tags: ['meaning_and_purpose', 'moral_confusion', 'guilt', 'wanting_to_change'],
+    emotional_tags: ['guilt', 'seeking', 'confusion', 'regret'],
+    arya_principle: 'Every action leaves a trace — not as punishment, but as consequence. The good news is that this works in both directions. The things we do with genuine care, honesty, and attention to others also leave traces. The question that changes behavior is not "what am I getting away with?" but "what am I building?"',
+    arya_story_seed: 'A man who spent years asking the wrong question about his decisions — what can I get away with? — and one day, for no reason he could identify, started asking a different one: what am I building? His decisions changed within a month.',
+    rasa: 'shanta',
+    guna_relevance: ['rajas', 'tamas', 'mixed'],
+    confidence_level: 'high',
+  },
+
+  {
+    domain: 'philosophy',
+    tradition: 'vedantic',
+    source_text: 'Garuda Purana — on the soul and what accompanies it',
+    source_name: 'Garuda Purana — nature of the soul',
+    situation_tags: ['mortality_awareness', 'grief_and_loss', 'meaning_and_purpose', 'legacy'],
+    emotional_tags: ['grief', 'fear', 'seeking', 'wonder'],
+    arya_principle: 'Of everything accumulated in a life — status, wealth, property, reputation — the only things that cannot be separated from a person are their qualities of character. Kindness, honesty, courage, care — these are not what someone has. They are what someone is.',
+    arya_story_seed: 'A very successful man who planned his legacy carefully — the buildings with his name, the endowments, the obituary — and a nurse who worked quietly for forty years and was remembered with genuine feeling by three hundred families.',
+    rasa: 'shanta',
+    guna_relevance: ['rajas', 'tamas'],
+    confidence_level: 'high',
+  },
+
+  {
+    domain: 'philosophy',
+    tradition: 'vedantic',
+    source_text: 'Garuda Purana — on grief and the nature of loss',
+    source_name: 'Garuda Purana — on mourning',
+    situation_tags: ['grief_and_loss', 'mortality_awareness', 'family_decision', 'letting_go'],
+    emotional_tags: ['grief', 'love', 'acceptance', 'longing'],
+    arya_principle: 'Grief is love with nowhere to go. It does not mean the loss was too great. It means the love was real. Sitting with that — not trying to resolve it quickly — is not weakness. It is honoring what was there.',
+    arya_story_seed: 'A woman who lost her mother and was surprised by how long the grief lasted. A friend told her: "You loved her for fifty years. Give it some time." That was the most useful thing anyone said.',
+    rasa: 'karuna',
+    guna_relevance: ['tamas', 'mixed'],
+    confidence_level: 'high',
+  },
+
+  {
+    domain: 'philosophy',
+    tradition: 'vedantic',
+    source_text: 'Garuda Purana — Acharakanda on daily conduct and truthfulness',
+    source_name: 'Garuda Purana — Acharakanda',
+    situation_tags: ['moral_confusion', 'integrity', 'workplace_conflict', 'wanting_to_change'],
+    emotional_tags: ['guilt', 'confusion', 'seeking', 'anxiety'],
+    arya_principle: 'Honesty is not only about what we say. It is about the gap between what we say and what we do, what we show people and what we actually feel, who we present ourselves as and who we are when no one is watching. Closing that gap is not comfortable. But it is profoundly restful.',
+    arya_story_seed: 'A professional who spent years maintaining a version of himself at work that required constant management, and the day he stopped, found that the exhaustion he had attributed to overwork disappeared almost immediately.',
+    rasa: 'shanta',
+    guna_relevance: ['rajas', 'mixed'],
+    confidence_level: 'high',
+  },
+
+  {
+    domain: 'philosophy',
+    tradition: 'vedantic',
+    source_text: 'Garuda Purana — on regret and the value of present action',
+    source_name: 'Garuda Purana — Pretakhanda (wisdom sections)',
+    situation_tags: ['procrastination', 'mortality_awareness', 'wanting_to_change', 'guilt'],
+    emotional_tags: ['regret', 'guilt', 'anxiety', 'fear'],
+    arya_principle: 'Regret about the past is useful for exactly one thing: informing what to do now. Beyond that point it becomes a way of continuing to punish yourself for something that cannot be changed. The question worth asking is not what did I do wrong — but what does that tell me about what to do today.',
+    arya_story_seed: 'A man who spent three years regretting not visiting his father before he died, and a therapist who asked him: "If your father could see you now, what would he want you to do with the years you still have?" The question ended three years of circular grief.',
+    rasa: 'shanta',
+    guna_relevance: ['tamas', 'rajas'],
+    confidence_level: 'high',
+  },
+
+  {
+    domain: 'philosophy',
+    tradition: 'vedantic',
+    source_text: 'Garuda Purana — on right relationship with others',
+    source_name: 'Garuda Purana — Acharakanda on relationships',
+    situation_tags: ['family_conflict', 'relationship_decision', 'forgiveness', 'betrayal'],
+    emotional_tags: ['anger', 'grief', 'love', 'confusion'],
+    arya_principle: 'The relationships that define a life are rarely the ones that were always easy. They are the ones that survived difficulty, misunderstanding, and the test of genuinely different needs. That survival is not accidental — it requires someone, at some point, to choose the relationship over being right.',
+    arya_story_seed: 'A brother and sister who did not speak for seven years over a property dispute, and the day one of them called — not to settle the dispute but just to call — was the day something that had seemed permanent quietly dissolved.',
+    rasa: 'shringara',
+    guna_relevance: ['tamas', 'rajas'],
+    confidence_level: 'high',
+  },
+
+];
+
+// ── SEEDING FUNCTION ──────────────────────────────────────────
+
+async function seedEpicPuranaWisdom() {
+  console.log(`Seeding ${EPIC_PURANA_SEEDS.length} epic/purana wisdom entries...`);
+  let inserted = 0;
+  let skipped = 0;
+
+  for (const seed of EPIC_PURANA_SEEDS) {
+    try {
+      const existing = await db.execute(
+        `SELECT id FROM arya_knowledge WHERE source_name = $1 LIMIT 1`,
+        [seed.source_name]
+      );
+
+      if (existing.rows && existing.rows.length > 0) {
+        console.log(`  SKIP (exists): ${seed.source_name}`);
+        skipped++;
+        continue;
+      }
+
+      await db.execute(`
+        INSERT INTO arya_knowledge (
+          domain, tradition, source_text, source_name,
+          situation_tags, emotional_tags, arya_principle,
+          arya_story_seed, rasa, guna_relevance,
+          confidence_level, reviewed, language_variants,
+          content
+        ) VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
+        )
+      `, [
+        seed.domain,
+        seed.tradition,
+        seed.source_text,
+        seed.source_name,
+        seed.situation_tags,
+        seed.emotional_tags,
+        seed.arya_principle,
+        seed.arya_story_seed || null,
+        seed.rasa,
+        seed.guna_relevance,
+        seed.confidence_level,
+        false,
+        JSON.stringify({ en: seed.arya_principle }),
+        seed.arya_principle,
+      ]);
+
+      console.log(`  OK: ${seed.source_name}`);
+      inserted++;
+    } catch (error) {
+      console.error(`  ERROR: ${seed.source_name}`, error);
+    }
+  }
+
+  console.log(`\nDone. Inserted: ${inserted}, Skipped: ${skipped}`);
+  console.log(`\nNext step: Run translate to add language variants.`);
+}
+
+// ── TRANSLATION FUNCTION ──────────────────────────────────────
+
+async function translateEpicPuranaEntries() {
+  console.log('Translating epic/purana entries...');
+
+  const entries = await db.execute(`
+    SELECT id, arya_principle, language_variants, source_name
+    FROM arya_knowledge
+    WHERE source_name LIKE '%Ramayana%'
+       OR source_name LIKE '%Mahabharata%'
+       OR source_name LIKE '%Garuda%'
+    ORDER BY id
+  `);
+
+  for (const row of entries.rows as any[]) {
+    const variants = row.language_variants || {};
+    const missingLanguages = INDIAN_LANGUAGES.filter(lang => !variants[lang]);
+
+    if (missingLanguages.length === 0) {
+      console.log(`  SKIP ${row.id} (${row.source_name}) — all variants present`);
+      continue;
+    }
+
+    console.log(`  Translating ${row.id} (${row.source_name})...`);
+
+    const newVariants = await batchTranslateWisdomEntry(
+      row.arya_principle,
+      missingLanguages,
+    );
+
+    const updatedVariants = { ...variants, ...newVariants };
+
+    await db.execute(`
+      UPDATE arya_knowledge
+      SET language_variants = $1
+      WHERE id = $2
+    `, [JSON.stringify(updatedVariants), row.id]);
+
+    console.log(`  OK ${row.id}`);
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+
+  console.log('\nTranslation complete.');
+}
+
+// ── RUN ───────────────────────────────────────────────────────
+
+const command = process.argv[2];
+
+if (command === 'translate') {
+  translateEpicPuranaEntries()
+    .then(() => process.exit(0))
+    .catch(err => { console.error(err); process.exit(1); });
+} else {
+  seedEpicPuranaWisdom()
+    .then(() => process.exit(0))
+    .catch(err => { console.error(err); process.exit(1); });
+}
+
+// Commands:
+// npx tsx scripts/seed-wisdom-epic-purana.ts           → seed entries
+// npx tsx scripts/seed-wisdom-epic-purana.ts translate  → add language variants

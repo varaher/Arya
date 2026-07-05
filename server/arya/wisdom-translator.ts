@@ -75,3 +75,59 @@ Respond with ONLY the translated wisdom — nothing else.`;
     return null;
   }
 }
+
+// ── Batch translate a single arya_principle into multiple languages ──────────
+// Used by seed scripts to pre-fill language_variants.
+// Returns a partial record — only languages that succeeded.
+export async function batchTranslateWisdomEntry(
+  principle: string,
+  languages: string[],
+): Promise<Record<string, string>> {
+  const openai = getOpenAI();
+
+  const LANG_NAMES: Record<string, string> = {
+    hi: "Hindi (Devanagari script)",
+    ta: "Tamil (Tamil script)",
+    te: "Telugu (Telugu script)",
+    ml: "Malayalam (Malayalam script)",
+    kn: "Kannada (Kannada script)",
+    bn: "Bengali (Bengali script)",
+    gu: "Gujarati (Gujarati script)",
+    pa: "Punjabi (Gurmukhi script)",
+    or: "Odia (Odia script)",
+    mr: "Marathi (Devanagari script)",
+    en: "English",
+  };
+
+  const langsNeeded = languages.filter(l => l !== "en" && LANG_NAMES[l]);
+  if (!langsNeeded.length) return { en: principle };
+
+  const prompt = `Translate this wisdom insight into each language listed. Return ONLY valid JSON.
+
+RULES:
+- Never cite any source or text. This is ARYA's direct insight.
+- Warm, natural, spoken idiom — not formal literary style.
+- 2-4 sentences max per language.
+- Use the correct script for each language.
+
+Insight: "${principle}"
+
+Languages (use these exact keys): ${langsNeeded.map(l => `"${l}" (${LANG_NAMES[l]})`).join(", ")}
+
+Return: {"${langsNeeded[0]}": "...", ...}`;
+
+  try {
+    const resp = await openai.chat.completions.create({
+      model: "gpt-4.1-mini",
+      messages: [{ role: "user", content: prompt }],
+      response_format: { type: "json_object" },
+      max_completion_tokens: 1500,
+      temperature: 0.3,
+    });
+    const raw = resp.choices[0]?.message?.content || "{}";
+    const parsed = JSON.parse(raw);
+    return { en: principle, ...parsed };
+  } catch {
+    return { en: principle };
+  }
+}
