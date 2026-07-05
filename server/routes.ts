@@ -12,7 +12,7 @@ import { generateAryaResponse, memoryEngine, type ChatMessage } from "./arya/cha
 import { GoalsEngine } from "./arya/goals-engine";
 import { FeedbackEngine } from "./arya/feedback-engine";
 import { getCacheQualityReport } from "./arya/response-quality-scorer";
-import { sarvamLangToShort, autoUpdateLanguagePreference } from "./arya/language-detector";
+import { sarvamLangToShort, autoUpdateLanguagePreference, clearLanguageCache } from "./arya/language-detector";
 import { detectLanguageFromIP, LANGUAGE_DISPLAY_NAMES } from "./arya/ip-language-detector";
 import { InsightsEngine } from "./arya/insights-engine";
 import { ResponseCacheEngine } from "./arya/response-cache-engine";
@@ -1954,6 +1954,7 @@ export async function registerRoutes(
       const id = parseInt(req.params.id);
       const userId = (req as any).userId || null;
       await chatStorage.deleteConversation(id, userId);
+      clearLanguageCache(String(id));
       res.status(204).send();
     } catch (error: any) {
       res.status(500).json({ error: "Something went wrong. Please try again." });
