@@ -1,0 +1,323 @@
+// ============================================================
+// FILE 1: server/arya/language-detector.ts
+//
+// Step zero in the ARYA pipeline.
+// Runs before GPT-4o sees the message.
+// Identifies user language explicitly so that:
+//   - Time context uses the right language
+//   - Wisdom retrieval pulls the right variant
+//   - GPT-4o system prompt gets correct instruction
+//   - Sarvam TTS uses the right voice
+//   - Response is generated in the user's actual language
+//
+// Paste this file at: server/arya/language-detector.ts
+// ============================================================
+
+import axios from 'axios';
+
+// ── SUPPORTED LANGUAGES ───────────────────────────────────────
+// Sarvam v3 supports 22 Indian languages + English
+// We map their language codes to ARYA's internal codes
+
+const SARVAM_TO_ARYA_LANGUAGE: Record<string, string> = {
+  // Indian languages (Sarvam codes → ARYA codes)
+  'hi-IN': 'hi',   // Hindi
+  'ml-IN': 'ml',   // Malayalam
+  'ta-IN': 'ta',   // Tamil
+  'te-IN': 'te',   // Telugu
+  'kn-IN': 'kn',   // Kannada
+  'bn-IN': 'bn',   // Bengali
+  'mr-IN': 'mr',   // Marathi
+  'gu-IN': 'gu',   // Gujarati
+  'pa-IN': 'pa',   // Punjabi
+  'or-IN': 'or',   // Odia
+  'sa-IN': 'sa',   // Sanskrit (route to Hindi for response)
+  'as-IN': 'as',   // Assamese
+  'mai-IN': 'hi',  // Maithili → Hindi fallback
+  'kok-IN': 'mr',  // Konkani → Marathi fallback
+  'doi-IN': 'hi',  // Dogri → Hindi fallback
+  'ne-IN': 'hi',   // Nepali → Hindi fallback
+  'ur-IN': 'ur',   // Urdu
+  'sd-IN': 'hi',   // Sindhi → Hindi fallback
+  'mni-IN': 'bn',  // Manipuri → Bengali fallback
+  'sat-IN': 'or',  // Santali → Odia fallback
+  'ks-IN': 'hi',   // Kashmiri → Hindi fallback
+  'brx-IN': 'hi',  // Bodo → Hindi fallback
+  'en-IN': 'en',   // Indian English
+  'en-US': 'en',   // English
+  'en-GB': 'en',   // English
+};
+
+// Indian language codes for time-aware greeting logic
+const INDIAN_LANGUAGES = new Set([
+  'hi', 'ml', 'ta', 'te', 'kn', 'bn', 'mr', 'gu', 'pa', 'or',
+  'sa', 'as', 'ur'
+]);
+
+export interface LanguageDetectionResult {
+  language: string;           // ARYA internal code: 'ml', 'hi', 'en', etc.
+  sarvamCode: string;         // Sarvam's code: 'ml-IN', 'hi-IN', etc.
+  confidence: number;         // 0-1
+  isIndianLanguage: boolean;
+  isMixed: boolean;           // code-mixed (Hinglish, Tanglish etc.)
+  scriptDetected: string;     // 'devanagari', 'malayalam', 'latin', etc.
+  source: 'sarvam' | 'unicode_fallback' | 'cached';
+}
+
+// ── UNICODE SCRIPT DETECTION (no-API fallback) ────────────────
+// Used when Sarvam API is unavailable or message is very short
+
+function detectScriptFromUnicode(text: string): LanguageDetectionResult {
+  const scripts = {
+    devanagari:  /[\u0900-\u097F]/,
+    malayalam:   /[\u0D00-\u0D7F]/,
+    tamil:       /[\u0B80-\u0BFF]/,
+    telugu:      /[\u0C00-\u0C7F]/,
+    kannada:     /[\u0C80-\u0CFF]/,
+    bengali:     /[\u0980-\u09FF]/,
+    gujarati:    /[\u0A80-\u0AFF]/,
+    gurmukhi:    /[\u0A00-\u0A7F]/,   // Punjabi
+    odia:        /[\u0B00-\u0B7F]/,
+    arabic:      /[\u0600-\u06FF]/,   // Urdu/Arabic
+  };
+
+  for (const [script, pattern] of Object.entries(scripts)) {
+    if (pattern.test(text)) {
+      const langMap: Record<string, string> = {
+        devanagari: 'hi',
+        malayalam:  'ml',
+        tamil:      'ta',
+        telugu:     'te',
+        kannada:    'kn',
+        bengali:    'bn',
+        gujarati:   'gu',
+        gurmukhi:   'pa',
+        odia:       'or',
+        arabic:     'ur',
+      };
+
+      const lang = langMap[script] || 'en';
+      return {
+        language: lang,
+        sarvamCode: `${lang}-IN`,
+        confidence: 0.85,
+        isIndianLanguage: INDIAN_LANGUAGES.has(lang),
+        isMixed: false,
+        scriptDetected: script,
+        source: 'unicode_fallback',
+      };
+    }
+  }
+
+  // Latin script — check for transliterated Indian language
+  // (Hinglish, Tanglish etc.)
+  const transliterationPatterns = {
+    hi: /\b(kya|haan|nahi|bahut|acha|theek|matlab|bhai|yaar|abhi|phir|toh|lekin|isliye|kyunki)\b/i,
+    ml: /\b(enthina|enthu|alle|aano|undo|vannu|pokum|parayam|kollam|pinne|ingane)\b/i,
+    ta: /\b(enna|illai|romba|nalla|seri|ponga|vaanga|eppo|eppadi|adhu|idhu)\b/i,
+    te: /\b(enti|ledhu|chala|bagundi|avunu|kaadu|ikkade|akkade|emiti|ela)\b/i,
+    kn: /\b(enu|illa|chennaagide|hogona|banni|howdu|alva|yaake|hege|elli)\b/i,
+  };
+
+  for (const [lang, pattern] of Object.entries(transliterationPatterns)) {
+    if (pattern.test(text)) {
+      return {
+        language: lang,
+        sarvamCode: `${lang}-IN`,
+        confidence: 0.65,
+        isIndianLanguage: true,
+        isMixed: true,
+        scriptDetected: 'latin_transliterated',
+        source: 'unicode_fallback',
+      };
+    }
+  }
+
+  return {
+    language: 'en',
+    sarvamCode: 'en-IN',
+    confidence: 0.8,
+    isIndianLanguage: false,
+    isMixed: false,
+    scriptDetected: 'latin',
+    source: 'unicode_fallback',
+  };
+}
+
+// ── SESSION LANGUAGE CACHE ────────────────────────────────────
+// Per-conversation cache so we don't detect on every single message
+// Language rarely changes mid-conversation
+
+const languageCache = new Map<string, {
+  result: LanguageDetectionResult;
+  messageCount: number;
+  lastDetectedAt: number;
+}>();
+
+// ── MAIN DETECTION FUNCTION ───────────────────────────────────
+
+export async function detectLanguage(
+  text: string,
+  conversationId: string,
+  userPreferredLanguage?: string,  // from user settings
+): Promise<LanguageDetectionResult> {
+
+  // 1. If user has explicitly set a language preference — use it
+  if (userPreferredLanguage && userPreferredLanguage !== 'auto') {
+    return {
+      language: userPreferredLanguage,
+      sarvamCode: `${userPreferredLanguage}-IN`,
+      confidence: 1.0,
+      isIndianLanguage: INDIAN_LANGUAGES.has(userPreferredLanguage),
+      isMixed: false,
+      scriptDetected: 'user_preference',
+      source: 'cached',
+    };
+  }
+
+  // 2. Check session cache (re-detect every 10 messages or after 5 min)
+  const cached = languageCache.get(conversationId);
+  const now = Date.now();
+  if (
+    cached &&
+    cached.messageCount < 10 &&
+    now - cached.lastDetectedAt < 5 * 60 * 1000
+  ) {
+    languageCache.set(conversationId, {
+      ...cached,
+      messageCount: cached.messageCount + 1,
+    });
+    return { ...cached.result, source: 'cached' };
+  }
+
+  // 3. Short messages — Unicode is faster and accurate enough
+  if (text.trim().length < 15) {
+    const result = detectScriptFromUnicode(text);
+    languageCache.set(conversationId, {
+      result, messageCount: 1, lastDetectedAt: now
+    });
+    return result;
+  }
+
+  // 4. Call Sarvam /detect-language
+  try {
+    const response = await axios.post(
+      'https://api.sarvam.ai/text-lid',
+      { input: text },
+      {
+        headers: {
+          'api-subscription-key': process.env.SARVAM_API_KEY!,
+          'Content-Type': 'application/json',
+        },
+        timeout: 1500, // 1.5 second timeout — fail fast
+      }
+    );
+
+    const sarvamCode = response.data?.language_code || 'en-IN';
+    const confidence = response.data?.confidence || 0.7;
+    const lang = SARVAM_TO_ARYA_LANGUAGE[sarvamCode] || 'en';
+
+    const result: LanguageDetectionResult = {
+      language: lang,
+      sarvamCode,
+      confidence,
+      isIndianLanguage: INDIAN_LANGUAGES.has(lang),
+      isMixed: response.data?.is_code_mixed || false,
+      scriptDetected: response.data?.script || 'unknown',
+      source: 'sarvam',
+    };
+
+    // Cache the result
+    languageCache.set(conversationId, {
+      result, messageCount: 1, lastDetectedAt: now
+    });
+
+    return result;
+
+  } catch (error) {
+    // Sarvam unavailable — fall back to Unicode detection
+    console.error('[LanguageDetector] Sarvam API failed, using Unicode fallback:', error);
+    const result = detectScriptFromUnicode(text);
+    languageCache.set(conversationId, {
+      result, messageCount: 1, lastDetectedAt: now
+    });
+    return result;
+  }
+}
+
+// ── CLEAR CACHE when conversation ends ───────────────────────
+
+export function clearLanguageCache(conversationId: string): void {
+  languageCache.delete(conversationId);
+}
+
+// ── LANGUAGE DISPLAY NAMES (for UI and logging) ───────────────
+
+export const LANGUAGE_DISPLAY_NAMES: Record<string, string> = {
+  en: 'English',
+  hi: 'Hindi — हिंदी',
+  ml: 'Malayalam — മലയാളം',
+  ta: 'Tamil — தமிழ்',
+  te: 'Telugu — తెలుగు',
+  kn: 'Kannada — ಕನ್ನಡ',
+  bn: 'Bengali — বাংলা',
+  mr: 'Marathi — मराठी',
+  gu: 'Gujarati — ગુજરાતી',
+  pa: 'Punjabi — ਪੰਜਾਬੀ',
+  or: 'Odia — ଓଡ଼ିଆ',
+  ur: 'Urdu — اردو',
+  sa: 'Sanskrit — संस्कृतम्',
+  // International
+  ar: 'Arabic — العربية',
+  fr: 'French — Français',
+  es: 'Spanish — Español',
+  de: 'German — Deutsch',
+  zh: 'Mandarin — 中文',
+  ja: 'Japanese — 日本語',
+  pt: 'Portuguese — Português',
+  sw: 'Swahili — Kiswahili',
+  ru: 'Russian — Русский',
+  id: 'Bahasa Indonesia',
+};
+
+// ── HOW TO WIRE INTO routes.ts ────────────────────────────────
+
+/*
+In your main chat handler in routes.ts,
+add detectLanguage as the FIRST step:
+
+import { detectLanguage } from '../arya/language-detector';
+
+app.post('/api/arya/conversations/:id/chat',
+  requireAuth,
+  async (req, res) => {
+
+  const { message } = req.body;
+  const userId = req.user.id;
+  const conversationId = req.params.id;
+
+  // ── STEP ZERO: Detect language ──────────────────────────
+  const languageResult = await detectLanguage(
+    message,
+    conversationId,
+    user.preferredLanguage, // from user settings, if set
+  );
+  const detectedLanguage = languageResult.language;
+
+  // This single variable now flows into:
+  //   buildTimeContext(userId, timezone, detectedLanguage)
+  //   retrieveRelevantWisdom({ language: detectedLanguage })
+  //   GPT-4o system prompt language instruction
+  //   Sarvam TTS voice selection
+
+  // ── STEP ONE: Build time context ───────────────────────
+  const timeContext = buildTimeContext(
+    userId,
+    user.timezone || 'Asia/Kolkata',
+    detectedLanguage,
+    lastConversationAt,
+  );
+
+  // ── Continue existing pipeline... ──────────────────────
+});
+*/

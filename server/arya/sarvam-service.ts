@@ -254,7 +254,7 @@ export async function sarvamSpeechToTextTranslate(
 
 /**
  * STEP ZERO — Sarvam language identification for typed text.
- * POST /text/language-identification — returns a BCP-47 code like "hi-IN".
+ * POST /text-lid — returns a BCP-47 code like "hi-IN".
  * Resolves null on any error so callers always fall back to Unicode detection.
  * Never throws — designed to race against a timeout in the calling code.
  */
@@ -266,7 +266,7 @@ export async function sarvamDetectLanguage(text: string): Promise<string | null>
     const key = process.env.SARVAM_API_KEY;
     if (!key) return null;
 
-    const response = await fetch(`${SARVAM_BASE_URL}/text/language-identification`, {
+    const response = await fetch(`${SARVAM_BASE_URL}/text-lid`, {
       method: "POST",
       headers: {
         "API-Subscription-Key": key,

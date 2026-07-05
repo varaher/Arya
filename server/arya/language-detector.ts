@@ -1,15 +1,35 @@
 /**
  * ARYA Language Detector
  * ─────────────────────────────────────────────────────────────────────
- * Script-based detection using Unicode ranges — zero API calls, <1ms.
- * Covers all 25 ARYA languages. Feeds into auto language profile update
- * so ARYA learns what language each user actually writes in over time.
+ * Two-tier detection:
+ *  1. detectLanguage(text) — sync, Unicode-based, <1ms. Used internally
+ *     and in buildLanguageInstruction/autoUpdateLanguagePreference.
+ *  2. detectLanguageFull(text, conversationId, userPreferred?) — async,
+ *     Sarvam /text-lid + per-conversation cache + Unicode fallback.
+ *     Returns LanguageDetectionResult. Used by chat-engine Step Zero.
  */
 
 import { db } from "../db";
 import { aryaUsers } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import type { ChatMessage } from "./chat-engine";
+
+// ── EXPORTED TYPE ─────────────────────────────────────────────────────────────
+
+export interface LanguageDetectionResult {
+  language: string;          // ARYA short code: 'ml', 'hi', 'en', etc.
+  sarvamCode: string;        // Sarvam BCP-47: 'ml-IN', 'hi-IN', etc.
+  confidence: number;        // 0–1
+  isIndianLanguage: boolean;
+  isMixed: boolean;          // code-mixed (Hinglish, Tanglish, etc.)
+  scriptDetected: string;    // 'devanagari', 'malayalam', 'latin', etc.
+  source: 'sarvam' | 'unicode_fallback' | 'cached' | 'user_preference';
+}
+
+const INDIAN_LANG_CODES = new Set([
+  'hi', 'ml', 'ta', 'te', 'kn', 'bn', 'mr', 'gu', 'pa', 'or',
+  'sa', 'as', 'ur',
+]);
 
 // ── Unicode script → language code ─────────────────────────────────────
 // Order matters: check more specific patterns before broad ones.
@@ -223,6 +243,158 @@ export function buildLanguageInstruction(
   const langName = LANG_NAMES[dominant] || dominant.toUpperCase();
   return `DETECTED LANGUAGE — THIS SESSION: The user is writing in ${langName}. Respond in ${langName}. Do not switch to English unless the user does first.`;
 }
+
+// ── FULL 22-LANGUAGE SARVAM MAP (used by detectLanguageFull) ─────────────────
+
+const SARVAM_TO_ARYA: Record<string, string> = {
+  'hi-IN': 'hi', 'ml-IN': 'ml', 'ta-IN': 'ta', 'te-IN': 'te',
+  'kn-IN': 'kn', 'bn-IN': 'bn', 'mr-IN': 'mr', 'gu-IN': 'gu',
+  'pa-IN': 'pa', 'or-IN': 'or', 'sa-IN': 'sa', 'as-IN': 'as',
+  'mai-IN': 'hi', 'kok-IN': 'mr', 'doi-IN': 'hi', 'ne-IN': 'hi',
+  'ur-IN': 'hi', 'sd-IN': 'hi', 'mni-IN': 'bn', 'sat-IN': 'or',
+  'ks-IN': 'hi', 'brx-IN': 'hi', 'en-IN': 'en', 'en-US': 'en', 'en-GB': 'en',
+};
+
+// ── PER-CONVERSATION LANGUAGE CACHE ──────────────────────────────────────────
+// Avoids calling Sarvam on every message — language rarely changes mid-session.
+
+const _langCache = new Map<string, {
+  result: LanguageDetectionResult;
+  messageCount: number;
+  lastDetectedAt: number;
+}>();
+
+export function clearLanguageCache(conversationId: string): void {
+  _langCache.delete(conversationId);
+}
+
+// ── detectLanguageFull ─────────────────────────────────────────────────────
+// Async, full-pipeline detection for Step Zero.
+// Priority: userPreferredLanguage → cache (10 msg / 5 min) → Unicode (<15 chars)
+//           → Sarvam /text-lid → Unicode fallback.
+// Never throws. Returns LanguageDetectionResult with .language (ARYA short code).
+
+export async function detectLanguageFull(
+  text: string,
+  conversationId: string,
+  userPreferredLanguage?: string,
+): Promise<LanguageDetectionResult> {
+
+  // 1. User has explicitly set a language preference
+  if (userPreferredLanguage && userPreferredLanguage !== 'auto') {
+    return {
+      language: userPreferredLanguage,
+      sarvamCode: `${userPreferredLanguage}-IN`,
+      confidence: 1.0,
+      isIndianLanguage: INDIAN_LANG_CODES.has(userPreferredLanguage),
+      isMixed: false,
+      scriptDetected: 'user_preference',
+      source: 'user_preference',
+    };
+  }
+
+  const now = Date.now();
+
+  // 2. Check session cache
+  const cached = _langCache.get(conversationId);
+  if (cached && cached.messageCount < 10 && now - cached.lastDetectedAt < 5 * 60 * 1000) {
+    _langCache.set(conversationId, { ...cached, messageCount: cached.messageCount + 1 });
+    return { ...cached.result, source: 'cached' };
+  }
+
+  // 3. Short messages — Unicode is fast and reliable enough
+  if (text.trim().length < 15) {
+    const lang = detectLanguage(text);
+    const result: LanguageDetectionResult = {
+      language: lang,
+      sarvamCode: `${lang}-IN`,
+      confidence: 0.85,
+      isIndianLanguage: INDIAN_LANG_CODES.has(lang),
+      isMixed: false,
+      scriptDetected: 'unicode_fallback',
+      source: 'unicode_fallback',
+    };
+    _langCache.set(conversationId, { result, messageCount: 1, lastDetectedAt: now });
+    return result;
+  }
+
+  // 4. Call Sarvam /text-lid
+  try {
+    const key = process.env.SARVAM_API_KEY;
+    if (!key) throw new Error('No Sarvam key');
+
+    const response = await fetch('https://api.sarvam.ai/text-lid', {
+      method: 'POST',
+      headers: {
+        'api-subscription-key': key,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ input: text.slice(0, 500) }),
+      signal: AbortSignal.timeout(1500),
+    });
+
+    if (!response.ok) throw new Error(`Sarvam LID ${response.status}`);
+
+    const data = await response.json() as any;
+    const sarvamCode: string = data?.language_code || 'en-IN';
+    const lang = SARVAM_TO_ARYA[sarvamCode] || sarvamCode.split('-')[0].toLowerCase() || 'en';
+    const confidence = typeof data?.confidence === 'number' ? data.confidence : 0.8;
+
+    const result: LanguageDetectionResult = {
+      language: lang,
+      sarvamCode,
+      confidence,
+      isIndianLanguage: INDIAN_LANG_CODES.has(lang),
+      isMixed: data?.is_code_mixed || false,
+      scriptDetected: data?.script || 'sarvam',
+      source: 'sarvam',
+    };
+    _langCache.set(conversationId, { result, messageCount: 1, lastDetectedAt: now });
+    return result;
+
+  } catch {
+    const lang = detectLanguage(text);
+    const result: LanguageDetectionResult = {
+      language: lang,
+      sarvamCode: `${lang}-IN`,
+      confidence: 0.75,
+      isIndianLanguage: INDIAN_LANG_CODES.has(lang),
+      isMixed: false,
+      scriptDetected: 'unicode_fallback',
+      source: 'unicode_fallback',
+    };
+    _langCache.set(conversationId, { result, messageCount: 1, lastDetectedAt: now });
+    return result;
+  }
+}
+
+// ── LANGUAGE DISPLAY NAMES (for UI and logging) ───────────────────────────────
+
+export const LANGUAGE_DISPLAY_NAMES: Record<string, string> = {
+  en: 'English',
+  hi: 'Hindi — हिंदी',
+  ml: 'Malayalam — മലയാളം',
+  ta: 'Tamil — தமிழ்',
+  te: 'Telugu — తెలుగు',
+  kn: 'Kannada — ಕನ್ನಡ',
+  bn: 'Bengali — বাংলা',
+  mr: 'Marathi — मराठी',
+  gu: 'Gujarati — ગુજરાતી',
+  pa: 'Punjabi — ਪੰਜਾਬੀ',
+  or: 'Odia — ଓଡ଼ିଆ',
+  ur: 'Urdu — اردو',
+  sa: 'Sanskrit — संस्कृतम्',
+  ar: 'Arabic — العربية',
+  fr: 'French — Français',
+  es: 'Spanish — Español',
+  de: 'German — Deutsch',
+  zh: 'Mandarin — 中文',
+  ja: 'Japanese — 日本語',
+  pt: 'Portuguese — Português',
+  sw: 'Swahili — Kiswahili',
+  ru: 'Russian — Русский',
+  id: 'Bahasa Indonesia',
+};
 
 // ── Switch-cooldown tracker (in-memory, per process) ───────────────────────
 // Stores the timestamp of the last preferredLanguage switch per userId.

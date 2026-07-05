@@ -24,10 +24,9 @@ import { db } from "../db";
 import { aryaNotifications, aryaUsers, aryaReminders } from "@shared/schema";
 import { detectAndCreateGoals } from "./goal-detector";
 import { buildLightContext } from "./context-builder";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { fetchLatestNews, fetchMarketNews, formatNewsForChat } from "./news-service";
-import { detectLanguage, buildLanguageInstruction, autoUpdateLanguagePreference, sarvamLangToShort } from "./language-detector";
-import { sarvamDetectLanguage } from "./sarvam-service";
+import { detectLanguage, buildLanguageInstruction, autoUpdateLanguagePreference, sarvamLangToShort, detectLanguageFull } from "./language-detector";
 import { buildTimeContext } from "./time-context";
 import { buildSectionTonePromptAddition } from "./section-tone-map";
 import { classifySituation, getSituationTags } from "./situation-classifier";
@@ -831,18 +830,27 @@ export async function generateAryaResponse(
 ): Promise<{ stream: AsyncIterable<string>; meta: AryaResponseMeta }> {
   const startTime = Date.now();
 
-  // STEP ZERO — Language detection.
-  // Voice: sarvamDetectedLang is already known from STT — use it directly.
-  // Text: fire Sarvam /text/language-identification concurrently (250ms budget).
-  //   earlyLang uses Unicode immediately for cache key (< 1ms, no I/O).
-  //   detectedLang (line ~1122) awaits the Sarvam promise — gets the accurate
-  //   result for all language instructions, wisdom routing, and tone shaping.
-  //   Fallback to Unicode detection on any error or timeout.
-  const _sarvamTextLangPromise: Promise<string | null> = (!sarvamDetectedLang && userMessage.trim().length >= 8)
+  // STEP ZERO — Language detection + last-conversation-at, fired concurrently.
+  // Voice: sarvamDetectedLang is already known from STT — skip text detection.
+  // Text: detectLanguageFull fires async (Sarvam /text-lid + conversation cache
+  //   + Unicode fallback). It runs while smart-command check + cache lookup +
+  //   all context DB queries happen — by detectedLang resolution time it has
+  //   almost always already returned. 400ms external race as safety net.
+  // lastConvAt runs concurrently — feeds gap-awareness in buildTimeContext.
+  const _detectedLangPromise = (!sarvamDetectedLang && userMessage.trim().length >= 8)
     ? Promise.race([
-        sarvamDetectLanguage(userMessage),
-        new Promise<null>(resolve => setTimeout(() => resolve(null), 250)),
+        detectLanguageFull(userMessage, String(conversationId ?? 'anon')),
+        new Promise<null>(resolve => setTimeout(() => resolve(null), 400)),
       ])
+    : Promise.resolve(null);
+
+  const _lastConvAtPromise = userId
+    ? db.execute(sql`
+        SELECT MAX(created_at) as last_at
+        FROM conversations
+        WHERE user_id = ${userId}
+          AND id != ${conversationId ?? 0}
+      `).catch(() => null)
     : Promise.resolve(null);
 
   const earlyLang: string = sarvamDetectedLang
@@ -1132,13 +1140,13 @@ export async function generateAryaResponse(
   // The voice route now passes the ORIGINAL language transcript (no English
   // round-trip translation), so sarvamDetectedLang is the authoritative signal.
   const msgLen = userMessage.trim().length;
-  // Await the Step Zero Sarvam detect promise — it has been running concurrently
-  // during smart-command check, cache lookup, and context assembly.
-  // By the time we reach here (~100-600ms later) it has almost always resolved.
-  const _sarvamTextLang = await _sarvamTextLangPromise;
+  // Await the Step Zero language promise — has been running concurrently
+  // during smart-command check, cache lookup, and all context DB queries.
+  // By the time we reach here it has almost always already resolved.
+  const _langResult = await _detectedLangPromise;
   const detectedLang = sarvamDetectedLang
     ? sarvamLangToShort(sarvamDetectedLang)
-    : (_sarvamTextLang ? sarvamLangToShort(_sarvamTextLang) : detectLanguage(userMessage));
+    : (_langResult ? _langResult.language : detectLanguage(userMessage));
   // buildLanguageInstruction uses conversation history — reliable even for
   // short messages ("OK", "👍") because it looks at the last 6 user turns.
   const langInstruction = buildLanguageInstruction(conversationHistory, detectedLang, "en");
@@ -1194,7 +1202,14 @@ export async function generateAryaResponse(
     thinkingModePrompt = CONFIDENCE_RATING_PROMPT + getModeSystemPrompt(thinkingMode);
   } catch {}
 
-  const timeContext = `\n\n${buildTimeContext()}`;
+  // Resolve lastConversationAt (has been running concurrently since Step Zero)
+  const _lastConvAtRaw = await _lastConvAtPromise;
+  const _lastConvAtMs = (_lastConvAtRaw as any)?.rows?.[0]?.last_at;
+  const _lastConvAt: Date | null = _lastConvAtMs ? new Date(_lastConvAtMs) : null;
+  const _validLastConvAt = _lastConvAt && !isNaN(_lastConvAt.getTime()) ? _lastConvAt : null;
+
+  const timeCtx = buildTimeContext(userId ?? 0, 'Asia/Kolkata', detectedLang, _validLastConvAt);
+  const timeContext = `\n\n${timeCtx.contextBlock}`;
 
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
     { role: "system", content: ARYA_SYSTEM_PROMPT + userPrefs + timeContext + (langInstruction ? `\n\n${langInstruction}` : "") + sectionToneAddition + knowledgeContext + newsContext + memoryContext + liveContext + wisdomContext + uncertaintyGuidance + voiceInstruction + longFormInstruction + goalCheckInCtx.systemPromptBlock + thinkingModePrompt + (studyNotesAddition || "") },
