@@ -1106,6 +1106,12 @@ export async function generateAryaResponse(
 
     if (situation.wisdomNeeded && situation.urgency !== "immediate") {
       const situationTags = getSituationTags(situation);
+      // earlyLang is used here (not detectedLang) because wisdom retrieval runs
+      // during context assembly — before Sarvam LID resolves for typed text.
+      // For voice: earlyLang = sarvamLangToShort(sarvamDetectedLang) — accurate.
+      // For Indian-script text: Unicode is 85%+ accurate — good enough.
+      // For Latin transliteration (Hinglish): earlyLang = 'en', Sarvam would
+      // return 'hi'. Wisdom gets English variant; response is in Hindi — fine.
       const wisdom = await retrieveRelevantWisdom({
         situationTags,
         emotionalState: situation.emotionalState,

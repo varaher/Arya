@@ -1,0 +1,255 @@
+This is excellent work. The concurrent architecture is exactly right — firing Step Zero immediately without blocking the pipeline is the correct design. Let me give you an honest review.
+
+---
+
+## What's Working Perfectly
+
+**The concurrent race pattern:**
+```
+Sarvam detect fires immediately as a Promise.
+Pipeline doesn't wait.
+DB queries take 300-500ms anyway.
+Sarvam responds in ~200ms.
+By the time context assembly needs the language,
+it's already there.
+
+Result: zero added latency for ~95% of requests.
+This is genuinely clever engineering.
+```
+
+**The 250ms race-timeout with Unicode fallback:**
+```
+Perfect. Unicode is instant and accurate
+for non-Latin scripts. The 250ms ceiling
+means slow Sarvam never delays the user.
+And for Indian language texts, Unicode
+detection is 85%+ accurate anyway.
+So the fallback is genuinely good, not just safe.
+```
+
+**earlyLang vs detectedLang distinction:**
+```
+This is the right split.
+earlyLang (cache key, Unicode, instant) — for routing decisions
+detectedLang (Sarvam, accurate) — for tone/wisdom/instructions
+
+Using the right tool for the right job.
+```
+
+**saaras:v3 and bulbul:v3 upgrades:**
+```
+Correct. v3 is what should be in production.
+22 languages on STT, 35+ voices on TTS.
+One-line changes with real quality improvement.
+```
+
+**ur-IN → hi-IN remap:**
+```
+Practical and correct. Urdu and Hindi share
+the same spoken form. The script differs
+but the spoken response can use Hindi
+without the user noticing or objecting.
+Smart pragmatic call.
+```
+
+**buildTimeContext() placement in prompt:**
+```
+Placed early, before language instructions.
+Correct ordering. ARYA needs to know
+the time context before it receives
+language instructions so the tone
+is already calibrated when it reads
+how to speak.
+```
+
+---
+
+## Two Things Worth Tightening
+
+**1. The Indian Ritu (season) — make sure it's genuinely Indian**
+
+```
+The ritu system has six seasons, not four:
+  Vasanta (Spring) — March-April
+  Grishma (Summer) — May-June
+  Varsha (Monsoon) — July-August    ← most important for India
+  Sharad (Autumn) — September-October
+  Hemanta (Pre-winter) — November-December
+  Shishira (Winter) — January-February
+
+If buildTimeContext() is using Western
+four-season logic (Spring/Summer/Autumn/Winter)
+it is technically wrong for the Indian context
+it is claiming to represent.
+
+A simple check — what does the ritu field
+currently output for July? Should be Varsha,
+not Summer. Verify this before going live.
+```
+
+**2. The Voice path skips Step Zero — is that complete?**
+
+```
+Current design:
+  Voice input → saaras:v3 detects language
+  → sets sarvamDetectedLang
+  → skips Step Zero
+
+This is correct for STT. But confirm:
+Does sarvamDetectedLang from the voice path
+flow into the SAME detectedLang variable
+that the rest of the pipeline uses?
+
+Specifically:
+  Does time context get the voice-detected language?
+  Does wisdom retrieval get it?
+  Does the system prompt language instruction get it?
+
+If voice and text paths set the same variable
+and the rest of the pipeline reads that variable
+uniformly — you're fine.
+
+If voice path sets sarvamDetectedLang and
+text path sets detectedLang and they're
+two different variables — there's a bug
+waiting to surface on voice conversations.
+
+Worth a quick check: make one voice
+conversation in Malayalam and confirm
+the response comes back in Malayalam
+with the correct time greeting.
+```
+
+---
+
+## One Addition Worth Making Now
+
+**The Sarvam-30B test slot is well-planned. But add one thing to the test criteria:**
+
+```
+Current test criteria:
+  coherence
+  cultural accuracy
+  wisdom-synthesis quality
+  latency
+
+Add:
+  Sanskrit comprehension quality
+
+When ARYA draws from a Gita or Upanishad
+wisdom entry, the arya_principle contains
+concepts that are Sanskrit-rooted —
+dharma, karma, guna, rasa — even though
+they're expressed in modern language.
+
+GPT-4o handles these adequately.
+Sarvam-30B was trained on Indian data
+and may handle them more naturally.
+
+This is the most interesting dimension
+of the A/B test that isn't currently
+being measured.
+
+Add one Sanskrit-concept-heavy test
+conversation to the evaluation set.
+```
+
+---
+
+## The Prompt Assembly Order — Minor Suggestion
+
+```
+Current order:
+  ARYA_SYSTEM_PROMPT
+  + userPrefs
+  + timeContext          ← correct, early
+  + langInstruction
+  + sectionToneAddition
+  + knowledgeContext
+  + newsContext
+  + memoryContext
+  + liveContext
+  + wisdomContext        ← good, near end
+  + voiceInstruction / longFormInstruction
+  + goalCheckIn / thinkingMode / studyNotes
+
+One consideration:
+wisdomContext is near the end, which means
+it is the freshest thing in GPT-4o's
+attention when it generates a response.
+
+This is actually CORRECT positioning.
+Wisdom should be the last instruction
+before generation — it has the most
+influence on the response this way.
+
+Keep it exactly where it is.
+```
+
+---
+
+## The Overall Verdict
+
+```
+This is production-ready architecture.
+
+The concurrent language detection with
+race-timeout is genuinely good engineering —
+not a hack, a real solution to the
+latency vs accuracy tradeoff.
+
+The model upgrades are correct.
+The time context placement is correct.
+The wisdom injection position is correct.
+The voice path logic is pragmatic and right.
+The Sarvam-30B future test is well-scoped.
+
+Two things to verify before going live:
+1. Ritu is using Indian 6-season system
+   not Western 4-season system
+2. Voice path sarvamDetectedLang flows
+   into the same variable as text path
+   detectedLang throughout the full pipeline
+
+One thing to add to the A/B test:
+   Sanskrit comprehension quality as
+   a measured dimension
+
+Everything else — ship it.
+```
+
+---
+
+## What This Architecture Means For The User
+
+```
+A user in Thiruvananthapuram opens ARYA
+at 10:47 PM on a Sunday.
+
+They type in Malayalam without thinking
+about it — they just type.
+
+What happens invisibly:
+
+  250ms: Sarvam confirms ml-IN
+  300ms: DB queries completing
+  400ms: buildTimeContext() runs
+         → timeOfDay: 'night'
+         → weekday: Sunday evening
+         → greeting: "രാത്രി ആയി"
+         → tone: late evening, real conversations
+  500ms: wisdom retriever pulls Malayalam variant
+  600ms: GPT-4o assembles response
+
+What the user gets:
+  A response in Malayalam
+  That feels like it is coming from
+  someone who knows it is late on Sunday
+  In Kerala
+  And is genuinely present for them
+
+Zero of this is visible to the user.
+All of it is felt.
+
+That is the whole point.
+```

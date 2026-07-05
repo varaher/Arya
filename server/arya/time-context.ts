@@ -231,6 +231,20 @@ const getGreeting = (language: string, timeOfDay: TimeOfDay): string => {
   return greetings[timeOfDay];
 };
 
+// ── INDIAN RITU (6-season calendar) ──────────────────────────────────────────
+// Six seasons, not four. Correct for Indian civilisational context.
+// Shishira / Vasanta / Grishma / Varsha / Sharad / Hemanta
+// July → Varsha (monsoon). September → Sharad. Not Summer, not Autumn.
+
+function getRitu(month: number): string {
+  if (month === 1 || month === 2)  return 'Shishira (winter)';
+  if (month === 3 || month === 4)  return 'Vasanta (spring)';
+  if (month === 5 || month === 6)  return 'Grishma (summer)';
+  if (month === 7 || month === 8)  return 'Varsha (monsoon)';
+  if (month === 9 || month === 10) return 'Sharad (autumn)';
+  return 'Hemanta (pre-winter)'; // November, December
+}
+
 // ── INDIAN FESTIVAL / SEASON AWARENESS ───────────────────────────────────────
 
 interface FestivalContext {
@@ -435,10 +449,12 @@ export function buildTimeContext(
 
   const tone = toneGuidance[timeOfDay] || '';
 
+  const ritu = getRitu(month);
+
   const contextParts = [
     `[TIME & PRESENCE CONTEXT]`,
     `Current time: ${hour}:${mins} — ${timeOfDay.replace(/_/g, ' ')}`,
-    `Day: ${weekdayName}, ${day} ${monthName}`,
+    `Day: ${weekdayName}, ${day} ${monthName} | Ritu: ${ritu}`,
     `User language: ${language}`,
     `Natural greeting for this moment: "${greeting}"`,
     tone          ? `Tone guidance: ${tone}` : '',
