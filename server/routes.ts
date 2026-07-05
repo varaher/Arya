@@ -4113,7 +4113,7 @@ Note: """${(transcript as string).trim()}"""`,
       const userId = (req as any).userId;
       const lang = (req.query.lang as string) || "en";
       const today = new Date().toDateString();
-      const cacheKey = `v3_${userId}_${today}_${lang}`;
+      const cacheKey = `v4_${userId}_${today}_${lang}`;
 
       if (dailyQuoteCache.has(cacheKey)) {
         const cached = dailyQuoteCache.get(cacheKey)!;
@@ -4137,6 +4137,45 @@ Note: """${(transcript as string).trim()}"""`,
         ? memories.map(m => `${m.key}: ${m.value}`).join("; ")
         : "";
 
+      // Pull wisdom seeds from arya_knowledge — rotate through domains by day of year
+      // so each day draws from a different tradition (Sanskrit, Chanakya, Vidura, etc.)
+      const WISDOM_DOMAINS = ["sanskrit", "chanakya", "vidura", "thiruvalluvar", "krishna", "shukra"];
+      const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
+      const primaryDomain = WISDOM_DOMAINS[dayOfYear % WISDOM_DOMAINS.length];
+      const secondaryDomain = WISDOM_DOMAINS[(dayOfYear + 2) % WISDOM_DOMAINS.length];
+
+      let wisdomSeeds: string[] = [];
+      try {
+        const seeds = await db.select({ content: aryaKnowledge.content })
+          .from(aryaKnowledge)
+          .where(
+            and(
+              inArray(aryaKnowledge.domain as any, [primaryDomain, secondaryDomain]),
+              eq(aryaKnowledge.status as any, "published"),
+              eq(aryaKnowledge.tenantId, "varah")
+            )
+          )
+          .orderBy(sql`random()`)
+          .limit(3);
+        wisdomSeeds = seeds.map(s => s.content.slice(0, 300));
+      } catch {}
+
+      const wisdomSeedBlock = wisdomSeeds.length > 0
+        ? `\nINVISIBLE WISDOM SEEDS — absorb the insight, never quote or cite the source:\n${wisdomSeeds.map((s, i) => `Seed ${i + 1}: "${s}"`).join("\n")}`
+        : "";
+
+      // Day-based theme rotation — ensures each day has a different focus
+      const DAILY_THEMES = [
+        "clarity and decision-making",
+        "patience and timing",
+        "relationships and trust",
+        "effort and discipline",
+        "self-knowledge and honesty",
+        "letting go and acceptance",
+        "focus and attention",
+      ];
+      const todayTheme = DAILY_THEMES[dayOfYear % DAILY_THEMES.length];
+
       const openai = new OpenAI({
         apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
         baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
@@ -4157,18 +4196,24 @@ Note: """${(transcript as string).trim()}"""`,
 
       const prompt = `You are ARYA — a personal thinking and growth assistant who speaks to ${firstName} like a wise, warm friend. You carry deep knowledge of India's civilizational wisdom: the Upanishads, Gita, Yoga Sutras, Chanakya, the great saints and thinkers — but you never quote or cite them directly. That wisdom simply flows through your words naturally.
 
+Today's date: ${today}
+Today's reflection theme: ${todayTheme}
+${wisdomSeedBlock}
+
 Write ONE original reflection for ${firstName} to begin their day. It should feel like ARYA wrote it personally — not a quote from a book, not a proverb, just a direct, warm, powerful thought addressed to them.
 
 ${memoryContext ? `What you know about ${firstName}: ${memoryContext}` : "No specific memory yet — write something universally personal and strong."}
 
 STRUCTURE RULES — follow exactly:
+- The reflection MUST be rooted in today's theme: ${todayTheme}. Do not drift into other topics.
+- If wisdom seeds are provided above, let their insight inform your words naturally — never cite or paraphrase them directly.
 - Maximum 2 sentences. Shorter is always better. One sentence is ideal.
 - One clear idea only. Never three ideas strung together.
 - No stacked metaphors. Never write "bridges of insight", "steady pulse of wisdom", "carve clarity through connection" type language.
 - Sound like a wise friend speaking directly — not a motivational poster, not a scripture.
 - Address ${firstName} by name only if it flows naturally. Never start with just their name as a salutation.
 - Reference their actual situation if context is available. If not — write something universally true but phrased simply and personally.
-- NEVER mention Gita, Vedas, Chanakya, or any religious text — let the wisdom be invisible.
+- NEVER mention Gita, Vedas, Chanakya, Vidura, Thiruvalluvar, or any religious/philosophical text — wisdom is invisible.
 - NEVER use clichés: "every day is a new beginning", "you've got this", "embrace the journey", etc.
 
 GOOD examples (aim for this):

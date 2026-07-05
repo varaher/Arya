@@ -3076,7 +3076,7 @@ function VoiceNotesPanel({ onClose, token, uiLang = "en", voiceLang = "en-IN", o
 
 function LoginToastContent({ token }: { token: string | null }) {
   const today = new Date().toDateString();
-  const cacheKey = `arya_quote_v3_${today}`;
+  const cacheKey = `arya_quote_v4_${today}`;
   const [content, setContent] = useState<{ type: "quote"; text: string } | { type: "fact"; text: string; emoji: string } | null>(null);
 
   useEffect(() => {
@@ -3314,7 +3314,7 @@ function DailyQuoteCard({ token }: { token: string | null }) {
   const { t } = useLanguage();
   const lang = getStoredUiLanguage();
   const today = new Date().toDateString();
-  const cacheKey = `arya_quote_v3_${today}_${lang}`;
+  const cacheKey = `arya_quote_v4_${today}_${lang}`;
   const [quoteExpanded, setQuoteExpanded] = useState(false);
 
   const { data, isLoading } = useQuery<{ quote: string; source?: string }>({
