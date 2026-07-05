@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Volume2, VolumeX, Bookmark, BookmarkCheck, Trash2, Plus, Loader2, ChevronDown, ChevronUp, Film, Download } from "lucide-react";
 import { useUserAuth } from "@/lib/user-auth";
 import { useLanguage } from "@/lib/language-context";
+import { getDrishyaWorldNames } from "@/lib/kaal-niti-language-patch";
 import DrishyaBackground from "@/components/drishya/DrishyaBackground";
 import CinematicReader from "@/components/drishya/CinematicReader";
 import { drishyaAmbient } from "@/components/drishya/DrishyaAmbient";
@@ -26,6 +27,15 @@ const WORLDS: { id: DrishyaWorld; emoji: string; label: string; sub: string; col
 ];
 
 
+function toLangCode(short: string): string {
+  const map: Record<string, string> = {
+    hi: "hi-IN", ml: "ml-IN", ta: "ta-IN", te: "te-IN",
+    kn: "kn-IN", bn: "bn-IN", mr: "mr-IN", gu: "gu-IN",
+    pa: "pa-IN", or: "or-IN",
+  };
+  return map[short] || "en-IN";
+}
+
 const BG_GRADIENTS: Record<DrishyaWorld, string> = {
   night:    "radial-gradient(ellipse at 20% 0%, rgba(99,102,241,0.18) 0%, transparent 60%), radial-gradient(ellipse at 80% 100%, rgba(49,46,129,0.25) 0%, transparent 60%)",
   film:     "radial-gradient(ellipse at 20% 0%, rgba(239,68,68,0.15) 0%, transparent 60%), radial-gradient(ellipse at 80% 100%, rgba(127,29,29,0.22) 0%, transparent 60%)",
@@ -35,7 +45,8 @@ const BG_GRADIENTS: Record<DrishyaWorld, string> = {
 export default function DrishyaPage() {
   const [, setLocation] = useLocation();
   const { token } = useUserAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const worldNames = getDrishyaWorldNames(language);
 
   const [world, setWorld] = useState<DrishyaWorld>("night");
   const [request, setRequest] = useState("");
@@ -98,7 +109,7 @@ export default function DrishyaPage() {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ world, request }),
+        body: JSON.stringify({ world, request, language }),
       });
 
       if (!res.ok) throw new Error("Story generation failed");
@@ -176,7 +187,7 @@ export default function DrishyaPage() {
       const res = await fetch("/api/arya/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: story.slice(0, 1000), language: "en-IN" }),
+        body: JSON.stringify({ text: story.slice(0, 1000), language: toLangCode(language) }),
       });
       if (!res.ok) throw new Error();
       const blob = await res.blob();
@@ -307,10 +318,10 @@ export default function DrishyaPage() {
             >
               <span style={{ fontSize: 22 }}>{w.emoji}</span>
               <span style={{ fontSize: 13, fontWeight: 600, color: world === w.id ? w.color : "rgba(240,235,224,0.6)" }}>
-                {w.label}
+                {worldNames[w.id as keyof Omit<typeof worldNames, "sub">]}
               </span>
               <span style={{ fontSize: 10, color: "rgba(240,235,224,0.3)", textAlign: "center", lineHeight: 1.3 }}>
-                {w.sub}
+                {worldNames.sub[w.id as keyof typeof worldNames.sub]}
               </span>
             </button>
           ))}
@@ -332,7 +343,7 @@ export default function DrishyaPage() {
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
                 <span style={{ fontSize: 16 }}>{activeWorld.emoji}</span>
                 <span style={{ fontSize: 11, color: activeWorld.color, letterSpacing: "0.14em", textTransform: "uppercase", fontWeight: 600 }}>
-                  {activeWorld.label} World
+                  {worldNames[world]} World
                 </span>
                 {isGenerating && (
                   <Loader2 size={13} style={{ color: activeWorld.color, animation: "spin 1s linear infinite", marginLeft: 4 }} />
@@ -913,7 +924,7 @@ function DrishyaCinematicViewer({
         const res = await fetch("/api/arya/tts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: sentence, language: "en-IN" }),
+          body: JSON.stringify({ text: sentence, language: toLangCode(language) }),
         });
         if (!res.ok) return false;
         const blob = await res.blob();

@@ -1,0 +1,468 @@
+// ============================================================
+// DRISHYA LANGUAGE PATCH
+// server/arya/drishya-language-patch.ts
+//
+// Ensures Drishya stories:
+//   1. Generate in the user's language (not always English)
+//   2. Use the correct literary register for that language
+//   3. Narrate with a story-appropriate voice in that language
+//   4. Wisdom seeds are delivered in the correct language
+//
+// Wire this into your existing generateDrishyaStory() function.
+// ============================================================
+
+// ── LANGUAGE NAMES FOR PROMPT ────────────────────────────────
+// Used to instruct GPT-4o which language to write in
+
+export const DRISHYA_LANGUAGE_NAMES: Record<string, string> = {
+  en: 'English',
+  hi: 'Hindi (हिंदी)',
+  ml: 'Malayalam (മലയാളം)',
+  ta: 'Tamil (தமிழ்)',
+  te: 'Telugu (తెలుగు)',
+  kn: 'Kannada (ಕನ್ನಡ)',
+  bn: 'Bengali (বাংলা)',
+  mr: 'Marathi (मराठी)',
+  gu: 'Gujarati (ગુજરાતી)',
+  pa: 'Punjabi (ਪੰਜਾਬੀ)',
+  or: 'Odia (ଓଡ଼ିଆ)',
+  ar: 'Arabic (العربية)',
+  fr: 'French (Français)',
+  es: 'Spanish (Español)',
+  de: 'German (Deutsch)',
+  zh: 'Mandarin (中文)',
+  ja: 'Japanese (日本語)',
+  pt: 'Portuguese (Português)',
+};
+
+// ── LITERARY REGISTER BY LANGUAGE ────────────────────────────
+// Each language has its own tradition of how stories are told.
+// GPT-4o needs this guidance to write authentically,
+// not just translate from English story structure.
+
+export const DRISHYA_LITERARY_REGISTER: Record<string, string> = {
+  en: `Write with warmth and directness. Use concrete images. Avoid abstraction.
+       End with one quiet question that stays with the reader.`,
+
+  hi: `Write in literary Hindi — not formal textbook Hindi, but the warm,
+       flowing Hindi of storytelling. Use compound verbs naturally.
+       The emotional register should feel like kathavachan — the oral
+       storytelling tradition. Short paragraphs. Each line should land.
+       End with a single line that feels like a doha — complete in itself.`,
+
+  ml: `Write in literary Malayalam — the language of Thakazhi and Vaikom
+       Muhammad Basheer. Warm, intimate, rooted in the earth of Kerala.
+       Sentences can be longer than in English — Malayalam has a natural
+       flow that English breaks unnecessarily. Use sensory detail:
+       the smell of rain on red earth, the sound of temple bells at dusk.
+       The closing question should feel like something a grandmother
+       would ask at the end of a story.`,
+
+  ta: `Write in literary Tamil — drawing from the Sangam tradition of
+       precise emotional mapping. Tamil stories have a particular quality
+       of restraint: the deepest feelings are implied, not stated.
+       Use the tinai vocabulary naturally if appropriate — the landscape
+       as emotional mirror. Each sentence should have weight.
+       The ending should feel inevitable, not surprising.`,
+
+  te: `Write in literary Telugu — the language known as the 'Italian of
+       the East' for its musicality. Telugu stories have a lyrical quality.
+       Use the natural flow of Telugu sentence structure — verb at the end.
+       Sensory detail matters. End with a question that the reader will
+       carry into sleep.`,
+
+  kn: `Write in literary Kannada — drawing from the Vachana tradition
+       of Basavanna and Akka Mahadevi. Kannada stories can be direct and
+       philosophical simultaneously. The language has a groundedness —
+       connect the wisdom to the earth, to ordinary daily life.
+       End with something that feels like a vachana: complete, surprising,
+       and simple all at once.`,
+
+  bn: `Write in literary Bengali — the language of Tagore and Bibhutibhushan.
+       Bengali stories have a particular emotional richness. Nature is
+       always present — the river, the monsoon, the evening light.
+       Allow sentences to breathe. The emotional register can be higher
+       than English comfortably allows. End with something that rhymes
+       with longing — the particular Bengali quality of amar sonar bangla.`,
+
+  mr: `Write in literary Marathi — warm, direct, with a particular Maharashtrian
+       groundedness. Marathi stories often have a philosophical underpinning
+       drawn from the Sant tradition — Tukaram, Dnyaneshwar. Connect the
+       story to ordinary life. The wisdom should feel earned, not given.`,
+
+  gu: `Write in literary Gujarati — warm, merchant-practical, and deeply
+       human. Gujarati stories value clarity and warmth over complexity.
+       The ending should feel like advice from an elder — practical and
+       kind at the same time.`,
+
+  pa: `Write in literary Punjabi — direct, warm, with the particular energy
+       of Punjab. Punjabi stories have colour and movement. Use nature —
+       wheat fields, rivers, the open sky. The wisdom should feel physical,
+       embodied. End with something that could be sung.`,
+
+  or: `Write in literary Odia — the language of Jagannath and the ocean.
+       Odia stories have a particular devotional quality without being
+       religious. Connect to the landscape — the sea, the temples,
+       the rice fields. Quiet and deep.`,
+
+  ar: `Write in warm, accessible Modern Standard Arabic — not formal
+       classical Arabic, but the literary register that crosses dialects.
+       Arabic stories have a tradition of the frame narrative and the
+       embedded lesson. The wisdom should feel like something from
+       One Thousand and One Nights — complete, beautiful, inevitable.
+       The closing question should echo like a prayer.`,
+
+  fr: `Write in literary French — clear, precise, emotionally honest.
+       French stories trust the reader's intelligence. Do not explain
+       the wisdom — let the story embody it. The ending should be
+       understated and linger.`,
+
+  es: `Write in warm literary Spanish — with the particular quality of
+       magical realism where appropriate. Spanish stories allow the
+       extraordinary to sit inside the ordinary without explanation.
+       The ending should feel warm and open.`,
+
+  zh: `Write in literary Mandarin Chinese — drawing from the tradition
+       of short prose (sanwen). Chinese literary tradition values
+       economy: maximum meaning in minimum words. Each sentence
+       should be considered. The ending should be like a Chinese
+       landscape painting — vast space, one small figure.`,
+
+  ja: `Write with the Japanese literary quality of mono no aware —
+       the poignant awareness of impermanence. Japanese stories
+       often end not with resolution but with a moment of recognition.
+       Use concrete sensory images. Silence is part of the story.
+       The closing question should be very quiet.`,
+};
+
+// ── DRISHYA VOICE SELECTION ───────────────────────────────────
+// Stories need a different voice than regular chat.
+// Storytelling = slower, warmer, more deliberate.
+// Map each language to its best available Drishya voice.
+
+// NOTE: Check Sarvam's current bulbul:v3 speaker list
+// and update these to match available speakers.
+// These are illustrative — verify against live API.
+
+export const DRISHYA_VOICE_BY_LANGUAGE: Record<string, {
+  speaker: string;
+  speed: number;    // 0.8-1.0 for stories (slower than chat)
+  pitch: number;    // slight adjustment for warmth
+}> = {
+  en:  { speaker: 'meera',    speed: 0.85, pitch: 0 },
+  hi:  { speaker: 'anushka',  speed: 0.85, pitch: 0 },
+  ml:  { speaker: 'vaishnavi',speed: 0.83, pitch: 0 },
+  ta:  { speaker: 'pavithra', speed: 0.85, pitch: 0 },
+  te:  { speaker: 'shreya',   speed: 0.85, pitch: 0 },
+  kn:  { speaker: 'anushka',  speed: 0.85, pitch: 0 },
+  bn:  { speaker: 'anushka',  speed: 0.85, pitch: 0 },
+  mr:  { speaker: 'anushka',  speed: 0.85, pitch: 0 },
+  gu:  { speaker: 'anushka',  speed: 0.85, pitch: 0 },
+  pa:  { speaker: 'anushka',  speed: 0.85, pitch: 0 },
+  or:  { speaker: 'anushka',  speed: 0.85, pitch: 0 },
+  // International — use English voice as fallback
+  ar:  { speaker: 'meera',    speed: 0.85, pitch: 0 },
+  fr:  { speaker: 'meera',    speed: 0.85, pitch: 0 },
+  es:  { speaker: 'meera',    speed: 0.85, pitch: 0 },
+  de:  { speaker: 'meera',    speed: 0.85, pitch: 0 },
+};
+
+// ── DRISHYA WORLD NAMES IN EACH LANGUAGE ─────────────────────
+// Shown in the Drishya UI — world selection buttons
+// should display in the user's language
+
+export const DRISHYA_WORLD_NAMES: Record<string, {
+  night: string;
+  film: string;
+  everyday: string;
+  subtitle: {
+    night: string;
+    film: string;
+    everyday: string;
+  };
+}> = {
+  en: {
+    night: 'Night',
+    film: 'Film',
+    everyday: 'Everyday',
+    subtitle: {
+      night: 'Stories for the end of a long day',
+      film: 'Cinematic, character-driven',
+      everyday: 'The ordinary made profound',
+    },
+  },
+  hi: {
+    night: 'रात',
+    film: 'फ़िल्म',
+    everyday: 'रोज़ाना',
+    subtitle: {
+      night: 'लंबे दिन के अंत के लिए कहानियाँ',
+      film: 'सिनेमाई, किरदार-केंद्रित',
+      everyday: 'सामान्य में असाधारण',
+    },
+  },
+  ml: {
+    night: 'രാത്രി',
+    film: 'ചലച്ചിത്രം',
+    everyday: 'ദൈനംദിന',
+    subtitle: {
+      night: 'ദീർഘ ദിവസത്തിന്റെ അന്ത്യത്തിൽ',
+      film: 'ചലച്ചിത്ര ഭാഷയിൽ',
+      everyday: 'സാധാരണ ജീവിതത്തിന്റെ ആഴം',
+    },
+  },
+  ta: {
+    night: 'இரவு',
+    film: 'திரைப்படம்',
+    everyday: 'அன்றாடம்',
+    subtitle: {
+      night: 'நீண்ட நாளின் முடிவில்',
+      film: 'திரைப்பட உணர்வில்',
+      everyday: 'அன்றாட வாழ்வின் ஆழம்',
+    },
+  },
+  te: {
+    night: 'రాత్రి',
+    film: 'చలనచిత్రం',
+    everyday: 'నిత్యం',
+    subtitle: {
+      night: 'పొడవైన రోజు చివరిలో',
+      film: 'సినిమా శైలిలో',
+      everyday: 'సాధారణ జీవితంలో లోతు',
+    },
+  },
+  kn: {
+    night: 'ರಾತ್ರಿ',
+    film: 'ಚಲನಚಿತ್ರ',
+    everyday: 'ದೈನಂದಿನ',
+    subtitle: {
+      night: 'ದೀರ್ಘ ದಿನದ ಕೊನೆಯಲ್ಲಿ',
+      film: 'ಚಲನಚಿತ್ರ ಶೈಲಿಯಲ್ಲಿ',
+      everyday: 'ಸಾಮಾನ್ಯ ಜೀವನದ ಆಳ',
+    },
+  },
+  bn: {
+    night: 'রাত',
+    film: 'চলচ্চিত্র',
+    everyday: 'দৈনন্দিন',
+    subtitle: {
+      night: 'দীর্ঘ দিনের শেষে',
+      film: 'চলচ্চিত্রের ভাষায়',
+      everyday: 'সাধারণ জীবনের গভীরতা',
+    },
+  },
+};
+
+// ── THE CORE DRISHYA PROMPT BUILDER ──────────────────────────
+// This replaces or extends your existing story generation prompt.
+// Wire this into generateDrishyaStory().
+
+export function buildDrishyaStoryPrompt(
+  world: 'night' | 'film' | 'everyday',
+  request: string,
+  language: string,
+  wisdomSeed?: string,  // from wisdom-retriever, optional
+): string {
+
+  const langName = DRISHYA_LANGUAGE_NAMES[language]
+    || DRISHYA_LANGUAGE_NAMES['en'];
+
+  const register = DRISHYA_LITERARY_REGISTER[language]
+    || DRISHYA_LITERARY_REGISTER['en'];
+
+  const worldTone: Record<string, string> = {
+    night: `Warm, intimate, Indian settings, quiet wisdom.
+            The feeling of a story told at the end of a long day.
+            Characters are ordinary people in recognisable situations.
+            The wisdom arrives gently, like something noticed rather than taught.`,
+
+    film:  `Cinematic, character-driven, dramatic but grounded.
+            A scene with momentum. Characters with clear wants and obstacles.
+            The wisdom is embedded in what characters do, not what they say.
+            More tension than the night world. Resolution that feels earned.`,
+
+    everyday: `The extraordinary inside the ordinary.
+               A moment from daily life — a conversation, a chore,
+               a commute, a meal — that cracks open to reveal something
+               larger. No magical elements. Just real life, fully attended to.
+               The wisdom is in the attention itself.`,
+  };
+
+  return `You are writing an original story for ARYA's Drishya feature.
+
+LANGUAGE: Write entirely in ${langName}.
+Not as a translation from English.
+As if this story was originally composed in ${langName},
+by someone who has lived inside this language their whole life.
+
+LITERARY REGISTER:
+${register}
+
+WORLD: ${world.toUpperCase()}
+${worldTone[world]}
+
+CRITICAL RULES — read carefully:
+
+1. COMPLETELY ORIGINAL.
+   No recognisable characters from known texts.
+   No obviously named figures from mythology or history.
+   Create entirely new characters with new names.
+   New settings. New situations.
+   The tradition lives in the wisdom, not the surface.
+
+2. INVISIBLE SOURCE.
+   ${wisdomSeed
+     ? `The following insight is the invisible skeleton of this story.
+        Never state it directly. Let the events of the story make it felt.
+        The reader should feel the truth arrive, not be told it.
+        The wisdom seed (never reveal this): "${wisdomSeed}"`
+     : `The wisdom should emerge from the story naturally.
+        Never preach. Never explain the lesson.
+        Let the reader discover it.`
+   }
+
+3. LENGTH AND SHAPE.
+   300-400 words. A complete arc.
+   Beginning that places us somewhere specific.
+   Middle with genuine movement.
+   Ending that resolves without explaining.
+
+4. THE CLOSING QUESTION.
+   The final line is one question, in italics.
+   Not rhetorical. Genuinely open.
+   Something the reader will carry into the night.
+   It should feel like the story whispering to them
+   directly — as if it knows something about them.
+
+5. NO CULTURAL LABELS.
+   Do not say "in ancient India" or "long ago in the East"
+   or anything that marks this as a retelling.
+   It is not a retelling. It is an original story.
+   It happens somewhere real and specific —
+   a kitchen in Chennai, a hospital corridor in Kochi,
+   a train platform in Howrah, a field in Punjab —
+   or somewhere timeless and unnamed.
+
+The request from the user: "${request}"
+
+Write the story now. Only the story. No preamble.`;
+}
+
+// ── HOW TO WIRE INTO EXISTING generateDrishyaStory() ─────────
+
+/*
+In your existing server/arya/drishya.ts,
+find the generateDrishyaStory() function.
+
+BEFORE (likely something like):
+  const prompt = `Write a ${world} world story about: ${request}`;
+
+AFTER:
+  import {
+    buildDrishyaStoryPrompt,
+    DRISHYA_VOICE_BY_LANGUAGE,
+    DRISHYA_WORLD_NAMES,
+  } from './drishya-language-patch';
+  import { retrieveStoryWisdom } from './wisdom-retriever';
+
+  async function generateDrishyaStory(
+    world: 'night' | 'film' | 'everyday',
+    request: string,
+    language: string,    // ← must be passed in from the route
+    userId: number,
+  ) {
+    // 1. Get wisdom seed (optional — story works without it)
+    const wisdomEntry = await retrieveStoryWisdom(
+      world, request, language, userId
+    ).catch(() => null);
+
+    // 2. Build the full prompt
+    const prompt = buildDrishyaStoryPrompt(
+      world,
+      request,
+      language,
+      wisdomEntry?.storySeed,
+    );
+
+    // 3. Generate story (your existing GPT-4o call, unchanged)
+    // Just replace the old prompt with the new one above.
+
+    // 4. For TTS narration — use Drishya-specific voice
+    const voiceConfig = DRISHYA_VOICE_BY_LANGUAGE[language]
+      || DRISHYA_VOICE_BY_LANGUAGE['en'];
+
+    // Pass voiceConfig.speaker and voiceConfig.speed
+    // to your Sarvam bulbul:v3 TTS call for this story.
+  }
+*/
+
+// ── HOW TO PASS LANGUAGE FROM THE ROUTE ──────────────────────
+
+/*
+In your routes.ts, wherever Drishya is called:
+
+  // The language comes from detectedLang (set by Step Zero)
+  // or from user's explicit language preference
+
+  app.post('/api/arya/drishya/generate', requireAuth, async (req, res) => {
+    const { world, request } = req.body;
+    const userId = req.user.id;
+
+    // detectedLang is available from Step Zero
+    // (however your pipeline passes it to route handlers)
+    const language = detectedLang || user.preferredLanguage || 'en';
+
+    const story = await generateDrishyaStory(
+      world,
+      request,
+      language,    // ← this is the key addition
+      userId,
+    );
+
+    res.json({ story });
+  });
+*/
+
+// ── UI: WORLD SELECTION IN USER'S LANGUAGE ───────────────────
+
+/*
+In DrishyaPage.tsx, import DRISHYA_WORLD_NAMES
+and use it for the world selection buttons:
+
+  import { DRISHYA_WORLD_NAMES } from '../../../server/arya/drishya-language-patch';
+  // Or move the constant to a shared/types file for client access
+
+  const worldNames = DRISHYA_WORLD_NAMES[userLanguage]
+    || DRISHYA_WORLD_NAMES['en'];
+
+  // Then in JSX:
+  <button className="drishya-world-btn night">
+    {worldNames.night}
+    <span className="subtitle">{worldNames.subtitle.night}</span>
+  </button>
+*/
+
+// ── QUICK VERIFICATION TEST ───────────────────────────────────
+
+/*
+After wiring, run these three tests:
+
+TEST 1 — Language generation
+  Set user language to Malayalam.
+  Request a night world story about "a doctor who forgets to rest."
+  Expected: Story in Malayalam, literary register, 300-400 words,
+            closing question in Malayalam.
+  Fail condition: Story in English.
+
+TEST 2 — Voice narration
+  Same story. Tap narrate.
+  Expected: Sarvam bulbul:v3 narrates in Malayalam voice,
+            slightly slower pace than regular chat.
+  Fail condition: English voice narrates.
+
+TEST 3 — World names in UI
+  Set user language to Tamil.
+  Open Drishya world selection.
+  Expected: "இரவு", "திரைப்படம்", "அன்றாடம்" as world names.
+  Fail condition: "Night", "Film", "Everyday" in English.
+*/

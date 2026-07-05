@@ -352,7 +352,7 @@ export default function NitiPage() {
       const r = await fetch("/api/niti/sessions", {
         method: "POST",
         headers: { "x-user-token": token, "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionType, mindText: mindText?.trim() || undefined }),
+        body: JSON.stringify({ sessionType, mindText: mindText?.trim() || undefined, language }),
       });
       const data = await r.json();
       if (data.sessionId && data.opening) {
@@ -379,7 +379,7 @@ export default function NitiPage() {
       const r = await fetch(`/api/niti/sessions/${currentSession.id}/message`, {
         method: "POST",
         headers: { "x-user-token": token, "Content-Type": "application/json" },
-        body: JSON.stringify({ content: text }),
+        body: JSON.stringify({ content: text, language }),
       });
       const data = await r.json();
       setMessages(prev => [...prev, {

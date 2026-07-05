@@ -1,0 +1,732 @@
+// ============================================================
+// KAAL AND NITI LANGUAGE PATCH
+// server/arya/kaal-niti-language-patch.ts
+//
+// What this fixes:
+//
+// KAAL:
+//   1. UI labels in user's language (Today/Week/Chapter etc.)
+//   2. Backend generation prompt gets language instruction
+//   3. All generated content arrives in user's language
+//
+// NITI:
+//   1. System prompt gets language instruction
+//   2. Quick-start prompts translated to user's language
+//   3. Thinking Journal saves in user's language
+//   4. Market Lens impact tags in user's language
+//   5. The push-back question from Niti in user's language
+//
+// Paste at: server/arya/kaal-niti-language-patch.ts
+// ============================================================
+
+
+// ════════════════════════════════════════════════════════════
+// PART 1: KAAL
+// ════════════════════════════════════════════════════════════
+
+// ── KAAL UI TRANSLATIONS ──────────────────────────────────────
+// Every static label in KaalDashboard.tsx
+// The component should import this and use labels[language]
+
+export const KAAL_UI_LABELS: Record<string, {
+  // Tab navigation
+  today: string;
+  thisWeek: string;
+  yourChapter: string;
+
+  // Section headers
+  bestWindow: string;
+  strengthToday: string;
+  handleWithCare: string;
+  weekAhead: string;
+  yourCycle: string;
+  guidance: string;
+
+  // Guidance sub-headers
+  money: string;
+  relationships: string;
+  body: string;
+  mind: string;
+
+  // Time labels
+  yearsLeft: string;
+  daysLeft: string;
+  peakTime: string;
+  avoid: string;
+
+  // Action
+  askArya: string;
+  viewMore: string;
+
+  // Day names (short)
+  days: string[];
+
+  // Disclaimer
+  disclaimer: string;
+}> = {
+  en: {
+    today: 'Today',
+    thisWeek: 'This Week',
+    yourChapter: 'Your Chapter',
+    bestWindow: 'Best Window',
+    strengthToday: 'Strength Today',
+    handleWithCare: 'Handle With Care',
+    weekAhead: 'The Week Ahead',
+    yourCycle: 'Your Current Cycle',
+    guidance: 'Guidance',
+    money: 'Money',
+    relationships: 'Relationships',
+    body: 'Body',
+    mind: 'Mind',
+    yearsLeft: 'years remaining',
+    daysLeft: 'days remaining',
+    peakTime: 'Peak time',
+    avoid: 'Avoid',
+    askArya: 'Ask ARYA about today →',
+    viewMore: 'View more',
+    days: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+    disclaimer: 'Used as a lens for self-awareness, not prediction.',
+  },
+  hi: {
+    today: 'आज',
+    thisWeek: 'इस सप्ताह',
+    yourChapter: 'आपका अध्याय',
+    bestWindow: 'सर्वोत्तम समय',
+    strengthToday: 'आज की शक्ति',
+    handleWithCare: 'सावधानी से संभालें',
+    weekAhead: 'आगामी सप्ताह',
+    yourCycle: 'आपका वर्तमान चक्र',
+    guidance: 'मार्गदर्शन',
+    money: 'धन',
+    relationships: 'संबंध',
+    body: 'शरीर',
+    mind: 'मन',
+    yearsLeft: 'वर्ष शेष',
+    daysLeft: 'दिन शेष',
+    peakTime: 'उत्तम समय',
+    avoid: 'बचें',
+    askArya: 'ARYA से आज के बारे में पूछें →',
+    viewMore: 'और देखें',
+    days: ['रवि', 'सोम', 'मंगल', 'बुध', 'गुरु', 'शुक्र', 'शनि'],
+    disclaimer: 'आत्म-जागरूकता के लिए एक दृष्टिकोण — भविष्यवाणी नहीं।',
+  },
+  ml: {
+    today: 'ഇന്ന്',
+    thisWeek: 'ഈ ആഴ്ച',
+    yourChapter: 'നിങ്ങളുടെ അധ്യായം',
+    bestWindow: 'ഉത്തമ സമയം',
+    strengthToday: 'ഇന്നത്തെ ശക്തി',
+    handleWithCare: 'ശ്രദ്ധയോടെ കൈകാര്യം ചെയ്യുക',
+    weekAhead: 'വരുന്ന ആഴ്ച',
+    yourCycle: 'നിങ്ങളുടെ ഇപ്പോഴത്തെ ചക്രം',
+    guidance: 'മാർഗ്ഗദർശനം',
+    money: 'ധനം',
+    relationships: 'ബന്ധങ്ങൾ',
+    body: 'ശരീരം',
+    mind: 'മനസ്സ്',
+    yearsLeft: 'വർഷം ശേഷിക്കുന്നു',
+    daysLeft: 'ദിവസം ശേഷിക്കുന്നു',
+    peakTime: 'ഉത്തമ സമയം',
+    avoid: 'ഒഴിവാക്കുക',
+    askArya: 'ഇന്നത്തെ കാര്യം ARYA-യോട് ചോദിക്കൂ →',
+    viewMore: 'കൂടുതൽ കാണുക',
+    days: ['ഞായർ', 'തിങ്കൾ', 'ചൊവ്വ', 'ബുധൻ', 'വ്യാഴം', 'വെള്ളി', 'ശനി'],
+    disclaimer: 'ആത്മബോധത്തിന് ഒരു ദൃഷ്ടി — പ്രവചനമല്ല.',
+  },
+  ta: {
+    today: 'இன்று',
+    thisWeek: 'இந்த வாரம்',
+    yourChapter: 'உங்கள் அத்தியாயம்',
+    bestWindow: 'சிறந்த நேரம்',
+    strengthToday: 'இன்றைய பலம்',
+    handleWithCare: 'கவனமாக கையாளுங்கள்',
+    weekAhead: 'வரும் வாரம்',
+    yourCycle: 'உங்கள் தற்போதைய சுழற்சி',
+    guidance: 'வழிகாட்டல்',
+    money: 'பணம்',
+    relationships: 'உறவுகள்',
+    body: 'உடல்',
+    mind: 'மனம்',
+    yearsLeft: 'ஆண்டுகள் மீதம்',
+    daysLeft: 'நாட்கள் மீதம்',
+    peakTime: 'சிறந்த நேரம்',
+    avoid: 'தவிர்க்கவும்',
+    askArya: 'இன்று பற்றி ARYA-விடம் கேளுங்கள் →',
+    viewMore: 'மேலும் காண்க',
+    days: ['ஞாயி', 'திங்', 'செவ்', 'புத', 'வியா', 'வெள்', 'சனி'],
+    disclaimer: 'சுய விழிப்புணர்வுக்கான ஒரு கண்ணோட்டம் — கணிப்பு அல்ல.',
+  },
+  te: {
+    today: 'ఈరోజు',
+    thisWeek: 'ఈ వారం',
+    yourChapter: 'మీ అధ్యాయం',
+    bestWindow: 'ఉత్తమ సమయం',
+    strengthToday: 'ఈరోజు బలం',
+    handleWithCare: 'జాగ్రత్తగా నిర్వహించండి',
+    weekAhead: 'వచ్చే వారం',
+    yourCycle: 'మీ ప్రస్తుత చక్రం',
+    guidance: 'మార్గదర్శనం',
+    money: 'ధనం',
+    relationships: 'సంబంధాలు',
+    body: 'శరీరం',
+    mind: 'మనసు',
+    yearsLeft: 'సంవత్సరాలు మిగిలి',
+    daysLeft: 'రోజులు మిగిలి',
+    peakTime: 'శ్రేష్ఠ సమయం',
+    avoid: 'నివారించండి',
+    askArya: 'ఈరోజు గురించి ARYA ని అడగండి →',
+    viewMore: 'మరిన్ని చూడండి',
+    days: ['ఆది', 'సోమ', 'మంగళ', 'బుధ', 'గురు', 'శుక్ర', 'శని'],
+    disclaimer: 'స్వీయ అవగాహనకు ఒక దృక్పథం — అంచనా కాదు.',
+  },
+  kn: {
+    today: 'ಇಂದು',
+    thisWeek: 'ಈ ವಾರ',
+    yourChapter: 'ನಿಮ್ಮ ಅಧ್ಯಾಯ',
+    bestWindow: 'ಉತ್ತಮ ಸಮಯ',
+    strengthToday: 'ಇಂದಿನ ಬಲ',
+    handleWithCare: 'ಜಾಗ್ರತೆಯಿಂದ ನಿಭಾಯಿಸಿ',
+    weekAhead: 'ಮುಂದಿನ ವಾರ',
+    yourCycle: 'ನಿಮ್ಮ ಪ್ರಸ್ತುತ ಚಕ್ರ',
+    guidance: 'ಮಾರ್ಗದರ್ಶನ',
+    money: 'ಧನ',
+    relationships: 'ಸಂಬಂಧಗಳು',
+    body: 'ದೇಹ',
+    mind: 'ಮನಸ್ಸು',
+    yearsLeft: 'ವರ್ಷಗಳು ಉಳಿದಿವೆ',
+    daysLeft: 'ದಿನಗಳು ಉಳಿದಿವೆ',
+    peakTime: 'ಶ್ರೇಷ್ಠ ಸಮಯ',
+    avoid: 'ತಪ್ಪಿಸಿ',
+    askArya: 'ಇಂದಿನ ಬಗ್ಗೆ ARYA ಅನ್ನು ಕೇಳಿ →',
+    viewMore: 'ಹೆಚ್ಚು ನೋಡಿ',
+    days: ['ರವಿ', 'ಸೋಮ', 'ಮಂಗಳ', 'ಬುಧ', 'ಗುರು', 'ಶುಕ್ರ', 'ಶನಿ'],
+    disclaimer: 'ಸ್ವಯಂ ಜಾಗೃತಿಗಾಗಿ ಒಂದು ದೃಷ್ಟಿಕೋನ — ಭವಿಷ್ಯ ನುಡಿ ಅಲ್ಲ.',
+  },
+  bn: {
+    today: 'আজ',
+    thisWeek: 'এই সপ্তাহ',
+    yourChapter: 'আপনার অধ্যায়',
+    bestWindow: 'সেরা সময়',
+    strengthToday: 'আজকের শক্তি',
+    handleWithCare: 'সাবধানে সামলান',
+    weekAhead: 'আগামী সপ্তাহ',
+    yourCycle: 'আপনার বর্তমান চক্র',
+    guidance: 'নির্দেশিকা',
+    money: 'অর্থ',
+    relationships: 'সম্পর্ক',
+    body: 'শরীর',
+    mind: 'মন',
+    yearsLeft: 'বছর বাকি',
+    daysLeft: 'দিন বাকি',
+    peakTime: 'সেরা সময়',
+    avoid: 'এড়িয়ে চলুন',
+    askArya: 'আজ সম্পর্কে ARYA-কে জিজ্ঞেস করুন →',
+    viewMore: 'আরও দেখুন',
+    days: ['রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহ', 'শুক্র', 'শনি'],
+    disclaimer: 'আত্ম-সচেতনতার জন্য একটি দৃষ্টিভঙ্গি — ভবিষ্যদ্বাণী নয়।',
+  },
+};
+
+// ── KAAL BACKEND GENERATION LANGUAGE INSTRUCTION ──────────────
+// Add this to whatever GPT-4o prompt generates
+// todayInsight, strengthToday, handleWithCare, guidance* etc.
+
+export function buildKaalLanguageInstruction(language: string): string {
+  const langNames: Record<string, string> = {
+    en: 'English',
+    hi: 'Hindi (हिंदी) — warm, literary, not formal textbook Hindi',
+    ml: 'Malayalam (മലയാളം) — intimate, grounded in Kerala life',
+    ta: 'Tamil (தமிழ்) — precise, restrained, with emotional depth',
+    te: 'Telugu (తెలుగు) — lyrical, warm',
+    kn: 'Kannada (ಕನ್ನಡ) — direct, philosophical',
+    bn: 'Bengali (বাংলা) — emotionally rich, literary',
+    mr: 'Marathi (मराठी) — warm, practical',
+    gu: 'Gujarati (ગુજરાતી) — warm, clear',
+    pa: 'Punjabi (ਪੰਜਾਬੀ) — direct, energetic',
+    or: 'Odia (ଓଡ଼ିଆ) — quiet, devotional',
+  };
+
+  if (language === 'en') return '';
+
+  return `
+LANGUAGE INSTRUCTION FOR KAAL:
+Generate ALL text fields in ${langNames[language] || language}.
+This includes: todayInsight, strengthToday, handleWithCare,
+guidanceMoney, guidanceRelationships, guidanceBody, cycleDescription.
+
+The tone should feel like a wise, warm elder speaking in that
+language — not a translation of English. Use the natural rhythms
+and expressions of ${langNames[language] || language}.
+
+KAAL carries the weight of Indian astrological tradition.
+In ${langNames[language] || language}, that tradition has its own
+vocabulary and register. Use it naturally.
+
+Example:
+  English: "A day of clarity — trust what you already know."
+  Malayalam should not be: "വ്യക്തതയുടെ ഒരു ദിവസം — നിങ്ങൾക്ക് ഇതിനകം അറിയാവുന്നത് വിശ്വസിക്കൂ."
+  Malayalam should feel like: "ഉള്ളിൽ ഒരു നല്ല വ്യക്തതയുണ്ട് ഇന്ന്. നിങ്ങൾ ഉള്ളിൽ അറിയുന്നത് ശരിയാണ്."
+  (The second version is natural Malayalam, not translated English.)
+`;
+}
+
+
+// ════════════════════════════════════════════════════════════
+// PART 2: NITI
+// ════════════════════════════════════════════════════════════
+
+// ── NITI QUICK-START PROMPTS IN EACH LANGUAGE ─────────────────
+// The five quick-start buttons in NitiPage
+// Currently hardcoded in English — this replaces them
+
+export const NITI_QUICK_STARTS: Record<string, Array<{
+  label: string;
+  sublabel: string;
+  prompt: string;
+  mode: string;
+}>> = {
+  en: [
+    {
+      label: 'Test an idea',
+      sublabel: 'Devil\'s advocate mode',
+      prompt: 'I want to stress-test an idea — ',
+      mode: 'devils_advocate',
+    },
+    {
+      label: 'Unclear decision',
+      sublabel: 'Think it through',
+      prompt: 'I\'ve been going back and forth on a decision. ',
+      mode: 'decision',
+    },
+    {
+      label: 'Market pulse',
+      sublabel: 'What\'s moving',
+      prompt: 'I want to think through what\'s happening in my market. ',
+      mode: 'market',
+    },
+    {
+      label: 'People situation',
+      sublabel: 'Team or conflict',
+      prompt: 'I have a situation with someone on my team — ',
+      mode: 'people',
+    },
+    {
+      label: 'Think it all out',
+      sublabel: 'Full chain',
+      prompt: 'I need to think through something important completely. ',
+      mode: 'full_chain',
+    },
+  ],
+  hi: [
+    {
+      label: 'विचार परखें',
+      sublabel: 'शैतान का वकील',
+      prompt: 'मैं एक विचार को कसौटी पर कसना चाहता हूँ — ',
+      mode: 'devils_advocate',
+    },
+    {
+      label: 'अटका फैसला',
+      sublabel: 'गहराई से सोचें',
+      prompt: 'मैं एक फैसले पर आगे-पीछे हो रहा हूँ। ',
+      mode: 'decision',
+    },
+    {
+      label: 'बाज़ार की नब्ज़',
+      sublabel: 'क्या हो रहा है',
+      prompt: 'मैं अपने बाज़ार में क्या हो रहा है इस पर सोचना चाहता हूँ। ',
+      mode: 'market',
+    },
+    {
+      label: 'लोगों का मामला',
+      sublabel: 'टीम या टकराव',
+      prompt: 'मेरी टीम में किसी के साथ एक स्थिति है — ',
+      mode: 'people',
+    },
+    {
+      label: 'पूरा सोचें',
+      sublabel: 'पूरी श्रृंखला',
+      prompt: 'मुझे कुछ महत्वपूर्ण पूरी तरह से सोचना है। ',
+      mode: 'full_chain',
+    },
+  ],
+  ml: [
+    {
+      label: 'ആശയം പരീക്ഷിക്കൂ',
+      sublabel: 'ദൗർബല്യം കണ്ടെത്തുക',
+      prompt: 'ഒരു ആശയം ശരിക്കും പരീക്ഷിക്കണം — ',
+      mode: 'devils_advocate',
+    },
+    {
+      label: 'തീരുമാനം തൂക്കിനോക്കൂ',
+      sublabel: 'ആഴത്തിൽ ചിന്തിക്കൂ',
+      prompt: 'ഒരു തീരുമാനത്തിൽ ഞാൻ ആടിയുലയുകയാണ്. ',
+      mode: 'decision',
+    },
+    {
+      label: 'മാർക്കറ്റ് നോക്കൂ',
+      sublabel: 'എന്ത് നടക്കുന്നു',
+      prompt: 'എന്റെ മാർക്കറ്റിൽ എന്ത് നടക്കുന്നു എന്ന് ചിന്തിക്കണം. ',
+      mode: 'market',
+    },
+    {
+      label: 'ആളുകളുടെ കാര്യം',
+      sublabel: 'ടീം അല്ലെങ്കിൽ സംഘർഷം',
+      prompt: 'ടീമിലെ ഒരാളുമായി ഒരു സ്ഥിതിഗതി ഉണ്ട് — ',
+      mode: 'people',
+    },
+    {
+      label: 'മൊത്തം ചിന്തിക്കൂ',
+      sublabel: 'പൂർണ്ണ ശൃംഖല',
+      prompt: 'ഒരു പ്രധാന കാര്യം പൂർണ്ണമായി ചിന്തിക്കണം. ',
+      mode: 'full_chain',
+    },
+  ],
+  ta: [
+    {
+      label: 'யோசனையை சோதிக்கவும்',
+      sublabel: 'பலவீனம் கண்டுபிடிக்க',
+      prompt: 'ஒரு யோசனையை சோதிக்க விரும்புகிறேன் — ',
+      mode: 'devils_advocate',
+    },
+    {
+      label: 'தடுமாறும் முடிவு',
+      sublabel: 'ஆழமாக சிந்திக்க',
+      prompt: 'ஒரு முடிவில் நான் தடுமாறுகிறேன். ',
+      mode: 'decision',
+    },
+    {
+      label: 'சந்தை நாடி',
+      sublabel: 'என்ன நடக்கிறது',
+      prompt: 'என் சந்தையில் என்ன நடக்கிறது என்று யோசிக்க வேண்டும். ',
+      mode: 'market',
+    },
+    {
+      label: 'மனித நிலைமை',
+      sublabel: 'குழு அல்லது முரண்பாடு',
+      prompt: 'என் குழுவில் யாரோடாவது ஒரு நிலைமை உள்ளது — ',
+      mode: 'people',
+    },
+    {
+      label: 'முழுவதும் சிந்திக்க',
+      sublabel: 'முழு சங்கிலி',
+      prompt: 'ஒரு முக்கியமான விஷயத்தை முழுமையாக சிந்திக்க வேண்டும். ',
+      mode: 'full_chain',
+    },
+  ],
+  te: [
+    {
+      label: 'ఆలోచనను పరీక్షించండి',
+      sublabel: 'బలహీనత కనుగొనండి',
+      prompt: 'ఒక ఆలోచనను సరిగ్గా పరీక్షించాలనుకుంటున్నాను — ',
+      mode: 'devils_advocate',
+    },
+    {
+      label: 'అనిర్ణయ నిర్ణయం',
+      sublabel: 'లోతుగా ఆలోచించండి',
+      prompt: 'ఒక నిర్ణయంపై నేను ముందూ వెనుకా వెళ్తున్నాను. ',
+      mode: 'decision',
+    },
+    {
+      label: 'మార్కెట్ చూడండి',
+      sublabel: 'ఏమి జరుగుతోంది',
+      prompt: 'నా మార్కెట్‌లో ఏమి జరుగుతోందో ఆలోచించాలనుకుంటున్నాను. ',
+      mode: 'market',
+    },
+    {
+      label: 'వ్యక్తుల పరిస్థితి',
+      sublabel: 'జట్టు లేదా వివాదం',
+      prompt: 'నా జట్టులో ఒకరితో ఒక పరిస్థితి ఉంది — ',
+      mode: 'people',
+    },
+    {
+      label: 'పూర్తిగా ఆలోచించండి',
+      sublabel: 'పూర్తి గొలుసు',
+      prompt: 'ఒక ముఖ్యమైన విషయాన్ని పూర్తిగా ఆలోచించాలి. ',
+      mode: 'full_chain',
+    },
+  ],
+};
+
+// Fallback to English for unlisted languages
+export function getNitiQuickStarts(language: string) {
+  return NITI_QUICK_STARTS[language] || NITI_QUICK_STARTS['en'];
+}
+
+// ── NITI SYSTEM PROMPT LANGUAGE ADDITION ──────────────────────
+// Add this to the bottom of NITI_CONVERSATION_PROMPT
+// It must go at the END — after all the Niti persona rules
+
+export function buildNitiLanguageInstruction(language: string): string {
+  if (language === 'en') return '';
+
+  const langNames: Record<string, string> = {
+    hi: 'Hindi (हिंदी)',
+    ml: 'Malayalam (മലയാളം)',
+    ta: 'Tamil (தமிழ்)',
+    te: 'Telugu (తెలుగు)',
+    kn: 'Kannada (ಕನ್ನಡ)',
+    bn: 'Bengali (বাংলা)',
+    mr: 'Marathi (मराठी)',
+    gu: 'Gujarati (ગુજરાતી)',
+    pa: 'Punjabi (ਪੰਜਾਬੀ)',
+    or: 'Odia (ଓଡ଼ିଆ)',
+    ar: 'Arabic (العربية)',
+    fr: 'French (Français)',
+    es: 'Spanish (Español)',
+    de: 'German (Deutsch)',
+  };
+
+  const langName = langNames[language] || language;
+
+  return `
+
+## LANGUAGE INSTRUCTION — CRITICAL
+
+Respond entirely in ${langName}.
+
+Every word of your Niti response must be in ${langName}.
+The push-back question must be in ${langName}.
+The analysis must be in ${langName}.
+If you suggest directions, state them in ${langName}.
+
+Do NOT switch to English at any point.
+Do NOT include English phrases in parentheses.
+Do NOT explain that you are responding in ${langName}.
+Just respond in ${langName} as naturally as you would in English.
+
+NITI's character does not change with the language.
+The directness, the refusal to flatter, the push-back question —
+all of these remain exactly the same.
+Only the language changes. The character does not.
+
+For business terms (ROI, KPI, B2B etc.) that exist in English:
+Use the term naturally without translation — they are understood
+in ${langName} business contexts as loan words.
+`;
+}
+
+// ── NITI MARKET LENS IMPACT TAG TRANSLATIONS ──────────────────
+// The impact tags that appear on news items in Market Lens
+// Currently generated in English — this provides translations
+
+export const NITI_IMPACT_TAGS: Record<string, Record<string, string>> = {
+  en: {
+    positive: 'Positive',
+    negative: 'Negative',
+    neutral: 'Watch',
+    opportunity: 'Opportunity',
+    risk: 'Risk',
+    sector_impact: 'Sector',
+    macro: 'Macro',
+  },
+  hi: {
+    positive: 'सकारात्मक',
+    negative: 'नकारात्मक',
+    neutral: 'ध्यान दें',
+    opportunity: 'अवसर',
+    risk: 'जोखिम',
+    sector_impact: 'क्षेत्र',
+    macro: 'व्यापक',
+  },
+  ml: {
+    positive: 'ഗുണകരം',
+    negative: 'ദോഷകരം',
+    neutral: 'ശ്രദ്ധിക്കൂ',
+    opportunity: 'അവസരം',
+    risk: 'റിസ്ക്',
+    sector_impact: 'മേഖല',
+    macro: 'മാക്രോ',
+  },
+  ta: {
+    positive: 'நேர்மறை',
+    negative: 'எதிர்மறை',
+    neutral: 'கவனிக்கவும்',
+    opportunity: 'வாய்ப்பு',
+    risk: 'ஆபத்து',
+    sector_impact: 'துறை',
+    macro: 'மேக்ரோ',
+  },
+  te: {
+    positive: 'సానుకూలం',
+    negative: 'ప్రతికూలం',
+    neutral: 'చూడండి',
+    opportunity: 'అవకాశం',
+    risk: 'నష్టం',
+    sector_impact: 'రంగం',
+    macro: 'స్థూల',
+  },
+  kn: {
+    positive: 'ಸಕಾರಾತ್ಮಕ',
+    negative: 'ನಕಾರಾತ್ಮಕ',
+    neutral: 'ಗಮನಿಸಿ',
+    opportunity: 'ಅವಕಾಶ',
+    risk: 'ಅಪಾಯ',
+    sector_impact: 'ಕ್ಷೇತ್ರ',
+    macro: 'ಮ್ಯಾಕ್ರೋ',
+  },
+  bn: {
+    positive: 'ইতিবাচক',
+    negative: 'নেতিবাচক',
+    neutral: 'দেখুন',
+    opportunity: 'সুযোগ',
+    risk: 'ঝুঁকি',
+    sector_impact: 'সেক্টর',
+    macro: 'ম্যাক্রো',
+  },
+};
+
+export function getNitiImpactTags(language: string) {
+  return NITI_IMPACT_TAGS[language] || NITI_IMPACT_TAGS['en'];
+}
+
+// ── NITI THINKING JOURNAL — LANGUAGE INSTRUCTION ──────────────
+// When saving a Thinking Journal entry after a Niti session,
+// the summary should be in the language the session was in.
+// Add this to the journal generation prompt.
+
+export function buildJournalLanguageInstruction(language: string): string {
+  if (language === 'en') return '';
+
+  const langNames: Record<string, string> = {
+    hi: 'Hindi', ml: 'Malayalam', ta: 'Tamil', te: 'Telugu',
+    kn: 'Kannada', bn: 'Bengali', mr: 'Marathi', gu: 'Gujarati',
+    pa: 'Punjabi', or: 'Odia',
+  };
+
+  return `Generate the Thinking Journal entry in ${langNames[language] || language}.
+The summary, insights, and follow-up question should all be in ${langNames[language] || language}.
+Keep the same structure but express it naturally in that language.`;
+}
+
+
+// ════════════════════════════════════════════════════════════
+// WIRING INSTRUCTIONS
+// ════════════════════════════════════════════════════════════
+
+/*
+─────────────────────────────────────────────────────────────
+KAAL WIRING
+─────────────────────────────────────────────────────────────
+
+1. CLIENT — KaalDashboard.tsx
+   Import KAAL_UI_LABELS and use for all static text:
+
+     import { KAAL_UI_LABELS } from '../../lib/kaal-niti-language-patch';
+
+     // Get labels for current language
+     const labels = KAAL_UI_LABELS[userLanguage] || KAAL_UI_LABELS['en'];
+
+     // Replace hardcoded strings:
+     // BEFORE: <div>Today</div>
+     // AFTER:  <div>{labels.today}</div>
+
+     // BEFORE: <div>Best Window</div>
+     // AFTER:  <div>{labels.bestWindow}</div>
+
+     // Day names in the week bar:
+     // BEFORE: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+     // AFTER:  labels.days
+
+2. SERVER — wherever KAAL content is generated (kaal-generator.ts or similar)
+   Add language instruction to the GPT-4o prompt:
+
+     import { buildKaalLanguageInstruction } from './kaal-niti-language-patch';
+
+     const kaalPrompt = `
+       [existing KAAL generation prompt]
+       ${buildKaalLanguageInstruction(userLanguage)}
+     `;
+
+─────────────────────────────────────────────────────────────
+NITI WIRING
+─────────────────────────────────────────────────────────────
+
+1. SERVER — niti-conversational-mode.ts (existing file)
+   Find NITI_CONVERSATION_PROMPT and add language instruction:
+
+     import { buildNitiLanguageInstruction } from './kaal-niti-language-patch';
+
+     // In the chat handler for Niti:
+     const systemPrompt = NITI_CONVERSATION_PROMPT
+       + buildNitiLanguageInstruction(detectedLanguage);
+
+2. CLIENT — NitiPage.tsx
+   Replace hardcoded quick-start prompts:
+
+     import { getNitiQuickStarts } from '../../lib/kaal-niti-language-patch';
+
+     // Get quick starts for current language
+     const quickStarts = getNitiQuickStarts(userLanguage);
+
+     // Map over quickStarts instead of hardcoded array
+     {quickStarts.map(qs => (
+       <button key={qs.mode} onClick={() => handleQuickStart(qs.prompt)}>
+         <span className="label">{qs.label}</span>
+         <span className="sublabel">{qs.sublabel}</span>
+       </button>
+     ))}
+
+3. CLIENT — Market Lens impact tags
+   Import and use getNitiImpactTags:
+
+     import { getNitiImpactTags } from '../../lib/kaal-niti-language-patch';
+     const tags = getNitiImpactTags(userLanguage);
+
+     // Use tags.positive, tags.risk etc. instead of hardcoded strings
+
+4. SERVER — Thinking Journal generation
+   Add language instruction when generating journal summary:
+
+     import { buildJournalLanguageInstruction } from './kaal-niti-language-patch';
+
+     const journalPrompt = `
+       [existing journal generation prompt]
+       ${buildJournalLanguageInstruction(sessionLanguage)}
+     `;
+
+─────────────────────────────────────────────────────────────
+VERIFICATION TESTS
+─────────────────────────────────────────────────────────────
+
+KAAL TEST 1 — UI labels
+  Set language to Tamil. Open KAAL.
+  Expected: "இன்று", "இந்த வாரம்", "உங்கள் அத்தியாயம்"
+  Fail: "Today", "This Week", "Your Chapter" in English
+
+KAAL TEST 2 — Generated content
+  Set language to Malayalam. Open KAAL today view.
+  Expected: todayInsight in Malayalam, strengths in Malayalam
+  Fail: English content with Malayalam UI
+
+KAAL TEST 3 — Day names
+  Set language to Hindi. Open week view.
+  Expected: "रवि सोम मंगल बुध गुरु शुक्र शनि"
+  Fail: "Sun Mon Tue Wed Thu Fri Sat"
+
+NITI TEST 1 — Quick starts
+  Set language to Telugu. Open Niti.
+  Expected: Telugu quick-start buttons
+  Fail: English buttons
+
+NITI TEST 2 — Conversation language
+  Set language to Kannada. Start a Niti session.
+  Type in English (business users often type in English).
+  Expected: Niti responds in Kannada regardless of input language.
+  Fail: Response in English
+
+NITI TEST 3 — Push-back question
+  Any language except English. Have a Niti session.
+  Expected: The push-back question at end of each response
+  is in the user's language.
+  Fail: Push-back question in English
+
+NITI TEST 4 — Thinking Journal
+  Complete a Tamil Niti session. View Thinking Journal.
+  Expected: Journal entry in Tamil.
+  Fail: Journal entry in English.
+
+NITI TEST 5 — Market Lens tags
+  Set language to Hindi. Open Market Lens.
+  Expected: Impact tags show "सकारात्मक", "जोखिम" etc.
+  Fail: "Positive", "Risk" in English.
+*/

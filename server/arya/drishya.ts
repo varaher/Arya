@@ -5,6 +5,7 @@ import { eq, and } from "drizzle-orm";
 import { buildLightContext } from "./context-builder";
 import { classifySituation, getSituationTags } from "./situation-classifier";
 import { retrieveRelevantWisdom } from "./wisdom-retriever";
+import { buildDrishyaLanguageInstruction } from "./drishya-language-patch";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -73,7 +74,8 @@ export async function* generateDrishyaStory(
   userId?: string
 ): AsyncGenerator<string> {
   const knowledgeContext = await getDrishyaKnowledge();
-  const systemPrompt = DRISHYA_SYSTEM_PROMPT.replace("{knowledgeContext}", knowledgeContext);
+  const systemPrompt = DRISHYA_SYSTEM_PROMPT.replace("{knowledgeContext}", knowledgeContext)
+    + buildDrishyaLanguageInstruction(language);
   const worldLabel =
     world === "night" ? "NIGHT WORLD" : world === "film" ? "FILM WORLD" : "EVERYDAY WORLD";
 

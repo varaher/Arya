@@ -3,6 +3,7 @@ import { buildLightContext } from "./context-builder";
 import { db } from "../db";
 import { aryaUsers, aryaNitiSessions, aryaNitiMessages } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
+import { buildNitiLanguageInstruction, buildJournalLanguageInstruction } from "./kaal-niti-language-patch";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -261,6 +262,7 @@ async function generateNitiConversationResponse(
       businessRole: aryaUsers.businessRole,
       businessChallenge: aryaUsers.businessChallenge,
       businessFocusAreas: aryaUsers.businessFocusAreas,
+      uiLanguage: aryaUsers.uiLanguage,
     })
     .from(aryaUsers)
     .where(eq(aryaUsers.id, userId))
@@ -303,7 +305,7 @@ ${historyContext ? `Conversation so far:\n${historyContext}\n` : ""}
 ${isOpening
   ? `User's first message: "${userMessage}"\n\nApply the FIRST RESPONSE RULE — ask one clarifying question that makes the conversation feel more serious. Not "tell me more" — something specific that gets underneath the surface.`
   : `User just said: "${userMessage}"\n\nApply the CONVERSATION ARC. Detected lens: ${lens}. Push the conversation forward — don't let it circle.`
-}`;
+}${buildNitiLanguageInstruction(user?.uiLanguage || "en")}`;
 
   try {
     const response = await openai.chat.completions.create({
@@ -369,6 +371,7 @@ export async function generateNitiResponse(
       businessRole: aryaUsers.businessRole,
       businessChallenge: aryaUsers.businessChallenge,
       businessFocusAreas: aryaUsers.businessFocusAreas,
+      uiLanguage: aryaUsers.uiLanguage,
     })
     .from(aryaUsers)
     .where(eq(aryaUsers.id, userId))
@@ -436,7 +439,7 @@ Return ONLY valid JSON (no markdown):
   "content": "Direct response — specific, tight, no filler",
   "pushQuestion": "The one question that gets under the surface",
   "followUps": ["Branch 1 (8-14 words)", "Branch 2 (8-14 words)", "Branch 3 (8-14 words)"]
-}`;
+}${buildNitiLanguageInstruction(user?.uiLanguage || "en")}`;
 
   try {
     const response = await openai.chat.completions.create({
@@ -540,6 +543,7 @@ export async function addNitiMessage(
 export async function generateNitiJournalEntry(
   sessionId: number,
   userId: string,
+  language = "en",
 ): Promise<string> {
   const messages = await db
     .select({ role: aryaNitiMessages.role, content: aryaNitiMessages.content })
@@ -561,7 +565,7 @@ export async function generateNitiJournalEntry(
       messages: [
         {
           role: "user",
-          content: `${NITI_JOURNAL_PROMPT}\n\nConversation transcript:\n${transcript}`,
+          content: `${NITI_JOURNAL_PROMPT}\n\nConversation transcript:\n${transcript}${buildJournalLanguageInstruction(language)}`,
         },
       ],
       max_tokens: 400,
