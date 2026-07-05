@@ -58,7 +58,7 @@ export async function sarvamSpeechToText(
 
     const formData = new FormData();
     formData.append("file", blob, "audio.wav");
-    formData.append("model", "saarika:v2.5");
+    formData.append("model", "saaras:v3");
     formData.append("language_code", languageCode);
 
     const response = await fetch(`${SARVAM_BASE_URL}/speech-to-text`, {
@@ -252,6 +252,39 @@ export async function sarvamSpeechToTextTranslate(
   }
 }
 
+/**
+ * STEP ZERO — Sarvam language identification for typed text.
+ * POST /text/language-identification — returns a BCP-47 code like "hi-IN".
+ * Resolves null on any error so callers always fall back to Unicode detection.
+ * Never throws — designed to race against a timeout in the calling code.
+ */
+export async function sarvamDetectLanguage(text: string): Promise<string | null> {
+  // Very short text is unreliable — let Unicode detection handle it
+  if (!text || text.trim().length < 8) return null;
+
+  try {
+    const key = process.env.SARVAM_API_KEY;
+    if (!key) return null;
+
+    const response = await fetch(`${SARVAM_BASE_URL}/text/language-identification`, {
+      method: "POST",
+      headers: {
+        "API-Subscription-Key": key,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ input: text.slice(0, 500) }),
+    });
+
+    if (!response.ok) return null;
+
+    const data = await response.json() as any;
+    // Response shape: { language_code: "hi-IN" } or { detected_language: "hi-IN" }
+    return data.language_code || data.detected_language || null;
+  } catch {
+    return null;
+  }
+}
+
 export function isIndianLanguage(langCode: string): boolean {
   if (!langCode || langCode === "en-IN" || langCode === "unknown") return false;
   return SUPPORTED_LANGUAGES.some(l => l.code === langCode && l.code !== "en-IN");
@@ -327,7 +360,7 @@ async function callSarvamTTS(
       inputs: [cleanedText],
       target_language_code: languageCode,
       speaker,
-      model: "bulbul:v2",
+      model: "bulbul:v3",
       enable_preprocessing: false,
     }),
   });

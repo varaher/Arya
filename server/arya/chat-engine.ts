@@ -27,6 +27,8 @@ import { buildLightContext } from "./context-builder";
 import { eq } from "drizzle-orm";
 import { fetchLatestNews, fetchMarketNews, formatNewsForChat } from "./news-service";
 import { detectLanguage, buildLanguageInstruction, autoUpdateLanguagePreference, sarvamLangToShort } from "./language-detector";
+import { sarvamDetectLanguage } from "./sarvam-service";
+import { buildTimeContext } from "./time-context";
 import { buildSectionTonePromptAddition } from "./section-tone-map";
 import { classifySituation, getSituationTags } from "./situation-classifier";
 import { retrieveRelevantWisdom } from "./wisdom-retriever";
@@ -829,9 +831,20 @@ export async function generateAryaResponse(
 ): Promise<{ stream: AsyncIterable<string>; meta: AryaResponseMeta }> {
   const startTime = Date.now();
 
-  // Detect language early — needed for language-partitioned cache lookups.
-  // For voice queries, sarvamDetectedLang is already known (Sarvam STT output).
-  // For typed queries, run detectLanguage() — it's < 1ms with no I/O.
+  // STEP ZERO — Language detection.
+  // Voice: sarvamDetectedLang is already known from STT — use it directly.
+  // Text: fire Sarvam /text/language-identification concurrently (250ms budget).
+  //   earlyLang uses Unicode immediately for cache key (< 1ms, no I/O).
+  //   detectedLang (line ~1122) awaits the Sarvam promise — gets the accurate
+  //   result for all language instructions, wisdom routing, and tone shaping.
+  //   Fallback to Unicode detection on any error or timeout.
+  const _sarvamTextLangPromise: Promise<string | null> = (!sarvamDetectedLang && userMessage.trim().length >= 8)
+    ? Promise.race([
+        sarvamDetectLanguage(userMessage),
+        new Promise<null>(resolve => setTimeout(() => resolve(null), 250)),
+      ])
+    : Promise.resolve(null);
+
   const earlyLang: string = sarvamDetectedLang
     ? sarvamLangToShort(sarvamDetectedLang)
     : detectLanguage(userMessage);
@@ -1119,9 +1132,13 @@ export async function generateAryaResponse(
   // The voice route now passes the ORIGINAL language transcript (no English
   // round-trip translation), so sarvamDetectedLang is the authoritative signal.
   const msgLen = userMessage.trim().length;
+  // Await the Step Zero Sarvam detect promise — it has been running concurrently
+  // during smart-command check, cache lookup, and context assembly.
+  // By the time we reach here (~100-600ms later) it has almost always resolved.
+  const _sarvamTextLang = await _sarvamTextLangPromise;
   const detectedLang = sarvamDetectedLang
     ? sarvamLangToShort(sarvamDetectedLang)
-    : detectLanguage(userMessage);
+    : (_sarvamTextLang ? sarvamLangToShort(_sarvamTextLang) : detectLanguage(userMessage));
   // buildLanguageInstruction uses conversation history — reliable even for
   // short messages ("OK", "👍") because it looks at the last 6 user turns.
   const langInstruction = buildLanguageInstruction(conversationHistory, detectedLang, "en");
@@ -1177,8 +1194,10 @@ export async function generateAryaResponse(
     thinkingModePrompt = CONFIDENCE_RATING_PROMPT + getModeSystemPrompt(thinkingMode);
   } catch {}
 
+  const timeContext = `\n\n${buildTimeContext()}`;
+
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-    { role: "system", content: ARYA_SYSTEM_PROMPT + userPrefs + (langInstruction ? `\n\n${langInstruction}` : "") + sectionToneAddition + knowledgeContext + newsContext + memoryContext + liveContext + wisdomContext + uncertaintyGuidance + voiceInstruction + longFormInstruction + goalCheckInCtx.systemPromptBlock + thinkingModePrompt + (studyNotesAddition || "") },
+    { role: "system", content: ARYA_SYSTEM_PROMPT + userPrefs + timeContext + (langInstruction ? `\n\n${langInstruction}` : "") + sectionToneAddition + knowledgeContext + newsContext + memoryContext + liveContext + wisdomContext + uncertaintyGuidance + voiceInstruction + longFormInstruction + goalCheckInCtx.systemPromptBlock + thinkingModePrompt + (studyNotesAddition || "") },
     ...conversationHistory.slice(-20).map(m => ({
       role: m.role as "user" | "assistant",
       content: m.content,
