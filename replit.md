@@ -11,6 +11,10 @@ Branding: ARYA stands for "Augmented Reasoning & Yielding Awareness." ARYA is "Y
 Bharatiya/Vedic/Sanskrit knowledge is the invisible core — ARYA draws from this wisdom naturally in responses, but these terms should NOT appear in user-facing UI labels, prompts, or navigation. The wisdom shows through the quality of advice, not through labels.
 Philosopher names (Chanakya, Vidura, Thiruvalluvar, Krishna, Shukracharya) and source texts (Arthashastra, Thirukkural, Bhagavad Gita, Vidura Niti, etc.) are NEVER shown to users — not in tooltips, session headers, message footers, onboarding screens, or anywhere user-facing. They exist only in backend system prompts to guide ARYA's thinking. Users experience ARYA's wisdom directly — they never see which tradition it came from.
 
+**Core backend principle (never violate):**
+> "The wisdom is the ingredient. ARYA is the dish. Users taste the dish. They never see the recipe."
+> It's always ARYA. Only ARYA. Never the source.
+
 ## System Architecture
 
 The project is structured as a monorepo with a React frontend, an Express backend, and a shared module for schemas and types. It functions as a Progressive Web App (PWA).

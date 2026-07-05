@@ -1,3 +1,17 @@
+// ═══════════════════════════════════════════════════════════════════════════════
+//  ARYA CORE DESIGN PRINCIPLE — never violate this, in any feature, ever
+//
+//  "The wisdom is the ingredient.
+//   ARYA is the dish.
+//   Users taste the dish.
+//   They never see the recipe."
+//
+//  Source texts (Gita, Ramayana, Mahabharata, Upanishads, Chanakya, Vidura,
+//  Thiruvalluvar, Shukracharya, Sanskrit traditions) are the invisible fuel.
+//  They shape ARYA's thinking. They NEVER appear in any user-facing surface.
+//  No labels. No tooltips. No footers. No attributions. Only ARYA. Always ARYA.
+// ═══════════════════════════════════════════════════════════════════════════════
+
 import OpenAI from "openai";
 import { KnowledgeRetriever } from "./knowledge-retriever";
 import { Orchestrator } from "./orchestrator";
