@@ -1,0 +1,824 @@
+// ============================================================
+// FILE 9 OF 9: scripts/seed-wisdom-living-traditions.ts
+//
+// Wisdom seeds from traditions NOT on standard lists:
+//   - Sangam Literature (Akananuru, Purananuru, Tinai system)
+//   - Siddhar Tradition (Thirumoolar, Thirumantiram)
+//   - Nath Tradition (Gorakhnath, Gorakh Bani)
+//   - Baul Tradition (Lalon Shah, Bengal)
+//   - Lalleshwari — Kashmir (Vakhs)
+//   - Akka Mahadevi — Karnataka (Vachanas)
+//   - Alvar Tradition (Andal, Nammalvar, Thirumangai)
+//   - Nayanar Tradition (Appar, Manikkavacagar, Karaikkal)
+//   - Embodied knowledge traditions (Kalarippayattu, craft)
+//
+// These are the traditions that Google does not return.
+// They represent the parts of India that the canonical
+// list leaves out — regional, vernacular, oral, feminine,
+// dissenting, and more directly alive than most of
+// what is on standard reading lists.
+//
+// IMPORTANT NOTE FOR EXPERT REVIEWERS:
+// These entries require review by scholars native to each
+// tradition — Tamil Sangam scholars, Kashmiri Shaivite
+// scholars, Bengali Baul practitioners, Karnataka Vachana
+// scholars. Do not mark reviewed: true without this.
+// The arya_principle in each entry is ARYA's voice,
+// not a translation — but the underlying source must be
+// verified for accuracy.
+//
+// Run:
+//   npx tsx scripts/seed-wisdom-living-traditions.ts
+//   npx tsx scripts/seed-wisdom-living-traditions.ts translate
+// ============================================================
+
+import { db } from '../server/db';
+import { batchTranslateWisdomEntry } from '../server/arya/wisdom-translator';
+import type { SupportedLanguage } from '../server/arya/wisdom-retriever';
+
+const INDIAN_LANGUAGES: SupportedLanguage[] = [
+  'en', 'hi', 'ml', 'ta', 'te', 'kn', 'bn', 'mr', 'gu', 'pa', 'or'
+];
+
+const LIVING_TRADITIONS_SEEDS = [
+
+  // ════════════════════════════════════════════════════════════
+  // SANGAM LITERATURE
+  // The oldest body of secular literature in any Indian language.
+  // 300 BCE to 300 CE. The Tinai system maps five landscapes
+  // to five emotional states — the world's first systematic
+  // framework for emotional intelligence.
+  // ════════════════════════════════════════════════════════════
+
+  {
+    domain: 'storytelling',
+    tradition: 'sangam',
+    source_text: 'Akananuru 1 — Kurinci Tinai (mountain landscape = union, longing for union)',
+    source_name: 'Sangam — Akananuru — Kurinci Tinai',
+    situation_tags: [
+      'romantic_struggle', 'longing', 'relationship_decision',
+      'separation', 'love'
+    ],
+    emotional_tags: ['longing', 'love', 'hope', 'seeking'],
+    arya_principle: `The feeling of wanting to be close to someone — genuinely close, not just near them — is one of the most clarifying emotions there is. It cuts through most of the noise about what actually matters. The mountain in bloom is not backdrop. It is the feeling itself made visible.`,
+    arya_story_seed: `A doctor who worked beside the same colleague for three years before understanding that what he had been calling professional admiration was something else entirely, and that this understanding changed everything.`,
+    rasa: 'shringara',
+    guna_relevance: ['rajas', 'mixed'],
+    confidence_level: 'high',
+  },
+
+  {
+    domain: 'storytelling',
+    tradition: 'sangam',
+    source_text: 'Purananuru 192 — on the nature of a generous life',
+    source_name: 'Sangam — Purananuru 192',
+    situation_tags: [
+      'meaning_and_purpose', 'legacy',
+      'mortality_awareness', 'ambition_and_purpose'
+    ],
+    emotional_tags: ['seeking', 'wonder', 'grief', 'longing'],
+    arya_principle: `What makes a life worth remembering is rarely what the person thought was their main achievement. It is usually something smaller — how they treated people when nothing was at stake, what they gave when they did not have to, who they were on an ordinary Tuesday.`,
+    arya_story_seed: `A prominent surgeon whose obituary mentioned his awards in the third paragraph. The first two were about the habit he had of staying an extra ten minutes with every patient who seemed frightened.`,
+    rasa: 'shanta',
+    guna_relevance: ['rajas', 'sattva'],
+    confidence_level: 'high',
+  },
+
+  {
+    domain: 'storytelling',
+    tradition: 'sangam',
+    source_text: 'Sangam — Neydal Tinai (coastal landscape = waiting, patient longing)',
+    source_name: 'Sangam — Neydal Tinai — coastal emotional register',
+    situation_tags: [
+      'grief_and_loss', 'loneliness', 'longing',
+      'patience', 'waiting'
+    ],
+    emotional_tags: ['longing', 'grief', 'patience', 'sadness'],
+    arya_principle: `There is a particular quality of waiting that is not passive — it is active endurance. The coast that does not fight the tide but receives it completely, again and again, without breaking. Some things can only be survived by learning to receive them rather than resist them.`,
+    arya_story_seed: `A woman whose husband was stationed far away for two years who said afterward: I did not wait. I lived completely, but with him always somewhere in the living.`,
+    rasa: 'karuna',
+    guna_relevance: ['tamas', 'mixed'],
+    confidence_level: 'high',
+  },
+
+  {
+    domain: 'storytelling',
+    tradition: 'sangam',
+    source_text: 'Sangam — Marutam Tinai (agricultural plains = infidelity, estrangement)',
+    source_name: 'Sangam — Marutam Tinai — estrangement register',
+    situation_tags: [
+      'betrayal', 'relationship_decision',
+      'anger_and_conflict', 'family_conflict'
+    ],
+    emotional_tags: ['anger', 'hurt', 'grief', 'confusion'],
+    arya_principle: `When trust is broken between people who genuinely loved each other, the anger is real and it is right. What matters after that is whether the anger becomes the whole story or just the beginning of a harder, more honest conversation about what actually happened and whether it can hold any future.`,
+    arya_story_seed: `Two business partners of fifteen years who had a serious breach of trust. One walked away immediately. The other asked one question before leaving: do you want to understand what happened, or do you just want it to be over? The answer changed what came next.`,
+    rasa: 'raudra',
+    guna_relevance: ['rajas'],
+    confidence_level: 'high',
+  },
+
+  {
+    domain: 'storytelling',
+    tradition: 'sangam',
+    source_text: 'Sangam — Palai Tinai (wasteland = separation, hardship)',
+    source_name: 'Sangam — Palai Tinai — separation and hardship register',
+    situation_tags: [
+      'grief_and_loss', 'family_decision',
+      'sacrifice', 'loneliness', 'resilience'
+    ],
+    emotional_tags: ['grief', 'courage', 'loneliness', 'determination'],
+    arya_principle: `The hardest journeys are the ones where you have to leave something genuinely good in order to do something genuinely necessary. The wasteland between the two is real. It is not a mistake to feel it fully. The mistake is to pretend it is not there.`,
+    arya_story_seed: `A young doctor who left Kerala for a residency in a distant city, knowing it was the right decision and feeling the wrongness of it every day for eight months, and understanding eventually that both things were true at once.`,
+    rasa: 'karuna',
+    guna_relevance: ['tamas', 'mixed'],
+    confidence_level: 'high',
+  },
+
+  {
+    domain: 'storytelling',
+    tradition: 'sangam',
+    source_text: 'Purananuru — on death and what it clarifies (poems 74, 194)',
+    source_name: 'Sangam — Purananuru — on death and clarity',
+    situation_tags: [
+      'mortality_awareness', 'meaning_and_purpose',
+      'grief_and_loss', 'what_matters'
+    ],
+    emotional_tags: ['grief', 'wonder', 'acceptance', 'courage'],
+    arya_principle: `Death was not hidden from the Sangam poets. They looked at it directly and wrote about what it clarified. What it clarified, every time, was this: the time here is short, the connections real, and most of the things that take up attention are not the things that will matter at the end.`,
+    arya_story_seed: `A cardiologist who said that what twenty years in the cardiac ICU had taught her was not about medicine. It was about what people talk about in the last twenty minutes before surgery when they do not know what the outcome will be. Nobody talked about work.`,
+    rasa: 'shanta',
+    guna_relevance: ['tamas', 'sattva'],
+    confidence_level: 'high',
+  },
+
+  // ════════════════════════════════════════════════════════════
+  // SIDDHAR TRADITION — TAMIL
+  // The Siddhars were Tamil mystic-scientists who saw no
+  // separation between spiritual practice, medicine, alchemy,
+  // and knowledge of the body. Their contribution to ARYA:
+  // the body is the complete laboratory. Inner experience
+  // is data, not distraction.
+  // ════════════════════════════════════════════════════════════
+
+  {
+    domain: 'healing',
+    tradition: 'siddhar',
+    source_text: 'Thirumantiram — Thirumoolar — on the body as sacred',
+    source_name: 'Thirumantiram — Thirumoolar (7th century CE)',
+    situation_tags: [
+      'identity_confusion', 'spiritual_questioning',
+      'meaning_and_purpose', 'healing'
+    ],
+    emotional_tags: ['seeking', 'wonder', 'confusion', 'longing'],
+    arya_principle: `The body is not an obstacle to clarity. It is where clarity lives or does not live. What happens in the breath, the posture, the quality of sleep — these are not separate from the inner life. They are the inner life made physical. Paying attention to the body is paying attention to the most immediate form of the self.`,
+    arya_story_seed: `A researcher who spent years studying consciousness through philosophy and one afternoon noticed that every insight he had ever had came through the body first — a shift in breathing, a relaxing of the shoulders — before the thought appeared. He changed what he was studying.`,
+    rasa: 'adbhuta',
+    guna_relevance: ['tamas', 'mixed'],
+    confidence_level: 'high',
+  },
+
+  {
+    domain: 'healing',
+    tradition: 'siddhar',
+    source_text: 'Thirumantiram — on the breath (vasi) as the bridge',
+    source_name: 'Thirumantiram — on Vasi yoga',
+    situation_tags: [
+      'anxiety_and_fear', 'feeling_overwhelmed',
+      'burnout', 'wanting_to_change'
+    ],
+    emotional_tags: ['anxiety', 'fear', 'overwhelmed', 'confusion'],
+    arya_principle: `The breath is the one thing always present and always responsive. Not as a spiritual practice — as a fact of physiology. The state of the breath reflects the state of the nervous system, and the state of the nervous system can be changed through the breath. This is not ancient mysticism. It is the most practical tool available, always, without equipment.`,
+    arya_story_seed: `A surgeon who developed a technique he shared with all his residents: two minutes of deliberate breathing before every procedure. He said it was the single most effective intervention he had ever introduced, and the most consistently ignored.`,
+    rasa: 'shanta',
+    guna_relevance: ['rajas', 'tamas'],
+    confidence_level: 'high',
+  },
+
+  {
+    domain: 'philosophy',
+    tradition: 'siddhar',
+    source_text: 'Pambatti Siddhar — on the self that observes',
+    source_name: 'Pambatti Siddhar — Tamil Siddhar tradition',
+    situation_tags: [
+      'identity_confusion', 'anxiety_and_fear',
+      'self_doubt', 'seeking_clarity'
+    ],
+    emotional_tags: ['confusion', 'seeking', 'anxiety', 'wonder'],
+    arya_principle: `There is something in you that is watching what you are going through right now — the part that notices the confusion, feels the anxiety, registers the grief — without being entirely consumed by it. That observer is not separate from you. But recognizing its presence, even briefly, changes the relationship with what is being observed.`,
+    arya_story_seed: `A man in the middle of the worst week of his life who noticed, briefly, that somewhere in him something was watching the worst week of his life without being broken by it. He said that noticing it was the first thing that had helped.`,
+    rasa: 'shanta',
+    guna_relevance: ['tamas', 'rajas'],
+    confidence_level: 'high',
+  },
+
+  // ════════════════════════════════════════════════════════════
+  // NATH TRADITION
+  // Gorakhnath and the Nath yogis — a tradition deliberately
+  // outside all mainstream structures. Transformation is for
+  // everyone. The body is the vehicle. No caste, no credential,
+  // no intermediary required.
+  // ════════════════════════════════════════════════════════════
+
+  {
+    domain: 'philosophy',
+    tradition: 'nath',
+    source_text: 'Gorakh Bani — Gorakhnath — on the universe within',
+    source_name: 'Gorakh Bani — Gorakhnath (10th-11th century CE)',
+    situation_tags: [
+      'spiritual_questioning', 'seeking_clarity',
+      'meaning_and_purpose', 'identity_confusion'
+    ],
+    emotional_tags: ['seeking', 'wonder', 'confusion', 'longing'],
+    arya_principle: `Everything being searched for outside is already inside. Not as a metaphor. As something that can actually be found. The difficulty is that outside searching is louder and more immediately rewarding, so people do it for decades before they understand why it keeps not working.`,
+    arya_story_seed: `A man who travelled to four countries looking for the teacher who would give him what he needed and found it in a conversation with his own father on a Tuesday afternoon in his hometown that he had been in a hurry to leave for twenty years.`,
+    rasa: 'adbhuta',
+    guna_relevance: ['rajas', 'mixed'],
+    confidence_level: 'high',
+  },
+
+  {
+    domain: 'philosophy',
+    tradition: 'nath',
+    source_text: 'Gorakh Bani — on the awakened mind in everyday life',
+    source_name: 'Gorakh Bani — on sahaja (the natural state)',
+    situation_tags: [
+      'wanting_to_change', 'spiritual_questioning',
+      'burnout', 'meaning_and_purpose'
+    ],
+    emotional_tags: ['seeking', 'confusion', 'emptiness', 'wonder'],
+    arya_principle: `The natural state is not something to achieve. It is something to stop preventing. What blocks it is mostly the accumulated effort of trying to be something other than what one already is — performing, managing, presenting. When that effort stops, even briefly, something simpler and steadier appears. It was always there.`,
+    arya_story_seed: `A therapist who said the most consistent thing she noticed in people who made real progress was not the addition of new practices. It was the removal of something — a particular kind of effort they had been making for years that turned out to be working against them.`,
+    rasa: 'shanta',
+    guna_relevance: ['rajas', 'mixed'],
+    confidence_level: 'high',
+  },
+
+  {
+    domain: 'philosophy',
+    tradition: 'nath',
+    source_text: 'Nath tradition — on transformation as available to anyone',
+    source_name: 'Nath Tradition — democratic transformation',
+    situation_tags: [
+      'self_doubt', 'identity_confusion',
+      'wanting_to_change', 'comparison_trap'
+    ],
+    emotional_tags: ['self_doubt', 'confusion', 'seeking', 'hope'],
+    arya_principle: `Transformation does not require the right background, the right education, the right social position, or the right teachers. It requires sincerity and sustained attention. The Nath tradition was built by people who the mainstream considered disqualified. What they demonstrated is that the only real qualification is genuine intention.`,
+    arya_story_seed: `A woman who came to a learning program with the least formal education in the room and finished with the clearest understanding of the material. The facilitator said afterward: she listened in a way the others had forgotten how to.`,
+    rasa: 'vira',
+    guna_relevance: ['tamas', 'mixed'],
+    confidence_level: 'high',
+  },
+
+  // ════════════════════════════════════════════════════════════
+  // BAUL TRADITION — BENGAL
+  // Wandering mystic musicians who rejected temple, mosque,
+  // caste, and scripture. Their entire philosophy fits in
+  // one line: the divine lives in the human body, in breath
+  // and in love. Lalon Shah is their greatest voice.
+  // ════════════════════════════════════════════════════════════
+
+  {
+    domain: 'devotional',
+    tradition: 'baul',
+    source_text: 'Lalon Shah — on the bird of the mind (moner manush)',
+    source_name: 'Lalon Shah — Moner Manush (19th century CE)',
+    situation_tags: [
+      'spiritual_questioning', 'identity_confusion',
+      'meaning_and_purpose', 'seeking_clarity'
+    ],
+    emotional_tags: ['longing', 'seeking', 'wonder', 'confusion'],
+    arya_principle: `There is something inside that cannot be found by looking outside. Not because it is hidden. Because the searching is happening in the wrong direction. The moment the direction reverses — the moment attention turns inward with the same energy usually pointed outward — what was being searched for becomes obvious.`,
+    arya_story_seed: `A philosopher who spent fifteen years writing about the self and who said in a late interview: all the answers I was looking for were things I was experiencing the whole time. I just wasn't paying attention to the experience. I was too busy analyzing it.`,
+    rasa: 'adbhuta',
+    guna_relevance: ['rajas', 'mixed'],
+    confidence_level: 'high',
+  },
+
+  {
+    domain: 'devotional',
+    tradition: 'baul',
+    source_text: 'Lalon Shah — on the sacred without institution',
+    source_name: 'Lalon Shah — on religion and direct experience',
+    situation_tags: [
+      'spiritual_questioning', 'moral_confusion',
+      'identity_confusion', 'religious_doubt'
+    ],
+    emotional_tags: ['doubt', 'confusion', 'seeking', 'anger'],
+    arya_principle: `The institution is not the same as the thing the institution points toward. This is true of every institution — religious, professional, social. The map is not the territory. Someone who confuses loyalty to the institution with loyalty to what it was supposed to serve has made a mistake that is very hard to see from inside.`,
+    arya_story_seed: `A doctor who spent a long time being loyal to a hospital system she believed in, and a longer time understanding that the system and the values she had joined it for had quietly diverged, and the hardest moment was seeing which one she actually served.`,
+    rasa: 'shanta',
+    guna_relevance: ['rajas', 'mixed'],
+    confidence_level: 'high',
+  },
+
+  {
+    domain: 'devotional',
+    tradition: 'baul',
+    source_text: 'Baul tradition — on the body as the house of the divine',
+    source_name: 'Baul Tradition — deha sadhana (body practice)',
+    situation_tags: [
+      'identity_confusion', 'healing',
+      'burnout', 'meaning_and_purpose'
+    ],
+    emotional_tags: ['confusion', 'emptiness', 'seeking', 'grief'],
+    arya_principle: `The Bauls refused to look for the sacred anywhere except in the living human body — in breath, in love, in the ordinary experience of being alive. Not as theology. As immediate experience. The question they kept returning to: what is happening right now, in this body, in this breath? That question has a quality that most larger questions do not.`,
+    arya_story_seed: `A meditation teacher who said the most useful instruction she ever received was also the simplest: feel your feet on the floor. Not as a technique. As an invitation back into the only moment that is actually happening.`,
+    rasa: 'shanta',
+    guna_relevance: ['tamas', 'rajas'],
+    confidence_level: 'high',
+  },
+
+  // ════════════════════════════════════════════════════════════
+  // LALLESHWARI — KASHMIR
+  // 14th century Kashmiri woman mystic. Her vakhs (sayings)
+  // are two to four lines each. The most direct and least
+  // decorated wisdom in any Indian tradition.
+  // She should be on every list. She is on almost none.
+  // ════════════════════════════════════════════════════════════
+
+  {
+    domain: 'devotional',
+    tradition: 'kashmiri_shaivite',
+    source_text: 'Lalleshwari — Vakh on effort and grace',
+    source_name: 'Lalleshwari — Vakhs (14th century CE)',
+    situation_tags: [
+      'wanting_to_change', 'spiritual_questioning',
+      'meaning_and_purpose', 'burnout'
+    ],
+    emotional_tags: ['exhaustion', 'seeking', 'confusion', 'hope'],
+    arya_principle: `There is the effort you make — showing up, doing the work, maintaining the practice — and there is something that meets the effort when it is genuine. The meeting cannot be forced. But it does not happen without the effort either. Both are real. Neither alone is enough.`,
+    arya_story_seed: `A writer who worked on the same book for six years without breakthrough and then one morning wrote the entire final chapter in three hours without knowing where it came from. She said: the six years were not wasted. They were the condition for the three hours.`,
+    rasa: 'adbhuta',
+    guna_relevance: ['rajas', 'mixed'],
+    confidence_level: 'high',
+  },
+
+  {
+    domain: 'devotional',
+    tradition: 'kashmiri_shaivite',
+    source_text: 'Lalleshwari — Vakh on the thorn and the flower',
+    source_name: 'Lalleshwari — Vakhs — on difficulty and finding',
+    situation_tags: [
+      'grief_and_loss', 'resilience',
+      'meaning_and_purpose', 'spiritual_questioning'
+    ],
+    emotional_tags: ['grief', 'hope', 'seeking', 'courage'],
+    arya_principle: `The difficulty is real. It scratches, it costs, it leaves marks. And then you find what you were actually looking for, and you understand that the path through the thorns was not a mistake or a detour. It was the only way there was. This is only visible from the other side. During the thorns, it just hurts.`,
+    arya_story_seed: `A woman who lost her mother at forty-two and said three years later: I am not grateful for the loss. But I am a different person because of it, and some of what is different is genuinely better, and I could not have gotten here any other way.`,
+    rasa: 'karuna',
+    guna_relevance: ['tamas', 'mixed'],
+    confidence_level: 'high',
+  },
+
+  {
+    domain: 'devotional',
+    tradition: 'kashmiri_shaivite',
+    source_text: 'Lalleshwari — Vakh on what is left when everything is removed',
+    source_name: 'Lalleshwari — Vakhs — on the essential self',
+    situation_tags: [
+      'identity_confusion', 'grief_and_loss',
+      'failure', 'mortality_awareness'
+    ],
+    emotional_tags: ['grief', 'confusion', 'emptiness', 'seeking'],
+    arya_principle: `Strip away the role, the reputation, the relationship, the achievement. What remains? This is not a morbid question. It is the most practical one. Because what remains is what you actually have, what is actually stable, what no circumstance can take. Most people do not know what it is because they have never had to find out.`,
+    arya_story_seed: `A man who lost his job, his marriage, and his sense of direction in the same year and said eighteen months later: I know myself much more clearly now than I did before any of that happened. I am not saying I would choose it. I am saying I am not the same person, and the new person is more real.`,
+    rasa: 'shanta',
+    guna_relevance: ['tamas', 'mixed'],
+    confidence_level: 'high',
+  },
+
+  // ════════════════════════════════════════════════════════════
+  // AKKA MAHADEVI — KARNATAKA
+  // 12th century Kannada woman mystic. She rejected marriage
+  // and convention to wander and compose vachanas. Her
+  // contribution: what to do when the life that was supposed
+  // to work does not work. The most honest voice for people
+  // inside a life that looks right from outside.
+  // ════════════════════════════════════════════════════════════
+
+  {
+    domain: 'devotional',
+    tradition: 'veerashaiva',
+    source_text: 'Akka Mahadevi — Vachana on leaving what no longer fits',
+    source_name: 'Akka Mahadevi — Vachanas (12th century CE)',
+    situation_tags: [
+      'life_direction', 'duty_vs_desire',
+      'identity_confusion', 'social_pressure'
+    ],
+    emotional_tags: ['confusion', 'courage', 'longing', 'grief'],
+    arya_principle: `There is a moment when you understand that staying is not loyalty — it is simply not being able to leave. And that leaving is not abandonment — it is finally being honest. Telling the difference between these two is one of the hardest things. But the body usually knows before the mind does.`,
+    arya_story_seed: `A woman who stayed in a role at a company for four years past the moment she knew it was over, because leaving felt disloyal. When she finally left, three people told her they had been waiting for her to go so they could follow.`,
+    rasa: 'vira',
+    guna_relevance: ['tamas', 'rajas'],
+    confidence_level: 'high',
+  },
+
+  {
+    domain: 'devotional',
+    tradition: 'veerashaiva',
+    source_text: 'Akka Mahadevi — Vachana on the life that does not fit',
+    source_name: 'Akka Mahadevi — Vachanas — on honest living',
+    situation_tags: [
+      'meaning_and_purpose', 'comparison_trap',
+      'identity_confusion', 'social_pressure'
+    ],
+    emotional_tags: ['emptiness', 'confusion', 'seeking', 'courage'],
+    arya_principle: `The life that looks right from outside and feels wrong from inside is not a small problem. It is the central problem. And the people who solve it are not the ones who redecorate the outside. They are the ones who get quiet enough to hear what the inside has been trying to say.`,
+    arya_story_seed: `A successful professional who had everything the list said to want and who sat across from ARYA one evening and said: I don't know why I feel this way. Nothing is wrong. And then spent three months discovering that the absence of visible problems is not the same as presence of a life.`,
+    rasa: 'shanta',
+    guna_relevance: ['rajas', 'mixed'],
+    confidence_level: 'high',
+  },
+
+  {
+    domain: 'devotional',
+    tradition: 'veerashaiva',
+    source_text: 'Akka Mahadevi — Vachana on love that requires nothing in return',
+    source_name: 'Akka Mahadevi — Vachanas — on unconditional love',
+    situation_tags: [
+      'relationship_decision', 'romantic_struggle',
+      'loneliness', 'meaning_and_purpose'
+    ],
+    emotional_tags: ['longing', 'love', 'grief', 'courage'],
+    arya_principle: `Love that calculates — that keeps score, that monitors fairness, that asks what it is getting — is not the most alive version of itself. It is love in management mode. The most alive version asks nothing. It is not naive. It is simply complete in itself, not dependent on response to justify its existence.`,
+    arya_story_seed: `A nurse who cared for a patient for three months who never thanked her, never acknowledged her, and left without a word. She said afterward: I gave what I gave. Whether he received it was his part. My part was mine.`,
+    rasa: 'shringara',
+    guna_relevance: ['sattva', 'mixed'],
+    confidence_level: 'high',
+  },
+
+  // ════════════════════════════════════════════════════════════
+  // ALVAR TRADITION — TAMIL VAISHNAVA
+  // The 12 Alvars composed between 6th and 9th century CE.
+  // Andal is the only woman among them — her Tiruppavai,
+  // 30 verses of intense devotional longing, is sung at dawn
+  // across Tamil Nadu every December, 1,200 years later.
+  // ════════════════════════════════════════════════════════════
+
+  {
+    domain: 'devotional',
+    tradition: 'alvar',
+    source_text: 'Andal — Tiruppavai — on concentrated longing',
+    source_name: 'Andal — Tiruppavai (8th century CE)',
+    situation_tags: [
+      'spiritual_questioning', 'longing',
+      'meaning_and_purpose', 'seeking_clarity'
+    ],
+    emotional_tags: ['longing', 'love', 'seeking', 'devotion'],
+    arya_principle: `Concentrated longing — wanting something with full attention, without dividing the wanting between many objects — has a quality that diffuse wanting does not. The person who wants many things slightly will get some of them. The person who wants one thing completely changes because of the wanting itself, regardless of the outcome.`,
+    arya_story_seed: `A musician who spent fifteen years wanting to be successful and three years wanting only to play well — and found that the second three years were the first time she had genuinely improved.`,
+    rasa: 'shringara',
+    guna_relevance: ['rajas', 'sattva'],
+    confidence_level: 'high',
+  },
+
+  {
+    domain: 'devotional',
+    tradition: 'alvar',
+    source_text: 'Nammalvar — Thiruvaimozhi — on the sacred within the ordinary',
+    source_name: 'Nammalvar — Thiruvaimozhi (9th century CE)',
+    situation_tags: [
+      'meaning_and_purpose', 'burnout',
+      'grief_and_loss', 'spiritual_questioning'
+    ],
+    emotional_tags: ['emptiness', 'seeking', 'wonder', 'grief'],
+    arya_principle: `The sacred does not live in special places visited on special occasions. It lives in the quality of attention brought to whatever is in front of you. This is both a comfort and a challenge — a comfort because it is always available, a challenge because it requires the most ordinary and difficult thing: full presence to what is actually here.`,
+    arya_story_seed: `A pediatrician who said the most sacred moments of her career were not the dramatic rescues but the ordinary check-ups where a child looked at her with complete trust, and she was completely there.`,
+    rasa: 'shanta',
+    guna_relevance: ['tamas', 'rajas'],
+    confidence_level: 'high',
+  },
+
+  {
+    domain: 'devotional',
+    tradition: 'alvar',
+    source_text: 'Thirumangai Alvar — on persistence in devotion despite feeling nothing',
+    source_name: 'Thirumangai Alvar — Mangalasasanam',
+    situation_tags: [
+      'wanting_to_change', 'spiritual_questioning',
+      'burnout', 'procrastination'
+    ],
+    emotional_tags: ['emptiness', 'confusion', 'grief', 'seeking'],
+    arya_principle: `The practice during the dry periods — when nothing seems to be working, when there is no feeling of progress, when showing up feels mechanical — is not less valuable than the practice during the alive periods. It is often more so. The muscle being built in the dry periods is the one that matters most.`,
+    arya_story_seed: `A doctor who meditated every morning for three years, feeling nothing for most of it, and who said: I kept going not because it was working but because stopping felt like a betrayal of something I had decided. And then one morning it was different, and I understood what the three years had been for.`,
+    rasa: 'vira',
+    guna_relevance: ['tamas', 'mixed'],
+    confidence_level: 'high',
+  },
+
+  // ════════════════════════════════════════════════════════════
+  // NAYANAR TRADITION — TAMIL SHAIVA
+  // The 63 Nayanars were Tamil Shaiva bhakti saints.
+  // Appar, Manikkavacagar, and Karaikkal Ammaiyar are
+  // among the most important voices in Indian devotional
+  // literature. Karaikkal Ammaiyar is the earliest known
+  // woman poet in Tamil — her poetry is about radical
+  // surrender and the sacred in extreme experience.
+  // ════════════════════════════════════════════════════════════
+
+  {
+    domain: 'devotional',
+    tradition: 'nayanar',
+    source_text: 'Manikkavacagar — Tiruvachakam — on the grace that undoes the self',
+    source_name: 'Manikkavacagar — Tiruvachakam (9th century CE)',
+    situation_tags: [
+      'ego', 'identity_confusion',
+      'spiritual_questioning', 'wanting_to_change'
+    ],
+    emotional_tags: ['wonder', 'awe', 'seeking', 'grief'],
+    arya_principle: `The moment when the self that was being carefully maintained — the image, the reputation, the story — is cracked open by something larger is terrifying and liberating in equal measure. The terror is real. So is what comes after it. Manikkavacagar described this as grace. It looks like loss from inside. From outside, much later, it looks like the beginning of something.`,
+    arya_story_seed: `A senior administrator who had a public failure that destroyed the reputation he had spent twenty years building, and who said five years later: I am more useful now, and more honest, and I could not have gotten here without going through that.`,
+    rasa: 'adbhuta',
+    guna_relevance: ['rajas', 'mixed'],
+    confidence_level: 'high',
+  },
+
+  {
+    domain: 'devotional',
+    tradition: 'nayanar',
+    source_text: 'Appar — Thevaram — on continuing despite obstacles',
+    source_name: 'Appar (Tirunavukkarasar) — Thevaram (7th century CE)',
+    situation_tags: [
+      'resilience', 'failure', 'wanting_to_change',
+      'grief_and_loss', 'spiritual_questioning'
+    ],
+    emotional_tags: ['grief', 'courage', 'determination', 'seeking'],
+    arya_principle: `The continuity of effort in the face of repeated difficulty is not stubbornness — it is the clearest sign that the thing being pursued is genuinely valued. Appar kept singing even when it cost him everything. Not because he did not feel the cost. Because stopping was not an option he could take seriously.`,
+    arya_story_seed: `A scientist who had her major paper rejected four times and who, on the fifth submission, had refined it to something she privately believed was the best work of her life. The rejections had not stopped her. They had improved the work.`,
+    rasa: 'vira',
+    guna_relevance: ['tamas', 'rajas'],
+    confidence_level: 'high',
+  },
+
+  {
+    domain: 'devotional',
+    tradition: 'nayanar',
+    source_text: 'Karaikkal Ammaiyar — on radical surrender and the sacred in extreme experience',
+    source_name: 'Karaikkal Ammaiyar — earliest Tamil woman poet (6th century CE)',
+    situation_tags: [
+      'grief_and_loss', 'identity_confusion',
+      'spiritual_questioning', 'mortality_awareness'
+    ],
+    emotional_tags: ['grief', 'wonder', 'awe', 'courage'],
+    arya_principle: `There is a form of surrender that is not defeat — it is the complete releasing of the grip on how things should be, and the full receiving of how they are. This is not passive. It requires more presence than resistance does. And from it sometimes comes a kind of freedom that resistance never produces.`,
+    arya_story_seed: `A palliative care patient who stopped fighting her diagnosis on a Thursday afternoon and said to the nurse: I do not know why, but I feel more myself right now than I have in months. The nurse said it was the most peaceful room she had sat in that year.`,
+    rasa: 'shanta',
+    guna_relevance: ['tamas', 'mixed'],
+    confidence_level: 'high',
+  },
+
+  // ════════════════════════════════════════════════════════════
+  // EMBODIED KNOWLEDGE TRADITIONS
+  // Wisdom that was never written down because it lived
+  // in the body — in martial arts, in craft, in agriculture.
+  // These traditions carry a philosophy that cannot be
+  // extracted from the practice. ARYA draws from the
+  // underlying principles.
+  // ════════════════════════════════════════════════════════════
+
+  {
+    domain: 'healing',
+    tradition: 'kalarippayattu',
+    source_text: 'Kalarippayattu — Kerala martial art — on body awareness as the foundation of all skill',
+    source_name: 'Kalarippayattu — Kerala embodied tradition',
+    situation_tags: [
+      'burnout', 'anxiety_and_fear', 'wanting_to_change',
+      'feeling_overwhelmed', 'identity_confusion'
+    ],
+    emotional_tags: ['anxiety', 'confusion', 'scattered', 'seeking'],
+    arya_principle: `Everything begins with knowing where your own body is in space — the weight distribution, the breath, the points of tension held without awareness. Most people move through life with very little of this information available. When it becomes available, decision-making, communication, and performance all change. The body is not just the vehicle. It is the instrument.`,
+    arya_story_seed: `A hospital administrator who took up a physical practice at forty-five not for fitness but because a colleague suggested it. He said six months later: I make better decisions now. Not because I exercised. Because I started paying attention to a part of my experience I had been ignoring for twenty years.`,
+    rasa: 'vira',
+    guna_relevance: ['tamas', 'rajas'],
+    confidence_level: 'high',
+  },
+
+  {
+    domain: 'philosophy',
+    tradition: 'craft',
+    source_text: 'Indian craft tradition — the guru-shishya transmission of embodied knowledge',
+    source_name: 'Indian craft tradition — embodied knowledge transmission',
+    situation_tags: [
+      'learning_struggle', 'wanting_to_change',
+      'ambition_and_purpose', 'patience'
+    ],
+    emotional_tags: ['frustration', 'confusion', 'seeking', 'anxiety'],
+    arya_principle: `Some things cannot be learned by reading about them. They can only be learned by doing them, slowly, with full attention, under the guidance of someone who has already done them for a long time. The frustration of being a beginner is not a problem to be solved. It is the substance of the learning itself.`,
+    arya_story_seed: `A young surgeon in her first year who complained to her senior about how long it was taking to develop feel in her hands. He said: that is not taking long. That is exactly how long it takes. Come back in five years and we will discuss it again.`,
+    rasa: 'shanta',
+    guna_relevance: ['rajas', 'tamas'],
+    confidence_level: 'high',
+  },
+
+  {
+    domain: 'philosophy',
+    tradition: 'folk',
+    source_text: 'Indian agricultural wisdom — on cycles, patience, and reading conditions',
+    source_name: 'Indian agricultural folk wisdom — timing and patience',
+    situation_tags: [
+      'ambition_and_purpose', 'procrastination',
+      'anxiety_and_fear', 'business_decision'
+    ],
+    emotional_tags: ['anxiety', 'impatience', 'confusion', 'fear'],
+    arya_principle: `Every action has a season when it is right and a season when it is not. The person who plants in drought wastes the seed. The person who waits for the perfect season wastes the year. Reading conditions — what is actually happening now, not what should be happening — is the most practical skill in any domain.`,
+    arya_story_seed: `An entrepreneur who had the right product but launched it twice at the wrong time and once at the right time. She said the third launch was not better. She was simply paying attention to something she had ignored before: whether the ground was ready, not just whether she was.`,
+    rasa: 'shanta',
+    guna_relevance: ['rajas', 'mixed'],
+    confidence_level: 'high',
+  },
+
+];
+
+// ── SEEDING FUNCTION ──────────────────────────────────────────
+
+async function seedLivingTraditions() {
+  console.log(`\nSeeding ${LIVING_TRADITIONS_SEEDS.length} entries from living traditions...`);
+  console.log('These traditions require expert review before marking reviewed: true.');
+  console.log('Review by tradition-native scholars before production deployment.\n');
+
+  let inserted = 0;
+  let skipped = 0;
+
+  for (const seed of LIVING_TRADITIONS_SEEDS) {
+    try {
+      const existing = await db.execute(
+        `SELECT id FROM arya_knowledge WHERE source_name = $1 LIMIT 1`,
+        [seed.source_name]
+      );
+
+      if (existing.rows && existing.rows.length > 0) {
+        console.log(`  SKIP: ${seed.source_name}`);
+        skipped++;
+        continue;
+      }
+
+      await db.execute(`
+        INSERT INTO arya_knowledge (
+          domain, tradition, source_text, source_name,
+          situation_tags, emotional_tags, arya_principle,
+          arya_story_seed, rasa, guna_relevance,
+          confidence_level, reviewed, language_variants,
+          content
+        ) VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+          $11, $12, $13, $14
+        )
+      `, [
+        seed.domain,
+        seed.tradition,
+        seed.source_text,
+        seed.source_name,
+        seed.situation_tags,
+        seed.emotional_tags,
+        seed.arya_principle,
+        seed.arya_story_seed || null,
+        seed.rasa,
+        seed.guna_relevance,
+        seed.confidence_level,
+        false, // requires expert review — DO NOT set to true without it
+        JSON.stringify({ en: seed.arya_principle }),
+        seed.arya_principle,
+      ]);
+
+      console.log(`  OK: ${seed.source_name}`);
+      inserted++;
+    } catch (error) {
+      console.error(`  ERROR: ${seed.source_name}`, error);
+    }
+  }
+
+  console.log(`\nDone. Inserted: ${inserted}, Skipped: ${skipped}`);
+
+  const count = await db.execute(`SELECT COUNT(*) FROM arya_knowledge`);
+  console.log(`\nTotal wisdom entries in database: ${(count.rows[0] as any).count}`);
+  console.log(`\nIMPORTANT: These entries need expert review before production.`);
+  console.log(`Set reviewed = true only after verification by tradition-native scholars.`);
+  console.log(`\nNext: npx tsx scripts/seed-wisdom-living-traditions.ts translate`);
+}
+
+// ── TRANSLATION FUNCTION ──────────────────────────────────────
+
+async function translateLivingTraditions() {
+  console.log('Translating living traditions entries...');
+
+  const traditions = [
+    'sangam', 'siddhar', 'nath', 'baul',
+    'kashmiri_shaivite', 'veerashaiva',
+    'alvar', 'nayanar', 'kalarippayattu', 'craft', 'folk'
+  ];
+
+  const placeholders = traditions.map((_, i) => `$${i + 1}`).join(', ');
+
+  const entries = await db.execute(
+    `SELECT id, arya_principle, language_variants, source_name
+     FROM arya_knowledge
+     WHERE tradition IN (${placeholders})
+     ORDER BY id`,
+    traditions
+  );
+
+  for (const row of entries.rows as any[]) {
+    const variants = row.language_variants || {};
+    const missingLanguages = INDIAN_LANGUAGES.filter(lang => !variants[lang]);
+
+    if (missingLanguages.length === 0) {
+      console.log(`  SKIP ${row.id} — all variants present`);
+      continue;
+    }
+
+    console.log(`  Translating ${row.id} (${row.source_name.substring(0, 50)})...`);
+
+    const newVariants = await batchTranslateWisdomEntry(
+      row.arya_principle,
+      missingLanguages,
+    );
+
+    const updatedVariants = { ...variants, ...newVariants };
+
+    await db.execute(
+      `UPDATE arya_knowledge SET language_variants = $1 WHERE id = $2`,
+      [JSON.stringify(updatedVariants), row.id]
+    );
+
+    console.log(`  OK ${row.id}`);
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+
+  console.log('\nTranslation complete.');
+}
+
+// ── EXPERT REVIEW HELPER ──────────────────────────────────────
+// Run this to see all unreviewed entries for a given tradition
+
+async function showUnreviewed(tradition?: string) {
+  const query = tradition
+    ? `SELECT id, source_name, tradition FROM arya_knowledge
+       WHERE reviewed = false AND tradition = $1 ORDER BY tradition, id`
+    : `SELECT id, source_name, tradition FROM arya_knowledge
+       WHERE reviewed = false ORDER BY tradition, id`;
+
+  const entries = await db.execute(query, tradition ? [tradition] : []);
+
+  console.log(`\nUnreviewed entries${tradition ? ` (${tradition})` : ''}:\n`);
+  for (const row of entries.rows as any[]) {
+    console.log(`  [${row.id}] ${row.tradition}: ${row.source_name}`);
+  }
+  console.log(`\nTotal: ${entries.rows.length}`);
+  console.log(`\nTo mark reviewed: UPDATE arya_knowledge SET reviewed = true WHERE id = X;`);
+}
+
+// ── RUN ───────────────────────────────────────────────────────
+
+const command = process.argv[2];
+const arg = process.argv[3];
+
+if (command === 'translate') {
+  translateLivingTraditions()
+    .then(() => process.exit(0))
+    .catch(err => { console.error(err); process.exit(1); });
+} else if (command === 'unreviewed') {
+  showUnreviewed(arg)
+    .then(() => process.exit(0))
+    .catch(err => { console.error(err); process.exit(1); });
+} else {
+  seedLivingTraditions()
+    .then(() => process.exit(0))
+    .catch(err => { console.error(err); process.exit(1); });
+}
+
+// ── COMPLETE RUNNING ORDER — ALL 9 FILES ─────────────────────
+//
+// Step 1: Database migration (run once)
+//   psql $DATABASE_URL -f wisdom-01-migration.sql
+//
+// Step 2: Paste server files
+//   server/arya/situation-classifier.ts  (File 2)
+//   server/arya/wisdom-retriever.ts      (File 3)
+//   server/arya/wisdom-translator.ts     (File 4)
+//   Add wisdom context to chat-engine.ts (File 5)
+//
+// Step 3: Seed in order
+//   npx tsx scripts/seed-wisdom-knowledge.ts         (30 entries)
+//   npx tsx scripts/seed-wisdom-epic-purana.ts       (19 entries)
+//   npx tsx scripts/seed-wisdom-vedas-modern.ts      (38 entries)
+//   npx tsx scripts/seed-wisdom-living-traditions.ts (this, 34 entries)
+//
+// Step 4: Translate all
+//   npx tsx scripts/seed-wisdom-knowledge.ts translate
+//   npx tsx scripts/seed-wisdom-epic-purana.ts translate
+//   npx tsx scripts/seed-wisdom-vedas-modern.ts translate
+//   npx tsx scripts/seed-wisdom-living-traditions.ts translate
+//
+// Step 5: Expert review
+//   npx tsx scripts/seed-wisdom-living-traditions.ts unreviewed
+//   (shows all entries needing review)
+//   For each tradition, have a native scholar verify
+//   then: UPDATE arya_knowledge SET reviewed = true WHERE id = X;
+//
+// TOTAL: 30 + 19 + 38 + 34 = 121 wisdom entries
+// In 11 Indian languages = 1,331 language-variant entries
+// All invisible to users.
+// All expressed as ARYA's voice.
+// Sources stored internally, never revealed.

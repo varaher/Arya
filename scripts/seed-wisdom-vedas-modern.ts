@@ -1,0 +1,502 @@
+// ══════════════════════════════════════════════════════════════════════════════
+//  ARYA WISDOM — Vedas, Shiva Purana, Bhakti & Modern Classics Seed Script
+//
+//  Covers: Four Vedas, Shiva Purana, Narada Bhakti Sutras,
+//          Ramacharitamanas (Tulsidas), Gospel of Sri Ramakrishna,
+//          Autobiography of a Yogi (Yogananda),
+//          Principal Upanishads (Radhakrishnan commentary)
+//
+//  Usage:
+//    npx tsx scripts/seed-wisdom-vedas-modern.ts            — seed entries
+//    npx tsx scripts/seed-wisdom-vedas-modern.ts translate  — fill variants
+//    npx tsx scripts/seed-wisdom-vedas-modern.ts stats      — show stats
+//
+//  CRITICAL RULE: source_name is INTERNAL ONLY. arya_principle is what
+//  ARYA draws from — never quoted, never attributed, always ARYA's voice.
+// ══════════════════════════════════════════════════════════════════════════════
+
+import "dotenv/config";
+import { Pool } from "pg";
+import { batchTranslateWisdomEntry } from "../server/arya/wisdom-translator";
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+// Domain mapper — our schema allows: medical, business, sanskrit, chanakya, jyotish, stories
+function mapDomain(d: string) {
+  if (d === "philosophy" || d === "devotional") return "sanskrit";
+  if (d === "healing") return "medical";
+  return "sanskrit";
+}
+
+const SEEDS = [
+
+  // ── RIG VEDA ────────────────────────────────────────────────
+
+  {
+    domain: "philosophy", tradition: "vedantic",
+    source_name: "Rig Veda 1.164.46",
+    situation_tags: ["spiritual_questioning","identity_confusion","moral_confusion","seeking_clarity","religious_doubt"],
+    emotional_tags: ["confusion","seeking","wonder","doubt"],
+    arya_principle: "Truth is one. The paths toward it are many, and different people name it differently. This is not a problem to be resolved — different names, different approaches, all reaching toward the same thing. The question worth sitting with is not which path is correct. It is whether the path you are on is genuine.",
+    arya_story_seed: "Three travellers who grew up in different villages, each with a different name for the mountain they all climbed, who reached the summit and laughed at themselves for the arguments they had held at the base.",
+    rasa: "adbhuta", guna_relevance: ["sattva","mixed"], confidence_level: "high", reviewed: true,
+  },
+
+  {
+    domain: "philosophy", tradition: "vedantic",
+    source_name: "Rig Veda 10.129 — Nasadiya Sukta",
+    situation_tags: ["spiritual_questioning","existential_confusion","meaning_and_purpose","identity_confusion"],
+    emotional_tags: ["wonder","confusion","seeking","awe"],
+    arya_principle: "One of the oldest texts in human history ends not with a declaration but with a question: who truly knows how all of this began? Even the one who might know — perhaps does not. There is a kind of intellectual honesty in sitting with genuine uncertainty rather than filling it with borrowed certainty. It is not weakness. It is accuracy.",
+    arya_story_seed: "A physicist who spent forty years studying the origin of the universe and told her graduate students on her last day: the more precisely I can describe what happened, the less certain I am about why. And that is the most honest thing I can say.",
+    rasa: "adbhuta", guna_relevance: ["sattva","mixed"], confidence_level: "high", reviewed: true,
+  },
+
+  {
+    domain: "philosophy", tradition: "vedantic",
+    source_name: "Rig Veda 10.90 — Purush Sukta",
+    situation_tags: ["loneliness","meaning_and_purpose","identity_confusion","disconnection"],
+    emotional_tags: ["loneliness","emptiness","seeking","wonder"],
+    arya_principle: "Nothing in existence is truly separate. The sense of isolation — of being entirely alone in what you are carrying — is real as an experience. But it is not accurate as a description of reality. You are part of something that runs deeper and wider than the moment feels.",
+    arya_story_seed: "A man who moved to a new city and felt completely alone for eight months, until one morning watching the street from his window he noticed how many people were doing the same ordinary things at the same ordinary hour, and felt something shift.",
+    rasa: "shanta", guna_relevance: ["tamas","mixed"], confidence_level: "high", reviewed: true,
+  },
+
+  {
+    domain: "philosophy", tradition: "vedantic",
+    source_name: "Rig Veda — Vak Sukta (10.125)",
+    situation_tags: ["anger_and_conflict","workplace_conflict","family_conflict","communication"],
+    emotional_tags: ["anger","frustration","anxiety","confusion"],
+    arya_principle: "Words spoken in anger or fear carry a different weight than words spoken with care. Not because the feeling behind them is wrong — but because what is said in a charged moment often says more about the state we are in than what we actually mean. The pause before speaking is not hesitation. It is craft.",
+    arya_story_seed: "A surgeon known for difficult conversations with families who had a rule she never broke: she never gave bad news without first sitting down, even if it was just for thirty seconds. She said the quality of every conversation changed from that one thing.",
+    rasa: "shanta", guna_relevance: ["rajas"], confidence_level: "high", reviewed: true,
+  },
+
+  // ── SAMA VEDA ───────────────────────────────────────────────
+
+  {
+    domain: "devotional", tradition: "vedantic",
+    source_name: "Sama Veda — musical and devotional tradition",
+    situation_tags: ["burnout","feeling_overwhelmed","grief_and_loss","meaning_and_purpose","spiritual_questioning"],
+    emotional_tags: ["grief","emptiness","seeking","longing"],
+    arya_principle: "Some things that cannot be reached through thinking can be reached through beauty — music, art, the patterns in nature. Not as distraction. As a different route to the same place. When words and analysis reach their limit, something else sometimes opens.",
+    arya_story_seed: "A man who had not cried in six years, not at his father's funeral, not at anything — who sat at a concert and found tears coming from nowhere during a passage he could not even name afterward. He said it was the most relief he had felt in years.",
+    rasa: "karuna", guna_relevance: ["tamas","rajas"], confidence_level: "high", reviewed: true,
+  },
+
+  {
+    domain: "devotional", tradition: "vedantic",
+    source_name: "Sama Veda — on chant and its effects",
+    situation_tags: ["anxiety_and_fear","feeling_overwhelmed","wanting_to_change","burnout"],
+    emotional_tags: ["anxiety","fear","overwhelmed","scattered"],
+    arya_principle: "The breath is always available and always changes everything when attended to. Not as a technique. Just as a fact. When the mind is completely scattered, the breath is the one thing that is present, simple, and responsive. Starting there is always possible.",
+    arya_story_seed: "An emergency room physician who learned one thing in fifteen years that she taught every student: before entering a difficult situation, three full breaths. Not because it was spiritual. Because it worked, every time, without exception.",
+    rasa: "shanta", guna_relevance: ["rajas","tamas"], confidence_level: "high", reviewed: true,
+  },
+
+  // ── YAJUR VEDA ──────────────────────────────────────────────
+
+  {
+    domain: "philosophy", tradition: "vedantic",
+    source_name: "Yajur Veda — Shanti Patha",
+    situation_tags: ["anxiety_and_fear","feeling_overwhelmed","grief_and_loss","burnout","spiritual_questioning"],
+    emotional_tags: ["anxiety","fear","grief","seeking"],
+    arya_principle: "Peace is not the absence of difficulty. It is a quality of presence within it. The oldest prayers for peace understood this — they were not asking for problems to stop. They were asking for the capacity to remain steady while the problems continued. That is a different and more honest request.",
+    arya_story_seed: "A palliative care nurse who said the most peaceful people she had ever met were not the ones whose lives had been easiest. They were the ones who had stopped fighting with what was already true.",
+    rasa: "shanta", guna_relevance: ["rajas","tamas","mixed"], confidence_level: "high", reviewed: true,
+  },
+
+  {
+    domain: "philosophy", tradition: "vedantic",
+    source_name: "Yajur Veda — Ishavasyopanishad (embedded)",
+    situation_tags: ["meaning_and_purpose","moral_confusion","wanting_to_change","ambition_and_purpose"],
+    emotional_tags: ["confusion","seeking","guilt","anxiety"],
+    arya_principle: "Living well does not require renouncing the world. It requires living in it with full engagement and without the desperate grasping that comes from believing this moment is the only one, or this possession the only security. Full presence without white-knuckle grip. That is both the ideal and the lifelong practice.",
+    arya_story_seed: "A very successful businessman who worked as hard as ever after retirement, but differently — he said the only thing that changed was that he stopped mistaking what he was doing for who he was.",
+    rasa: "shanta", guna_relevance: ["rajas","mixed"], confidence_level: "high", reviewed: true,
+  },
+
+  // ── ATHARVA VEDA ────────────────────────────────────────────
+
+  {
+    domain: "healing", tradition: "vedantic",
+    source_name: "Atharva Veda — healing hymns",
+    situation_tags: ["burnout","grief_and_loss","anxiety_and_fear","feeling_overwhelmed","identity_confusion"],
+    emotional_tags: ["grief","exhaustion","fear","confusion"],
+    arya_principle: "Healing rarely happens in one place at a time. Something that presents as physical is often carrying an emotional weight. Something that presents as emotional often has a physical dimension that is being ignored. The person who tends to only one layer and wonders why the other persists is missing something important.",
+    arya_story_seed: "A patient with chronic back pain who had tried every physical treatment for three years. A doctor who asked about his home life. Three sessions later, the pain had reduced by half and he had not changed his posture once.",
+    rasa: "shanta", guna_relevance: ["tamas","mixed"], confidence_level: "high", reviewed: true,
+  },
+
+  {
+    domain: "healing", tradition: "vedantic",
+    source_name: "Atharva Veda — Bhumisukta (Earth hymn)",
+    situation_tags: ["anxiety_and_fear","loneliness","meaning_and_purpose","grief_and_loss"],
+    emotional_tags: ["fear","loneliness","grief","seeking"],
+    arya_principle: "There is something in the experience of being held by something larger — nature, a community, a tradition, a sense of the sacred — that quiets a certain kind of fear that nothing else reaches. It is not irrationality. It is the recognition that you are not as alone or as small as the fear insists.",
+    arya_story_seed: "A woman going through the hardest year of her life who started walking in a forest near her home every morning without knowing why, and who said months later that it was the only thing that had consistently helped.",
+    rasa: "shanta", guna_relevance: ["tamas","mixed"], confidence_level: "high", reviewed: true,
+  },
+
+  // ── SHIVA PURANA ────────────────────────────────────────────
+
+  {
+    domain: "philosophy", tradition: "vedantic",
+    source_name: "Shiva Purana — on the nature of Shiva",
+    situation_tags: ["wanting_to_change","grief_and_loss","identity_confusion","failure","letting_go"],
+    emotional_tags: ["grief","fear","confusion","seeking"],
+    arya_principle: "What ends is not always what dies. Sometimes what looks like loss is actually the clearing that makes space for what comes next. This is not a consolation prize. It is a genuine pattern — things that dissolve create the conditions for new forms. The difficulty is that the clearing does not feel like anything except loss while it is happening.",
+    arya_story_seed: "A woman who was devastated when her business failed at forty-two and who, three years later, was doing work she had not imagined at forty-one and could not imagine returning to what she had lost.",
+    rasa: "adbhuta", guna_relevance: ["tamas","mixed"], confidence_level: "high", reviewed: true,
+  },
+
+  {
+    domain: "philosophy", tradition: "vedantic",
+    source_name: "Shiva Purana — Shiva as mahayogi",
+    situation_tags: ["loneliness","identity_confusion","social_pressure","comparison_trap","spiritual_questioning"],
+    emotional_tags: ["loneliness","confusion","seeking","courage"],
+    arya_principle: "The one who does not fit the expected shape of a life is not necessarily doing something wrong. Sometimes the form that looks most unconventional from outside is the one that is most honest from inside. The question worth asking is not whether your path looks like others'. It is whether it is genuinely yours.",
+    arya_story_seed: "A doctor who left a prestigious hospital to work in a small clinic in a district nobody wanted to go to, and who said ten years later that it was the only decision he had made that felt completely his own.",
+    rasa: "vira", guna_relevance: ["rajas","mixed"], confidence_level: "high", reviewed: true,
+  },
+
+  {
+    domain: "philosophy", tradition: "vedantic",
+    source_name: "Shiva Purana — Nataraja symbolism",
+    situation_tags: ["anxiety_and_fear","feeling_overwhelmed","grief_and_loss","wanting_to_change"],
+    emotional_tags: ["fear","anxiety","grief","wonder"],
+    arya_principle: "Creation and dissolution are not opposites. They are the same movement, in two phases. What feels like everything falling apart is often the same process as what felt, earlier, like things coming together. Both are in motion. Neither is final.",
+    arya_story_seed: "A sculptor who said she never knew what a piece was going to be until she had destroyed the first three versions. Her students learned to stop worrying when she broke their work. It meant it was getting closer.",
+    rasa: "adbhuta", guna_relevance: ["tamas","rajas"], confidence_level: "high", reviewed: true,
+  },
+
+  {
+    domain: "philosophy", tradition: "vedantic",
+    source_name: "Shiva Purana — Ardhanarishvara",
+    situation_tags: ["identity_confusion","relationship_decision","duty_vs_desire","wanting_to_change"],
+    emotional_tags: ["confusion","seeking","anxiety","wonder"],
+    arya_principle: "The qualities we tend to split into opposites — strength and tenderness, ambition and contentment, logic and feeling — are not actually in conflict. The most whole people are not the ones who chose one and suppressed the other. They are the ones who found a way to carry both.",
+    arya_story_seed: "A senior executive who was told early in her career to choose between being liked and being respected. She spent twenty years finding out that this was a false choice, and that the people who had told her this had simply not figured out how to be both.",
+    rasa: "shanta", guna_relevance: ["rajas","mixed"], confidence_level: "high", reviewed: true,
+  },
+
+  // ── NARADA BHAKTI SUTRAS ────────────────────────────────────
+
+  {
+    domain: "devotional", tradition: "bhakti",
+    source_name: "Narada Bhakti Sutras 1-2",
+    situation_tags: ["meaning_and_purpose","spiritual_questioning","loneliness","emptiness","relationship_decision"],
+    emotional_tags: ["longing","seeking","emptiness","love"],
+    arya_principle: "There is a kind of love that does not calculate, does not keep score, does not ask what it is getting in return. It is not passivity. It is the highest form of engagement — complete attention given freely, without the constant monitoring of fairness. Most people have experienced it briefly. A few make it a way of being.",
+    arya_story_seed: "A mother who was asked by her daughter why she did so much for people who never thanked her, and who said, after a long pause: because when I am doing it, I am not thinking about being thanked. That is the whole answer.",
+    rasa: "shringara", guna_relevance: ["sattva","mixed"], confidence_level: "high", reviewed: true,
+  },
+
+  {
+    domain: "devotional", tradition: "bhakti",
+    source_name: "Narada Bhakti Sutras 16-20",
+    situation_tags: ["spiritual_questioning","wanting_to_change","meaning_and_purpose","seeking_clarity"],
+    emotional_tags: ["seeking","longing","confusion","wonder"],
+    arya_principle: "Every genuine transformation happens in stages that are only recognizable in hindsight. At the time, it mostly just feels like uncertainty. The person who is in the middle of becoming different cannot usually see the shape of what is being built. That uncertainty is not the absence of progress. It is often what progress feels like from inside.",
+    arya_story_seed: "A young woman who spent two years feeling like she was not growing at all and then looked at a journal from before that period and could not recognize the person who had written it.",
+    rasa: "adbhuta", guna_relevance: ["mixed","rajas"], confidence_level: "high", reviewed: true,
+  },
+
+  {
+    domain: "devotional", tradition: "bhakti",
+    source_name: "Narada Bhakti Sutras 54-60",
+    situation_tags: ["ego","comparison_trap","anger_and_conflict","relationship_decision","identity_confusion"],
+    emotional_tags: ["anger","pride","seeking","confusion"],
+    arya_principle: "The self that constantly needs to be defended, compared, and proven is exhausting to maintain. Not because the self is bad — but because that particular relationship with it takes enormous energy that could go elsewhere. The moments when that maintenance stops — in deep work, in love, in flow — people describe as the most alive they have felt.",
+    arya_story_seed: "A competitive professional who noticed that his best work happened on the days when he forgot to compare himself to anyone, and spent three years trying to understand why that was so difficult to do on purpose.",
+    rasa: "shanta", guna_relevance: ["rajas","mixed"], confidence_level: "high", reviewed: true,
+  },
+
+  {
+    domain: "devotional", tradition: "bhakti",
+    source_name: "Narada Bhakti Sutras 38-43",
+    situation_tags: ["friendship_difficulty","wanting_to_change","family_conflict","loneliness"],
+    emotional_tags: ["confusion","seeking","loneliness","anxiety"],
+    arya_principle: "Who we spend time with quietly shapes who we become — more than most people account for. Not through dramatic influence but through the slow accumulation of what is normal, what is said, what is valued, what is laughed at. The people around us are part of the environment we grow in.",
+    arya_story_seed: "A man who realized at forty that he had spent his thirties becoming gradually more cynical and traced it back not to any event but to the gradual narrowing of who he spent time with to people who saw the world that way.",
+    rasa: "shanta", guna_relevance: ["rajas","tamas"], confidence_level: "high", reviewed: true,
+  },
+
+  // ── RAMACHARITAMANAS — TULSIDAS ─────────────────────────────
+
+  {
+    domain: "devotional", tradition: "bhakti",
+    source_name: "Ramacharitamanas — Sundar Kand",
+    situation_tags: ["self_doubt","fear_of_failure","ambition_and_purpose","wanting_to_change","procrastination"],
+    emotional_tags: ["fear","self_doubt","anxiety","confusion"],
+    arya_principle: "The capability was always there. What was missing was the remembering of it. This happens repeatedly — the moment someone says with confidence you can do this and something shifts, not because the ability changed but because the self-assessment did. Strength that needs reminding is still strength.",
+    arya_story_seed: "A resident surgeon who froze before her first independent procedure and the senior doctor who stood beside her not to assist but simply to say: you have done this before. You know how. She did.",
+    rasa: "vira", guna_relevance: ["tamas","mixed"], confidence_level: "high", reviewed: true,
+  },
+
+  {
+    domain: "devotional", tradition: "bhakti",
+    source_name: "Ramacharitamanas — Bal Kand invocation",
+    situation_tags: ["ego","ambition_and_purpose","comparison_trap","leadership","career_decision"],
+    emotional_tags: ["pride","anxiety","seeking","confusion"],
+    arya_principle: "The person who knows how much they do not know is always more useful than the one who does not. Not as performance of modesty — as actual orientation. From that place, questions become possible, learning becomes possible, genuine collaboration becomes possible. Without it, most of what looks like confidence is just a closed door.",
+    arya_story_seed: "A young consultant who arrived at his first major client with certainty and left with questions. His second client went better. By his fifth, the questions had become his most valued tool.",
+    rasa: "shanta", guna_relevance: ["rajas","mixed"], confidence_level: "high", reviewed: true,
+  },
+
+  {
+    domain: "devotional", tradition: "bhakti",
+    source_name: "Ramacharitamanas — Shabari episode",
+    situation_tags: ["loneliness","self_doubt","spiritual_questioning","meaning_and_purpose","identity_confusion"],
+    emotional_tags: ["loneliness","seeking","longing","love"],
+    arya_principle: "What matters in any genuine act of care is not the form it takes or who witnesses it but the quality of attention behind it. The person who waits for perfect conditions to offer something meaningful will wait forever. The one who offers what they actually have, completely, changes things.",
+    arya_story_seed: "An old woman in a village who had spent forty years offering food to the same group of children who passed her door every morning. Nobody wrote about it. Decades later, three of those children cited it as the reason they became doctors.",
+    rasa: "shringara", guna_relevance: ["sattva","mixed"], confidence_level: "high", reviewed: true,
+  },
+
+  {
+    domain: "devotional", tradition: "bhakti",
+    source_name: "Ramacharitamanas — Uttara Kand",
+    situation_tags: ["moral_confusion","duty_vs_desire","integrity","workplace_conflict","family_conflict"],
+    emotional_tags: ["confusion","guilt","seeking","anxiety"],
+    arya_principle: "The question is rarely what the right thing to do is. Usually we know. The question is whether we are willing to do it when it costs something. That is the actual test — not the knowing but the doing, when doing is inconvenient.",
+    arya_story_seed: "A manager who knew exactly what the honest thing to do was in a difficult situation and spent two weeks finding reasons to do something easier. The two weeks cost him more than the honest thing would have.",
+    rasa: "vira", guna_relevance: ["rajas","mixed"], confidence_level: "high", reviewed: true,
+  },
+
+  // ── GOSPEL OF SRI RAMAKRISHNA ───────────────────────────────
+
+  {
+    domain: "devotional", tradition: "vedantic",
+    source_name: "Gospel of Sri Ramakrishna — on paths to truth",
+    situation_tags: ["spiritual_questioning","comparison_trap","identity_confusion","seeking_clarity"],
+    emotional_tags: ["confusion","seeking","wonder","doubt"],
+    arya_principle: "People are genuinely different. What opens one person closes another. What liberates one person confuses another. There is no single method that works for everyone — and the person who insists there is has usually found something that worked for them and made a universal claim from a personal experience.",
+    arya_story_seed: "Two students given the same meditation practice by the same teacher. One flourished. One struggled for years. The teacher, when asked, said: I gave you each what I thought you needed. Not what worked for the other.",
+    rasa: "shanta", guna_relevance: ["rajas","mixed"], confidence_level: "high", reviewed: true,
+  },
+
+  {
+    domain: "devotional", tradition: "vedantic",
+    source_name: "Gospel of Sri Ramakrishna — salt doll parable",
+    situation_tags: ["spiritual_questioning","identity_confusion","meaning_and_purpose","existential_confusion"],
+    emotional_tags: ["wonder","seeking","confusion","awe"],
+    arya_principle: "There are questions that cannot be answered by thinking about them. They can only be answered by going in — fully, without holding back a part of yourself to observe the experience. The observer who keeps one foot out of the water cannot describe what it is to swim.",
+    arya_story_seed: "A philosopher who spent thirty years writing about love and a grandmother who had never read a word of philosophy but who understood something about it that he spent another ten years trying to articulate.",
+    rasa: "adbhuta", guna_relevance: ["sattva","mixed"], confidence_level: "high", reviewed: true,
+  },
+
+  {
+    domain: "devotional", tradition: "vedantic",
+    source_name: "Gospel of Sri Ramakrishna — on practice",
+    situation_tags: ["wanting_to_change","procrastination","self_doubt","habit"],
+    emotional_tags: ["frustration","confusion","seeking","anxiety"],
+    arya_principle: "The mind does not change through understanding alone. It changes through repetition — doing the thing, again and again, even imperfectly, until the groove deepens. This is not willpower. It is carpentry. You are building a new path, and it takes time for it to feel like the natural one.",
+    arya_story_seed: "A man who tried to stop a habit of harsh criticism for years through willpower and awareness and could not. Then spent three months replacing each critical thought with a specific alternative phrase, mechanically, and found six months later that the original pattern had quietly disappeared.",
+    rasa: "shanta", guna_relevance: ["rajas","tamas"], confidence_level: "high", reviewed: true,
+  },
+
+  {
+    domain: "devotional", tradition: "vedantic",
+    source_name: "Gospel of Sri Ramakrishna — Shiva in Jiva",
+    situation_tags: ["anger_and_conflict","family_conflict","workplace_conflict","loneliness"],
+    emotional_tags: ["anger","frustration","grief","confusion"],
+    arya_principle: "The person who is currently difficult — the one who is exhausting, frustrating, or hurtful — is also carrying something. Not as an excuse for their behavior. As context that sometimes changes what response is possible. Looking for what someone is carrying does not mean accepting what they are doing.",
+    arya_story_seed: "A nurse who worked with a patient who was rude to everyone on the ward, and who one day asked what had happened to him before he came in. She said the conversation that followed was the quietest he had been, and the ward changed after that.",
+    rasa: "karuna", guna_relevance: ["rajas","mixed"], confidence_level: "high", reviewed: true,
+  },
+
+  // ── AUTOBIOGRAPHY OF A YOGI — YOGANANDA ─────────────────────
+
+  {
+    domain: "philosophy", tradition: "vedantic",
+    source_name: "Autobiography of a Yogi — Yogananda",
+    situation_tags: ["meaning_and_purpose","moral_confusion","grief_and_loss","anxiety_and_fear"],
+    emotional_tags: ["confusion","anxiety","seeking","grief"],
+    arya_principle: "Nothing that happens is entirely random and nothing is entirely predetermined. Every situation is shaped by what came before — choices made, patterns established, relationships built or damaged. This is not fatalism. It is the opposite: it means that what you do now is genuinely building something, and the quality of that building matters.",
+    arya_story_seed: "A doctor who spent years treating the same conditions in the same families across generations and gradually understood that what she was treating was not just biology. She began asking different questions and getting different results.",
+    rasa: "shanta", guna_relevance: ["mixed","rajas"], confidence_level: "high", reviewed: true,
+  },
+
+  {
+    domain: "philosophy", tradition: "vedantic",
+    source_name: "Autobiography of a Yogi — on meditation and inner experience",
+    situation_tags: ["spiritual_questioning","seeking_clarity","meaning_and_purpose","identity_confusion"],
+    emotional_tags: ["seeking","wonder","confusion","longing"],
+    arya_principle: "The inner life is not a supplement to the real one. It is a dimension of the same life. What happens in the quality of a person's attention, their inner conversation, their relationship with silence — these shape the outer life as much as any circumstance. Tending to that dimension is not escapism. It is maintenance of the most fundamental thing.",
+    arya_story_seed: "A highly accomplished professional who described her life as successful and empty at the same time, and who took up a meditation practice not for spiritual reasons but out of curiosity, and said two years later that the emptiness had not gone but it had changed character entirely.",
+    rasa: "adbhuta", guna_relevance: ["rajas","mixed"], confidence_level: "high", reviewed: true,
+  },
+
+  {
+    domain: "philosophy", tradition: "vedantic",
+    source_name: "Autobiography of a Yogi — on the teacher",
+    situation_tags: ["seeking_clarity","career_decision","wanting_to_change","trust"],
+    emotional_tags: ["seeking","confusion","longing","hope"],
+    arya_principle: "Real guidance — the kind that actually helps — does not give you answers. It gives you better questions. And it does not make you dependent on the guide. It makes you more capable of finding your own way. The test of whether someone is genuinely helping you is whether you are becoming more, not less, able to navigate on your own.",
+    arya_story_seed: "A mentor who was asked by her student what she should do with her career, and who said: I am going to ask you seven questions over seven weeks and you are going to discover that you already know. The student was frustrated for the first four weeks and clear by the seventh.",
+    rasa: "shanta", guna_relevance: ["rajas","mixed"], confidence_level: "high", reviewed: true,
+  },
+
+  // ── PRINCIPAL UPANISHADS — S. RADHAKRISHNAN ────────────────
+
+  {
+    domain: "philosophy", tradition: "vedantic",
+    source_name: "Principal Upanishads — Radhakrishnan — Katha Upanishad",
+    situation_tags: ["mortality_awareness","grief_and_loss","identity_confusion","spiritual_questioning"],
+    emotional_tags: ["grief","fear","seeking","wonder"],
+    arya_principle: "Fear of death is real and worth examining — but it is often less about death itself than about the sense that something essential will end. The question worth sitting with is: what is the most essential part of you? Not the role, not the reputation, not even the relationships. What is underneath all of that? That question has a different quality than the fear.",
+    arya_story_seed: "A terminally ill professor who said in his final months that the dying had been unexpectedly clarifying — not because he had resolved the big questions but because the small ones had stopped taking up so much space.",
+    rasa: "shanta", guna_relevance: ["tamas","mixed"], confidence_level: "high", reviewed: true,
+  },
+
+  {
+    domain: "philosophy", tradition: "vedantic",
+    source_name: "Principal Upanishads — Radhakrishnan — Mundaka Upanishad",
+    situation_tags: ["seeking_clarity","meaning_and_purpose","ambition_and_purpose","learning_struggle"],
+    emotional_tags: ["confusion","seeking","anxiety","wonder"],
+    arya_principle: "There are two kinds of knowledge. The first is information about the world — what, how, when, who. The second is understanding of what you actually are and how you relate to everything else. The first is useful. The second is what makes the first meaningful. Most people invest heavily in the first and almost nothing in the second, and wonder why competence does not produce satisfaction.",
+    arya_story_seed: "A highly educated man who had read more books than anyone he knew and who said at fifty that he had accumulated a great deal of knowledge and very little wisdom, and could now tell the difference.",
+    rasa: "shanta", guna_relevance: ["rajas","mixed"], confidence_level: "high", reviewed: true,
+  },
+
+  {
+    domain: "philosophy", tradition: "vedantic",
+    source_name: "Principal Upanishads — Radhakrishnan — Chandogya Upanishad",
+    situation_tags: ["loneliness","disconnection","spiritual_questioning","meaning_and_purpose","identity_confusion"],
+    emotional_tags: ["loneliness","emptiness","seeking","wonder"],
+    arya_principle: "The deepest source of loneliness is the feeling of being entirely separate — from others, from the world, from something larger. The deepest source of peace is the direct experience that this separation is not as complete as it feels. This is not a belief to be adopted. It is something that opens, occasionally and unexpectedly, when the busyness stops for long enough.",
+    arya_story_seed: "A researcher who spent six months in a very remote location with very few people and who expected to feel isolated, and who felt instead, for the first time in his adult life, a deep and inexplicable sense of not being alone.",
+    rasa: "shanta", guna_relevance: ["tamas","sattva"], confidence_level: "high", reviewed: true,
+  },
+
+  {
+    domain: "philosophy", tradition: "vedantic",
+    source_name: "Principal Upanishads — Radhakrishnan — Introduction",
+    situation_tags: ["moral_confusion","identity_confusion","spiritual_questioning","comparison_trap"],
+    emotional_tags: ["confusion","seeking","doubt","wonder"],
+    arya_principle: "The most intellectually honest position on difficult questions is often: I hold this view, and I understand why others hold different ones, and I remain curious about what I am missing. This is not weakness. The ability to hold a position while genuinely respecting the partial truth of opposing ones is considered the mark of a mature mind.",
+    arya_story_seed: "A judge who was known not for never changing her mind but for the quality of her reasoning when she did. She said: the cases I decided most carefully were the ones where I could argue the other side almost as well as my own.",
+    rasa: "shanta", guna_relevance: ["sattva","mixed"], confidence_level: "high", reviewed: true,
+  },
+
+];
+
+// ── SEED ─────────────────────────────────────────────────────
+
+async function seed() {
+  console.log(`\n📚 Seeding ${SEEDS.length} Vedas/Modern Classic wisdom entries...\n`);
+  let inserted = 0, skipped = 0;
+
+  for (const s of SEEDS) {
+    const exists = await pool.query(
+      "SELECT id FROM arya_knowledge WHERE source_name = $1 LIMIT 1",
+      [s.source_name],
+    );
+    if (exists.rows.length > 0) {
+      console.log(`  SKIP (exists): ${s.source_name}`);
+      skipped++;
+      continue;
+    }
+
+    await pool.query(`
+      INSERT INTO arya_knowledge (
+        tenant_id, domain, topic, content, tags, source_type, source_title, status,
+        situation_tags, emotional_tags, arya_principle, arya_story_seed,
+        rasa, guna_relevance, confidence_level, reviewed, tradition, source_name
+      ) VALUES (
+        'varah', $1, $2, $3, $4, 'text', $5, 'published',
+        $6, $7, $8, $9, $10, $11, $12, $13, $14, $15
+      )`,
+      [
+        mapDomain(s.domain),
+        s.source_name,
+        s.arya_principle,
+        s.situation_tags,
+        s.source_name,
+        s.situation_tags,
+        s.emotional_tags,
+        s.arya_principle,
+        s.arya_story_seed || null,
+        s.rasa,
+        s.guna_relevance,
+        s.confidence_level,
+        s.reviewed,
+        s.tradition,
+        s.source_name,
+      ],
+    );
+    console.log(`  ✓ ${s.source_name}`);
+    inserted++;
+  }
+
+  console.log(`\n✅ Done. Inserted: ${inserted}  Skipped: ${skipped}\n`);
+  await showStats();
+}
+
+// ── TRANSLATE ────────────────────────────────────────────────
+
+async function translate() {
+  const sourceNames = SEEDS.map(s => s.source_name);
+  const placeholders = sourceNames.map((_, i) => `$${i + 1}`).join(",");
+  const res = await pool.query(
+    `SELECT id, arya_principle, language_variants, source_name
+     FROM arya_knowledge
+     WHERE source_name IN (${placeholders})
+       AND (language_variants IS NULL OR language_variants::text = '{}')
+     ORDER BY source_name`,
+    sourceNames,
+  );
+
+  if (!res.rows.length) {
+    console.log("✅ All entries already have language_variants.");
+    return;
+  }
+  console.log(`\n🌐 Translating ${res.rows.length} entries...\n`);
+
+  const langs = ["hi","ta","te","ml","kn","bn","mr","gu","pa","or"];
+  let done = 0, failed = 0;
+
+  for (const row of res.rows) {
+    process.stdout.write(`  ${String(row.source_name).slice(0,55).padEnd(57)}`);
+    const variants = await batchTranslateWisdomEntry(row.arya_principle, langs);
+    if (variants && Object.keys(variants).length >= 4) {
+      await pool.query(
+        "UPDATE arya_knowledge SET language_variants = $1 WHERE id = $2",
+        [JSON.stringify(variants), row.id],
+      );
+      console.log("✓"); done++;
+    } else {
+      console.log("✗"); failed++;
+    }
+    await new Promise(r => setTimeout(r, 350));
+  }
+  console.log(`\n✅ Done. Translated: ${done}  Failed: ${failed}\n`);
+}
+
+// ── STATS ────────────────────────────────────────────────────
+
+async function showStats() {
+  const r = await pool.query(`
+    SELECT COUNT(*) total,
+      SUM(CASE WHEN reviewed AND arya_principle IS NOT NULL THEN 1 ELSE 0 END) wisdom_ready,
+      SUM(CASE WHEN language_variants IS NOT NULL AND language_variants::text <> '{}' THEN 1 ELSE 0 END) translated
+    FROM arya_knowledge WHERE status = 'published'
+  `);
+  const s = r.rows[0];
+  console.log(`\n📊 Knowledge Base — Total`);
+  console.log(`  Total: ${s.total}  |  Wisdom-ready: ${s.wisdom_ready}  |  Translated: ${s.translated}\n`);
+}
+
+// ── RUN ──────────────────────────────────────────────────────
+
+const cmd = process.argv[2];
+(async () => {
+  try {
+    if (cmd === "translate") { await translate(); await showStats(); }
+    else if (cmd === "stats") { await showStats(); }
+    else { await seed(); }
+  } finally {
+    await pool.end();
+  }
+})().catch(err => { console.error(err); process.exit(1); });
