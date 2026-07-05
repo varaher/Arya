@@ -28,6 +28,9 @@ import { eq } from "drizzle-orm";
 import { fetchLatestNews, fetchMarketNews, formatNewsForChat } from "./news-service";
 import { detectLanguage, buildLanguageInstruction, autoUpdateLanguagePreference, sarvamLangToShort } from "./language-detector";
 import { buildSectionTonePromptAddition } from "./section-tone-map";
+import { classifySituation, getSituationTags } from "./situation-classifier";
+import { retrieveRelevantWisdom } from "./wisdom-retriever";
+import { translateWisdomToARYAVoice } from "./wisdom-translator";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -1066,6 +1069,50 @@ export async function generateAryaResponse(
   } catch {}
   // ─────────────────────────────────────────────────────────────────────────
 
+  // ── Wisdom Intelligence Pipeline ─────────────────────────────────────────
+  // Silently classifies the user's situation, retrieves the most relevant
+  // wisdom from arya_knowledge (Gita, Ramayana, Thirukkural, Upanishads…),
+  // and translates it into ARYA's natural voice.
+  // Injected as an OPTIONAL context block — ARYA may use it if the moment
+  // has genuine space. Max once per conversation. Never cites the source.
+  let wisdomContext = "";
+  try {
+    const recentHistoryText = conversationHistory.slice(-4)
+      .map(m => `${m.role}: ${m.content}`)
+      .join("\n");
+
+    const situation = await classifySituation(userMessage, recentHistoryText);
+
+    if (situation.wisdomNeeded && situation.urgency !== "immediate") {
+      const situationTags = getSituationTags(situation);
+      const wisdom = await retrieveRelevantWisdom({
+        situationTags,
+        emotionalState: situation.emotionalState,
+        gunaState: situation.gunaState,
+        userId: userId || tenantId,
+        language: earlyLang || "en",
+      });
+
+      if (wisdom && wisdom.confidence !== "contextual") {
+        const firstName = ctx?.firstName || "";
+        const translated = await translateWisdomToARYAVoice(
+          wisdom,
+          {
+            firstName,
+            currentSituation: situation.primarySituation,
+            whatTheyJustSaid: userMessage,
+          },
+          earlyLang || "en",
+        );
+
+        if (translated) {
+          wisdomContext = `\n\n[WISDOM AVAILABLE — from ARYA's deep knowledge. Use only if this moment genuinely has space for it. Only once in this conversation. Weave naturally — never announce it, never cite any source. If the moment does not call for it, ignore this entirely.\nInsight: ${translated}]`;
+        }
+      }
+    }
+  } catch {}
+  // ─────────────────────────────────────────────────────────────────────────
+
   // ── Language detection ────────────────────────────────────────────────────
   // For voice input: Sarvam STT already detected the language accurately —
   // use it directly. For typed text: run script detection on the message.
@@ -1131,7 +1178,7 @@ export async function generateAryaResponse(
   } catch {}
 
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-    { role: "system", content: ARYA_SYSTEM_PROMPT + userPrefs + (langInstruction ? `\n\n${langInstruction}` : "") + sectionToneAddition + knowledgeContext + newsContext + memoryContext + liveContext + uncertaintyGuidance + voiceInstruction + longFormInstruction + goalCheckInCtx.systemPromptBlock + thinkingModePrompt + (studyNotesAddition || "") },
+    { role: "system", content: ARYA_SYSTEM_PROMPT + userPrefs + (langInstruction ? `\n\n${langInstruction}` : "") + sectionToneAddition + knowledgeContext + newsContext + memoryContext + liveContext + wisdomContext + uncertaintyGuidance + voiceInstruction + longFormInstruction + goalCheckInCtx.systemPromptBlock + thinkingModePrompt + (studyNotesAddition || "") },
     ...conversationHistory.slice(-20).map(m => ({
       role: m.role as "user" | "assistant",
       content: m.content,

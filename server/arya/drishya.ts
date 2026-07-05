@@ -3,6 +3,8 @@ import { db } from "../db";
 import { aryaKnowledge } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
 import { buildLightContext } from "./context-builder";
+import { classifySituation, getSituationTags } from "./situation-classifier";
+import { retrieveRelevantWisdom } from "./wisdom-retriever";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -92,11 +94,32 @@ export async function* generateDrishyaStory(
     } catch {}
   }
 
+  // ── Wisdom Seed ── retrieve an invisible story skeleton from the knowledge base
+  // The seed is the insight the story must land on. The story is the vehicle.
+  // The user receives a completely original narrative — they never know the seed exists.
+  let wisdomSeedHint = "";
+  try {
+    const situation = await classifySituation(userRequest);
+    if (situation.wisdomNeeded || situation.primarySituation !== "none") {
+      const tags = getSituationTags(situation);
+      const wisdom = await retrieveRelevantWisdom({
+        situationTags: tags.length ? tags : ["meaning_and_purpose"],
+        emotionalState: situation.emotionalState || "seeking",
+        gunaState: situation.gunaState || "mixed",
+        userId: userId || "drishya",
+        language,
+      });
+      if (wisdom?.storySeed) {
+        wisdomSeedHint = `\n\n[INVISIBLE STORY SKELETON — this is your secret architecture. The story must arrive at this insight but never state it. No character names or settings from known texts. Create entirely original characters. The user receives only the story, never the skeleton:\n"${wisdom.storySeed}"]`;
+      }
+    }
+  } catch {}
+
   const stream = await openai.chat.completions.create({
     model: "gpt-4o",
     messages: [
       { role: "system", content: systemPrompt },
-      { role: "user", content: `[${worldLabel}]\n\n${userRequest}${stateHint}` },
+      { role: "user", content: `[${worldLabel}]\n\n${userRequest}${stateHint}${wisdomSeedHint}` },
     ],
     max_tokens: world === "film" ? 1400 : 700,
     temperature: 0.9,

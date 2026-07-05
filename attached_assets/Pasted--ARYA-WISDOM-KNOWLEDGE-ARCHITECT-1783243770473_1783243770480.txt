@@ -1,0 +1,1021 @@
+// ============================================================
+// ARYA — WISDOM KNOWLEDGE ARCHITECTURE
+// The complete system for integrating India's ancient wisdom
+// tradition invisibly into ARYA's intelligence.
+//
+// Core principle:
+//   "The wisdom is the ingredient.
+//    ARYA is the dish.
+//    Users taste the dish.
+//    They never see the recipe."
+//
+// Files to create/modify:
+//   NEW:  server/arya/wisdom-retriever.ts
+//   NEW:  server/arya/wisdom-translator.ts
+//   NEW:  server/arya/situation-classifier.ts
+//   NEW:  scripts/seed-wisdom-knowledge.ts
+//   EDIT: server/arya/chat-engine.ts (wire wisdom into live context)
+//   EDIT: server/arya/drishya.ts (wire wisdom into story generation)
+//   EDIT: shared/schema.ts (expand arya_knowledge table)
+// ============================================================
+
+
+// ──────────────────────────────────────────────────────────────
+// PART 1: THE DATABASE ARCHITECTURE
+// How wisdom is stored — not as texts to quote,
+// but as patterns, insights, and principles
+// ──────────────────────────────────────────────────────────────
+
+/*
+-- ── EXPAND arya_knowledge TABLE ──────────────────────────────
+-- Add these columns to the existing arya_knowledge table:
+
+ALTER TABLE arya_knowledge
+  ADD COLUMN IF NOT EXISTS domain          TEXT,
+  -- 'storytelling' | 'philosophy' | 'ethics' | 'psychology'
+  -- | 'healing' | 'governance' | 'devotional' | 'timing'
+
+  ADD COLUMN IF NOT EXISTS tradition       TEXT,
+  -- 'vedantic' | 'buddhist' | 'jain' | 'sikh' | 'sufi'
+  -- | 'bhakti' | 'tantric' | 'ayurvedic' | 'sangam' | 'folk'
+
+  ADD COLUMN IF NOT EXISTS source_text     TEXT,
+  -- INTERNAL ONLY. Never sent to user or LLM response.
+  -- The actual text/verse/story in its original form.
+  -- Stored for reference and accuracy verification only.
+
+  ADD COLUMN IF NOT EXISTS source_name     TEXT,
+  -- INTERNAL ONLY. Name of the source text.
+  -- e.g. 'Bhagavad Gita 3.35', 'Thirukkural 391',
+  -- 'Panchatantra Book 1 Story 3'
+  -- Never displayed to user under any circumstances.
+
+  ADD COLUMN IF NOT EXISTS situation_tags  TEXT[],
+  -- Array of human situations this wisdom addresses.
+  -- e.g. ARRAY['duty_vs_desire', 'fear_of_failure',
+  --            'betrayal', 'grief', 'ambition',
+  --            'relationship_conflict', 'career_decision']
+  -- Used by wisdom-retriever.ts to find relevant entries
+
+  ADD COLUMN IF NOT EXISTS emotional_tags  TEXT[],
+  -- Array of emotional states this wisdom speaks to.
+  -- e.g. ARRAY['anxiety', 'confusion', 'loss',
+  --            'anger', 'grief', 'joy', 'emptiness']
+  -- Maps to the Navarasas internally
+
+  ADD COLUMN IF NOT EXISTS arya_principle  TEXT,
+  -- The distilled insight — expressed as ARYA would
+  -- understand it, not as the original text states it.
+  -- This is what gets passed to the LLM context.
+  -- e.g. "When someone feels trapped between what they
+  --       owe others and what they owe themselves,
+  --       the deepest resolution often comes from
+  --       asking: what is uniquely mine to do here?
+  --       Not better or worse than another path —
+  --       but specifically mine."
+
+  ADD COLUMN IF NOT EXISTS arya_story_seed TEXT,
+  -- For Drishya use only.
+  -- The narrative seed — not the original story,
+  -- but the essence of what made it powerful.
+  -- e.g. "A merchant who discovers that his shrewdness,
+  --       which he despised in himself, was the very
+  --       quality that saved his family."
+
+  ADD COLUMN IF NOT EXISTS rasa            TEXT,
+  -- The primary emotional register of this wisdom.
+  -- One of the 9 Navarasas:
+  -- shringara | hasya | karuna | raudra | vira |
+  -- bhayanaka | bibhatsa | adbhuta | shanta
+  -- Used to match wisdom to the user's current
+  -- emotional state
+
+  ADD COLUMN IF NOT EXISTS guna_relevance  TEXT[],
+  -- Which Guna states benefit from this wisdom.
+  -- ARRAY['tamas'] = good for someone stuck/heavy
+  -- ARRAY['rajas'] = good for someone agitated/driven
+  -- ARRAY['sattva'] = good for someone seeking clarity
+  -- ARRAY['tamas', 'rajas'] = relevant to both
+
+  ADD COLUMN IF NOT EXISTS language_variants JSONB,
+  -- Versions of arya_principle in different languages.
+  -- ARYA delivers in the user's chosen language.
+  -- {
+  --   "hi": "जब कोई व्यक्ति दूसरों के प्रति कर्तव्य...",
+  --   "ml": "ഒരാൾ മറ്റുള്ളവരോടുള്ള കടമയും...",
+  --   "ta": "ஒருவர் மற்றவர்களுக்கான கடமையும்...",
+  --   "te": "ఒకరు ఇతరులపట్ల విధిని...",
+  --   "kn": "ಒಬ್ಬರು ಇತರರ ಬಗ್ಗೆ ಕರ್ತವ್ಯ..."
+  -- }
+
+  ADD COLUMN IF NOT EXISTS confidence_level TEXT DEFAULT 'high',
+  -- 'high' = well-established, unambiguous wisdom
+  -- 'medium' = interpreted, contextual
+  -- 'contextual' = only relevant in specific situations
+  -- Used to prevent ARYA from over-applying wisdom
+
+  ADD COLUMN IF NOT EXISTS reviewed        BOOLEAN DEFAULT FALSE;
+  -- Has this entry been reviewed by a subject matter
+  -- expert for accuracy and appropriateness?
+  -- Do not use unreviewed entries in production.
+*/
+
+
+// ──────────────────────────────────────────────────────────────
+// PART 2: THE WISDOM DOMAINS
+// Complete catalog of what goes into the knowledge base
+// ──────────────────────────────────────────────────────────────
+
+/*
+Each entry below represents a SOURCE to seed from.
+The seeding script (Part 5) processes each source
+into individual arya_knowledge rows.
+
+────────────────────────────────────────────────────
+DOMAIN: STORYTELLING
+────────────────────────────────────────────────────
+Source: Panchatantra (5 books, 84 stories)
+  Situations covered: leadership, betrayal, strategy,
+  friendship, foolishness, wisdom disguised as weakness,
+  the gap between appearance and reality
+
+Source: Jataka Tales (50 key stories of 547)
+  Situations covered: compassion in crisis, sacrifice,
+  the nature of desire, how past actions shape present
+
+Source: Hitopadesha
+  Situations covered: practical wisdom, statecraft,
+  relationships, the value of education
+
+Source: Vikram and Betal (25 tales)
+  Situations covered: ethical dilemmas with no easy answer,
+  the complexity of justice, duty under uncertainty
+
+Source: Regional folk traditions
+  Kerala — Panchavadyam traditions, Kathakali moral tales
+  Tamil Nadu — Murugan legends, Kovalan-Kannagi story
+  Bengal — Thakurmar Jhuli folk tales
+  Rajasthan — Rajput honour tales, desert wisdom
+  Punjab — Heer-Ranjha as devotional allegory
+
+────────────────────────────────────────────────────
+DOMAIN: PHILOSOPHY
+────────────────────────────────────────────────────
+Source: Bhagavad Gita (all 18 chapters)
+  Situations covered:
+  Ch 1-2: paralysis in the face of difficult duty
+  Ch 3:   action vs inaction, doing one's own work
+  Ch 4:   the nature of knowledge and wisdom
+  Ch 6:   the restless mind, self-discipline
+  Ch 9:   devotion, surrender, grace
+  Ch 12:  the nature of love
+  Ch 16:  divine vs demonic tendencies in humans
+  Ch 18:  renunciation, freedom, the final teaching
+
+Source: 10 Principal Upanishads
+  Isha: the sacred in the ordinary
+  Kena: who is the real knower?
+  Katha: the nature of death and what lies beyond
+  Mundaka: two kinds of knowledge
+  Mandukya: the four states of consciousness
+  Taittiriya: the five sheaths of the self
+  Chandogya: Tat tvam asi — thou art that
+  Brihadaranyaka: the nature of self and reality
+
+Source: Yoga Sutras of Patanjali (196 sutras)
+  Situations covered: restless mind, scattered attention,
+  the nature of suffering, the path to stillness,
+  how thought patterns form and how to loosen them
+
+Source: Yoga Vasishtha (key sections)
+  Situations covered: the constructed nature of reality,
+  how stories we tell ourselves create our world,
+  profound confusion about identity and purpose
+
+Source: Advaita Vedanta — Shankaracharya
+  Vivekachudamani: discrimination between real and unreal
+  Situations covered: identity crisis, what is truly mine,
+  the nature of the self beneath all roles
+
+────────────────────────────────────────────────────
+DOMAIN: ETHICS & GOVERNANCE
+────────────────────────────────────────────────────
+Source: Thirukkural (all 1,330 kurals, 3 books)
+  Book 1 (Aram — Virtue): 380 kurals
+    Situations: character, honesty, gratitude, love,
+    hospitality, anger management, forgiveness
+  Book 2 (Porul — Wealth): 700 kurals
+    Situations: leadership, governance, strategy,
+    organisation, relationships, resilience
+  Book 3 (Inbam — Love): 250 kurals
+    Situations: longing, union, separation, desire
+
+Source: Arthashastra — Kautilya (15 books)
+  Situations covered: leadership under pressure,
+  strategy, knowing who to trust, economics,
+  how to build something that lasts
+
+Source: Chanakya Niti (17 chapters)
+  Situations covered: practical wisdom for daily life,
+  relationships, self-discipline, ambition,
+  what to do and what never to do
+
+Source: Naladiyar (400 poems)
+  Situations covered: impermanence, right action,
+  the nature of friendship, the reality of death,
+  what matters and what doesn't
+
+Source: Subhashitani (500 key verses)
+  Situations covered: virtually all human situations
+  in two-line aphoristic form — the Indian Proverbs
+
+────────────────────────────────────────────────────
+DOMAIN: DEVOTIONAL & POETIC WISDOM
+────────────────────────────────────────────────────
+Source: Kabir's Dohas (complete — ~300 core dohas)
+  Situations covered: hypocrisy, the gap between
+  belief and action, finding the sacred in the ordinary,
+  the futility of external seeking, love as practice
+
+Source: Mirabai's bhajans (50 key)
+  Situations covered: devotion as the highest clarity,
+  surrendering what cannot be controlled, longing,
+  the courage to love against social pressure
+
+Source: Basavanna's Vachanas (100 key)
+  Situations covered: egalitarianism, work as worship,
+  the hypocrisy of caste and ritual,
+  what it means to be truly human
+
+Source: Tukaram's Abhangas (100 key)
+  Situations covered: the ordinary made sacred,
+  faith in crisis, the value of simplicity,
+  finding God in the marketplace
+
+Source: Nammalvar's Thiruvaimozhi (key sections)
+  Situations covered: longing, surrender, the nature
+  of devotion, love as the highest knowledge
+
+Source: Guru Nanak and Gurbani (key shabads)
+  Situations covered: equality, service, honest work,
+  the nature of divine presence, ego as the only enemy
+
+Source: Amir Khusrau and Indian Sufi tradition
+  Situations covered: love beyond boundaries,
+  longing, the meeting of traditions,
+  music as a path to truth
+
+────────────────────────────────────────────────────
+DOMAIN: PSYCHOLOGY & MIND
+────────────────────────────────────────────────────
+Source: Natyashastra — Navarasas framework
+  The 9 emotional registers and what each needs:
+  Shringara (love/beauty) — needs tenderness
+  Hasya (joy/humor) — needs lightness
+  Karuna (compassion/grief) — needs witnessing
+  Raudra (fury) — needs grounding
+  Vira (courage/heroism) — needs challenge
+  Bhayanaka (fear) — needs presence
+  Bibhatsa (disgust/aversion) — needs reframing
+  Adbhuta (wonder/awe) — needs expansion
+  Shanta (peace/serenity) — needs silence
+
+Source: Samkhya Philosophy — Guna theory
+  Tamas (heaviness, inertia, darkness):
+    User profile: stuck, avoiding, heavy, sleeping too much
+    What helps: gentle movement toward light
+  Rajas (activity, passion, agitation):
+    User profile: driven, anxious, restless, over-busy
+    What helps: grounding, perspective, stillness
+  Sattva (clarity, balance, harmony):
+    User profile: clear, purposeful, at ease
+    What helps: maintenance, deepening
+
+Source: Pancha Kosha model (5 sheaths of self)
+  Annamaya (physical body)
+  Pranamaya (energy/breath body)
+  Manomaya (mental/emotional body)
+  Vijnanamaya (wisdom/discernment body)
+  Anandamaya (bliss/deep self body)
+  Used by ARYA to understand at which level
+  a user's struggle is actually occurring
+
+Source: Buddhist psychology — Abhidhamma
+  The nature of mental factors,
+  how suffering arises and how it ends,
+  the 52 mental factors and their interactions
+
+Source: Jain philosophy — Anekantavada
+  The doctrine of many-sidedness:
+  every truth has multiple valid perspectives.
+  Used when users present complex situations
+  as simple either/or choices.
+
+────────────────────────────────────────────────────
+DOMAIN: HEALING & WELLBEING
+────────────────────────────────────────────────────
+Source: Charaka Samhita (lifestyle and mind sections)
+  Dinacharya (daily routine) principles
+  The relationship between food and mood
+  Sleep as medicine
+  The seasons and their effect on mind
+
+Source: Ashtanga Hridayam (Kerala Ayurveda)
+  Dosha theory applied to daily life
+  The 3 doshas as personality and tendency:
+  Vata (air/space) — creative, anxious, scattered
+  Pitta (fire/water) — driven, intense, perfectionist
+  Kapha (earth/water) — steady, loyal, resistant to change
+
+Source: Hatha Yoga Pradipika
+  Breath as the bridge between body and mind
+  Physical practice as preparation for mental clarity
+
+────────────────────────────────────────────────────
+DOMAIN: REGIONAL WISDOM — SOUTH INDIA
+────────────────────────────────────────────────────
+Source: Sangam literature (Tamil — 300 BCE to 300 CE)
+  Akam poetry (inner life/love): longing, separation,
+  the seasons as emotional states
+  Puram poetry (outer life): heroism, friendship,
+  the nature of death, what deserves to be remembered
+
+Source: Attaprakaram — Kerala performance tradition
+  The emotional grammar of Kathakali
+  How different states of being are embodied
+
+Source: Tolkappiyam — Tamil grammar and poetics
+  The Tinai system: five landscapes each representing
+  an emotional state — used in Drishya world-building
+*/
+
+
+// ──────────────────────────────────────────────────────────────
+// PART 3: THE SITUATION CLASSIFIER
+// Detects what kind of human moment the user is in
+// Maps it to relevant wisdom domains
+// ──────────────────────────────────────────────────────────────
+
+/*
+// server/arya/situation-classifier.ts
+
+interface SituationProfile {
+  primarySituation: string;     // e.g. 'career_decision'
+  secondarySituations: string[]; // related dimensions
+  emotionalState: string;        // Navarasas mapping
+  gunaState: 'tamas' | 'rajas' | 'sattva' | 'mixed';
+  urgency: 'immediate' | 'reflective' | 'background';
+  wisdomNeeded: boolean;         // should wisdom be surfaced?
+}
+
+// The master situation taxonomy
+// (matches situation_tags in arya_knowledge table)
+
+const SITUATION_TAXONOMY = {
+  // DECISIONS
+  career_decision:        ['duty_vs_desire', 'fear_of_failure', 'identity'],
+  business_decision:      ['strategy', 'trust', 'risk', 'leadership'],
+  relationship_decision:  ['love', 'duty', 'letting_go', 'boundaries'],
+  financial_decision:     ['security_vs_growth', 'greed', 'contentment'],
+
+  // STRUGGLES
+  feeling_stuck:          ['tamas', 'inertia', 'lost_direction'],
+  feeling_overwhelmed:    ['rajas', 'too_much', 'scattered'],
+  grief_and_loss:         ['karuna', 'impermanence', 'letting_go'],
+  anger_and_conflict:     ['raudra', 'injustice', 'ego'],
+  anxiety_and_fear:       ['bhayanaka', 'uncertainty', 'control'],
+  loneliness:             ['disconnection', 'longing', 'belonging'],
+  failure:                ['shame', 'resilience', 'learning'],
+  betrayal:               ['trust_broken', 'justice', 'forgiveness'],
+
+  // GROWTH
+  ambition_and_purpose:   ['dharma', 'calling', 'right_action'],
+  seeking_clarity:        ['viveka', 'discernment', 'truth'],
+  wanting_to_change:      ['habit', 'discipline', 'transformation'],
+  creative_block:         ['fear_of_expression', 'perfectionism'],
+
+  // RELATIONSHIPS
+  family_conflict:        ['duty', 'love', 'boundaries', 'forgiveness'],
+  friendship_difficulty:  ['trust', 'loyalty', 'letting_go'],
+  romantic_struggle:      ['love', 'desire', 'attachment', 'longing'],
+  parenting_challenge:    ['guidance', 'letting_go', 'love'],
+
+  // EXISTENTIAL
+  meaning_and_purpose:    ['dharma', 'identity', 'calling'],
+  mortality_awareness:    ['impermanence', 'what_matters', 'legacy'],
+  identity_confusion:     ['self_knowledge', 'roles_vs_self'],
+  spiritual_questioning:  ['doubt', 'faith', 'direct_experience'],
+};
+*/
+
+
+// ──────────────────────────────────────────────────────────────
+// PART 4: THE WISDOM RETRIEVER
+// Finds the right wisdom for the right moment
+// Without the user ever knowing it's looking
+// ──────────────────────────────────────────────────────────────
+
+/*
+// server/arya/wisdom-retriever.ts
+
+import { db } from '../db';
+import { arya_knowledge } from '../../shared/schema';
+import { arrayOverlaps, eq, and } from 'drizzle-orm';
+
+interface WisdomContext {
+  situationTags: string[];   // from situation classifier
+  emotionalState: string;    // current rasa
+  gunaState: string;         // current guna
+  userId: number;            // to avoid repeating same wisdom
+  language: string;          // user's language
+}
+
+interface WisdomEntry {
+  principle: string;         // arya_principle in user's language
+  storySeed?: string;        // for Drishya if relevant
+  rasa: string;
+  confidence: string;
+}
+
+export async function retrieveRelevantWisdom(
+  context: WisdomContext
+): Promise<WisdomEntry | null> {
+
+  // Find matching wisdom entries
+  const candidates = await db
+    .select()
+    .from(arya_knowledge)
+    .where(
+      and(
+        // Must match at least one situation tag
+        arrayOverlaps(
+          arya_knowledge.situationTags,
+          context.situationTags
+        ),
+        // Must match emotional state or guna
+        arrayOverlaps(
+          arya_knowledge.emotionalTags,
+          [context.emotionalState]
+        ),
+        // Only use reviewed, high-confidence entries
+        eq(arya_knowledge.reviewed, true),
+      )
+    )
+    .limit(5);
+
+  if (!candidates.length) return null;
+
+  // Score candidates by relevance
+  const scored = candidates.map(entry => ({
+    entry,
+    score: calculateRelevanceScore(entry, context),
+  }));
+
+  scored.sort((a, b) => b.score - a.score);
+  const best = scored[0].entry;
+
+  // Get the principle in the right language
+  const variants = best.languageVariants as Record<string, string>;
+  const principle = variants?.[context.language] || best.aryaPrinciple;
+
+  return {
+    principle,
+    storySeed: best.aryaStorySeed || undefined,
+    rasa: best.rasa,
+    confidence: best.confidenceLevel,
+  };
+}
+
+function calculateRelevanceScore(
+  entry: any,
+  context: WisdomContext
+): number {
+  let score = 0;
+
+  // Situation tag overlap
+  const situationOverlap = entry.situationTags?.filter(
+    (t: string) => context.situationTags.includes(t)
+  ).length || 0;
+  score += situationOverlap * 3;
+
+  // Emotional tag match
+  if (entry.emotionalTags?.includes(context.emotionalState)) score += 5;
+
+  // Guna match
+  if (entry.gunaRelevance?.includes(context.gunaState)) score += 4;
+
+  // Rasa alignment
+  if (entry.rasa === mapEmotionToRasa(context.emotionalState)) score += 3;
+
+  return score;
+}
+
+function mapEmotionToRasa(emotion: string): string {
+  const mapping: Record<string, string> = {
+    'love': 'shringara',
+    'joy': 'hasya',
+    'grief': 'karuna',
+    'sadness': 'karuna',
+    'anger': 'raudra',
+    'courage': 'vira',
+    'fear': 'bhayanaka',
+    'anxiety': 'bhayanaka',
+    'disgust': 'bibhatsa',
+    'wonder': 'adbhuta',
+    'peace': 'shanta',
+    'confusion': 'bhayanaka',
+    'emptiness': 'karuna',
+  };
+  return mapping[emotion] || 'shanta';
+}
+*/
+
+
+// ──────────────────────────────────────────────────────────────
+// PART 5: THE WISDOM TRANSLATOR
+// Converts retrieved wisdom into ARYA's natural voice
+// This is the most critical component —
+// it ensures wisdom NEVER sounds like a citation
+// ──────────────────────────────────────────────────────────────
+
+/*
+// server/arya/wisdom-translator.ts
+
+// This function takes a wisdom principle and translates it
+// into ARYA's natural conversational voice,
+// personalised to this specific user in this specific moment.
+
+export async function translateWisdomToARYAVoice(
+  wisdom: WisdomEntry,
+  userContext: {
+    firstName: string;
+    currentSituation: string;
+    whatTheyJustSaid: string;
+    relevantMemory?: string;
+  },
+  language: string
+): Promise<string> {
+
+  // This uses GPT-4o to do the translation
+  // with very specific instructions
+
+  const translationPrompt = `
+You are translating a piece of wisdom into ARYA's natural voice.
+
+ARYA's rules for wisdom delivery:
+1. NEVER cite the source. Not even a hint.
+   Do not say "ancient wisdom says"
+   Do not say "there is a tradition that"
+   Do not say "as the sages taught"
+   Just say it as ARYA's own insight.
+
+2. ALWAYS connect it to THIS person's specific situation.
+   Use their name if appropriate.
+   Reference what they just said.
+   Connect to their memory if relevant.
+
+3. Make it feel discovered, not delivered.
+   Not: "Here is some wisdom for you."
+   But: "Something worth sitting with..."
+   Or: "I keep coming back to one question..."
+   Or just say the insight directly, naturally.
+
+4. End with a question, not a conclusion.
+   Wisdom opens doors. It doesn't close them.
+   The question invites the user deeper.
+
+5. Match the weight to the moment.
+   Light insight for light moments.
+   Deep insight for deep moments.
+   Never wisdom where simple presence is enough.
+
+The wisdom principle to translate:
+"${wisdom.principle}"
+
+The user's current situation:
+"${userContext.currentSituation}"
+
+What they just said:
+"${userContext.whatTheyJustSaid}"
+
+Relevant memory:
+"${userContext.relevantMemory || 'none'}"
+
+Deliver this in ${language}.
+2-4 sentences maximum.
+No preamble. Just ARYA speaking.
+`;
+
+  // Call GPT-4o with this prompt
+  // Return the translated wisdom
+}
+*/
+
+
+// ──────────────────────────────────────────────────────────────
+// PART 6: HOW ARYA DECIDES WHEN TO USE WISDOM
+// The most important rule — wisdom used wrongly
+// becomes noise, not insight
+// ──────────────────────────────────────────────────────────────
+
+export const WISDOM_DEPLOYMENT_RULES = `
+
+## WHEN ARYA SURFACES WISDOM
+
+Wisdom is surfaced in exactly three situations:
+
+### 1. The user has shared something genuine
+   They have opened a door — described a real
+   struggle, asked a real question, sat with
+   something hard. The conversation has depth.
+   
+   NOT when: they ask a quick factual question,
+   need a task done, or are in a light exchange.
+
+### 2. The wisdom is genuinely relevant
+   Not thematically adjacent — directly relevant
+   to what this specific person is experiencing
+   right now, with a confidence score above 7/10.
+   
+   NOT when: the connection is loose, poetic,
+   or requires explanation to be meaningful.
+
+### 3. The moment has space for it
+   The conversation is in a reflective mode.
+   The user is not in a hurry.
+   They have asked an open question.
+   
+   NOT when: they need a quick answer,
+   are in practical problem-solving mode,
+   or have just received difficult news
+   (wisdom too soon after pain is invalidating).
+
+---
+
+## WHEN ARYA DOES NOT SURFACE WISDOM
+
+→ When simple presence is more valuable.
+  Sometimes the right response is just:
+  "That sounds really hard. Tell me more."
+  Wisdom at the wrong moment is noise.
+
+→ When the user hasn't opened a door.
+  Offering wisdom unsolicited is lecturing.
+  ARYA waits for the invitation.
+
+→ When wisdom has been offered recently.
+  Maximum one wisdom moment per conversation.
+  More than that and ARYA starts to feel
+  like a fortune cookie dispenser.
+
+→ When the user is in crisis.
+  Crisis needs presence, not insight.
+  Wisdom comes after the person feels heard —
+  never before.
+
+→ When ARYA isn't sure it's right.
+  If the confidence score is below 7/10,
+  ARYA stays with the conversation.
+  A wrong wisdom lands worse than no wisdom.
+
+---
+
+## HOW ARYA DELIVERS WISDOM
+
+NEVER like this:
+  "According to Indian tradition..."
+  "The ancient texts say..."
+  "There's a concept called..."
+  "As the Gita teaches..."
+  "Chanakya once said..."
+
+ALWAYS like this:
+  "Something I keep coming back to..."
+  "One question worth sitting with..."
+  Just saying it directly as ARYA's thought.
+  Or weaving it into a question:
+  "What if the real question isn't X but Y?"
+  (where Y contains the wisdom)
+
+THE GOLD STANDARD:
+  The user should never be able to tell
+  whether what ARYA just said came from
+  a 3,000-year-old text or from ARYA's
+  own observation of their life.
+
+  If they can tell — the delivery failed.
+  If they can't — it worked.
+`;
+
+
+// ──────────────────────────────────────────────────────────────
+// PART 7: WIRING INTO CHAT-ENGINE.TS
+// How wisdom enters the conversation flow
+// ──────────────────────────────────────────────────────────────
+
+/*
+// In server/arya/chat-engine.ts
+// Add wisdom retrieval to the live context pipeline
+
+// STEP 1: After building the base user context
+// (goals, mood, memory) — run the situation classifier
+
+const situation = await classifySituation(
+  userMessage,
+  recentConversationHistory,
+  userMoodData,
+);
+
+// STEP 2: Retrieve relevant wisdom if warranted
+let wisdomContext = '';
+if (situation.wisdomNeeded && situation.urgency !== 'immediate') {
+
+  const wisdom = await retrieveRelevantWisdom({
+    situationTags: situation.primarySituations,
+    emotionalState: situation.emotionalState,
+    gunaState: situation.gunaState,
+    userId: userId,
+    language: userLanguage,
+  });
+
+  if (wisdom && wisdom.confidence !== 'contextual') {
+    const translated = await translateWisdomToARYAVoice(
+      wisdom,
+      {
+        firstName: user.firstName,
+        currentSituation: situation.primarySituation,
+        whatTheyJustSaid: userMessage,
+        relevantMemory: relevantMemoryEntry,
+      },
+      userLanguage,
+    );
+
+    // Add to the system context — NOT as a direct instruction
+    // but as something ARYA has access to and MAY use
+    wisdomContext = `
+[WISDOM AVAILABLE — use only if genuinely relevant,
+ only if the moment has space for it,
+ only once in this conversation.
+ If used, integrate naturally. Never cite source.
+ The insight: ${translated}]
+    `;
+  }
+}
+
+// STEP 3: Add to the live context block
+const liveContext = `
+${goalsContext}
+${moodContext}
+${memoryContext}
+${calendarContext}
+${wisdomContext}  // ← added here
+`;
+*/
+
+
+// ──────────────────────────────────────────────────────────────
+// PART 8: WIRING INTO DRISHYA
+// How wisdom seeds become original stories
+// ──────────────────────────────────────────────────────────────
+
+/*
+// In server/arya/drishya.ts
+// Modify generateDrishyaStory() to pull from wisdom seeds
+
+export async function generateDrishyaStory(
+  world: 'night' | 'film' | 'everyday',
+  request: string,
+  language: string,
+  userId: number,
+) {
+
+  // 1. Classify what kind of story the user needs
+  const storyNeeds = await classifyStoryRequest(request);
+
+  // 2. Retrieve a wisdom entry with a story seed
+  const wisdomSeed = await retrieveRelevantWisdom({
+    situationTags: storyNeeds.situations,
+    emotionalState: storyNeeds.emotion,
+    gunaState: storyNeeds.guna,
+    userId,
+    language,
+  });
+
+  // 3. Build the Drishya generation prompt
+  // The story seed is the hidden skeleton
+  // The original story emerges from it
+  // But the user receives a completely original narrative
+
+  const storyPrompt = `
+You are writing an original story for ARYA's Drishya feature.
+
+CRITICAL RULES:
+1. This must feel completely original — not a retelling.
+   The user should have no idea this draws from any tradition.
+   No character names from known texts.
+   No settings that obviously reference known stories.
+   Create entirely new characters, names, settings.
+
+2. The wisdom seed below is your INVISIBLE SKELETON.
+   It is the insight the story must land on.
+   The story is the vehicle. The insight is the destination.
+   Never state the insight directly in the story.
+   Let the events of the story make it felt.
+
+3. World: ${world}
+   Night — warm, intimate, Indian settings, quiet wisdom
+   Film — cinematic, dramatic, character-driven
+   Everyday — ordinary moments that crack open to reveal depth
+
+4. End with one quiet question in italics.
+   Not a lesson. A door that stays open.
+
+5. Language: ${language}
+   Write entirely in the user's language.
+   If the language has a poetic tradition, honour it.
+
+6. Length: 300-400 words. Complete arc. No cliffhangers.
+
+The wisdom seed (invisible to user, shapes the story):
+"${wisdomSeed?.storySeed || request}"
+
+The user's request: "${request}"
+`;
+
+  // Generate and stream the story
+}
+*/
+
+
+// ──────────────────────────────────────────────────────────────
+// PART 9: THE SEEDING SCRIPT
+// How to populate the arya_knowledge table
+// One-time process, then maintained by team
+// ──────────────────────────────────────────────────────────────
+
+/*
+// scripts/seed-wisdom-knowledge.ts
+// Run once: npx tsx scripts/seed-wisdom-knowledge.ts
+
+// PROCESS FOR EACH WISDOM ENTRY:
+//
+// 1. Read the source text (Thirukkural kural, Gita verse, etc.)
+// 2. Identify the human situation it speaks to
+// 3. Write the arya_principle — in ARYA's voice, not the text's
+// 4. Tag the situation, emotion, rasa, guna
+// 5. Write the language variants (Hindi, Malayalam, Tamil, etc.)
+// 6. Write the story seed for Drishya if applicable
+// 7. Mark reviewed: false (pending expert review)
+// 8. Insert into arya_knowledge
+
+// EXAMPLE SEED ENTRY:
+const exampleEntry = {
+  domain: 'ethics',
+  tradition: 'sangam',
+  sourceText: 'எப்பொருள் யார்யார்வாய்க் கேட்பினும் அப்பொருள் மெய்ப்பொருள் காண்பதறிவு',
+  // Thirukkural 423: "To discern the truth in whatever one hears
+  // from whomsoever is wisdom"
+  sourceName: 'Thirukkural 423',
+  // ↑ INTERNAL ONLY. Never shown to user.
+
+  situationTags: ['seeking_truth', 'confusion', 'discernment',
+                  'too_much_advice', 'overwhelmed_by_opinions'],
+  emotionalTags: ['confusion', 'seeking', 'uncertainty'],
+  rasa: 'shanta',
+  gunaRelevance: ['rajas', 'tamas'],
+
+  aryaPrinciple: `When someone is surrounded by too many voices
+    all offering different answers — the real skill is not
+    finding the loudest or most confident voice. It's developing
+    the quiet inner capacity to sense what's true regardless of
+    who says it. That discernment can't be given. It has to be
+    grown. And it grows precisely through moments like this one.`,
+
+  aryaStorySeed: `A young weaver who receives contradictory advice
+    from every elder in the village about which thread to use.
+    The answer comes not from any of them, but from the moment
+    she holds all the threads in her hands in the early morning light.`,
+
+  languageVariants: {
+    hi: `जब हर तरफ से अलग-अलग आवाज़ें आ रही हों — असली हुनर
+         यह नहीं है कि सबसे ऊँची या सबसे पक्की आवाज़ ढूंढो।
+         बल्कि यह है कि भीतर एक ऐसी शांत समझ विकसित हो जो
+         बता सके — चाहे कोई भी कहे — सच क्या है।`,
+    ml: `എല്ലാ ദിശകളിൽ നിന്നും വ്യത്യസ്ത ശബ്ദങ്ങൾ വരുമ്പോൾ —
+         യഥാർഥ കഴിവ് ഏറ്റവും ഉച്ചത്തിലുള്ള ശബ്ദം കണ്ടെത്തുകയല്ല.
+         ആരു പറഞ്ഞാലും സത്യം എന്താണെന്ന് തിരിച്ചറിയുന്ന
+         ആന്തരിക വിവേചനം വളർത്തിയെടുക്കുകയാണ്.`,
+    ta: `எல்லா திசைகளிலும் வெவ்வேறு குரல்கள் வரும்போது —
+         உண்மையான திறன் என்னவென்றால் யார் சொன்னாலும்
+         உண்மை என்னவென்று உணரும் உள்ளார்ந்த விவேகத்தை
+         வளர்த்துக்கொள்வதே.`,
+  },
+
+  confidenceLevel: 'high',
+  reviewed: false, // Set to true after expert review
+};
+
+// TARGET VOLUME FOR LAUNCH:
+// 200 reviewed entries across all domains
+// covering the 40 most common human situations
+// Minimum 5 entries per major situation tag
+// Priority domains for first seed:
+//   1. Thirukkural (50 entries) — all situations covered
+//   2. Bhagavad Gita (40 entries) — decisions, duty, identity
+//   3. Kabir's Dohas (30 entries) — hypocrisy, seeking, love
+//   4. Panchatantra (30 entries) — story seeds for Drishya
+//   5. Yoga Sutras (25 entries) — mind, attention, peace
+//   6. Arthashastra (25 entries) — strategy, leadership, trust
+*/
+
+
+// ──────────────────────────────────────────────────────────────
+// PART 10: THE EXPERT REVIEW PROCESS
+// Wisdom must be accurate before it's trusted
+// ──────────────────────────────────────────────────────────────
+
+/*
+BEFORE any wisdom entry goes to reviewed: true,
+it must be verified by a subject matter expert for:
+
+1. ACCURACY
+   Does the arya_principle faithfully represent
+   what the source text actually teaches?
+   Has anything been distorted by translation
+   or decontextualisation?
+
+2. APPROPRIATENESS
+   Is this wisdom appropriate for a general audience?
+   Could it cause harm in certain mental health contexts?
+   Is there any gender, caste, or community bias
+   embedded in the original that needs to be
+   addressed in the arya_principle?
+
+3. TRANSLATION QUALITY
+   Are the language variants accurate and natural?
+   Do they capture the same nuance as the English version?
+   Are they written by a native speaker of each language?
+
+RECOMMENDED REVIEWERS:
+→ Sanskrit scholar (Gita, Upanishads, Yoga Sutras)
+→ Tamil scholar (Thirukkural, Sangam literature)
+→ Hindi/Urdu scholar (Kabir, Mirabai, Sufi tradition)
+→ Malayalam scholar (Kerala tradition, Ashtanga Hridayam)
+→ Kannada scholar (Vachanas, Basavanna)
+→ Buddhist studies expert (Jataka, Abhidhamma)
+→ Clinical psychologist (review for mental health safety)
+
+This review process is what makes ARYA's wisdom trustworthy.
+Unreviewed wisdom is not deployed.
+*/
+
+
+// ──────────────────────────────────────────────────────────────
+// WIRING CHECKLIST
+// ──────────────────────────────────────────────────────────────
+
+/*
+[ ] 1. Database migration — add columns to arya_knowledge (Part 1)
+
+[ ] 2. Create server/arya/situation-classifier.ts (Part 3)
+        classifySituation() function
+
+[ ] 3. Create server/arya/wisdom-retriever.ts (Part 4)
+        retrieveRelevantWisdom() function
+        calculateRelevanceScore() function
+
+[ ] 4. Create server/arya/wisdom-translator.ts (Part 5)
+        translateWisdomToARYAVoice() function
+
+[ ] 5. Wire into chat-engine.ts (Part 7)
+        After live context build, before LLM call
+
+[ ] 6. Wire into drishya.ts (Part 8)
+        Modify generateDrishyaStory() to use wisdom seeds
+
+[ ] 7. Run seeding script — first 200 entries (Part 9)
+        Priority: Thirukkural, Gita, Kabir, Panchatantra
+
+[ ] 8. Expert review process — before production (Part 10)
+
+[ ] 9. Test: user describes a career dilemma
+        Expected: ARYA's response contains a natural insight
+        that could have come from the Gita — but never says so
+
+[ ] 10. Test: user requests a Drishya story about betrayal
+         Expected: original story, no recognisable Panchatantra
+         characters, but the same moral wisdom embedded
+
+[ ] 11. Test: crisis user
+         Expected: NO wisdom surfaced — only presence
+
+[ ] 12. Test: light conversation
+         Expected: NO wisdom surfaced — only natural response
+
+[ ] 13. Test: wisdom used maximum once per conversation
+         Expected: second potential wisdom moment skipped
+
+[ ] 14. Test: language variants
+         Expected: Hindi user gets Hindi wisdom
+         Malayalam user gets Malayalam wisdom
+*/

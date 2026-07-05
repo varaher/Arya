@@ -38,7 +38,21 @@ export const aryaKnowledge = pgTable("arya_knowledge", {
   version: integer("version").default(1),
   rules: jsonb("rules"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull()
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  // ── Wisdom Intelligence Columns ──────────────────────────────
+  // INTERNAL ONLY. None of these are ever shown to users.
+  situationTags: text("situation_tags").array().default(sql`ARRAY[]::text[]`),
+  emotionalTags: text("emotional_tags").array().default(sql`ARRAY[]::text[]`),
+  aryaPrinciple: text("arya_principle"),
+  aryaStorySeed: text("arya_story_seed"),
+  rasa: varchar("rasa", { length: 20 }),
+  gunaRelevance: text("guna_relevance").array().default(sql`ARRAY[]::text[]`),
+  languageVariants: jsonb("language_variants"),
+  confidenceLevel: varchar("confidence_level", { length: 20 }).default("high"),
+  reviewed: boolean("reviewed").default(false),
+  tradition: varchar("tradition", { length: 100 }),
+  sourceText: text("source_text"),
+  sourceName: varchar("source_name", { length: 500 }),
 });
 
 // Knowledge Drafts Table (self-learning AI drafts)

@@ -1,3 +1,4 @@
 - [Drishya Architecture](drishya-architecture.md) — Stories segment: knowledge domain='stories', 16 records seeded, SSE streaming via /api/drishya/story, saved in arya_drishya_stories table.
 - [Prana health profile](prana-health-profile.md) — health coaching: height_cm/weight_kg/sex/activity_level on arya_users, profile setup modal, CoachTab SSE, PersonalizedStatsCard with BMI/BMR
 - [Trial Budget System](trial-budget.md) — Taper-up model in trial-budget.ts; two independent layers (feature access via getEffectivePlan, daily volume via checkTrialConversationBudget); plan-status + trial-status both need isPaidSubscriber fix for Razorpay subscribers.
+- [Wisdom Knowledge Architecture](wisdom-architecture.md) — 12 new columns on arya_knowledge, 3 new services (situation-classifier, wisdom-retriever, wisdom-translator), wired into chat-engine + drishya, 24 seeds across 9 traditions.
