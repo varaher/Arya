@@ -1,16 +1,19 @@
 {
-  "id": "/",
-  "name": "ARYA - AI Assistant",
+  "id": "https://aryaai.in/",
+  "name": "ARYA - Personal Thinking & Growth Assistant",
   "short_name": "ARYA",
   "description": "Your personal thinking and growth assistant. Think clearly, feel less alone.",
-  "start_url": "/",
+  "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
   "background_color": "#0a0e1a",
-  "theme_color": "#0a0e1a",
-  "orientation": "portrait",
-  "lang": "en",
-  "categories": ["productivity", "education", "utilities"],
+  "theme_color": "#00a896",
+  "orientation": "portrait-primary",
+  "lang": "en-IN",
+  "dir": "ltr",
+  "categories": ["productivity", "education", "utilities", "lifestyle"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icons/icon-192.png",
@@ -36,5 +39,29 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "shortcuts": [
+    {
+      "name": "New Chat",
+      "short_name": "Chat",
+      "description": "Start a new conversation with ARYA",
+      "url": "/?shortcut=chat",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "My Goals",
+      "short_name": "Goals",
+      "description": "View and update your goals",
+      "url": "/my-goals?shortcut=goals",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "share_target": {
+    "action": "/",
+    "method": "GET",
+    "params": {
+      "text": "shared_text",
+      "url": "shared_url"
+    }
+  }
 }
