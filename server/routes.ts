@@ -4138,11 +4138,14 @@ Note: """${(transcript as string).trim()}"""`,
         : "";
 
       // Pull wisdom seeds from arya_knowledge — rotate through domains by day of year
-      // so each day draws from a different tradition (Sanskrit, Chanakya, Vidura, etc.)
-      const WISDOM_DOMAINS = ["sanskrit", "chanakya", "vidura", "thiruvalluvar", "krishna", "shukra"];
+      // so each day draws from a different tradition
+      const WISDOM_DOMAINS = [
+        "gita", "ramayana", "mahabharata", "upanishads",
+        "sanskrit", "chanakya", "vidura", "thiruvalluvar", "krishna", "shukra"
+      ];
       const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
       const primaryDomain = WISDOM_DOMAINS[dayOfYear % WISDOM_DOMAINS.length];
-      const secondaryDomain = WISDOM_DOMAINS[(dayOfYear + 2) % WISDOM_DOMAINS.length];
+      const secondaryDomain = WISDOM_DOMAINS[(dayOfYear + 3) % WISDOM_DOMAINS.length];
 
       let wisdomSeeds: string[] = [];
       try {
