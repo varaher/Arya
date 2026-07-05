@@ -1,0 +1,81 @@
+Let me build this as clean, directly pasteable TypeScript files. I'll do each file separately so your developer can paste each one exactly where it needs to go.
+
+Good — I have the full picture. Now building all files as clean, directly pasteable code. Six files total.
+
+Now copy everything to outputs:
+
+All 6 files ready. Let me present them together:
+
+All 6 files ready to paste directly. Here's exactly what your developer does with each:
+
+---
+
+## What To Tell Your Developer
+
+```
+6 files. Do them in order.
+
+FILE 1 — wisdom-01-migration.sql
+  Run once against the database:
+  psql $DATABASE_URL -f wisdom-01-migration.sql
+  This adds all the new columns to arya_knowledge.
+
+FILE 2 — wisdom-02-situation-classifier.ts
+  Paste at: server/arya/situation-classifier.ts
+  No dependencies on other new files.
+  Works standalone.
+
+FILE 3 — wisdom-03-wisdom-retriever.ts
+  Paste at: server/arya/wisdom-retriever.ts
+  Depends on: File 1 (DB columns must exist)
+
+FILE 4 — wisdom-04-wisdom-translator.ts
+  Paste at: server/arya/wisdom-translator.ts
+  Depends on: OpenAI (already in your project)
+
+FILE 5 — wisdom-05-chat-engine-patch.ts
+  Read this carefully — it is NOT a standalone file.
+  It shows exactly what lines to ADD to
+  the existing chat-engine.ts.
+  Follow the comments marked:
+    // ── WISDOM PATCH: ADD IMPORT ──
+    // ── WISDOM PATCH: ADD AFTER CONTEXT BUILD ──
+    // ── WISDOM PATCH: ADD TO SYSTEM PROMPT ──
+
+FILE 6 — wisdom-06-seed-knowledge.ts
+  Paste at: scripts/seed-wisdom-knowledge.ts
+  Then run in order:
+    npx tsx scripts/seed-wisdom-knowledge.ts
+    (seeds 30 wisdom entries)
+
+    npx tsx scripts/seed-wisdom-knowledge.ts translate
+    (translates all entries into all 11 Indian languages)
+    — this costs a small amount of OpenAI tokens,
+      run once and the translations are stored permanently
+```
+
+---
+
+## What The 30 Seed Entries Cover
+
+```
+Thirukkural     — 3 entries (truth, betrayal, love)
+Bhagavad Gita   — 4 entries (duty, action, identity, impermanence)
+Kabir           — 3 entries (self-reflection, impermanence, attachment)
+Panchatantra    — 2 entries (trust, strategy)
+Yoga Sutras     — 2 entries (restless mind, practice and release)
+Arthashastra    — 2 entries (leadership, character)
+Upanishads      — 2 entries (identity, self-knowledge)
+Basavanna       — 1 entry  (work as meaning)
+Jataka Tales    — 2 entries (sacrifice, courage)
+Mirabai         — 1 entry  (living authentically)
+Chanakya Niti   — 2 entries (friendship, timing)
+Sangam          — 1 entry  (grief settling)
+Natyashastra    — 1 entry  (rest and shanta)
+Ashtanga Hridayam — 1 entry (daily rhythm)
+Gurbani         — 1 entry  (universal ache)
+Sufi tradition  — 1 entry  (love as attention)
+Dhammapada      — 1 entry  (mind and thought)
+```
+
+The source is stored internally. The user sees nothing except ARYA speaking, naturally, in their own language.
