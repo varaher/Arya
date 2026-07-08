@@ -3979,6 +3979,7 @@ export default function AryaChat() {
   const [renamingId, setRenamingId] = useState<number | null>(null);
   const [editModeChats, setEditModeChats] = useState(false);
   const [selectedChats, setSelectedChats] = useState<Set<number>>(new Set());
+  const [chatSearchQuery, setChatSearchQuery] = useState("");
   const [renameValue, setRenameValue] = useState("");
   const [pinnedIds, setPinnedIds] = useState<Set<number>>(() => {
     try { return new Set(JSON.parse(localStorage.getItem("arya_pinned_convs") || "[]")); } catch { return new Set(); }
@@ -4251,6 +4252,12 @@ export default function AryaChat() {
       return bp - ap;
     });
   }, [conversations, pinnedIds]);
+
+  const visibleConversations = useMemo(() => {
+    const q = chatSearchQuery.trim().toLowerCase();
+    if (!q) return sortedConversations;
+    return sortedConversations.filter((conv) => (conv.title || "").toLowerCase().includes(q));
+  }, [sortedConversations, chatSearchQuery]);
 
   const startRehearsal = async () => {
     if (!rehearsalPerson.trim() || rehearsalLoading) return;
@@ -5261,6 +5268,29 @@ export default function AryaChat() {
           )}
         </div>
 
+        <div className="px-3 pt-2 pb-1 border-b border-gray-100 dark:border-slate-700">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+            <input
+              data-testid="input-search-chats"
+              type="text"
+              value={chatSearchQuery}
+              onChange={(e) => setChatSearchQuery(e.target.value)}
+              placeholder={t("search_chats") || "Search past chats..."}
+              className="w-full pl-8 pr-7 py-1.5 rounded-lg text-xs bg-gray-100 dark:bg-slate-800 border border-transparent focus:border-emerald-300 dark:focus:border-emerald-700 focus:outline-none text-gray-700 dark:text-gray-200 placeholder:text-gray-400"
+            />
+            {chatSearchQuery && (
+              <button
+                data-testid="button-clear-search-chats"
+                onClick={() => setChatSearchQuery("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+
         <div className="px-2 py-2 border-b border-gray-100 dark:border-slate-700 flex gap-1 overflow-x-auto">
           <button
             data-testid="button-toggle-memory"
@@ -5317,7 +5347,12 @@ export default function AryaChat() {
         </div>
 
         <div className="flex-1 overflow-y-auto space-y-1 px-2 py-2" data-testid="list-conversations" onClick={() => setOpenMenuId(null)}>
-          {sortedConversations.map((conv) => {
+          {chatSearchQuery.trim() && visibleConversations.length === 0 && (
+            <div data-testid="text-no-search-results" className="text-center text-xs text-gray-400 dark:text-gray-500 py-8 px-4">
+              No chats found for "{chatSearchQuery.trim()}"
+            </div>
+          )}
+          {visibleConversations.map((conv) => {
             const date = new Date(conv.createdAt);
             const now = new Date();
             const isToday = date.toDateString() === now.toDateString();

@@ -56,6 +56,7 @@ const translations: Record<UiLanguage, Record<string, string>> = {
   en: {
     chat_history:      "Chat History",
     new_chat:          "New Chat",
+    search_chats:      "Search past chats...",
     memory:            "Memory",
     goals:             "Goals",
     alerts:            "Alerts",
@@ -663,6 +664,7 @@ const translations: Record<UiLanguage, Record<string, string>> = {
   hi: {
     chat_history:      "चैट इतिहास",
     new_chat:          "नई चैट",
+    search_chats:      "पुरानी चैट खोजें...",
     memory:            "स्मृति",
     goals:             "लक्ष्य",
     alerts:            "सूचनाएं",
