@@ -41,10 +41,13 @@ The project is structured as a monorepo with a React frontend, an Express backen
 -   **Multilingual UI:** Full English + Hindi UI via `client/src/lib/i18n.ts`. `getTranslation(lang, key)` / `getStoredUiLanguage()` / `setStoredUiLanguage()`. Applied across sidebar, chat, mood card, voice notes panel, and customize panel.
 -   **Theme:** Light/dark toggle. `ThemeProvider` in `client/src/lib/theme.tsx`, stored in localStorage. `[data-theme="dark"]` on `<html>`, Tailwind v4 `@custom-variant dark`.
 -   **Desktop layout:** `UniversalBottomNav` wrapped in `md:hidden` so bottom nav shows only on mobile. Main chat area uses `md:h-[100dvh]` for full-viewport height on desktop.
+-   **Chat sidebar search:** Search box above the conversation list filters by title (case-insensitive, client-side). Conversation titles auto-generate from the first ~50 characters of the user's opening message.
 
 ### Backend
 
 -   **Framework:** Express.js on Node.js with TypeScript.
+
+#### Core AI & Knowledge
 -   **User Auth Service:** Signup (bcrypt hashing), login, session verification, profile management, Google OAuth login (`server/arya/user-auth-service.ts`).
 -   **Core AI Components:**
     -   **Orchestrator** (`orchestrator.ts`): Routes queries to knowledge domains based on intent and context.
@@ -54,15 +57,20 @@ The project is structured as a monorepo with a React frontend, an Express backen
     -   **Neural Link Engine** (`neural-link-engine.ts`): Discovers cross-domain connections for insights.
     -   **Smart Commands** (`smart-commands.ts`): Instant local commands without LLM API calls ("Alexa Mode").
     -   **Goal Detection in Chat:** Detects goal-setting intent post-response via pattern matching and GPT-4o-mini, auto-creating structured goals.
-    -   **Memory Engine** (`memory-engine.ts`): Persistent user memory, cross-session context.
+    -   **Memory Engine** (`memory-engine.ts`): Persistent user memory, cross-session context. Extracted memories capped at 150 characters; recall pulls up to 100 recent memories, scores relevance, surfaces top 20 (top 10 injected into chat-engine system prompt).
     -   **Patterns Engine** (`patterns-engine.ts`): Detects behavioral patterns over time.
     -   **Silence Detection** (`silence-detection.ts`): Detects inactivity and sends re-engagement nudges.
     -   **Response Cache Engine** (`response-cache-engine.ts`): Golden response caching, similarity matching, shadow-mode lookup to reduce LLM dependency.
+-   **Chat context window:** `chat-engine.ts` sends only the **last 20 messages** of a conversation to the LLM as working context (keeps prompts fast/cheap). Full message history itself is never truncated — every message is stored permanently and fetched with no limit when a conversation is opened; there is no automatic deletion or retention cutoff (only manual delete or the Right to Forget tool removes data).
 -   **Indian Legal Knowledge:** 13 knowledge records in `arya_knowledge` — BNS 2023, BNSS 2023, consumer rights, RTI Act, labour law, property law, family law, cyber law, banking rights, traffic law, women's safety, fundamental rights, and a Hindi-language rights summary. ARYA system prompt in `chat-engine.ts` includes an INDIAN LEGAL KNOWLEDGE RULE instructing the model to draw from these records.
+
+#### Niti — Business Mind
 -   **Niti — Business Mind** (`niti.ts`, `market-lens.ts`): Dark-premium PWA at `/niti` with two modes on the home screen, toggled by a tab bar:
     -   **⚖️ Decisions tab**: 6-screen onboarding → philosopher routing (Chanakya/Vidura/Thiruvalluvar/Krishna/Shukracharya) → session types (Help me decide / Stress-test my plan / People situation / Think out loud). Each ARYA response: insight + push question (italic gold) + 3 follow-up chips. Sessions in `arya_niti_sessions` + `arya_niti_messages`.
     -   **📈 Market Lens tab**: (1) Indicative market indices (NIFTY/SENSEX/BANK NF/NIFTY IT) with sparkline SVGs; (2) 3 rotating news cards with impact chips + "What does this mean for me?" → ARYA GPT modal; (3) Portfolio Journal (self-reported holdings in `arya_portfolio_holdings`, ARYA asks Socratic questions per holding); (4) Think with ARYA (4 pre-loaded questions + free input → ARYA one-shot response). Every ARYA market response ends with a Socratic question — never a verdict. Legal safety + product magic. Routes: GET /api/niti/market/indices, /api/niti/market/news, POST /api/niti/market/ask, GET/POST /api/niti/portfolio, DELETE /api/niti/portfolio/:id.
     -   User business profile on `arya_users`: nitiEnabled, businessType, businessStage, businessRole, businessChallenge, businessFocusAreas. Menu: ✦ Niti — Business Wisdom in both user menus.
+
+#### Goals & Reminders
 -   **Goal Intelligence System** (`server/arya/goal-checkin.ts`): Proactive check-in engine wired into chat-engine and the evening scheduler.
     -   8 check-in types: `just_created`, `stalled_early`, `stalled_week`, `stalled_long`, `abandoned`, `near_deadline`, `overdue`, `completed_recent` — each triggers a different ARYA nudge style (curious, not judgmental).
     -   Vague-goal detection: goals like "get fit" / "learn more" trigger a quiet specificity prompt if created in the last 10 min.
@@ -71,31 +79,39 @@ The project is structured as a monorepo with a React frontend, an Express backen
     -   3 routes: `GET /api/user/goals/abandoned`, `POST /api/user/goals/:goalId/hygiene` (keep/pause/release), `POST /api/user/goals/:goalId/checkin` (yes/skipped).
     -   **GoalsPanel hygiene section**: shows "💤 Sitting untouched" cards for goals 21+ days old with 0% progress — three one-tap actions: ✓ Keep it · ⏸ Pause · ✕ Let go.
 -   **Alarm & Reminder differentiation:** Reminders = standard push notifications. Alarms = time-critical push with alarm sound + full-screen in-app overlay (cannot be missed). SW handles `alarm` type separately from `reminder`. Snooze (10 min) and Dismiss routes: `POST /api/user/reminders/:id/snooze`, `POST /api/user/reminders/:id/dismiss`.
--   **Retention & Engagement Services:**
-    -   **Morning Briefing** (`morning-briefing.ts`): Daily personalized briefing — active goals + news + motivational line, sent as a notification. Triggered by scheduler for users with `morningBriefingEnabled = true`.
-    -   **Weekly Review** (`weekly-review.ts`): Sunday GPT-generated narrative review woven from goals, memory, and voice flashback (notes from 28–62 days prior). Sent as notification.
-    -   **Hard Conversation Rehearsal** (`rehearsal.ts`): ARYA plays a persona (boss, parent, investor, etc.) so users can practise difficult conversations. Conversations enter `rehearsal` mode with `rehearsalPersona` + `rehearsalExchangeCount` tracked on the conversations table. POST `/api/arya/conversations/:id/start-rehearsal`, `/rehearsal-feedback`.
-    -   **Community Challenges** (`community-challenge.ts`): Shared weekly challenges, community posts, reactions.
-    -   **Reflection Share** (`reflection-share.ts`): Tokenised public links for sharing weekly reflections.
+
+#### Retention & Engagement
+-   **Morning Briefing** (`morning-briefing.ts`): Daily personalized briefing — active goals + news + motivational line, sent as a notification. Triggered by scheduler for users with `morningBriefingEnabled = true`.
+-   **Weekly Review** (`weekly-review.ts`): Sunday GPT-generated narrative review woven from goals, memory, and voice flashback (notes from 28–62 days prior). Sent as notification.
+-   **Hard Conversation Rehearsal** (`rehearsal.ts`): ARYA plays a persona (boss, parent, investor, etc.) so users can practise difficult conversations. Conversations enter `rehearsal` mode with `rehearsalPersona` + `rehearsalExchangeCount` tracked on the conversations table. POST `/api/arya/conversations/:id/start-rehearsal`, `/rehearsal-feedback`.
+-   **Community Challenges** (`community-challenge.ts`): Shared weekly challenges, community posts, reactions.
+-   **Reflection Share** (`reflection-share.ts`): Tokenised public links for sharing weekly reflections.
 -   **Scheduler** (`reminder-scheduler.ts`): Manages all background tasks — morning briefings (every 5 min check), weekly reviews (every 15 min check), community challenges, silence detection, pattern analysis, goal reminders, evening goal check-ins (every 10 min check, fires at 8 PM IST), Sarvam health check (midnight). All raw queries use `sql` tagged template literals.
 -   **Notifications System:** Types include welcome, goal_created, progress, streak, reminder, alarm, morning_briefing, weekly_review, community_challenge, pattern_insight, silence_nudge, notes_reminder, goal_checkin.
+
+#### Documents, Calendar & Mood
 -   **Document & Image Analysis with OCR:** `POST /api/arya/conversations/:id/scan` — accepts base64 file + mimeType + question. **Images:** Sarvam OCR (`/v1/ocr`) extracts raw text first (handles Hindi, Tamil, Telugu, Kannada, Malayalam, Bengali, Gujarati, Punjabi, Odia + English); extracted text is sent to GPT-4o for interpretation. Falls back to GPT-4o vision if OCR fails or returns empty. **PDFs:** pdf-parse text extraction → GPT-4o; scanned/image PDFs: JPEG embedded bytes extracted → GPT-4o vision. Response optionally translated via Sarvam. Frontend: "Scan document" button in `···` toolbar menu opens camera (`capture="environment"`) → auto-sends through OCR pipeline. Loading indicator: "🔍 OCR reading document…".
 -   **Google Calendar** (`google-calendar.ts`): OAuth 2.0 flow. Routes: `GET /api/calendar/auth-url`, `GET /api/calendar/callback`, `GET /api/calendar/status`, `GET /api/calendar/events`, `DELETE /api/calendar/disconnect`. CalendarPanel component in AryaChat.
 -   **Mood Check-ins:** `POST /api/user/mood` (mood + energy + note), `GET /api/user/mood/today`, `GET /api/user/mood/history`. Stored in `arya_mood_checkins`. MoodCheckInCard shown once daily in welcome screen (below TalkToARYACard).
--   **Voice Notes & Study Notes (complete):**
-    -   `POST /api/user/voice-notes` — saves transcript + base64 audio (`audioData`) + `mimeType` + `durationSeconds`. Background GPT-4o-mini job generates summary (bullet format) + extracts tasks/people/deadlines → updates note. Sends `notes_reminder` notification.
-    -   `GET /api/user/voice-notes` — list (50 most recent).
-    -   `GET /api/user/voice-notes/:id/audio` — streams stored WAV as binary (`Content-Type: audio/wav`); returns 204 if no audio stored.
-    -   `POST /api/user/voice-notes/:id/save-tasks` — creates goals from extracted tasks (with `dueDate` where found), stamps `tasksSavedAt` on note, links each goal via `sourceNoteId`.
-    -   `DELETE /api/user/voice-notes/:id`.
-    -   **VoiceNoteCard UI:** header (timestamp · duration · language), ✨ Summary bullets, collapsible full transcript, 📋 action items found section with "✅ Save as goals" full-width button, `[🔊 Play]` / `[⏹ Stop]` toggle, `[📋 Copy]` copies transcript.
-    -   **Study Notes System** (`server/arya/study-notes-extractor.ts`): Auto-detects study intent from user messages (exam_prep, ppt_prep, concept_learn, essay_writing, topic_summary). When detected: injects structured guidance into ARYA's system prompt, extracts bullets from the streamed response (zero latency), saves to `arya_voice_notes` with `source_type='chat'`, emits `note_saved` SSE event. Background GPT-4o-mini generates 4 exam questions (exam_prep / concept_learn only) and enriches the note after `done:true`.
-    -   **StudyNoteToast** (`AryaChat.tsx`): `createPortal` to `document.body`. Slides up from bottom on `note_saved` SSE event, shows icon per study type (📝📊💡✍️📌), auto-dismisses in 6s, "Open →" jumps to Notes panel.
-    -   **StudyNoteCard** (`AryaChat.tsx`): Teal/cyan color scheme (distinct from violet voice notes). Shows title, type badge, ✨ Summary bullets, ❓ Likely Exam Questions (filled ~3s after response).
-    -   **DB columns added to `arya_voice_notes`:** `source_type` (voice/chat), `study_type`, `exam_questions` (JSONB), `conversation_id`.
-    -   **Chat-engine proactive context**: unactioned voice note tasks (extractedTasks > 0 AND !tasksSavedToGoals) are added to liveContext as `UNACTIONED VOICE NOTE ITEMS` — ARYA weaves these naturally into conversation, never as a list announcement.
+
+#### Voice Notes & Study Notes
+-   `POST /api/user/voice-notes` — saves transcript + base64 audio (`audioData`) + `mimeType` + `durationSeconds`. Background GPT-4o-mini job generates summary (bullet format) + extracts tasks/people/deadlines → updates note. Sends `notes_reminder` notification.
+-   `GET /api/user/voice-notes` — list (50 most recent).
+-   `GET /api/user/voice-notes/:id/audio` — streams stored WAV as binary (`Content-Type: audio/wav`); returns 204 if no audio stored.
+-   `POST /api/user/voice-notes/:id/save-tasks` — creates goals from extracted tasks (with `dueDate` where found), stamps `tasksSavedAt` on note, links each goal via `sourceNoteId`.
+-   `DELETE /api/user/voice-notes/:id`.
+-   **VoiceNoteCard UI:** header (timestamp · duration · language), ✨ Summary bullets, collapsible full transcript, 📋 action items found section with "✅ Save as goals" full-width button, `[🔊 Play]` / `[⏹ Stop]` toggle, `[📋 Copy]` copies transcript.
+-   **Study Notes System** (`server/arya/study-notes-extractor.ts`): Auto-detects study intent from user messages (exam_prep, ppt_prep, concept_learn, essay_writing, topic_summary). When detected: injects structured guidance into ARYA's system prompt, extracts bullets from the streamed response (zero latency), saves to `arya_voice_notes` with `source_type='chat'`, emits `note_saved` SSE event. Background GPT-4o-mini generates 4 exam questions (exam_prep / concept_learn only) and enriches the note after `done:true`.
+-   **StudyNoteToast** (`AryaChat.tsx`): `createPortal` to `document.body`. Slides up from bottom on `note_saved` SSE event, shows icon per study type (📝📊💡✍️📌), auto-dismisses in 6s, "Open →" jumps to Notes panel.
+-   **StudyNoteCard** (`AryaChat.tsx`): Teal/cyan color scheme (distinct from violet voice notes). Shows title, type badge, ✨ Summary bullets, ❓ Likely Exam Questions (filled ~3s after response).
+-   **DB columns added to `arya_voice_notes`:** `source_type` (voice/chat), `study_type`, `exam_questions` (JSONB), `conversation_id`.
+-   **Chat-engine proactive context**: unactioned voice note tasks (extractedTasks > 0 AND !tasksSavedToGoals) are added to liveContext as `UNACTIONED VOICE NOTE ITEMS` — ARYA weaves these naturally into conversation, never as a list announcement.
+
+#### Prompt Engineering & Privacy
 -   **Image Prompt Engineer** (in ARYA system prompt, `chat-engine.ts`): ARYA acts as a personal prompt engineer when the user asks for image prompts or visual content for Midjourney, DALL-E, Canva AI, Adobe Firefly, Microsoft Designer, or Stable Diffusion. Knows exact syntax for each tool. Personalises prompts using user context (doctor → Kerala hospital setting, founder → Indian office, student → study environment, goals → pulled from Goals panel). Default recommendation: Canva AI (free, browser-based). Always writes the actual prompt — never just explains how to write one.
 -   **Right to Forget / Privacy Control** (`forget-me-service.ts`): DPDP Act 2023 compliance. Three deletion paths — selective (by category), period (date range), full reset. All operations logged to `arya_deletion_audit` (records THAT a deletion happened, never WHAT). Routes: `GET /api/user/data-summary`, `DELETE /api/user/forget/selective`, `/period`, `/all`.
+
+#### Billing, Usage & Infra
 -   **Billing / Subscriptions:** `client/src/pages/PricingPage.tsx` (full page at `/pricing`) and `client/src/components/PricingModal.tsx` (in-app modal). Both support Razorpay checkout (India, INR) via `POST /api/subscription/create` + `POST /api/subscription/verify`. International (USD) buttons are visually disabled ("Coming soon"). Plans: Free · Core (₹249) · Pro (₹499) · Elite (₹999). Annual toggle shows 2-months-free pricing. Exit-intent nudge fires when user taps back arrow. Voice minutes: Free=0, Core=150/mo, Pro=500/mo, Elite=unlimited. Razorpay secrets (`RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_PLAN_ID_CORE`, `RAZORPAY_PLAN_ID_PRO`, `RAZORPAY_WEBHOOK_SECRET`) not yet configured — billing UI is ready but live payments will activate once secrets are added.
 -   **Usage & Cost Management:** Granular usage tracking, daily cost estimation, rate limiting, cost cap enforcement (`usage-budget.ts`). Beta mode with invite-only access and user caps (`beta-guard.ts`).
 -   **Multi-Tenancy:** `tenant_id` and validation middleware throughout.
@@ -147,13 +163,13 @@ Key tables:
 
 ## Key Files
 
--   `client/src/pages/AryaChat.tsx` — Main chat UI (~8500 lines). Contains: VoiceConversationMode, VoiceNotesPanel (with NoteCard/StudyNoteCard — audio playback, copy, save-tasks, exam questions), StudyNoteToast, MoodCheckInCard, TalkToARYACard, CalendarPanel, CustomizePanel, RehearsalSetupPanel, GoalsPanel (with hygiene section), QuickStartTutorial (16 steps), all sidebar panels, welcome screen, detectTextScript utility.
+-   `client/src/pages/AryaChat.tsx` — Main chat UI (~9300 lines). Contains: VoiceConversationMode, VoiceNotesPanel (with NoteCard/StudyNoteCard — audio playback, copy, save-tasks, exam questions), StudyNoteToast, MoodCheckInCard, TalkToARYACard, CalendarPanel, CustomizePanel, RehearsalSetupPanel, GoalsPanel (with hygiene section), QuickStartTutorial (16 steps), sidebar chat search, all sidebar panels, welcome screen, detectTextScript utility.
 -   `client/src/pages/PricingPage.tsx` — Full pricing page: India/Global toggle, Monthly/Annual billing toggle, plan cards with feature bullets, feature comparison table, voice metering explainer, FAQ accordion, exit-intent nudge modal. Plans: Free · Core (₹249/₹207 annual) · Pro (₹499/₹416) · Elite (₹999/₹833).
 -   `client/src/components/PricingModal.tsx` — In-app upgrade modal (triggered from chat UI). India-only, monthly pricing, Razorpay checkout.
 -   `client/src/pages/PrivacyControlPage.tsx` — Right to Forget multi-step UI (3 deletion paths, typed confirmation, receipt screen).
--   `client/src/lib/i18n.ts` — English + Hindi translations, getTranslation/getStoredUiLanguage/setStoredUiLanguage.
--   `server/routes.ts` — All API routes (~5100 lines).
--   `server/arya/chat-engine.ts` — Core LLM pipeline. Builds liveContext from: goals, memory, mood, calendar, news, voice notes (summary + unactioned tasks). Injects goal check-in system prompt block. IMAGE PROMPT ENGINEER section in ARYA_SYSTEM_PROMPT. Calls markGoalCheckedIn post-stream. `studyNotesAddition` parameter injects study context when study intent detected.
+-   `client/src/lib/i18n.ts` — English + Hindi (+ additional locale scaffolding) translations, getTranslation/getStoredUiLanguage/setStoredUiLanguage.
+-   `server/routes.ts` — All API routes (~5900 lines).
+-   `server/arya/chat-engine.ts` — Core LLM pipeline. Builds liveContext from: goals, memory, mood, calendar, news, voice notes (summary + unactioned tasks). Injects goal check-in system prompt block. IMAGE PROMPT ENGINEER section in ARYA_SYSTEM_PROMPT. Calls markGoalCheckedIn post-stream. `studyNotesAddition` parameter injects study context when study intent detected. Sends last 20 messages of a conversation as LLM context (see Backend > Core AI & Knowledge).
 -   `server/arya/study-notes-extractor.ts` — Study intent detection (5 types), bullet extraction from responses, note title builder, study notes system prompt addition builder.
 -   `server/arya/goal-checkin.ts` — Goal intelligence: buildGoalCheckInContext, markGoalCheckedIn, isVagueGoal, buildSpecificityPrompt, getAbandonedGoals. 8 check-in types.
 -   `server/arya/sarvam-service.ts` — Sarvam STT, TTS, translate functions. TTS: text sanitisation pipeline, bulbul:v2, two-tier fallback logging. `isIndianLanguage()`, `getSpeakerForLanguage()`, `SUPPORTED_LANGUAGES`. `isTransliteratedEnglish()` helper for Whisper fallback.
@@ -166,3 +182,4 @@ Key tables:
 -   `shared/schema.ts` — Drizzle schema for all tables.
 -   `shared/models/chat.ts` — conversations + messages tables.
 -   `client/public/sw.js` — Service worker. Handles push notification actions: alarm (snooze/dismiss), goal_checkin (yes/skip/not-yet), reminder, morning_briefing, weekly_review.
+-   `client/public/manifest.json` — PWA manifest. Absolute `id` (`https://aryaai.in/`), `prefer_related_applications: false`, `display_override`, `shortcuts` (New Chat, Goals), `share_target` — configured to avoid Android Play Protect WebAPK warnings on install.
