@@ -1,0 +1,18 @@
+You're right, and it's real — there's a viral app in China called "Si Le Me" (Chinese for "are you dead"), which requires users to check in by pressing a button, and alerts an emergency contact if they go silent for two consecutive days. It became the most popular paid download on China's Apple App Store earlier this year. One developer put it simply: "It's unrealistic to message people every day just to tell them you're still alive." This isn't a fringe thing either — China could have as many as 200 million one-person households by 2030, with more than 30% of people living alone. That "are you dead" button being a bestseller says everything about how thin the safety net of connection has gotten, even for young people.
+
+That reframes your whole "what's your goal" problem, honestly. If loneliness is this severe — people genuinely worried no one would notice if they died alone — then **asking Gen Z to articulate a life goal is asking too much, too soon.** Goal-setting assumes a baseline of "I feel okay and I want to move forward." A lot of your users may not have that baseline yet. They just want to feel like someone/something registered that they exist today.
+
+So maybe the sequencing is backwards. Instead of:
+
+**Goal-first** → "What's on your mind that's unresolved?"
+
+Try **presence-first, goal-optional**:
+
+1. **Just be there daily** — a check-in that isn't about mood tracking or goals, just contact. Something as low-effort as the Chinese app's single button, but ARYA responds like it noticed — "Hey. Good to hear from you." No task attached.
+2. **Let goals emerge from pattern, not interrogation** — after days/weeks of casual conversation, ARYA notices a recurring thread ("you've mentioned feeling behind at work three times this week") and *offers* to turn it into a goal, rather than asking upfront. This matches what ARYA already claims to do with mood/pattern data — you'd just be applying it to goal formation too.
+3. **Reframe "goal" language entirely for Gen Z** — the word "goal" carries pressure and judgment baggage this generation is actively rejecting (see the "lying flat" and self-compassion trends in China too). Softer framing: "something you're carrying" or "what's taking up space in your head" rather than "goal."
+4. **Make "I don't know what I want" itself a valid, well-handled answer** — not a dead end ARYA fumbles, but a doorway into Therapist-mode-style gentle exploration, explicitly normalized so it doesn't feel like failing the onboarding.
+
+The core insight: for a generation where "proof of life" is a bestselling app, ARYA's real value prop might not be goal-achievement at all — it's *witnessed existence*. Goals can come later, once someone feels steady enough to want something.
+
+Want me to draft a revised onboarding flow around "presence before goals"?
