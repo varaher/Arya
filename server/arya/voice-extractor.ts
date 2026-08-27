@@ -15,8 +15,9 @@
 
 import OpenAI from "openai";
 import { db } from "../db";
-import { aryaVoiceNotes, aryaMemory, aryaNotifications } from "@shared/schema";
+import { aryaVoiceNotes, aryaMemory } from "@shared/schema";
 import { eq } from "drizzle-orm";
+import { createAndPushNotification } from "./reminder-scheduler";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -130,11 +131,12 @@ Return empty arrays if nothing found. Keep each item under 15 words. Do not incl
   if (extraction.hasDecisionLanguage && extraction.decisions.length > 0) {
     const decisionPreview = extraction.decisions[0];
     try {
-      await db.insert(aryaNotifications).values({
+      await createAndPushNotification({
         userId,
         type: "pattern_insight" as any,
         title: "🤔 Sounds like a decision you're sitting with",
         message: `Your voice note touched on: "${decisionPreview}". Want to think it through properly? Open Niti → Help me decide.`,
+        url: "/?tab=niti",
       });
     } catch (err: any) {
       console.error("[VOICE-EXTRACTOR] Niti notification failed:", err.message);

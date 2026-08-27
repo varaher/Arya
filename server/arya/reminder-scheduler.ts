@@ -11,6 +11,7 @@ import { generateWeeklyReflectionShares } from "./reflection-share";
 import { sweepGoalReminders } from "./auto-reminder";
 import { sweepCalendarForReminders } from "./calendar-auto-reminders";
 import { processTrialNotifications } from "./trial-notifications";
+import { createNotificationActionToken } from "./notification-action-token";
 
 let vapidPublicKey: string | null = null;
 let isInitialized = false;
@@ -86,9 +87,22 @@ function getAppBaseUrl(): string {
   return '';
 }
 
-async function sendPushToUser(userId: string, title: string, body: string, icon: string, extra?: Record<string, unknown>): Promise<void> {
+export async function sendPushToUser(userId: string, title: string, body: string, icon: string, extra?: Record<string, unknown>): Promise<void> {
   const subs = await db.select().from(aryaPushSubscriptions).where(eq(aryaPushSubscriptions.userId, userId));
-  const payload = JSON.stringify({ title, body, icon, url: "/", ...extra });
+  const reminderId = typeof extra?.reminderId === "string" ? extra.reminderId : null;
+  const goalId = typeof extra?.goalId === "string" ? extra.goalId : null;
+  const type = typeof extra?.type === "string" ? extra.type : "";
+  const actionToken = reminderId
+    ? createNotificationActionToken(userId, "reminder", reminderId, ["dismiss", "snooze"])
+    : type === "goal_checkin" && goalId
+      ? createNotificationActionToken(userId, "goal", goalId, ["checkin"])
+      : null;
+  const payload = JSON.stringify({ title, body, icon, url: "/", ...extra, ...(actionToken ? { actionToken } : {}) });
+
+  if (subs.length === 0) {
+    console.info("[PUSH] Skipped delivery: no active device subscription.");
+    return;
+  }
 
   for (const sub of subs) {
     try {
@@ -99,9 +113,39 @@ async function sendPushToUser(userId: string, title: string, body: string, icon:
     } catch (err: any) {
       if (err.statusCode === 410 || err.statusCode === 404) {
         await db.delete(aryaPushSubscriptions).where(eq(aryaPushSubscriptions.id, sub.id));
+        console.info("[PUSH] Removed an expired device subscription.");
+      } else {
+        console.error("[PUSH] Delivery failed:", err.statusCode || "unknown", err.message || "Unknown error");
       }
     }
   }
+}
+
+export async function createAndPushNotification(input: {
+  userId: string;
+  type: string;
+  title: string;
+  message: string;
+  goalId?: string;
+  url?: string;
+  extra?: Record<string, unknown>;
+}): Promise<void> {
+  await db.insert(aryaNotifications).values({
+    userId: input.userId,
+    type: input.type as any,
+    title: input.title,
+    message: input.message,
+    goalId: input.goalId,
+  }).catch((err: any) => {
+    console.error("[NOTIFICATIONS] Failed to save in-app notification:", err.message || "Unknown error");
+  });
+
+  await sendPushToUser(input.userId, input.title, input.message, "/icons/icon-192.png", {
+    type: input.type,
+    ...(input.goalId ? { goalId: input.goalId } : {}),
+    ...(input.url ? { url: input.url } : {}),
+    ...input.extra,
+  });
 }
 
 function getReminderIcon(type: string): string {
@@ -326,7 +370,17 @@ async function checkGoalReminders(): Promise<void> {
     for (const goal of rows) {
       if (!goal.user_id) continue;
 
-      await sendPushToUser(goal.user_id, `🔔 ${goal.title}`, "ARYA reminder", "/icons/icon-192.png");
+      await sendPushToUser(
+        goal.user_id,
+        `🔔 ${goal.title}`,
+        "ARYA reminder",
+        "/icons/icon-192.png",
+        {
+          type: "goal_reminder",
+          goalId: goal.id,
+          url: `/?panel=goals&goalId=${encodeURIComponent(goal.id)}`,
+        },
+      );
 
       await db.execute(
         sql`UPDATE arya_goals SET reminder_fired = true WHERE id = ${goal.id}`
@@ -334,7 +388,7 @@ async function checkGoalReminders(): Promise<void> {
 
       await db.insert(aryaNotifications).values({
         userId: goal.user_id,
-        type: 'reminder',
+        type: 'goal_reminder',
         title: 'ARYA reminder',
         message: goal.title,
         goalId: goal.id,
@@ -388,7 +442,17 @@ async function checkEveningGoalCheckins(): Promise<void> {
         `🎯 ${goal.title}`,
         "Did you work on this today?",
         "/icons/icon-192.png",
-        { type: "goal_checkin", goalId: goal.id, ...(cardImage ? { image: cardImage } : {}) }
+        {
+          type: "goal_checkin",
+          goalId: goal.id,
+          url: `/?panel=goals&goalId=${encodeURIComponent(goal.id)}`,
+          actions: [
+            { action: "yes", title: "✓ Yes" },
+            { action: "no", title: "Not yet" },
+            { action: "skip", title: "Skip today" },
+          ],
+          ...(cardImage ? { image: cardImage } : {}),
+        }
       );
       console.log(`[EveningCheckin] Sent to user ${goal.user_id} for goal "${goal.title}"`);
     }

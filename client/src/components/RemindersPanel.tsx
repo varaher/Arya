@@ -4,7 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useUserAuth } from "@/lib/user-auth";
 import { useLanguage } from "@/lib/language-context";
-import { requestNotificationPermission } from "@/lib/push-notifications";
+import {
+  enablePushNotifications,
+  getPushSetupStatus,
+  sendTestPushNotification,
+  unsubscribeFromPush,
+} from "@/lib/push-notifications";
 import { playARYASound } from "@/utils/reminderSound";
 import {
   Bell, Plus, Trash2, X, Clock, Droplets, Briefcase,
@@ -83,7 +88,12 @@ export default function RemindersPanel({ onClose }: { onClose: () => void }) {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [notifPermission, setNotifPermission] = useState<NotificationPermission>("default");
+  const [pushSubscribed, setPushSubscribed] = useState(false);
+  const [pushSupported, setPushSupported] = useState(true);
+  const [notificationMessage, setNotificationMessage] = useState<string | null>(null);
   const [requestingPerm, setRequestingPerm] = useState(false);
+  const [testingPush, setTestingPush] = useState(false);
+  const [disablingPush, setDisablingPush] = useState(false);
   const [editingReminder, setEditingReminder] = useState<Reminder | null>(null);
   const [editTime, setEditTime] = useState("");
   const [editSaving, setEditSaving] = useState(false);
@@ -98,8 +108,16 @@ export default function RemindersPanel({ onClose }: { onClose: () => void }) {
   });
 
   useEffect(() => {
-    if ("Notification" in window) setNotifPermission(Notification.permission);
+    let cancelled = false;
+    getPushSetupStatus().then((status) => {
+      if (cancelled) return;
+      setNotifPermission(status.permission);
+      setPushSubscribed(status.subscribed);
+      setPushSupported(status.supported);
+      setNotificationMessage(status.error || null);
+    });
     if (isLoggedIn && token) loadReminders();
+    return () => { cancelled = true; };
   }, [isLoggedIn, token]);
 
   async function loadReminders() {
@@ -112,13 +130,47 @@ export default function RemindersPanel({ onClose }: { onClose: () => void }) {
 
   async function enableNotifications() {
     if (!token || requestingPerm) return;
-    if (Notification.permission === "denied") { setNotifPermission("denied"); return; }
     setRequestingPerm(true);
+    setNotificationMessage(null);
     try {
-      const perm = await requestNotificationPermission(token);
-      setNotifPermission(perm);
-    } catch {}
+      const result = await enablePushNotifications(token);
+      setNotifPermission(result.permission);
+      setPushSubscribed(result.subscribed);
+      setPushSupported(result.supported);
+      setNotificationMessage(result.error || null);
+    } catch {
+      setNotificationMessage("ARYA could not enable notifications on this device. Please try again.");
+    }
     finally { setRequestingPerm(false); }
+  }
+
+  async function disableNotifications() {
+    if (!token || disablingPush) return;
+    setDisablingPush(true);
+    setNotificationMessage(null);
+    try {
+      await unsubscribeFromPush(token);
+      setPushSubscribed(false);
+      setNotificationMessage("Notifications are turned off for this device.");
+    } catch {
+      setNotificationMessage("ARYA could not turn off notifications. Please try again.");
+    } finally {
+      setDisablingPush(false);
+    }
+  }
+
+  async function testNotifications() {
+    if (!token || testingPush) return;
+    setTestingPush(true);
+    setNotificationMessage(null);
+    try {
+      await sendTestPushNotification(token);
+      setNotificationMessage("Test sent. Put ARYA in the background and it should appear within a few seconds.");
+    } catch (error: any) {
+      setNotificationMessage(error.message || "ARYA could not send a test notification.");
+    } finally {
+      setTestingPush(false);
+    }
   }
 
   async function createReminder(data?: typeof QUICK_TEMPLATES[0]) {
@@ -207,7 +259,17 @@ export default function RemindersPanel({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {notifPermission === "denied" && (
+          {!pushSupported && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 flex items-start gap-3">
+              <Bell className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-red-300 font-medium">Notifications unavailable in this app</p>
+                <p className="text-xs text-red-400/70 mt-0.5">This Play Store installation needs a PWA/TWA notification connection or a native push bridge.</p>
+              </div>
+            </div>
+          )}
+
+          {pushSupported && notifPermission === "denied" && (
             <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 flex items-start gap-3">
               <Bell className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
               <div className="flex-1 min-w-0">
@@ -217,7 +279,7 @@ export default function RemindersPanel({ onClose }: { onClose: () => void }) {
             </div>
           )}
 
-          {notifPermission === "default" && (
+          {pushSupported && notifPermission === "default" && (
             <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex items-start gap-3">
               <Bell className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
               <div className="flex-1 min-w-0">
@@ -231,11 +293,41 @@ export default function RemindersPanel({ onClose }: { onClose: () => void }) {
             </div>
           )}
 
-          {notifPermission === "granted" && (
-            <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-3 flex items-center gap-2">
-              <Check className="w-4 h-4 text-green-400 shrink-0" />
-              <p className="text-xs text-green-300">Notifications enabled — ARYA will alert you even in background</p>
+          {pushSupported && notifPermission === "granted" && pushSubscribed && (
+            <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-3">
+              <div className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-green-400 shrink-0" />
+                <p className="text-xs text-green-300">Notifications enabled for this device</p>
+              </div>
+              <div className="flex gap-2 mt-2">
+                <Button size="sm" variant="outline" onClick={testNotifications} disabled={testingPush}
+                  className="h-7 px-2.5 text-xs border-green-500/30 text-green-300 hover:bg-green-500/10">
+                  {testingPush ? "Sending…" : "Send test"}
+                </Button>
+                <Button size="sm" variant="ghost" onClick={disableNotifications} disabled={disablingPush}
+                  className="h-7 px-2.5 text-xs text-muted-foreground hover:text-red-300 hover:bg-red-500/10">
+                  {disablingPush ? "Turning off…" : "Turn off"}
+                </Button>
+              </div>
             </div>
+          )}
+
+          {pushSupported && notifPermission === "granted" && !pushSubscribed && (
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex items-start gap-3">
+              <Bell className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-amber-300 font-medium">Finish setting up notifications</p>
+                <p className="text-xs text-amber-400/70 mt-0.5">Permission is allowed, but this device is not connected yet.</p>
+                <Button size="sm" onClick={enableNotifications} disabled={requestingPerm}
+                  className="mt-2 bg-amber-500 hover:bg-amber-400 text-black text-xs h-7 px-3 disabled:opacity-60">
+                  {requestingPerm ? t("rem_requesting") : "Try again"}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {notificationMessage && (
+            <p className="px-1 text-xs text-muted-foreground" role="status">{notificationMessage}</p>
           )}
 
           <div>

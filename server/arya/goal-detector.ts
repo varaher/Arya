@@ -1,10 +1,11 @@
 import OpenAI from "openai";
 import { db } from "../db";
-import { aryaGoals, aryaNotifications } from "@shared/schema";
+import { aryaGoals } from "@shared/schema";
 import type { GoalType } from "@shared/schema";
 import { createCalendarEvent, isCalendarConnected } from "./google-calendar";
 import { scheduleGoalReminders } from "./auto-reminder";
 import { eq } from "drizzle-orm";
+import { createAndPushNotification } from "./reminder-scheduler";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -181,13 +182,14 @@ export async function detectAndCreateGoals(
           ? ` · ${reminderAt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`
           : '';
 
-      await db.insert(aryaNotifications).values({
+      await createAndPushNotification({
         userId,
         type: 'goal_created',
         title: TYPE_NOTIFICATION[goalType],
         message: `"${g.title}"${dueDateStr}`,
         goalId: goal.id,
-      }).catch(() => {});
+        url: `/?panel=goals&goalId=${encodeURIComponent(goal.id)}`,
+      });
 
       console.log(`[GoalDetector] ${goalType.toUpperCase()} created: "${g.title}" (conf: ${g.confidence})`);
     }

@@ -90,7 +90,6 @@ import ThinkingModeSelector, { THINKING_MODES_CLIENT } from "@/components/Thinki
 import { UpgradePrompt, type UpgradePromptConfig, UPGRADE_PROMPTS } from "@/components/UpgradePrompt";
 import CancelSubscription from "@/components/CancelSubscription";
 import PlanStatusBadge from "@/components/PlanStatusBadge";
-import { requestNotificationPermission } from "@/lib/push-notifications";
 import { playARYASound, playAlarmSound, stopAlarmSound } from "@/utils/reminderSound";
 import ConversationLimitBanner from "@/components/ConversationLimitBanner";
 import ConversationLimitBlock from "@/components/ConversationLimitBlock";
@@ -4392,15 +4391,6 @@ export default function AryaChat() {
     const timer = setTimeout(() => setShowFeatureTour(true), 1800);
     return () => clearTimeout(timer);
   }, [isLoggedIn, user?.id]);
-
-  useEffect(() => {
-    if (isLoggedIn && token && "Notification" in window && Notification.permission === "default") {
-      const timer = setTimeout(() => {
-        requestNotificationPermission(token).catch(() => {});
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [isLoggedIn, token]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);

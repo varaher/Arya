@@ -89,7 +89,8 @@ import {
   aryaCommunityPosts,
   aryaCommunityReactions,
 } from "@shared/schema";
-import { getVapidPublicKey } from "./arya/reminder-scheduler";
+import { createAndPushNotification, getVapidPublicKey, sendPushToUser } from "./arya/reminder-scheduler";
+import { verifyNotificationActionToken } from "./arya/notification-action-token";
 import { conversations } from "@shared/models/chat";
 import { streamRehearsalResponse, generateRehearsalFeedback } from "./arya/rehearsal";
 import { getDataSummary, forgetSelective, forgetPeriod, forgetAll } from "./arya/forget-me-service";
@@ -422,7 +423,10 @@ export async function registerRoutes(
     try {
       await db.insert(aryaPushSubscriptions)
         .values({ userId: user.id, endpoint, p256dh, auth })
-        .onConflictDoNothing();
+        .onConflictDoUpdate({
+          target: aryaPushSubscriptions.endpoint,
+          set: { userId: user.id, p256dh, auth },
+        });
       res.json({ success: true });
     } catch (err: any) {
       res.status(500).json({ error: "Failed to save subscription" });
@@ -436,21 +440,78 @@ export async function registerRoutes(
     if (!user) return res.status(401).json({ error: "Unauthorized" });
     const { endpoint } = req.body;
     if (endpoint) {
-      await db.delete(aryaPushSubscriptions).where(eq(aryaPushSubscriptions.endpoint, endpoint));
+      await db.delete(aryaPushSubscriptions).where(and(
+        eq(aryaPushSubscriptions.endpoint, endpoint),
+        eq(aryaPushSubscriptions.userId, user.id),
+      ));
     }
     res.json({ success: true });
+  });
+
+  app.post("/api/push/test", async (req: Request, res: Response) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith("Bearer ")) return res.status(401).json({ error: "Unauthorized" });
+    const user = await verifySession(authHeader.slice(7));
+    if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+    const subscriptions = await db.select({ id: aryaPushSubscriptions.id })
+      .from(aryaPushSubscriptions)
+      .where(eq(aryaPushSubscriptions.userId, user.id));
+    if (subscriptions.length === 0) {
+      return res.status(409).json({ error: "No active device subscription. Enable notifications first." });
+    }
+
+    setTimeout(() => {
+      sendPushToUser(
+        user.id,
+        "ARYA notifications are working",
+        "This is a test from ARYA. You will receive reminders and reflections here.",
+        "/icons/icon-192.png",
+        { type: "test", url: "/" },
+      ).catch((error: any) => {
+        console.error("[PUSH] Test delivery failed:", error.message || "Unknown error");
+      });
+    }, 5_000);
+    res.json({ success: true, subscriptions: subscriptions.length, deliveryDelaySeconds: 5 });
   });
 
   // =============================================
   // REMINDERS ROUTES
   // =============================================
 
-  async function requireUserAuth(req: Request, res: Response): Promise<{ id: string; name: string } | null> {
+  async function getAuthenticatedUser(req: Request): Promise<{ id: string; name: string } | null> {
     const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith("Bearer ")) { res.status(401).json({ error: "Unauthorized" }); return null; }
+    if (!authHeader?.startsWith("Bearer ")) return null;
     const user = await verifySession(authHeader.slice(7));
-    if (!user) { res.status(401).json({ error: "Unauthorized" }); return null; }
+    return user || null;
+  }
+
+  async function requireUserAuth(req: Request, res: Response): Promise<{ id: string; name: string } | null> {
+    const user = await getAuthenticatedUser(req);
+    if (!user) {
+      res.status(401).json({ error: "Unauthorized" });
+      return null;
+    }
     return user;
+  }
+
+  async function requireNotificationActionUser(
+    req: Request,
+    res: Response,
+    kind: "reminder" | "goal",
+    resourceId: string,
+    action: "snooze" | "dismiss" | "checkin",
+  ): Promise<{ id: string; name: string } | null> {
+    const signedInUser = await getAuthenticatedUser(req);
+    if (signedInUser) return signedInUser;
+
+    const actionToken = req.header("x-arya-notification-action");
+    const actionPayload = verifyNotificationActionToken(actionToken, { kind, resourceId, action });
+    if (!actionPayload) {
+      res.status(401).json({ error: "A valid ARYA notification action is required" });
+      return null;
+    }
+    return { id: actionPayload.userId, name: "" };
   }
 
   app.get("/api/reminders", async (req: Request, res: Response) => {
@@ -528,14 +589,19 @@ export async function registerRoutes(
 
   // Snooze a reminder — reschedule to snoozeUntil (called from SW or in-app overlay)
   app.post("/api/reminders/snooze", async (req: Request, res: Response) => {
-    const user = await requireUserAuth(req, res);
-    if (!user) return;
     try {
       const { reminderId, snoozeUntil } = req.body;
       if (!reminderId || !snoozeUntil) return res.status(400).json({ error: "reminderId and snoozeUntil are required" });
+      const user = await requireNotificationActionUser(req, res, "reminder", reminderId, "snooze");
+      if (!user) return;
+      const scheduledAt = new Date(snoozeUntil);
+      const now = Date.now();
+      if (!Number.isFinite(scheduledAt.getTime()) || scheduledAt.getTime() <= now + 15_000 || scheduledAt.getTime() > now + 30 * 24 * 60 * 60 * 1000) {
+        return res.status(400).json({ error: "Snooze time must be between 15 seconds and 30 days from now" });
+      }
       const [updated] = await db.update(aryaReminders)
         .set({
-          scheduledAt: new Date(snoozeUntil),
+          scheduledAt,
           snoozedAt: new Date(),
           snoozeCount: sql`snooze_count + 1`,
           isActive: true,
@@ -552,11 +618,13 @@ export async function registerRoutes(
 
   // Dismiss a reminder — deactivates once-only; recurring stays active for next cycle
   app.post("/api/reminders/:id/dismiss", async (req: Request, res: Response) => {
-    const user = await requireUserAuth(req, res);
+    const reminderId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    if (!reminderId) return res.status(400).json({ error: "Reminder id is required" });
+    const user = await requireNotificationActionUser(req, res, "reminder", reminderId, "dismiss");
     if (!user) return;
     try {
       const [reminder] = await db.select().from(aryaReminders)
-        .where(and(eq(aryaReminders.id, req.params.id), eq(aryaReminders.userId, user.id)))
+        .where(and(eq(aryaReminders.id, reminderId), eq(aryaReminders.userId, user.id)))
         .limit(1);
       if (!reminder) return res.status(404).json({ error: "Not found" });
       await db.update(aryaReminders)
@@ -564,7 +632,7 @@ export async function registerRoutes(
           isActive: reminder.recurrence === "once" ? false : reminder.isActive,
           lastTriggeredAt: new Date(),
         })
-        .where(eq(aryaReminders.id, req.params.id));
+        .where(eq(aryaReminders.id, reminderId));
       res.json({ success: true });
     } catch (err: any) {
       res.status(500).json({ error: "Failed to dismiss reminder" });
@@ -1096,19 +1164,40 @@ export async function registerRoutes(
   });
 
   // Goal evening check-in — records yes / skip result from notification action
-  app.post("/api/user/goals/:goalId/checkin", requireUser, async (req: Request, res: Response) => {
-    const userId = (req as any).userId;
-    const { goalId } = req.params;
+  app.post("/api/user/goals/:goalId/checkin", async (req: Request, res: Response) => {
+    const goalId = Array.isArray(req.params.goalId) ? req.params.goalId[0] : req.params.goalId;
+    if (!goalId) return res.status(400).json({ error: "Goal id is required" });
     const { completed, skipped } = req.body;
     try {
-      const result = completed ? 'completed' : skipped ? 'skipped' : 'noted';
+      const didComplete = completed === true;
+      const didSkip = skipped === true;
+      if (didComplete === didSkip) {
+        return res.status(400).json({ error: "Choose either completed or skipped" });
+      }
+      const signedInUser = await getAuthenticatedUser(req);
+      const actionPayload = signedInUser
+        ? null
+        : verifyNotificationActionToken(req.header("x-arya-notification-action"), {
+            kind: "goal",
+            resourceId: goalId,
+            action: "checkin",
+          });
+      const userId = signedInUser?.id || actionPayload?.userId;
+      if (!userId) return res.status(401).json({ error: "A valid ARYA notification action is required" });
+
+      const [goal] = await db.select({ id: aryaGoals.id }).from(aryaGoals)
+        .where(and(eq(aryaGoals.id, goalId), eq(aryaGoals.userId, userId)))
+        .limit(1);
+      if (!goal) return res.status(404).json({ error: "Goal not found" });
+
+      const result = didComplete ? 'completed' : 'skipped';
       await db.execute(
         sql`INSERT INTO arya_goal_checkins (user_id, goal_id, result) VALUES (${userId}, ${goalId}, ${result})`
       );
       await db.execute(
         sql`UPDATE arya_goals SET last_checked_at = NOW() WHERE id = ${goalId} AND user_id = ${userId}`
       );
-      if (completed) {
+      if (didComplete) {
         await db.execute(
           sql`UPDATE arya_goals SET streak_count = streak_count + 1, last_activity_at = NOW() WHERE id = ${goalId} AND user_id = ${userId}`
         );
@@ -1248,12 +1337,13 @@ export async function registerRoutes(
               const newStreak = (goal.streakCount || 0) + 1;
               await db.update(aryaGoals).set({ streakCount: newStreak }).where(eq(aryaGoals.id, goal.id));
 
-              await db.insert(aryaNotifications).values({
+              await createAndPushNotification({
                 userId,
                 type: "streak",
                 title: `${newStreak} Day Streak!`,
                 message: `Amazing! You've completed your daily goal for "${goal.title}" ${newStreak} days in a row. Keep it up!`,
                 goalId: goal.id,
+                url: `/?panel=goals&goalId=${encodeURIComponent(goal.id)}`,
               });
             }
           }
@@ -3047,12 +3137,13 @@ Note: """${(transcript as string).trim()}"""`,
             ? `Note saved — ${taskCount} action item${taskCount > 1 ? "s" : ""} found. Tap to review.`
             : "Note saved and transcribed.";
 
-          await db.insert(aryaNotifications).values({
+          await createAndPushNotification({
             userId,
             type: "notes_reminder" as any,
             title: "🎙️ Voice note saved",
             message: notifBody,
-          }).catch(() => {});
+            url: "/?panel=notes",
+          });
 
           // Memory extraction — goals, decisions, people → aryaMemory + Niti offer
           extractFromVoiceNote(userId, note.id, transcript as string).catch(() => {});
