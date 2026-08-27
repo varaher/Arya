@@ -6252,6 +6252,16 @@ export default function AryaChat() {
                  </p>
                </div>
              </motion.div>
+             <DailyQuoteCard token={token} />
+             {isLoggedIn && token && !moodCheckedInToday && (
+               <div ref={moodCardRef}>
+                 <MoodCheckInCard
+                   token={token}
+                   onComplete={() => setMoodCheckedInToday(true)}
+                   uiLang={uiLanguage}
+                 />
+               </div>
+             )}
              <AnimatePresence>
                {goalReassuranceVisible && (
                  <motion.div
