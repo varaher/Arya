@@ -6162,7 +6162,7 @@ export default function AryaChat() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.4 }}
-            className="overflow-y-auto min-h-0 flex flex-col items-center justify-start text-center px-4 pt-6 pb-20"
+            className="overflow-y-auto min-h-0 flex flex-col items-center justify-start text-center px-4 pt-6 pb-16"
             style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y", maxHeight: "100%" }}
           >
             <motion.div
@@ -6211,14 +6211,12 @@ export default function AryaChat() {
                <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-1">
                  {t("welcome_start_subheading")}
                </p>
-               <div className="flex flex-wrap gap-2 mt-3" role="list" aria-label="Conversation starters">
+                <div className="flex flex-wrap gap-2 mt-3" role="list" aria-label="Conversation starters">
                  {[
                    { key: "starter_work", icon: "💼" },
                    { key: "starter_health", icon: "🌱" },
                    { key: "starter_relationship", icon: "💛" },
                    { key: "starter_delay", icon: "⏳" },
-                   { key: "starter_overwhelmed", icon: "🌊" },
-                   { key: "starter_unknown", icon: "💬" },
                  ].map((starter, i) => (
                    <motion.button
                      key={starter.key}
@@ -6254,7 +6252,6 @@ export default function AryaChat() {
                  </p>
                </div>
              </motion.div>
-            <DailyQuoteCard token={token} />
              <AnimatePresence>
                {goalReassuranceVisible && (
                  <motion.div
@@ -6269,81 +6266,6 @@ export default function AryaChat() {
                  </motion.div>
                )}
              </AnimatePresence>
-            <div className="flex items-center gap-2 mb-1.5">
-              {!isLoggedIn && (
-                <button
-                  data-testid="button-welcome-signin"
-                  onClick={() => setShowUserAuth(true)}
-                  className="px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all flex items-center gap-1.5"
-                >
-                  <LogIn className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                  {t("sign_in_goals")}
-                </button>
-              )}
-              {conversations.length === 0 && (
-                <button
-                  data-testid="button-welcome-tutorial"
-                  onClick={() => setShowTutorial(true)}
-                  className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-slate-700 border border-gray-200 dark:border-slate-700 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-amber-300 transition-all flex items-center gap-1.5"
-                >
-                  <HelpCircle className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-                  {t("take_tour")}
-                </button>
-              )}
-            </div>
-            <TalkToARYACard
-              onStart={() => {
-                if (isMainFree) { setMainUpgradePrompt(UPGRADE_PROMPTS.voiceGate()); return; }
-                setShowVoiceMode(true);
-              }}
-              uiLang={uiLanguage}
-            />
-
-            {isLoggedIn && token && !moodCheckedInToday && (
-              <div ref={moodCardRef}>
-                <MoodCheckInCard
-                  token={token}
-                  onComplete={() => setMoodCheckedInToday(true)}
-                  uiLang={uiLanguage}
-                />
-              </div>
-            )}
-
-            {/* ── Quick Access (horizontal scrollable pills) ── */}
-            {isLoggedIn && (
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.35, delay: 0.32 }}
-                className="w-full mb-1"
-              >
-                <div className="flex gap-2 overflow-x-auto scrollbar-hide px-4 pb-1 -mx-4">
-                  {[
-                    { icon: "🎯", label: t("goals"),     action: () => { setShowGoals(true); setShowMemory(false); setShowNotes(false); setShowReminders(false); setShowCalendar(false); } },
-                    { icon: "🧠", label: t("memory"),    action: () => { setShowMemory(true); setShowGoals(false); setShowNotes(false); setShowReminders(false); setShowCalendar(false); } },
-                    { icon: "📝", label: t("notes"),     action: () => { setShowNotes(true); setShowGoals(false); setShowMemory(false); setShowReminders(false); setShowCalendar(false); } },
-                    { icon: "🔔", label: t("reminders"), action: () => { setShowReminders(true); setShowGoals(false); setShowMemory(false); setShowNotes(false); setShowCalendar(false); } },
-                    { icon: "📅", label: t("calendar"),  action: () => { setShowCalendar(true); setShowGoals(false); setShowMemory(false); setShowNotes(false); setShowReminders(false); } },
-                    { icon: "🏘️", label: t("community"), action: () => setLocation("/community") },
-                  ].map((item, i) => (
-                    <motion.button
-                      key={item.label}
-                      data-testid={`button-quick-access-${i}`}
-                      onClick={item.action}
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.2, delay: 0.34 + i * 0.04 }}
-                      whileHover={{ scale: 1.04 }}
-                      whileTap={{ scale: 0.92 }}
-                      className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-emerald-200 dark:hover:border-slate-500 transition-all whitespace-nowrap flex-shrink-0"
-                    >
-                      <span className="text-sm leading-none">{item.icon}</span>
-                      <span className="text-[11px] font-medium text-gray-600 dark:text-gray-300">{item.label}</span>
-                    </motion.button>
-                  ))}
-                </div>
-              </motion.div>
-            )}
 
             {/* ── Collapsible toggle for suggestion cards ── */}
             <motion.button
