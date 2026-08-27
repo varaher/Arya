@@ -4122,6 +4122,7 @@ export default function AryaChat() {
   const [futureLetterSaving, setFutureLetterSaving] = useState(false);
   const [futureLetterSaved, setFutureLetterSaved] = useState(false);
   const [showRehearsalSetup, setShowRehearsalSetup] = useState(false);
+  const [showChatStarters, setShowChatStarters] = useState(false);
   const [showWelcomeCards, setShowWelcomeCards] = useState(false);
   const rehearsalSetupRef = useRef<HTMLDivElement>(null);
   const moodCardRef = useRef<HTMLDivElement>(null);
@@ -6199,59 +6200,73 @@ export default function AryaChat() {
             >
               {t("your_pa")}
             </motion.p>
-             <motion.div
-               initial={{ opacity: 0, y: 10 }}
-               animate={{ opacity: 1, y: 0 }}
-               transition={{ duration: 0.4, delay: 0.26 }}
-               className="w-full max-w-2xl text-left mb-3 md:mb-4"
-             >
-               <h2 className="text-base md:text-lg font-semibold text-gray-800 dark:text-gray-100">
-                 {t("welcome_start_heading")}
-               </h2>
-               <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-1">
-                 {t("welcome_start_subheading")}
-               </p>
-                <div className="flex flex-wrap gap-2 mt-3" role="list" aria-label="Conversation starters">
-                 {[
-                   { key: "starter_work", icon: "💼" },
-                   { key: "starter_health", icon: "🌱" },
-                   { key: "starter_relationship", icon: "💛" },
-                   { key: "starter_delay", icon: "⏳" },
-                 ].map((starter, i) => (
-                   <motion.button
-                     key={starter.key}
-                     type="button"
-                     role="listitem"
-                     data-testid={`button-starter-${starter.key.replace("starter_", "")}`}
-                     onClick={() => sendMessage(t(starter.key))}
-                     initial={{ opacity: 0, y: 8 }}
-                     animate={{ opacity: 1, y: 0 }}
-                     transition={{ duration: 0.22, delay: 0.32 + i * 0.04 }}
-                     whileHover={{ y: -1 }}
-                     whileTap={{ scale: 0.97 }}
-                     className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full border border-emerald-100 dark:border-emerald-900/50 bg-white/85 dark:bg-slate-900/80 text-xs text-gray-600 dark:text-gray-300 hover:text-emerald-700 dark:hover:text-emerald-300 hover:border-emerald-300 dark:hover:border-emerald-700 hover:bg-emerald-50/70 dark:hover:bg-emerald-950/30 transition-all shadow-sm"
-                   >
-                     <span aria-hidden="true">{starter.icon}</span>
-                     <span>{t(starter.key)}</span>
-                   </motion.button>
-                 ))}
-               </div>
-               <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 mt-3">
-                 <button
-                   type="button"
-                   data-testid="button-guided-reflection"
-                   onClick={() => sendMessage("Guide me through a gentle reflection. Ask me one question at a time.")}
-                   className="inline-flex items-center justify-center gap-1.5 self-start px-3 py-2 rounded-lg bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-700 transition-colors shadow-sm"
-                 >
-                   <Sparkles className="w-3.5 h-3.5" />
-                   {t("guided_reflection")}
-                   <ArrowRight className="w-3 h-3" />
-                 </button>
-                 <p className="text-[11px] text-gray-400 dark:text-gray-500 leading-relaxed">
-                   {t("welcome_start_hint")}
-                 </p>
-               </div>
-             </motion.div>
+              <motion.button
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3, delay: 0.26 }}
+                onClick={() => setShowChatStarters(v => !v)}
+                aria-expanded={showChatStarters}
+                className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 border border-dashed border-gray-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all mb-1"
+                data-testid="button-toggle-chat-starters"
+              >
+                <span>{showChatStarters ? "▲" : "▼"}</span>
+                <span>{t("welcome_start_heading")}</span>
+              </motion.button>
+              <AnimatePresence initial={false}>
+                {showChatStarters && (
+                  <motion.div
+                    initial={{ opacity: 0, maxHeight: 0 }}
+                    animate={{ opacity: 1, maxHeight: 320 }}
+                    exit={{ opacity: 0, maxHeight: 0 }}
+                    transition={{ duration: 0.28 }}
+                    className="w-full max-w-2xl overflow-hidden text-left mb-3 md:mb-4"
+                  >
+                    <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-1">
+                      {t("welcome_start_subheading")}
+                    </p>
+                    <div className="flex flex-wrap gap-2 mt-3" role="list" aria-label="Conversation starters">
+                      {[
+                        { key: "starter_work", icon: "💼" },
+                        { key: "starter_health", icon: "🌱" },
+                        { key: "starter_relationship", icon: "💛" },
+                        { key: "starter_delay", icon: "⏳" },
+                      ].map((starter, i) => (
+                        <motion.button
+                          key={starter.key}
+                          type="button"
+                          role="listitem"
+                          data-testid={`button-starter-${starter.key.replace("starter_", "")}`}
+                          onClick={() => sendMessage(t(starter.key))}
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.22, delay: 0.08 + i * 0.04 }}
+                          whileHover={{ y: -1 }}
+                          whileTap={{ scale: 0.97 }}
+                          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full border border-emerald-100 dark:border-emerald-900/50 bg-white/85 dark:bg-slate-900/80 text-xs text-gray-600 dark:text-gray-300 hover:text-emerald-700 dark:hover:text-emerald-300 hover:border-emerald-300 dark:hover:border-emerald-700 hover:bg-emerald-50/70 dark:hover:bg-emerald-950/30 transition-all shadow-sm"
+                        >
+                          <span aria-hidden="true">{starter.icon}</span>
+                          <span>{t(starter.key)}</span>
+                        </motion.button>
+                      ))}
+                    </div>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 mt-3">
+                      <button
+                        type="button"
+                        data-testid="button-guided-reflection"
+                        onClick={() => sendMessage("Guide me through a gentle reflection. Ask me one question at a time.")}
+                        className="inline-flex items-center justify-center gap-1.5 self-start px-3 py-2 rounded-lg bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-700 transition-colors shadow-sm"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        {t("guided_reflection")}
+                        <ArrowRight className="w-3 h-3" />
+                      </button>
+                      <p className="text-[11px] text-gray-400 dark:text-gray-500 leading-relaxed">
+                        {t("welcome_start_hint")}
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
              <DailyQuoteCard token={token} />
              {isLoggedIn && token && !moodCheckedInToday && (
                <div ref={moodCardRef}>
