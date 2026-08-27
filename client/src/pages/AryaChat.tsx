@@ -1699,6 +1699,7 @@ function GoalsPanel({ onClose }: { onClose: () => void }) {
       setNewGoalTitle("");
       setNewGoalSteps("");
       playARYASound('goal');
+      window.dispatchEvent(new CustomEvent("arya:goal-saved"));
     },
   });
 
@@ -3803,6 +3804,8 @@ export default function AryaChat() {
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const [showToolMore, setShowToolMore] = useState(false);
   const [betaLangPopup, setBetaLangPopup] = useState<{ show: boolean; language: string; langCode: string } | null>(null);
+  const [goalReassuranceVisible, setGoalReassuranceVisible] = useState(false);
+  const goalReassuranceTimerRef = useRef<number | null>(null);
 
   const LANG_NAMES: Record<string, string> = {
     "ml-IN": "Malayalam", "hi-IN": "Hindi", "ta-IN": "Tamil", "te-IN": "Telugu",
@@ -3812,6 +3815,26 @@ export default function AryaChat() {
     "pt-BR": "Portuguese", "zh-CN": "Chinese", "ja-JP": "Japanese", "ko-KR": "Korean",
     "ru-RU": "Russian", "tr-TR": "Turkish", "sw-KE": "Swahili",
   };
+
+  useEffect(() => {
+    const handleGoalSaved = () => {
+      setGoalReassuranceVisible(true);
+      if (goalReassuranceTimerRef.current !== null) {
+        window.clearTimeout(goalReassuranceTimerRef.current);
+      }
+      goalReassuranceTimerRef.current = window.setTimeout(() => {
+        setGoalReassuranceVisible(false);
+        goalReassuranceTimerRef.current = null;
+      }, 6500);
+    };
+    window.addEventListener("arya:goal-saved", handleGoalSaved);
+    return () => {
+      window.removeEventListener("arya:goal-saved", handleGoalSaved);
+      if (goalReassuranceTimerRef.current !== null) {
+        window.clearTimeout(goalReassuranceTimerRef.current);
+      }
+    };
+  }, []);
 
   const GRADUATED_LANGS = new Set(["hi-IN", "ta-IN", "ml-IN"]);
 
@@ -6176,7 +6199,76 @@ export default function AryaChat() {
             >
               {t("your_pa")}
             </motion.p>
+             <motion.div
+               initial={{ opacity: 0, y: 10 }}
+               animate={{ opacity: 1, y: 0 }}
+               transition={{ duration: 0.4, delay: 0.26 }}
+               className="w-full max-w-2xl text-left mb-3 md:mb-4"
+             >
+               <h2 className="text-base md:text-lg font-semibold text-gray-800 dark:text-gray-100">
+                 {t("welcome_start_heading")}
+               </h2>
+               <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-1">
+                 {t("welcome_start_subheading")}
+               </p>
+               <div className="flex flex-wrap gap-2 mt-3" role="list" aria-label="Conversation starters">
+                 {[
+                   { key: "starter_work", icon: "💼" },
+                   { key: "starter_health", icon: "🌱" },
+                   { key: "starter_relationship", icon: "💛" },
+                   { key: "starter_delay", icon: "⏳" },
+                   { key: "starter_overwhelmed", icon: "🌊" },
+                   { key: "starter_unknown", icon: "💬" },
+                 ].map((starter, i) => (
+                   <motion.button
+                     key={starter.key}
+                     type="button"
+                     role="listitem"
+                     data-testid={`button-starter-${starter.key.replace("starter_", "")}`}
+                     onClick={() => sendMessage(t(starter.key))}
+                     initial={{ opacity: 0, y: 8 }}
+                     animate={{ opacity: 1, y: 0 }}
+                     transition={{ duration: 0.22, delay: 0.32 + i * 0.04 }}
+                     whileHover={{ y: -1 }}
+                     whileTap={{ scale: 0.97 }}
+                     className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full border border-emerald-100 dark:border-emerald-900/50 bg-white/85 dark:bg-slate-900/80 text-xs text-gray-600 dark:text-gray-300 hover:text-emerald-700 dark:hover:text-emerald-300 hover:border-emerald-300 dark:hover:border-emerald-700 hover:bg-emerald-50/70 dark:hover:bg-emerald-950/30 transition-all shadow-sm"
+                   >
+                     <span aria-hidden="true">{starter.icon}</span>
+                     <span>{t(starter.key)}</span>
+                   </motion.button>
+                 ))}
+               </div>
+               <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 mt-3">
+                 <button
+                   type="button"
+                   data-testid="button-guided-reflection"
+                   onClick={() => sendMessage("Guide me through a gentle reflection. Ask me one question at a time.")}
+                   className="inline-flex items-center justify-center gap-1.5 self-start px-3 py-2 rounded-lg bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-700 transition-colors shadow-sm"
+                 >
+                   <Sparkles className="w-3.5 h-3.5" />
+                   {t("guided_reflection")}
+                   <ArrowRight className="w-3 h-3" />
+                 </button>
+                 <p className="text-[11px] text-gray-400 dark:text-gray-500 leading-relaxed">
+                   {t("welcome_start_hint")}
+                 </p>
+               </div>
+             </motion.div>
             <DailyQuoteCard token={token} />
+             <AnimatePresence>
+               {goalReassuranceVisible && (
+                 <motion.div
+                   initial={{ opacity: 0, y: -4, height: 0 }}
+                   animate={{ opacity: 1, y: 0, height: "auto" }}
+                   exit={{ opacity: 0, y: -4, height: 0 }}
+                   className="w-full max-w-2xl mb-2 px-3 py-2 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50/80 dark:bg-emerald-950/30 text-xs text-emerald-700 dark:text-emerald-300 text-left"
+                   role="status"
+                   data-testid="text-goal-reassurance"
+                 >
+                   <span className="mr-1.5">✓</span>{t("goal_change_reassurance")}
+                 </motion.div>
+               )}
+             </AnimatePresence>
             <div className="flex items-center gap-2 mb-1.5">
               {!isLoggedIn && (
                 <button
