@@ -138,9 +138,16 @@ function StreamingText({ content }: { content: string }) {
   );
 }
 
+function visibleMessageContent(content: string): string {
+  return content
+    .replace(/\n*\[ARYA_DOCUMENT_CONTEXT\][\s\S]*?\[\/ARYA_DOCUMENT_CONTEXT\]\s*/g, "")
+    .trim();
+}
+
 function FormattedMessage({ content, isUser }: { content: string; isUser?: boolean }) {
+  const visibleContent = visibleMessageContent(content);
   if (isUser) {
-    return <div className="text-sm leading-relaxed whitespace-pre-wrap">{content}</div>;
+    return <div className="text-sm leading-relaxed whitespace-pre-wrap">{visibleContent}</div>;
   }
   return (
     <div className="prose-arya text-[14.5px] leading-[1.7]">
@@ -211,7 +218,7 @@ function FormattedMessage({ content, isUser }: { content: string; isUser?: boole
           td: ({ children }) => <td className="px-3 py-2 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300">{children}</td>,
         }}
       >
-        {content}
+        {visibleContent}
       </ReactMarkdown>
     </div>
   );
@@ -4837,6 +4844,7 @@ export default function AryaChat() {
           body: JSON.stringify({
             image: file.base64,
             mimeType: file.mimeType,
+            filename: file.name,
             question: i === 0 ? question : "",
             language: selectedLanguage,
           }),
@@ -6546,7 +6554,7 @@ export default function AryaChat() {
                   <div className="flex justify-end mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       data-testid={`button-copy-msg-${msg.id}`}
-                      onClick={() => copyMessage(msg.id, msg.content)}
+                      onClick={() => copyMessage(msg.id, visibleMessageContent(msg.content))}
                       className="p-1 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
                       title="Copy"
                     >
