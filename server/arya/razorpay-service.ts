@@ -1,4 +1,5 @@
 import Razorpay from "razorpay";
+import { migrationPreview } from "../migration-preview";
 import crypto from "crypto";
 import { db } from "../db";
 import { aryaSubscriptions, aryaUsers } from "@shared/schema";
@@ -6,6 +7,7 @@ import { eq } from "drizzle-orm";
 
 let _razorpay: Razorpay | null = null;
 function getRazorpay(): Razorpay {
+  if (migrationPreview) throw new Error("Payments are unavailable during migration testing.");
   if (!_razorpay) {
     if (!process.env.RAZORPAY_KEY_ID) throw new Error("RAZORPAY_KEY_ID not set");
     _razorpay = new Razorpay({

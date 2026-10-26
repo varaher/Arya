@@ -9,7 +9,8 @@ import { initVapidKeys, startReminderScheduler } from "./arya/reminder-scheduler
 import { activateUserPlan } from "./arya/razorpay-service";
 import { db } from "./db";
 import { aryaSubscriptions } from "../shared/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
+import { migrationPreview } from "./migration-preview";
 
 // Global crash guards — log and survive instead of dying
 process.on("uncaughtException", (err) => {
@@ -29,9 +30,10 @@ declare module "http" {
 }
 
 const isProduction = process.env.NODE_ENV === "production";
-const allowedOrigins = process.env.REPLIT_DOMAINS
-  ? process.env.REPLIT_DOMAINS.split(",").map(d => `https://${d.trim()}`)
-  : [];
+const allowedOrigins = [
+  ...(process.env.ALLOWED_ORIGINS || "").split(",").map(value => value.trim()).filter(Boolean),
+  ...(process.env.REPLIT_DOMAINS || "").split(",").map(value => value.trim()).filter(Boolean).map(domain => `https://${domain}`),
+];
 
 app.use(cors({
   origin: isProduction
@@ -58,6 +60,29 @@ app.use(
 app.use(express.urlencoded({ extended: false }));
 
 app.set("trust proxy", 1);
+
+app.get("/healthz", (_req, res) => res.json({ status: "ok" }));
+app.get("/readyz", async (_req, res) => {
+  try {
+    await db.execute(sql`SELECT 1`);
+    res.json({ status: "ready" });
+  } catch {
+    res.status(503).json({ status: "unavailable" });
+  }
+});
+
+if (migrationPreview) {
+  app.use([
+    "/api/subscription/create",
+    "/api/subscription/verify",
+    "/api/subscription/cancel",
+    "/api/subscription/webhook",
+    "/api/webhook/razorpay",
+  ], (req, res, next) => {
+    if (req.method !== "POST") return next();
+    return res.status(503).json({ error: "Payments are unavailable during migration testing." });
+  });
+}
 
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -164,9 +189,13 @@ async function runStartupPaymentReconciliation() {
 }
 
 (async () => {
-  await initVapidKeys();
-  startReminderScheduler();
-  await runStartupPaymentReconciliation();
+  if (migrationPreview) {
+    log("Migration preview: background tasks and startup payment reconciliation are disabled.");
+  } else {
+    await initVapidKeys();
+    startReminderScheduler();
+    await runStartupPaymentReconciliation();
+  }
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {

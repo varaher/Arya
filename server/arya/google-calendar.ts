@@ -1,4 +1,5 @@
 import { google } from "googleapis";
+import { migrationPreview } from "../migration-preview";
 import { db } from "../db";
 import { aryaUsers } from "@shared/schema";
 import { eq, sql } from "drizzle-orm";
@@ -161,6 +162,7 @@ export async function createCalendarEvent(
   description?: string,
   location?: string
 ): Promise<CalendarEvent | null> {
+  if (migrationPreview) return null;
   try {
     const calendar = await getAuthenticatedCalendar(userId);
     if (!calendar) return null;
