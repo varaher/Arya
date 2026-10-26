@@ -1,4 +1,5 @@
 import webpush from "web-push";
+import { migrationPreview } from "../migration-preview";
 import { db } from "../db";
 import { aryaReminders, aryaAppSettings, aryaPushSubscriptions, aryaUsers, aryaNotifications } from "@shared/schema";
 import { eq, and, lte, isNull, or, sql } from "drizzle-orm";
@@ -88,6 +89,7 @@ function getAppBaseUrl(): string {
 }
 
 export async function sendPushToUser(userId: string, title: string, body: string, icon: string, extra?: Record<string, unknown>): Promise<void> {
+  if (migrationPreview) return;
   const subs = await db.select().from(aryaPushSubscriptions).where(eq(aryaPushSubscriptions.userId, userId));
   const reminderId = typeof extra?.reminderId === "string" ? extra.reminderId : null;
   const goalId = typeof extra?.goalId === "string" ? extra.goalId : null;
@@ -483,6 +485,7 @@ function scheduleMidnightSarvamCheck(): void {
 }
 
 export function startReminderScheduler(): void {
+  if (migrationPreview) return;
   if (schedulerInterval) return;
   schedulerInterval = setInterval(checkAndFireReminders, 30 * 1000);
   checkAndFireReminders();

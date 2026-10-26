@@ -1,0 +1,10 @@
+.git
+.agents
+node_modules
+dist
+.env
+.env.*
+**/*.dump
+**/*.sql
+**/*.sql.gz
+*.tar.gz

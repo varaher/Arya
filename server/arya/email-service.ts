@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { migrationPreview } from "../migration-preview";
 
 function getTransporter() {
   const host = process.env.SMTP_HOST;
@@ -81,6 +82,7 @@ function welcomeEmailHtml(name: string): string {
 }
 
 export async function sendWelcomeEmail(name: string, email: string): Promise<void> {
+  if (migrationPreview) return;
   const transporter = getTransporter();
   if (!transporter) {
     console.log(`[Email] SMTP not configured — skipping welcome email for ${email}`);
