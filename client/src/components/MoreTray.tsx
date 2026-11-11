@@ -1,6 +1,23 @@
+import type { ReactNode } from "react";
 import { useLocation } from "wouter";
-import { AnimatePresence, motion } from "framer-motion";
-import { Activity, BookOpen, SlidersHorizontal, Brain, Users, Lock, Megaphone, X, Clapperboard } from "lucide-react";
+import {
+  Activity,
+  BookOpen,
+  Brain,
+  CalendarClock,
+  ChevronRight,
+  Clapperboard,
+  Heart,
+  Languages,
+  Lock,
+  Megaphone,
+  MoonStar,
+  Palette,
+  Scale,
+  Target,
+  UserRound,
+} from "lucide-react";
+import { BottomSheet, SettingsRow, SurfaceCard } from "@/design-system/components";
 import { getTranslation, getStoredUiLanguage } from "@/lib/i18n";
 
 interface MoreTrayProps {
@@ -9,262 +26,135 @@ interface MoreTrayProps {
   onOpenCustomize?: () => void;
 }
 
+interface FeatureItem {
+  icon: ReactNode;
+  label: string;
+  sub: string;
+  action: () => void;
+  accent?: "green" | "purple";
+}
+
 export default function MoreTray({ isOpen, onClose, onOpenCustomize }: MoreTrayProps) {
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const lang = getStoredUiLanguage();
-  const t = (key: string) => getTranslation(lang, key as any);
+  const t = (key: string, fallback: string) => {
+    const result = getTranslation(lang, key as any);
+    return result === key ? fallback : result;
+  };
 
-  const mainFeatures = [
-    {
-      icon: <Clapperboard size={22} />,
-      emoji: "🎭",
-      label: "Drishya",
-      sub: "Stories that find you",
-      color: "#a78bfa",
-      action: () => setLocation("/drishya"),
-    },
-    {
-      icon: <Activity size={22} />,
-      emoji: "🫁",
-      label: "Prana",
-      sub: t("more_prana_sub"),
-      color: "#22c55e",
-      action: () => setLocation("/prana"),
-    },
-    {
-      icon: <BookOpen size={22} />,
-      emoji: "📖",
-      label: "Review",
-      sub: t("more_review_sub"),
-      color: "#f59e0b",
-      action: () => setLocation("/review"),
-    },
-    {
-      icon: <SlidersHorizontal size={22} />,
-      emoji: "🎨",
-      label: t("customize_arya") || "Customize",
-      sub: t("more_customize_sub"),
-      color: "#a855f7",
-      action: () => {
-        if (onOpenCustomize) {
-          onOpenCustomize();
-        } else {
-          window.dispatchEvent(new CustomEvent("arya-open-customize"));
-        }
-      },
-    },
-    {
-      icon: <Brain size={22} />,
-      emoji: "🧠",
-      label: t("memory") || "Memory",
-      sub: t("more_memory_sub"),
-      color: "#6366f1",
-      action: () => window.dispatchEvent(new CustomEvent("arya-open-memory")),
-    },
-    {
-      icon: <Users size={22} />,
-      emoji: "👥",
-      label: t("community") || "Community",
-      sub: t("more_community_sub"),
-      color: "#ef4444",
-      action: () => setLocation("/community"),
-    },
-  ];
-
-  const utilityLinks = [
-    {
-      icon: <Lock size={15} />,
-      label: t("menu_privacy") || "Privacy & Control",
-      action: () => setLocation("/privacy-control"),
-    },
-    {
-      icon: <Megaphone size={15} />,
-      label: t("menu_report") || "Report an Issue",
-      action: () => window.dispatchEvent(new CustomEvent("arya-open-report")),
-    },
-  ];
-
-  function handleItem(action: () => void) {
+  function afterClose(action: () => void) {
     onClose();
-    // small delay so the tray animates out before navigating
-    setTimeout(action, 80);
+    window.setTimeout(action, 180);
   }
 
+  function openAryaPanel(eventName: string) {
+    afterClose(() => {
+      if (location !== "/") setLocation("/");
+      window.setTimeout(() => window.dispatchEvent(new CustomEvent(eventName)), location === "/" ? 0 : 350);
+    });
+  }
+
+  function go(path: string) {
+    afterClose(() => setLocation(path));
+  }
+
+  const primaryItems: FeatureItem[] = [
+    {
+      icon: <Target className="size-5" />,
+      label: "Intentions & reminders",
+      sub: "Goals, habits, tasks, and reminders",
+      action: () => go("/my-goals"),
+    },
+    {
+      icon: <UserRound className="size-5" />,
+      label: "Profile and plan",
+      sub: "Personal details, membership, and settings",
+      action: () => openAryaPanel("arya-open-profile"),
+    },
+    {
+      icon: <CalendarClock className="size-5" />,
+      label: "Reminder settings",
+      sub: "Manage schedules and notifications",
+      action: () => openAryaPanel("arya-open-reminders"),
+    },
+  ];
+
+  const moreItems: FeatureItem[] = [
+    { icon: <MoonStar className="size-5" />, label: "KAAL", sub: "Daily guidance", action: () => go("/vedic-lens") },
+    { icon: <Scale className="size-5" />, label: "Niti", sub: "Decisions and principles", action: () => go("/niti") },
+    { icon: <Activity className="size-5" />, label: "Prana", sub: t("more_prana_sub", "Health and wellbeing"), action: () => go("/prana") },
+    { icon: <Clapperboard className="size-5" />, label: "Drishya", sub: "Stories and reflection", action: () => go("/drishya") },
+    { icon: <BookOpen className="size-5" />, label: "Sunday Review", sub: t("more_review_sub", "A weekly moment to reflect"), action: () => go("/review") },
+    { icon: <Palette className="size-5" />, label: t("customize_arya", "Customize ARYA"), sub: t("more_customize_sub", "Choose how ARYA feels"), action: () => onOpenCustomize ? afterClose(onOpenCustomize) : openAryaPanel("arya-open-customize") },
+    { icon: <Brain className="size-5" />, label: t("memory", "Private memory"), sub: t("more_memory_sub", "Review what ARYA remembers"), action: () => openAryaPanel("arya-open-memory") },
+    { icon: <Heart className="size-5" />, label: "Community", sub: t("more_community_sub", "Connect with others"), action: () => go("/community") },
+    { icon: <Languages className="size-5" />, label: "Language", sub: "Change ARYA's language", action: () => go("/language") },
+  ];
+
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          {/* Backdrop */}
-          <motion.div
-            key="more-tray-backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            onClick={onClose}
-            style={{
-              position: "fixed", inset: 0, zIndex: 90,
-              background: "rgba(0,0,0,0.55)",
-              backdropFilter: "blur(2px)",
-              WebkitBackdropFilter: "blur(2px)",
-            }}
-          />
+    <BottomSheet
+      open={isOpen}
+      onOpenChange={(open) => { if (!open) onClose(); }}
+      title="You"
+      description="Your intentions, account, and ARYA features."
+      className="max-h-[88dvh]"
+    >
+      <div className="space-y-5">
+        <section aria-labelledby="you-account-heading">
+          <h2 id="you-account-heading" className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--arya-text-subtle)]">
+            Your account
+          </h2>
+          <SurfaceCard className="overflow-hidden p-1 shadow-none">
+            {primaryItems.map((item) => (
+              <SettingsRow
+                key={item.label}
+                icon={<span className={item.accent === "purple" ? "text-[var(--arya-secondary)]" : "text-[var(--arya-primary)]"}>{item.icon}</span>}
+                title={item.label}
+                detail={item.sub}
+                trailing={<ChevronRight className="size-4 text-[var(--arya-text-subtle)]" />}
+                onClick={item.action}
+              />
+            ))}
+          </SurfaceCard>
+        </section>
 
-          {/* Tray sheet */}
-          <motion.div
-            key="more-tray-sheet"
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ type: "spring", damping: 30, stiffness: 320 }}
-            style={{
-              position: "fixed",
-              bottom: 0, left: 0, right: 0,
-              zIndex: 91,
-              background: "rgba(10, 10, 20, 0.97)",
-              backdropFilter: "blur(24px)",
-              WebkitBackdropFilter: "blur(24px)",
-              borderTop: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: "20px 20px 0 0",
-              paddingBottom: "env(safe-area-inset-bottom, 20px)",
-              maxHeight: "85vh",
-              overflowY: "auto",
-            }}
+        <section aria-labelledby="you-more-heading">
+          <h2 id="you-more-heading" className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--arya-text-subtle)]">
+            More with ARYA
+          </h2>
+          <SurfaceCard className="overflow-hidden p-1 shadow-none">
+            {moreItems.map((item) => (
+              <SettingsRow
+                key={item.label}
+                icon={<span className={item.accent === "purple" ? "text-[var(--arya-secondary)]" : "text-[var(--arya-primary)]"}>{item.icon}</span>}
+                title={item.label}
+                detail={item.sub}
+                trailing={<ChevronRight className="size-4 text-[var(--arya-text-subtle)]" />}
+                onClick={item.action}
+              />
+            ))}
+          </SurfaceCard>
+        </section>
+
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => go("/privacy-control")}
+            className="flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--arya-border)] text-sm font-medium text-[var(--arya-text-muted)] transition-colors hover:bg-[var(--arya-primary-soft)]"
           >
-            {/* Drag handle */}
-            <div style={{
-              width: 36, height: 4, borderRadius: 2,
-              background: "rgba(255,255,255,0.18)",
-              margin: "12px auto 0",
-            }} />
-
-            {/* Header row */}
-            <div style={{
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-              padding: "14px 20px 6px",
-            }}>
-              <span style={{
-                fontSize: 10, fontWeight: 700, letterSpacing: "0.16em",
-                textTransform: "uppercase",
-                color: "rgba(255,255,255,0.35)",
-                fontFamily: "Inter, sans-serif",
-              }}>
-                {t("more_title") || "ARYA FEATURES"}
-              </span>
-              <button
-                onClick={onClose}
-                data-testid="more-tray-close"
-                style={{
-                  background: "rgba(255,255,255,0.08)",
-                  border: "none", borderRadius: 8,
-                  color: "rgba(255,255,255,0.45)",
-                  width: 28, height: 28,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  cursor: "pointer",
-                }}
-              >
-                <X size={14} />
-              </button>
-            </div>
-
-            {/* Main features */}
-            <div style={{ padding: "4px 10px 0" }}>
-              {mainFeatures.map((item) => (
-                <button
-                  key={item.label}
-                  data-testid={`more-tray-item-${item.label.toLowerCase().replace(/\s/g, "-")}`}
-                  onClick={() => handleItem(item.action)}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 14,
-                    width: "100%", padding: "11px 10px",
-                    borderRadius: 14, border: "none",
-                    background: "transparent",
-                    cursor: "pointer", textAlign: "start",
-                    transition: "background 0.15s",
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
-                  onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-                >
-                  {/* Icon bubble */}
-                  <div style={{
-                    width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    background: `${item.color}1a`,
-                    border: `1px solid ${item.color}33`,
-                    color: item.color,
-                  }}>
-                    {item.icon}
-                  </div>
-
-                  {/* Text */}
-                  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
-                    <span style={{
-                      fontSize: 15, fontWeight: 600,
-                      color: "rgba(255,255,255,0.92)",
-                      fontFamily: "Inter, sans-serif",
-                    }}>
-                      {item.label}
-                    </span>
-                    <span style={{
-                      fontSize: 12,
-                      color: "rgba(255,255,255,0.4)",
-                      fontFamily: "Inter, sans-serif",
-                    }}>
-                      {item.sub}
-                    </span>
-                  </div>
-
-                  {/* Arrow */}
-                  <span style={{
-                    fontSize: 18,
-                    color: "rgba(255,255,255,0.2)",
-                    fontFamily: "Inter, sans-serif",
-                  }}>
-                    ›
-                  </span>
-                </button>
-              ))}
-            </div>
-
-            {/* Divider */}
-            <div style={{
-              height: 1,
-              background: "rgba(255,255,255,0.07)",
-              margin: "8px 18px",
-            }} />
-
-            {/* Utility links */}
-            <div style={{
-              padding: "4px 10px 12px",
-              display: "flex", gap: 8,
-            }}>
-              {utilityLinks.map((item) => (
-                <button
-                  key={item.label}
-                  data-testid={`more-tray-util-${item.label.toLowerCase().replace(/\s/g, "-")}`}
-                  onClick={() => handleItem(item.action)}
-                  style={{
-                    flex: 1,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    gap: 7, padding: "11px 8px",
-                    borderRadius: 12,
-                    border: "1px solid rgba(255,255,255,0.09)",
-                    background: "rgba(255,255,255,0.04)",
-                    fontSize: 12,
-                    color: "rgba(255,255,255,0.45)",
-                    cursor: "pointer",
-                    fontFamily: "Inter, sans-serif",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {item.icon}
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+            <Lock className="size-4" />
+            {t("menu_privacy", "Privacy & Control")}
+          </button>
+          <button
+            type="button"
+            onClick={() => openAryaPanel("arya-open-report")}
+            className="flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--arya-border)] text-sm font-medium text-[var(--arya-text-muted)] transition-colors hover:bg-[var(--arya-primary-soft)]"
+          >
+            <Megaphone className="size-4" />
+            {t("menu_report", "Report an issue")}
+          </button>
+        </div>
+      </div>
+    </BottomSheet>
   );
 }

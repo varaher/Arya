@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useUserAuth } from "@/lib/user-auth";
 import { useLocation } from "wouter";
+import { SurfaceCard } from "@/design-system/components";
 import {
   Send,
   Mic,
@@ -3781,6 +3782,8 @@ export default function AryaChat() {
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [showVoiceMode, setShowVoiceMode] = useState(false);
+  const [isTalkView, setIsTalkView] = useState(false);
+  const [quietMinuteRemaining, setQuietMinuteRemaining] = useState<number | null>(null);
   const [mainUpgradePrompt, setMainUpgradePrompt] = useState<UpgradePromptConfig | null>(null);
   const [showCancelSheet, setShowCancelSheet] = useState(false);
   const THINKING_FREE_MODES = new Set(["default", "therapist"]);
@@ -3980,6 +3983,7 @@ export default function AryaChat() {
       if (!msg) return;
       setInput(msg);
       setActiveConversation(null);
+      setIsTalkView(true);
       setTimeout(() => inputRef.current?.focus(), 350);
     };
     window.addEventListener("arya-prefill", handler);
@@ -3993,15 +3997,27 @@ export default function AryaChat() {
       localStorage.removeItem("arya_prefill");
       setInput(pending);
       setActiveConversation(null);
+      setIsTalkView(true);
       setTimeout(() => inputRef.current?.focus(), 350);
     }
   }, []);
 
   useEffect(() => {
-    const handler = () => { setActiveConversation(null); };
+    const handler = () => {
+      setActiveConversation(null);
+      setIsTalkView(false);
+    };
     window.addEventListener("arya:go-home", handler);
     return () => window.removeEventListener("arya:go-home", handler);
   }, []);
+
+  useEffect(() => {
+    if (quietMinuteRemaining === null || quietMinuteRemaining <= 0) return;
+    const timer = window.setTimeout(() => {
+      setQuietMinuteRemaining((remaining) => remaining === null ? null : Math.max(0, remaining - 1));
+    }, 1000);
+    return () => window.clearTimeout(timer);
+  }, [quietMinuteRemaining]);
 
   const [copiedMsgId, setCopiedMsgId] = useState<number | null>(null);
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
@@ -4058,6 +4074,33 @@ export default function AryaChat() {
   });
   const mainUserPlan: string = trialStatus?.effectivePlan || (user as any)?.plan || "free";
   const isMainFree = mainUserPlan === "free";
+
+  useEffect(() => {
+    const openProfile = () => setShowProfile(true);
+    const openReminders = () => setShowReminders(true);
+    const openVoice = () => {
+      setIsTalkView(true);
+      if (isMainFree) {
+        setMainUpgradePrompt(UPGRADE_PROMPTS.voiceGate());
+      } else {
+        setShowVoiceMode(true);
+      }
+    };
+    const focusTalk = () => {
+      setIsTalkView(true);
+      window.setTimeout(() => inputRef.current?.focus(), 100);
+    };
+    window.addEventListener("arya-open-profile", openProfile);
+    window.addEventListener("arya-open-reminders", openReminders);
+    window.addEventListener("arya:launch-voice", openVoice);
+    window.addEventListener("arya:go-talk", focusTalk);
+    return () => {
+      window.removeEventListener("arya-open-profile", openProfile);
+      window.removeEventListener("arya-open-reminders", openReminders);
+      window.removeEventListener("arya:launch-voice", openVoice);
+      window.removeEventListener("arya:go-talk", focusTalk);
+    };
+  }, [isMainFree]);
 
   // Conversation limit state — drives banner (1-5 left) and block (0 left)
   const convRemaining: number | null = trialStatus?.conversationsRemaining ?? null;
@@ -4219,6 +4262,7 @@ export default function AryaChat() {
     },
     onSuccess: (data) => {
       setActiveConversation(data.id);
+      setIsTalkView(true);
       queryClient.invalidateQueries({ queryKey: ["/api/arya/conversations"] });
     },
   });
@@ -4302,6 +4346,7 @@ export default function AryaChat() {
       const conv = await convRes.json();
       if (!conv?.id) throw new Error("Could not create conversation");
       setActiveConversation(conv.id);
+      setIsTalkView(true);
 
       const startRes = await fetch(`/api/arya/conversations/${conv.id}/start-rehearsal`, {
         method: "POST", headers,
@@ -4522,6 +4567,7 @@ export default function AryaChat() {
 
   const sendMessage = useCallback(async (text: string) => {
     if (!text.trim() || isStreaming) return;
+    setIsTalkView(true);
 
     let convId = activeConversation;
     if (!convId) {
@@ -4796,6 +4842,7 @@ export default function AryaChat() {
 
   const sendWithImage = useCallback(async () => {
     if (pendingFiles.length === 0 || isScanningDoc) return;
+    setIsTalkView(true);
 
     const filesToSend = [...pendingFiles];
     const firstFile = filesToSend[0];
@@ -5205,6 +5252,21 @@ export default function AryaChat() {
   };
 
   const currentLang = DEFAULT_LANGUAGES.find(l => l.code === selectedLanguage);
+  const currentHour = new Date().getHours();
+  const homeGreetingKey = currentHour < 12
+    ? "kaal_greeting_morning"
+    : currentHour < 17
+      ? "kaal_greeting_afternoon"
+      : currentHour < 21
+        ? "kaal_greeting_evening"
+        : "kaal_greeting_night";
+  const homeGreeting = t(homeGreetingKey);
+  const firstName = user?.name?.trim().split(/\s+/)[0];
+  const homeDateLabel = new Intl.DateTimeFormat(uiLanguage || "en", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  }).format(new Date());
 
   return (
     <div className="flex h-[calc(100dvh-5rem)] md:h-[100dvh] gap-0 md:gap-4 relative" data-testid="page-arya-chat">
@@ -5275,6 +5337,7 @@ export default function AryaChat() {
               data-testid="button-new-chat"
               onClick={() => {
                 setActiveConversation(null);
+                setIsTalkView(true);
                 setStreamingContent("");
                 setIsStreaming(false);
                 setInput("");
@@ -5402,6 +5465,7 @@ export default function AryaChat() {
                       return;
                     }
                     setActiveConversation(conv.id);
+                    setIsTalkView(true);
                     setShowSidebar(false);
                     setOpenMenuId(null);
                   }}
@@ -5801,6 +5865,7 @@ export default function AryaChat() {
               data-testid="button-new-chat-mobile"
               onClick={() => {
                 setActiveConversation(null);
+                setIsTalkView(true);
                 setStreamingContent("");
                 setIsStreaming(false);
                 setThinkingMode("default");
@@ -6161,7 +6226,7 @@ export default function AryaChat() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.4 }}
-            className="overflow-y-auto min-h-0 flex flex-col items-center justify-start text-center px-4 pt-6 pb-16"
+            className="overflow-y-auto min-h-0 flex flex-col items-center justify-start text-center px-4 pt-6 pb-28"
             style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y", maxHeight: "100%" }}
           >
             <motion.div
@@ -6172,32 +6237,120 @@ export default function AryaChat() {
               className="mb-1 md:mb-2 flex flex-col items-center gap-1"
             >
               <span
-                className="text-4xl md:text-5xl"
+                className="text-2xl md:text-3xl"
                 style={{
-                  fontFamily: "'Space Grotesk', sans-serif",
+                  fontFamily: "var(--arya-font-display)",
                   fontWeight: 700,
-                  letterSpacing: "0.18em",
+                  letterSpacing: "0.14em",
                   lineHeight: 1,
                   display: "block",
-                  color: "#047857",
+                  color: "var(--arya-primary)",
                 }}
               >
                 ARYA
               </span>
               <span className="flex gap-1">
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: "radial-gradient(circle at 40% 40%, #6ee7b7, #059669)" }} />
-                <span className="w-2 h-2 rounded-full" style={{ background: "radial-gradient(circle at 40% 40%, #34d399, #047857)" }} />
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: "radial-gradient(circle at 40% 40%, #6ee7b7, #059669)" }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--arya-primary)] opacity-55" />
+                <span className="w-2 h-2 rounded-full bg-[var(--arya-primary)]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--arya-primary)] opacity-55" />
               </span>
             </motion.div>
             <motion.p
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.2 }}
-              className="text-[13px] font-medium text-emerald-600 dark:text-emerald-400 tracking-wide mb-1 md:mb-2"
+              className="text-[13px] font-medium text-[var(--arya-primary)] tracking-wide mb-3"
             >
               {t("your_pa")}
             </motion.p>
+            <div className="w-full max-w-2xl text-left mb-5">
+              <p className="mb-1 text-xs font-medium uppercase tracking-[0.14em] text-[var(--arya-text-subtle)]">
+                {homeDateLabel}
+              </p>
+              <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-[var(--arya-text)]">
+                {homeGreeting}{firstName ? `, ${firstName}` : ""}
+              </h1>
+            </div>
+
+            <SurfaceCard className="w-full max-w-2xl mb-3 bg-gradient-to-br from-[var(--arya-primary-soft)] to-[var(--arya-surface)] p-4 text-left md:p-6">
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--arya-primary)]">
+                {t("talk_arya_title")}
+              </p>
+              <h2 className="text-xl font-semibold tracking-tight text-[var(--arya-text)] md:text-2xl">
+                {t("welcome_start_heading")}
+              </h2>
+              <p className="mt-2 max-w-lg text-sm leading-relaxed text-[var(--arya-text-muted)]">
+                {t("talk_arya_sub")}
+              </p>
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new CustomEvent("arya:go-talk"))}
+                className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-full bg-[var(--arya-primary)] px-5 text-sm font-semibold text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--arya-primary)] focus-visible:ring-offset-2"
+                data-testid="button-home-talk"
+              >
+                {t("talk_arya_start")}
+                <ArrowRight className="size-4" aria-hidden="true" />
+              </button>
+            </SurfaceCard>
+
+            <div className="mb-5 grid w-full max-w-2xl grid-cols-1 gap-3 text-left sm:grid-cols-2">
+              <SurfaceCard className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--arya-primary-soft)] text-[var(--arya-primary)]">
+                    <Moon className="size-5" aria-hidden="true" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-[var(--arya-text)]">Take a quiet minute</h3>
+                    <p className="mt-1 text-sm leading-relaxed text-[var(--arya-text-muted)]">
+                  {quietMinuteRemaining === null
+                    ? "A small pause, just for you."
+                    : quietMinuteRemaining > 0
+                      ? `${formatTime(quietMinuteRemaining)} left in your minute`
+                      : "Your minute is complete. Take your time."}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setQuietMinuteRemaining(quietMinuteRemaining && quietMinuteRemaining > 0 ? 0 : 60)}
+                  className="mt-2 min-h-9 text-sm font-semibold text-[var(--arya-primary)] underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--arya-primary)]"
+                  aria-label={quietMinuteRemaining !== null && quietMinuteRemaining > 0 ? "End quiet minute" : "Start a one-minute quiet timer"}
+                  data-testid="button-home-quiet-minute"
+                >
+                  {quietMinuteRemaining !== null && quietMinuteRemaining > 0 ? "Finish" : quietMinuteRemaining === 0 ? "Start again" : "Begin"}
+                </button>
+                <p className="mt-0.5 text-[10px] text-[var(--arya-text-subtle)]">A simple timer while ARYA is open.</p>
+              </SurfaceCard>
+
+              <SurfaceCard className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--arya-secondary-soft)] text-[var(--arya-secondary)]">
+                    <Sparkles className="size-5" aria-hidden="true" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-[var(--arya-text)]">A moment to reflect</h3>
+                    <p className="mt-1 text-sm leading-relaxed text-[var(--arya-text-muted)]">
+                      Start with one gentle question. You can edit it before sending.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveConversation(null);
+                    setIsTalkView(true);
+                    setInput("Guide me through a gentle reflection. Ask me one question at a time.");
+                    window.setTimeout(() => inputRef.current?.focus(), 100);
+                  }}
+                  className="mt-2 min-h-9 text-sm font-semibold text-[var(--arya-secondary)] underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--arya-secondary)]"
+                  data-testid="button-home-reflect"
+                >
+                  {t("guided_reflection")}
+                  <ArrowRight className="ml-1 inline size-4" aria-hidden="true" />
+                </button>
+              </SurfaceCard>
+            </div>
+
               <motion.button
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -6251,7 +6404,12 @@ export default function AryaChat() {
                       <button
                         type="button"
                         data-testid="button-guided-reflection"
-                        onClick={() => sendMessage("Guide me through a gentle reflection. Ask me one question at a time.")}
+                        onClick={() => {
+                          setActiveConversation(null);
+                          setIsTalkView(true);
+                          setInput("Guide me through a gentle reflection. Ask me one question at a time.");
+                          window.setTimeout(() => inputRef.current?.focus(), 100);
+                        }}
                         className="inline-flex items-center justify-center gap-1.5 self-start px-3 py-2 rounded-lg bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-700 transition-colors shadow-sm"
                       >
                         <Sparkles className="w-3.5 h-3.5" />
@@ -6737,7 +6895,7 @@ export default function AryaChat() {
           </div>{/* end max-w-3xl */}
         </div>{/* end messages scroll */}
 
-        <div className={`border-t border-gray-100 dark:border-slate-800 bg-white dark:bg-[#0f1117] px-3 md:px-6 pb-[env(safe-area-inset-bottom,4px)] md:pb-4 pt-2 ${(!activeConversation && messages.length === 0 && !streamingContent) ? "absolute bottom-0 left-0 right-0 z-10" : ""}`}>
+        <div className={`border-t border-[var(--arya-border)] bg-[var(--arya-surface)] px-3 md:px-6 pb-[env(safe-area-inset-bottom,4px)] md:pb-4 pt-2 ${(!activeConversation && messages.length === 0 && !streamingContent) ? "absolute bottom-0 left-0 right-0 z-10" : ""} ${(isTalkView || !!activeConversation || messages.length > 0 || !!streamingContent) ? "" : "hidden"}`}>
           {playingAudio && (
             <div className="flex items-center justify-center gap-2 mb-2">
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 dark:bg-amber-900/20 border border-amber-300">
@@ -7104,7 +7262,7 @@ export default function AryaChat() {
             </p>
           </div>
         </div>
-      </div>
+        </div>
 
       {showLanguageMenu && createPortal(
         <div

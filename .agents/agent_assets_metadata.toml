@@ -6,9 +6,25 @@ id = "Ata0zyyfj4IIMsQ9NVTB-"
 uri = "file://client/public/arya-logo.png"
 type = "image"
 title = "ARYA Logo"
+logical_id = "25fef5a3-d828-4119-96ad-e53e6b00d83e"
 
 [[outputs]]
 id = "h20Vj-SVQCIax6VE3kAfZ"
 uri = "file://client/public/arya-logo-transparent.png"
 type = "image"
 title = "ARYA Logo (Transparent)"
+logical_id = "82e3fc12-afd8-4414-a80d-04b996effee7"
+
+[[outputs]]
+id = "drZlBOxKUiAaN-R7M6koO"
+uri = "file://docs/arya-design-system.html"
+type = "html"
+title = "ARYA Studio design system"
+description = "The new emerald-and-ivory design language, shared component patterns, dark theme, and accessibility foundations. This is the system foundation before applying the skin to the app."
+logical_id = "36383287-f708-491f-805c-aaec201b62e9"
+content_hash = "sha256:bf978fadce25f232310b32aebb3a9a48f70d17ba74ca549d6e4056e25b4b1cf7"
+size = 6404
+mtime_ms = 1794406894339
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:9228cbc9-64ab-41d4-8aa4-89fc651b90ae/36383287-f708-491f-805c-aaec201b62e9/8bffa2de-bfab-4c5e-b6dd-383ed0134f77"
+storage_version_token = "1794406913158617"
+content_type = "text/html"

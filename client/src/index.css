@@ -1,42 +1,43 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "./design-system/design-tokens.css";
 
 @plugin "tailwindcss-animate";
 
 @theme inline {
-  --font-sans: 'Inter', sans-serif;
-  --font-display: 'Space Grotesk', sans-serif;
+  --font-sans: var(--arya-font-sans);
+  --font-display: var(--arya-font-sans);
   --font-mono: 'JetBrains Mono', monospace;
 
-  --color-background: hsl(0 0% 99%);
-  --color-foreground: hsl(220 15% 16%);
+  --color-background: var(--arya-bg);
+  --color-foreground: var(--arya-text);
   
-  --color-card: hsl(0 0% 100%);
-  --color-card-foreground: hsl(220 15% 16%);
+  --color-card: var(--arya-surface);
+  --color-card-foreground: var(--arya-text);
   
-  --color-popover: hsl(0 0% 100%);
-  --color-popover-foreground: hsl(220 15% 16%);
+  --color-popover: var(--arya-surface-raised);
+  --color-popover-foreground: var(--arya-text);
   
-  --color-primary: hsl(152 60% 36%);
-  --color-primary-foreground: hsl(0 0% 100%);
+  --color-primary: var(--arya-primary);
+  --color-primary-foreground: var(--arya-primary-foreground);
   
-  --color-secondary: hsl(43 96% 56%);
-  --color-secondary-foreground: hsl(220 15% 16%);
+  --color-secondary: var(--arya-secondary-soft);
+  --color-secondary-foreground: var(--arya-secondary);
   
-  --color-muted: hsl(220 13% 95%);
-  --color-muted-foreground: hsl(220 10% 46%);
+  --color-muted: var(--arya-primary-soft);
+  --color-muted-foreground: var(--arya-text-muted);
   
-  --color-accent: hsl(220 13% 95%);
-  --color-accent-foreground: hsl(220 15% 16%);
+  --color-accent: var(--arya-secondary-soft);
+  --color-accent-foreground: var(--arya-secondary);
   
-  --color-destructive: hsl(0 72% 51%);
+  --color-destructive: var(--arya-danger);
   --color-destructive-foreground: hsl(0 0% 100%);
   
-  --color-border: hsl(220 13% 90%);
-  --color-input: hsl(220 13% 90%);
-  --color-ring: hsl(152 60% 36%);
+  --color-border: var(--arya-border);
+  --color-input: var(--arya-border);
+  --color-ring: var(--arya-primary);
   
-  --radius: 0.25rem;
+  --radius: 0.875rem;
 }
 
 @layer base {
@@ -75,46 +76,12 @@
     @apply font-display tracking-tight;
   }
 
-  :root[data-theme="dark"] {
-    --color-background: hsl(222 47% 7%);
-    --color-foreground: hsl(210 20% 95%);
-
-    --color-card: hsl(222 40% 10%);
-    --color-card-foreground: hsl(210 20% 95%);
-
-    --color-popover: hsl(222 40% 10%);
-    --color-popover-foreground: hsl(210 20% 95%);
-
-    --color-primary: hsl(190 90% 50%);
-    --color-primary-foreground: hsl(222 47% 7%);
-
-    --color-secondary: hsl(43 96% 56%);
-    --color-secondary-foreground: hsl(222 47% 7%);
-
-    --color-muted: hsl(222 30% 15%);
-    --color-muted-foreground: hsl(215 16% 60%);
-
-    --color-accent: hsl(222 30% 15%);
-    --color-accent-foreground: hsl(210 20% 95%);
-
-    --color-destructive: hsl(0 72% 51%);
-    --color-destructive-foreground: hsl(0 0% 100%);
-
-    --color-border: hsl(222 30% 18%);
-    --color-input: hsl(222 30% 18%);
-    --color-ring: hsl(190 90% 50%);
-  }
 }
 
 .glass-panel {
-  background: rgba(255, 255, 255, 0.85);
+  background: color-mix(in srgb, var(--arya-surface) 88%, transparent);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-}
-
-:root[data-theme="dark"] .glass-panel {
-  background: rgba(15, 23, 42, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--arya-border);
 }
 
 .tech-grid {
@@ -131,7 +98,7 @@
 }
 
 .arya-green-glow {
-  box-shadow: 0 0 60px rgba(34, 197, 94, 0.12), 0 0 120px rgba(16, 185, 129, 0.06);
+  box-shadow: 0 0 60px color-mix(in srgb, var(--arya-primary) 12%, transparent), 0 0 120px color-mix(in srgb, var(--arya-primary) 6%, transparent);
 }
 
 /* ── Chat message bubble CSS vars ─────────────────────────────────── */
@@ -144,8 +111,8 @@
 
 /* ── Chat input pill focus ring ──────────────────────────────────── */
 .chat-input-pill:focus-within {
-  border-color: rgb(5 150 105);
-  box-shadow: 0 0 0 2px rgb(5 150 105 / 0.12);
+  border-color: var(--arya-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--arya-primary) 14%, transparent);
 }
 
 /* ── Hide all scrollbars globally — scroll still works ───────────── */

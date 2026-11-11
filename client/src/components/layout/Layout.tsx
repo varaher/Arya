@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { AppShell } from "@/design-system/components";
 import { useAdminAuth } from "@/lib/admin-auth";
 import { useTheme } from "@/lib/theme";
 import { 
@@ -200,8 +201,8 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
 export function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <AppShell className="min-h-screen">
       {children}
-    </div>
+    </AppShell>
   );
 }

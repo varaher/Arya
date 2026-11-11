@@ -10,6 +10,10 @@ packages = ["ffmpeg", "freetype", "gumbo", "harfbuzz", "imagemagick", "jbig2dec"
 localPort = 5000
 externalPort = 80
 
+[[ports]]
+localPort = 8765
+externalPort = 3000
+
 [env]
 PORT = "5000"
 
