@@ -6654,10 +6654,10 @@ export default function AryaChat() {
                 /* ── User bubble — sage, asymmetric corners ── */
                 <div className="group max-w-[75%]">
                   <div
-                    className="px-4 py-3 text-[15px] leading-relaxed text-gray-900 dark:text-white"
+                    className="px-4 py-3 text-[15px] leading-relaxed text-primary-foreground"
                     style={{
-                      background: "var(--user-bubble, #eef2ee)",
-                      borderRadius: "18px 18px 4px 18px",
+                      background: "var(--arya-primary)",
+                      borderRadius: "22px 22px 6px 22px",
                     }}
                   >
                     <FormattedMessage content={msg.content} isUser />
@@ -6679,7 +6679,7 @@ export default function AryaChat() {
                   <div className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 tracking-[0.5px] uppercase mb-1.5">
                     ARYA
                   </div>
-                  <div className="text-[15px] md:text-[16px] leading-[1.65] text-gray-800 dark:text-gray-100">
+                  <div className="text-[15px] md:text-[16px] leading-[1.65] text-foreground rounded-[6px_22px_22px_22px] border border-border bg-card px-4 py-3.5 shadow-[var(--arya-shadow-card)]">
                     <FormattedMessage content={msg.content} />
                   </div>
                   {/* Action row */}

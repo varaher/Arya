@@ -5,30 +5,31 @@ import { useUserAuth } from "@/lib/user-auth";
 import { useLanguage } from "@/lib/language-context";
 import { X, Loader2, Trash2, ChevronLeft, Wifi, AlertCircle, Send, User, ChevronRight, CheckCircle2 } from "lucide-react";
 import PranaOnboarding from "@/components/PranaOnboarding";
+import { PageHeading } from "@/components/PageHeading";
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 const C = {
-  bg: "#08080e", surface: "#111118", surface2: "#181820",
-  border: "#22222e", border2: "#2d2d3e",
-  teal: "#3dd9c0", tealDim: "rgba(61,217,192,0.10)", tealBorder: "rgba(61,217,192,0.22)",
-  rose: "#e87070", roseDim: "rgba(232,112,112,0.10)", roseBorder: "rgba(232,112,112,0.22)",
-  violet: "#7c6aff", violetDim: "rgba(124,106,255,0.10)",
-  amber: "#f5a623", amberDim: "rgba(245,166,35,0.10)", amberBorder: "rgba(245,166,35,0.22)",
-  lime: "#a8e063", limeDim: "rgba(168,224,99,0.10)",
-  text: "#e8e8f0", textDim: "#9898b8", textMuted: "#7878a0",
-  green: "#4ade80", greenDim: "rgba(74,222,128,0.10)",
+  bg: "var(--arya-bg)", surface: "var(--arya-surface)", surface2: "var(--arya-surface-raised)",
+  border: "var(--arya-border)", border2: "var(--arya-border)",
+  teal: "var(--arya-primary)", tealDim: "color-mix(in srgb, var(--arya-primary) 10%, transparent)", tealBorder: "color-mix(in srgb, var(--arya-primary) 22%, transparent)",
+  rose: "var(--arya-danger)", roseDim: "color-mix(in srgb, var(--arya-danger) 10%, transparent)", roseBorder: "color-mix(in srgb, var(--arya-danger) 22%, transparent)",
+  violet: "var(--arya-secondary)", violetDim: "color-mix(in srgb, var(--arya-secondary) 10%, transparent)",
+  amber: "var(--arya-warning)", amberDim: "color-mix(in srgb, var(--arya-warning) 12%, transparent)", amberBorder: "color-mix(in srgb, var(--arya-warning) 24%, transparent)",
+  lime: "var(--arya-primary)", limeDim: "color-mix(in srgb, var(--arya-primary) 10%, transparent)",
+  text: "var(--arya-text)", textDim: "var(--arya-text-muted)", textMuted: "var(--arya-text-subtle)",
+  green: "var(--arya-success)", greenDim: "color-mix(in srgb, var(--arya-success) 10%, transparent)",
 };
-const sans = "'Inter', 'Nunito', sans-serif";
-const serif = "'Libre Baskerville', Georgia, serif";
+const sans = "var(--arya-font-sans)";
+const serif = "var(--arya-font-sans)";
 
 // ── Metrics config ────────────────────────────────────────────────────────────
 const METRICS = [
   { key: "heart_rate",  label: "Heart Rate",   unit: "bpm",  emoji: "❤️",  color: C.rose,   bg: C.roseDim,   border: C.roseBorder,   min: 30,  max: 220, decimals: 0, isHigh: (v: number) => v > 100 || v < 50 },
-  { key: "spo2",        label: "Blood Oxygen", unit: "%",    emoji: "🫁",  color: C.violet, bg: C.violetDim, border: "rgba(124,106,255,0.22)", min: 80,  max: 100, decimals: 1, isHigh: (v: number) => v < 95 },
+  { key: "spo2",        label: "Blood Oxygen", unit: "%",    emoji: "🫁",  color: C.violet, bg: C.violetDim, border: "rgba(120,84,155,0.22)", min: 80,  max: 100, decimals: 1, isHigh: (v: number) => v < 95 },
   { key: "steps",       label: "Steps",        unit: "",     emoji: "👟",  color: C.teal,   bg: C.tealDim,   border: C.tealBorder,   min: 0,   max: 50000, decimals: 0, isHigh: () => false },
   { key: "stress",      label: "Stress",       unit: "/100", emoji: "🧠",  color: C.amber,  bg: C.amberDim,  border: C.amberBorder,  min: 0,   max: 100, decimals: 0, isHigh: (v: number) => v > 60 },
-  { key: "calories",    label: "Calories",     unit: "kcal", emoji: "🔥",  color: "#f5c842", bg: "rgba(245,200,66,0.10)", border: "rgba(245,200,66,0.22)", min: 0, max: 9999, decimals: 0, isHigh: () => false },
-  { key: "weight",      label: "Weight",       unit: "kg",   emoji: "⚖️",  color: "#8fa0b8", bg: "rgba(143,160,184,0.10)", border: "rgba(143,160,184,0.22)", min: 20, max: 300, decimals: 1, isHigh: () => false },
+  { key: "calories",    label: "Calories",     unit: "kcal", emoji: "🔥",  color: "#b8892a", bg: "rgba(184,137,42,0.10)", border: "rgba(184,137,42,0.22)", min: 0, max: 9999, decimals: 0, isHigh: () => false },
+  { key: "weight",      label: "Weight",       unit: "kg",   emoji: "⚖️",  color: "#6b7770", bg: "rgba(107,119,112,0.10)", border: "rgba(107,119,112,0.22)", min: 20, max: 300, decimals: 1, isHigh: () => false },
 ];
 const SLEEP_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -119,7 +120,7 @@ function LogModal({ metric, onClose, onSave, loading }: { metric: typeof METRICS
             style={{ flex: 1, background: C.surface2, border: `1.5px solid ${val2 ? metric.border : C.border2}`, borderRadius: 14, padding: "16px", fontSize: 24, fontWeight: 700, color: metric.color, fontFamily: sans, outline: "none", textAlign: "center" as const }} />}
         </div>
         <button onClick={() => val && onSave(val, val2 || undefined)} disabled={!val || loading}
-          style={{ width: "100%", padding: "16px", borderRadius: 14, border: "none", background: val ? `linear-gradient(135deg, ${metric.color}, ${metric.color}bb)` : C.border2, color: val ? "#08080e" : C.textDim, fontSize: 15, fontWeight: 700, cursor: val ? "pointer" : "not-allowed", fontFamily: sans, transition: "all 0.2s", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          style={{ width: "100%", padding: "16px", borderRadius: 14, border: "none", background: val ? metric.color : C.border2, color: val ? "var(--arya-primary-foreground)" : C.textDim, fontSize: 15, fontWeight: 700, cursor: val ? "pointer" : "not-allowed", fontFamily: sans, transition: "all 0.2s", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
           {loading ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : null}
           Save reading
         </button>
@@ -128,9 +129,9 @@ function LogModal({ metric, onClose, onSave, loading }: { metric: typeof METRICS
   );
 }
 
-const BP_METRIC = { key: "blood_pressure", label: "Blood Pressure", unit: "mmHg", emoji: "🩺", color: C.violet, bg: C.violetDim, border: "rgba(124,106,255,0.22)", min: 40, max: 250, decimals: 0, isHigh: () => false };
-const GLUCOSE_METRIC = { key: "glucose", label: "Blood Glucose", unit: "mg/dL", emoji: "🩸", color: "#f5c842", bg: "rgba(245,200,66,0.10)", border: "rgba(245,200,66,0.22)", min: 40, max: 400, decimals: 0, isHigh: (v: number) => v > 125 };
-const SLEEP_METRIC = { key: "sleep_hours", label: "Sleep", unit: "hours", emoji: "🌙", color: C.violet, bg: C.violetDim, border: "rgba(124,106,255,0.22)", min: 0, max: 24, decimals: 1, isHigh: (v: number) => v < 5 };
+const BP_METRIC = { key: "blood_pressure", label: "Blood Pressure", unit: "mmHg", emoji: "🩺", color: C.violet, bg: C.violetDim, border: "rgba(120,84,155,0.22)", min: 40, max: 250, decimals: 0, isHigh: () => false };
+const GLUCOSE_METRIC = { key: "glucose", label: "Blood Glucose", unit: "mg/dL", emoji: "🩸", color: "#b8892a", bg: "rgba(184,137,42,0.10)", border: "rgba(184,137,42,0.22)", min: 40, max: 400, decimals: 0, isHigh: (v: number) => v > 125 };
+const SLEEP_METRIC = { key: "sleep_hours", label: "Sleep", unit: "hours", emoji: "🌙", color: C.violet, bg: C.violetDim, border: "rgba(120,84,155,0.22)", min: 0, max: 24, decimals: 1, isHigh: (v: number) => v < 5 };
 
 // ── MetricCard ────────────────────────────────────────────────────────────────
 function MetricCard({ metric, reading, onTap }: { metric: typeof METRICS[0]; reading?: HealthReading; onTap: () => void }) {
@@ -336,7 +337,7 @@ function ProfileSetupModal({ onSave, onSkip, token }: { onSave: (p: HealthProfil
               ))}
             </div>
             <button onClick={() => setStep("form")} data-testid="prana-profile-setup-btn"
-              style={{ width: "100%", padding: "17px", borderRadius: 16, border: "none", background: `linear-gradient(135deg, ${C.teal}, ${C.violet})`, color: "#08080e", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: sans, marginTop: 8 }}>
+              style={{ width: "100%", padding: "17px", borderRadius: 16, border: "none", background: C.teal, color: "var(--arya-primary-foreground)", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: sans, marginTop: 8 }}>
               Tell us about yourself
             </button>
           </div>
@@ -401,7 +402,7 @@ function ProfileSetupModal({ onSave, onSkip, token }: { onSave: (p: HealthProfil
             </div>
 
             <button onClick={handleSave} disabled={!canSave || saving} data-testid="prana-save-profile-btn"
-              style={{ width: "100%", padding: "17px", borderRadius: 16, border: "none", background: canSave ? `linear-gradient(135deg, ${C.teal}, ${C.violet})` : C.border2, color: canSave ? "#08080e" : C.textDim, fontSize: 15, fontWeight: 800, cursor: canSave ? "pointer" : "not-allowed", fontFamily: sans, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+              style={{ width: "100%", padding: "17px", borderRadius: 16, border: "none", background: canSave ? C.teal : C.border2, color: canSave ? "var(--arya-primary-foreground)" : C.textDim, fontSize: 15, fontWeight: 800, cursor: canSave ? "pointer" : "not-allowed", fontFamily: sans, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
               {saving ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : null}
               Save and continue
             </button>
@@ -435,7 +436,7 @@ function PersonalizedStatsCard({ profile, onEdit }: { profile: HealthProfile; on
   ].filter(Boolean) as { label: string; value: string; sub: string; color: string }[];
 
   return (
-    <div style={{ background: `linear-gradient(135deg, rgba(61,217,192,0.07), rgba(124,106,255,0.07))`, border: `1px solid ${C.tealBorder}`, borderRadius: 18, padding: "16px", marginBottom: 20 }}>
+    <div style={{ background: `linear-gradient(135deg, rgba(25,99,79,0.07), rgba(120,84,155,0.07))`, border: `1px solid ${C.tealBorder}`, borderRadius: 18, padding: "16px", marginBottom: 20 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: C.teal, letterSpacing: "0.1em", textTransform: "uppercase" as const }}>{t("prana_profile_heading")}</div>
         <button onClick={onEdit} style={{ background: "none", border: `1px solid ${C.border}`, fontSize: 11, color: C.textDim, cursor: "pointer", fontFamily: sans, padding: "4px 8px", borderRadius: 6 }}>{t("prana_edit")}</button>
@@ -573,7 +574,7 @@ function CoachTab({ token, profile }: { token?: string | null; profile: HealthPr
               <div style={{ width: 32, height: 32, borderRadius: "50%", background: `linear-gradient(135deg, ${C.teal}, ${C.violet})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>🫁</div>
             )}
             <div style={{
-              background: m.role === "user" ? `linear-gradient(135deg, ${C.teal}22, ${C.tealBorder})` : C.surface,
+              background: m.role === "user" ? C.tealDim : C.surface,
               border: `1px solid ${m.role === "user" ? C.tealBorder : C.border}`,
               borderRadius: m.role === "user" ? "16px 4px 16px 16px" : "4px 16px 16px 16px",
               padding: "11px 14px", maxWidth: "85%",
@@ -600,7 +601,7 @@ function CoachTab({ token, profile }: { token?: string | null; profile: HealthPr
             data-testid="prana-coach-input"
             style={{ flex: 1, background: C.surface2, border: `1.5px solid ${input ? C.tealBorder : C.border2}`, borderRadius: 14, padding: "12px 14px", fontSize: 14, color: C.text, fontFamily: sans, outline: "none", resize: "none" as const, lineHeight: 1.5, minHeight: 46 }} />
           <button onClick={() => sendMessage(input)} disabled={!input.trim() || streaming} data-testid="prana-coach-send"
-            style={{ width: 46, height: 46, borderRadius: 14, border: "none", background: input.trim() ? `linear-gradient(135deg, ${C.teal}, ${C.violet})` : C.border2, color: input.trim() ? "#08080e" : C.textDim, cursor: input.trim() ? "pointer" : "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.2s" }}>
+            style={{ width: 46, height: 46, borderRadius: 14, border: "none", background: input.trim() ? C.teal : C.border2, color: input.trim() ? "var(--arya-primary-foreground)" : C.textDim, cursor: input.trim() ? "pointer" : "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.2s" }}>
             {streaming ? <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} /> : <Send size={18} />}
           </button>
         </div>
@@ -676,7 +677,7 @@ function DailyLogTab({ readings, onLog, onDelete, token, profile, onEditProfile 
             ) : <div style={{ fontSize: 13, color: C.textMuted }}>{t("health_no_readings")}</div>}
           </div>
           <button onClick={() => setActive(BP_METRIC as any)}
-            style={{ fontSize: 11, color: C.violet, background: C.violetDim, border: "1px solid rgba(124,106,255,0.22)", borderRadius: 8, padding: "4px 12px", cursor: "pointer" }}>
+            style={{ fontSize: 11, color: C.violet, background: C.violetDim, border: "1px solid rgba(120,84,155,0.22)", borderRadius: 8, padding: "4px 12px", cursor: "pointer" }}>
             + Log
           </button>
         </div>
@@ -911,7 +912,7 @@ export default function PranaPage() {
   return (
     <div style={{ background: C.bg, minHeight: "100vh", color: C.text, fontFamily: sans, position: "relative" }}>
       <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, overflow: "hidden" }}>
-        <div style={{ position: "absolute", top: "30%", left: "50%", transform: "translate(-50%, -50%)", width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(ellipse, rgba(61,217,192,0.04) 0%, transparent 70%)" }} />
+        <div style={{ position: "absolute", top: "30%", left: "50%", transform: "translate(-50%, -50%)", width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(ellipse, rgba(25,99,79,0.04) 0%, transparent 70%)" }} />
       </div>
       <div style={{ position: "relative", zIndex: 1 }}>
         <div style={{ padding: "20px 20px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -926,6 +927,10 @@ export default function PranaPage() {
             <User size={13} color={hasProfile(healthProfile) ? C.teal : C.textDim} />
             <span style={{ fontSize: 11, color: hasProfile(healthProfile) ? C.teal : C.textDim, fontFamily: sans }}>Profile</span>
           </button>
+        </div>
+
+        <div style={{ padding: "18px 20px 0" }}>
+          <PageHeading eyebrow={t("page_prana_eyebrow")} title={t("page_prana_t1")} accent={t("page_prana_t2")} />
         </div>
 
         {!isLoggedIn && (

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useLanguage } from "@/lib/language-context";
+import { PageHeading } from "@/components/PageHeading";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -243,24 +244,27 @@ function GoalsView({ token, userName, onBack }: { token: string; userName: strin
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
-            className="p-2 rounded-full hover:bg-card text-muted-foreground hover:text-white transition-colors"
+            className="p-2 rounded-full hover:bg-card text-muted-foreground hover:text-foreground transition-colors"
             data-testid="button-back-from-goals"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white" data-testid="text-goals-title">{t("goals_title")}</h1>
-            <p className="text-xs text-muted-foreground">{t("goals_subtitle")}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground" data-testid="text-goals-title">{t("goals_title")}</p>
           </div>
         </div>
         <Button
           data-testid="button-create-goal"
           onClick={() => { setCreateType("task"); setShowCreateForm(true); }}
           size="sm"
-          className="bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white rounded-xl"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl"
         >
           <Plus className="w-4 h-4 mr-1" /> {t("goals_new")}
         </Button>
+      </div>
+
+      <div className="px-4">
+        <PageHeading title={t("page_goals_t1")} accent={t("page_goals_t2")} sub={t("goals_subtitle")} />
       </div>
 
       {/* Tabs */}
@@ -276,7 +280,7 @@ function GoalsView({ token, userName, onBack }: { token: string; userName: strin
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
                 isActive
                   ? "bg-primary/20 text-primary border border-primary/30"
-                  : "text-muted-foreground hover:text-white hover:bg-card"
+                  : "text-muted-foreground hover:text-foreground hover:bg-card"
               }`}
             >
               <tab.icon className="w-3 h-3" />
@@ -421,14 +425,14 @@ function EmptyState({ tab, onAdd }: { tab: Tab; onAdd: (type: GoalType) => void 
         <Icon className="w-7 h-7 text-primary" />
       </div>
       <div>
-        <h3 className="text-base font-semibold text-white">{c.heading}</h3>
+        <h3 className="text-base font-semibold text-foreground">{c.heading}</h3>
         <p className="text-sm text-muted-foreground mt-1 max-w-xs mx-auto">{c.sub}</p>
       </div>
       <Button
         data-testid="button-create-first-goal"
         onClick={() => onAdd(c.type)}
         size="sm"
-        className="bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white rounded-xl"
+        className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl"
       >
         <Plus className="w-4 h-4 mr-1" /> {c.cta}
       </Button>
@@ -463,7 +467,7 @@ function GoalCard({
     <div
       data-testid={`card-goal-${goal.id}`}
       className={`bg-card/50 backdrop-blur-sm rounded-2xl border p-4 space-y-2.5 transition-opacity ${
-        isCompleted ? "opacity-60 border-white/5" : `${meta.border}`
+        isCompleted ? "opacity-60 border-border/60" : `${meta.border}`
       }`}
     >
       {/* Header row */}
@@ -476,7 +480,7 @@ function GoalCard({
         {/* Title + meta */}
         <div className="flex-1 min-w-0">
           <h3
-            className={`font-medium text-sm leading-snug ${isCompleted ? "line-through text-muted-foreground" : "text-white"}`}
+            className={`font-medium text-sm leading-snug ${isCompleted ? "line-through text-muted-foreground" : "text-foreground"}`}
             data-testid={`text-goal-title-${goal.id}`}
           >
             {goal.title}
@@ -545,7 +549,7 @@ function GoalCard({
             </button>
             <button
               onClick={() => setExpanded(e => !e)}
-              className="p-1.5 rounded-lg text-muted-foreground hover:text-white hover:bg-white/5 transition-colors"
+              className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               title="More options"
               data-testid={`button-expand-goal-${goal.id}`}
             >
@@ -575,7 +579,7 @@ function GoalCard({
             transition={{ duration: 0.15 }}
             className="overflow-hidden"
           >
-            <div className="pt-1 border-t border-white/5 space-y-2">
+            <div className="pt-1 border-t border-border/60 space-y-2">
               {goal.description && (
                 <p className="text-xs text-muted-foreground">{goal.description}</p>
               )}
@@ -587,7 +591,7 @@ function GoalCard({
                     <span className="flex items-center gap-1"><Clock className="w-2.5 h-2.5" /> Today's practice</span>
                     <span>{goal.stats.todayMinutes}/{goal.dailyTargetMinutes} min</span>
                   </div>
-                  <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                     <div
                       className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full transition-all duration-500"
                       style={{ width: `${Math.min(100, (goal.stats.todayMinutes / goal.dailyTargetMinutes) * 100)}%` }}
@@ -604,7 +608,7 @@ function GoalCard({
                       <div className={`w-3 h-3 rounded-full border shrink-0 ${
                         step.status === "completed" ? "bg-green-500 border-green-500" : "border-white/20"
                       }`} />
-                      <span className={step.status === "completed" ? "text-muted-foreground line-through" : "text-white/80"}>
+                      <span className={step.status === "completed" ? "text-muted-foreground line-through" : "text-foreground/80"}>
                         {step.description}
                       </span>
                     </div>
@@ -701,10 +705,10 @@ function CreateGoalForm({
       className="bg-card/60 backdrop-blur-sm rounded-2xl border border-primary/20 p-4 space-y-3"
     >
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
           <Plus className="w-4 h-4 text-primary" /> {t("goals_form_new")}
         </h3>
-        <button type="button" onClick={onCancel} className="text-muted-foreground hover:text-white">
+        <button type="button" onClick={onCancel} className="text-muted-foreground hover:text-foreground">
           <X className="w-4 h-4" />
         </button>
       </div>
@@ -723,7 +727,7 @@ function CreateGoalForm({
               className={`flex flex-col items-center gap-1 p-2 rounded-xl border text-[10px] font-medium transition-all ${
                 goalType === t
                   ? `${m.bg} ${m.border} ${m.color}`
-                  : "border-white/5 text-muted-foreground hover:border-white/10 hover:text-white"
+                  : "border-border/60 text-muted-foreground hover:border-primary/30 hover:text-foreground"
               }`}
             >
               <Icon className="w-4 h-4" />
@@ -741,7 +745,7 @@ function CreateGoalForm({
           value={title}
           onChange={e => setTitle(e.target.value)}
           placeholder={TYPE_PROMPTS[goalType]}
-          className="bg-background/50 border-white/10 text-white text-sm"
+          className="bg-background/50 border-border text-foreground text-sm"
           autoFocus
         />
       </div>
@@ -757,7 +761,7 @@ function CreateGoalForm({
               value={dueDate}
               min={todayISO}
               onChange={e => setDueDate(e.target.value)}
-              className="bg-background/50 border-white/10 text-white text-sm"
+              className="bg-background/50 border-border text-foreground text-sm"
             />
           </div>
           {dueDate && (
@@ -768,7 +772,7 @@ function CreateGoalForm({
                 data-testid="input-due-time"
                 value={dueTime}
                 onChange={e => setDueTime(e.target.value)}
-                className="bg-background/50 border-white/10 text-white text-sm w-28"
+                className="bg-background/50 border-border text-foreground text-sm w-28"
               />
             </div>
           )}
@@ -786,7 +790,7 @@ function CreateGoalForm({
               value={reminderDate}
               min={todayISO}
               onChange={e => setReminderDate(e.target.value)}
-              className="bg-background/50 border-white/10 text-white text-sm"
+              className="bg-background/50 border-border text-foreground text-sm"
             />
           </div>
           <div className="space-y-1">
@@ -796,7 +800,7 @@ function CreateGoalForm({
               data-testid="input-reminder-time"
               value={reminderTime}
               onChange={e => setReminderTime(e.target.value)}
-              className="bg-background/50 border-white/10 text-white text-sm w-28"
+              className="bg-background/50 border-border text-foreground text-sm w-28"
             />
           </div>
         </div>
@@ -811,7 +815,7 @@ function CreateGoalForm({
               data-testid="select-recurrence"
               value={recurrence}
               onChange={e => setRecurrence(e.target.value)}
-              className="w-full bg-background/50 border border-white/10 rounded-md text-white text-sm p-2 focus:outline-none focus:border-primary/50"
+              className="w-full bg-background/50 border border-border rounded-md text-foreground text-sm p-2 focus:outline-none focus:border-primary/50"
             >
               <option value="daily">{t("goals_recur_daily")}</option>
               <option value="weekdays">{t("goals_recur_weekdays")}</option>
@@ -826,7 +830,7 @@ function CreateGoalForm({
               value={dailyMinutes}
               onChange={e => setDailyMinutes(e.target.value)}
               min="5" max="240"
-              className="bg-background/50 border-white/10 text-white text-sm w-20"
+              className="bg-background/50 border-border text-foreground text-sm w-20"
             />
           </div>
         </div>
@@ -843,7 +847,7 @@ function CreateGoalForm({
             value={peopleText}
             onChange={e => setPeopleText(e.target.value)}
             placeholder="e.g., Priya, Rahul"
-            className="bg-background/50 border-white/10 text-white text-sm"
+            className="bg-background/50 border-border text-foreground text-sm"
           />
         </div>
       )}
@@ -879,7 +883,7 @@ function CreateGoalForm({
           type="submit"
           size="sm"
           disabled={!title.trim() || isLoading}
-          className="bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white rounded-xl"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl"
           data-testid="button-submit-goal"
         >
           {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : t("goals_form_save")}

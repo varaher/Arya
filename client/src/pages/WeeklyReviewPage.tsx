@@ -4,26 +4,27 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Check, Loader2, Download } from "lucide-react";
 import { useUserAuth } from "@/lib/user-auth";
 import { useLanguage } from "@/lib/language-context";
+import { PageHeading } from "@/components/PageHeading";
 
 const P = {
-  bg: "#f5f0e8",
-  surface: "rgba(0,0,0,0.04)",
-  border: "rgba(0,0,0,0.1)",
-  gold: "#b5a06a",
-  goldDark: "#8a7248",
-  text: "#1a1a1a",
-  body: "#2a2a2a",
-  muted: "rgba(0,0,0,0.35)",
-  steel: "rgba(0,0,0,0.45)",
-  green: "#4a7c59",
-  greenBg: "rgba(74,124,89,0.08)",
-  greenBorder: "rgba(74,124,89,0.4)",
-  greenText: "#2d5a3d",
-  darkCard: "#1a1a1a",
-  darkText: "#f5f0e8",
-  darkMuted: "rgba(245,240,232,0.5)",
-  darkGold: "#b5a06a",
-  divider: "rgba(0,0,0,0.07)",
+  bg: "var(--arya-bg)",
+  surface: "var(--arya-surface)",
+  border: "var(--arya-border)",
+  gold: "var(--arya-secondary)",
+  goldDark: "var(--arya-secondary)",
+  text: "var(--arya-text)",
+  body: "var(--arya-text)",
+  muted: "var(--arya-text-subtle)",
+  steel: "var(--arya-text-muted)",
+  green: "var(--arya-primary)",
+  greenBg: "var(--arya-primary-soft)",
+  greenBorder: "color-mix(in srgb, var(--arya-primary) 40%, transparent)",
+  greenText: "var(--arya-primary)",
+  darkCard: "radial-gradient(ellipse at 100% 0%, var(--arya-hero-glow), transparent 57%), linear-gradient(120deg, var(--arya-hero-a), var(--arya-hero-b) 55%, var(--arya-hero-c))",
+  darkText: "var(--arya-hero-title)",
+  darkMuted: "var(--arya-hero-copy)",
+  darkGold: "var(--arya-secondary)",
+  divider: "var(--arya-border)",
 };
 
 interface DayMood {
@@ -129,9 +130,9 @@ function MoodArcSVG({ days }: { days: DayMood[] }) {
                 <circle cx={x} cy={y} r={4} fill={P.gold} stroke={P.bg} strokeWidth={1.5} />
               </>
             ) : (
-              <circle cx={x} cy={y} r={3} fill="rgba(0,0,0,0.12)" />
+              <circle cx={x} cy={y} r={3} fill="color-mix(in srgb, var(--arya-text) 12%, transparent)" />
             )}
-            <text x={x} y={H + 18} textAnchor="middle" fontSize={10} fill={P.muted} fontFamily="Inter, sans-serif">
+            <text x={x} y={H + 18} textAnchor="middle" fontSize={10} fill={P.muted} fontFamily="var(--arya-font-sans)">
               {day.dayShort[0]}
             </text>
           </g>
@@ -143,7 +144,7 @@ function MoodArcSVG({ days }: { days: DayMood[] }) {
 
 function SLabel({ text }: { text: string }) {
   return (
-    <div style={{ fontFamily: "'Cinzel', serif", fontSize: 9, letterSpacing: "0.25em", color: P.muted, textTransform: "uppercase", marginBottom: 14 }}>
+    <div style={{ fontFamily: "var(--arya-font-sans)", fontSize: 9, letterSpacing: "0.25em", color: P.muted, textTransform: "uppercase", marginBottom: 14 }}>
       {text}
     </div>
   );
@@ -260,7 +261,7 @@ export default function WeeklyReviewPage() {
   const intentionValue = customIntention.trim() || selectedChip;
 
   return (
-    <div style={{ minHeight: "100dvh", background: P.bg, color: P.body, fontFamily: "'Crimson Pro', Georgia, serif", paddingBottom: "calc(88px + env(safe-area-inset-bottom, 0px))" }}>
+    <div style={{ minHeight: "100dvh", background: P.bg, color: P.body, fontFamily: "var(--arya-font-sans)", paddingBottom: "calc(88px + env(safe-area-inset-bottom, 0px))" }}>
       <style>{`
         @keyframes wr-spin { to { transform: rotate(360deg); } }
         .wr-spin { animation: wr-spin 0.8s linear infinite; }
@@ -272,16 +273,16 @@ export default function WeeklyReviewPage() {
       `}</style>
 
       {/* ── Sticky Nav ── */}
-      <div style={{ position: "sticky", top: 0, background: P.bg, borderBottom: `1px solid rgba(0,0,0,0.08)`, padding: "13px 16px", display: "flex", alignItems: "center", gap: 12, zIndex: 10 }}>
+      <div style={{ position: "sticky", top: 0, background: P.bg, borderBottom: `1px solid color-mix(in srgb, var(--arya-text) 8%, transparent)`, padding: "13px 16px", display: "flex", alignItems: "center", gap: 12, zIndex: 10 }}>
         <button
           data-testid="button-review-back"
           onClick={() => setLocation("/")}
-          style={{ width: 36, height: 36, borderRadius: "50%", border: `1px solid rgba(0,0,0,0.12)`, background: "transparent", color: P.steel, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+          style={{ width: 36, height: 36, borderRadius: "50%", border: `1px solid color-mix(in srgb, var(--arya-text) 12%, transparent)`, background: "transparent", color: P.steel, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
         >
           <ArrowLeft size={15} />
         </button>
         <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: "'Cinzel', serif", fontSize: 12, color: P.gold, letterSpacing: "0.12em" }}>
+          <div style={{ fontFamily: "var(--arya-font-sans)", fontSize: 12, color: P.gold, letterSpacing: "0.12em" }}>
             {t("review_title")}
           </div>
           {data && (
@@ -294,7 +295,7 @@ export default function WeeklyReviewPage() {
           <button
             data-testid="button-review-download"
             onClick={handleDownload}
-            style={{ display: "flex", alignItems: "center", gap: 5, padding: "7px 12px", borderRadius: 8, border: `1px solid rgba(0,0,0,0.12)`, background: "transparent", color: P.steel, fontSize: 12, cursor: "pointer", fontFamily: "Inter, sans-serif" }}
+            style={{ display: "flex", alignItems: "center", gap: 5, padding: "7px 12px", borderRadius: 8, border: `1px solid color-mix(in srgb, var(--arya-text) 12%, transparent)`, background: "transparent", color: P.steel, fontSize: 12, cursor: "pointer", fontFamily: "var(--arya-font-sans)" }}
           >
             <Download size={12} /> {t("review_save_btn")}
           </button>
@@ -305,7 +306,7 @@ export default function WeeklyReviewPage() {
       {loading && (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "72vh", gap: 14 }}>
           <div style={{ fontSize: 36 }}>🌿</div>
-          <div style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: "0.15em", color: P.muted }}>
+          <div style={{ fontFamily: "var(--arya-font-sans)", fontSize: 11, letterSpacing: "0.15em", color: P.muted }}>
             {t("review_loading")}
           </div>
           <Loader2 size={18} color={P.gold} className="wr-spin" />
@@ -328,7 +329,7 @@ export default function WeeklyReviewPage() {
           <div style={{ fontSize: 15, color: P.text, marginBottom: 18, fontWeight: 600 }}>{t("review_error_h")}</div>
           <button
             onClick={() => { setError(""); setLoading(true); window.location.reload(); }}
-            style={{ padding: "9px 18px", borderRadius: 8, border: `1px solid ${P.gold}`, background: "transparent", color: P.gold, fontSize: 13, cursor: "pointer", fontFamily: "Inter, sans-serif" }}
+            style={{ padding: "9px 18px", borderRadius: 8, border: `1px solid ${P.gold}`, background: "transparent", color: P.gold, fontSize: 13, cursor: "pointer", fontFamily: "var(--arya-font-sans)" }}
           >
             {t("review_retry")}
           </button>
@@ -345,22 +346,17 @@ export default function WeeklyReviewPage() {
         >
 
           {/* ── 1. HEADER ── */}
-          <div style={{ textAlign: "center", padding: "40px 0 28px" }}>
-            <span style={{ fontSize: 36, display: "block", marginBottom: 14 }}>🌿</span>
-            <div style={{ fontFamily: "'Cinzel', serif", fontSize: 9, letterSpacing: "0.3em", color: P.muted, textTransform: "uppercase", marginBottom: 10 }}>
-              ARYA's Sunday Letter
-            </div>
-            <div style={{ fontFamily: "'Crimson Pro', serif", fontSize: 34, fontWeight: 400, color: P.text, marginBottom: 6, lineHeight: 1.1 }}>
-              to {data.userName.toLowerCase()}
-            </div>
-            <div style={{ fontSize: 13, color: P.muted, marginBottom: 22, fontFamily: "Inter, sans-serif" }}>
-              {data.weekLabel}
-            </div>
-            <div style={{ width: 48, height: 1.5, background: P.gold, margin: "0 auto" }} />
+      <div style={{ padding: "28px 0 20px" }}>
+        <PageHeading
+          eyebrow={<>ARYA's Sunday Letter · {data.weekLabel}</>}
+          title={t("page_review_t1")}
+          accent={t("page_review_t2")}
+          sub={<>For {data.userName}</>}
+        />
           </div>
 
           {/* ── 2. OPENING LINE ── */}
-          <div style={{ fontFamily: "'Crimson Pro', serif", fontSize: 22, fontStyle: "italic", lineHeight: 1.55, textAlign: "center", color: P.body, padding: "0 4px 28px" }}>
+          <div style={{ fontFamily: "var(--arya-font-sans)", fontSize: 22, fontStyle: "italic", lineHeight: 1.55, textAlign: "center", color: P.body, padding: "0 4px 28px" }}>
             "{data.openingLine}"
           </div>
 
@@ -381,7 +377,7 @@ export default function WeeklyReviewPage() {
             ) : (
               <>
                 <MoodArcSVG days={data.moodArc.days} />
-                <div style={{ marginTop: 8, fontSize: 12, color: P.muted, fontFamily: "Inter, sans-serif" }}>
+                <div style={{ marginTop: 8, fontSize: 12, color: P.muted, fontFamily: "var(--arya-font-sans)" }}>
                   {data.moodArc.checkInCount} of 7 days · avg mood {data.moodArc.avgMood.toFixed(1)}/5
                 </div>
               </>
@@ -408,10 +404,10 @@ export default function WeeklyReviewPage() {
                     { label: t("review_untouched"), value: data.goals.untouched },
                   ].map(({ label, value }) => (
                     <div key={label} style={{ flex: 1, textAlign: "center" }}>
-                      <div style={{ fontFamily: "'Crimson Pro', serif", fontSize: 32, fontWeight: 600, color: P.text, lineHeight: 1 }}>
+                      <div style={{ fontFamily: "var(--arya-font-sans)", fontSize: 32, fontWeight: 600, color: P.text, lineHeight: 1 }}>
                         {value}
                       </div>
-                      <div style={{ fontFamily: "'Cinzel', serif", fontSize: 8, letterSpacing: "0.15em", color: P.muted, marginTop: 4 }}>
+                      <div style={{ fontFamily: "var(--arya-font-sans)", fontSize: 8, letterSpacing: "0.15em", color: P.muted, marginTop: 4 }}>
                         {label}
                       </div>
                     </div>
@@ -450,7 +446,7 @@ export default function WeeklyReviewPage() {
                       </div>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 15, color: P.body }}>{g.title}</div>
-                        <div style={{ fontSize: 12, color: P.muted, marginTop: 2, fontFamily: "Inter, sans-serif" }}>
+                        <div style={{ fontSize: 12, color: P.muted, marginTop: 2, fontFamily: "var(--arya-font-sans)" }}>
                           {g.progress > 0 ? `${g.progress}% done` : t("review_not_started")}
                           {g.streak > 0 ? ` · 🔥 ${t("review_streak_day").replace("{n}", String(g.streak))}` : ""}
                         </div>
@@ -471,11 +467,11 @@ export default function WeeklyReviewPage() {
 
           {/* ── 5. SOMETHING ARYA NOTICED (dark card) ── */}
           <section>
-            <div style={{ background: P.darkCard, borderRadius: 16, padding: "20px" }}>
-              <div style={{ fontFamily: "'Cinzel', serif", fontSize: 9, letterSpacing: "0.2em", color: P.darkGold, marginBottom: 14, display: "flex", alignItems: "center", gap: 6 }}>
+            <div style={{ background: P.darkCard, borderRadius: 24, border: "1px solid rgb(255 255 255 / 60%)", padding: "20px" }}>
+              <div style={{ fontFamily: "var(--arya-font-sans)", fontSize: 9, letterSpacing: "0.2em", color: P.darkGold, marginBottom: 14, display: "flex", alignItems: "center", gap: 6 }}>
                 <span>◆</span> {t("review_arya_noticed").toUpperCase()}
               </div>
-              <div style={{ fontFamily: "'Crimson Pro', serif", fontSize: 16, fontStyle: "italic", lineHeight: 1.7, color: P.darkText }}>
+              <div style={{ fontFamily: "var(--arya-font-sans)", fontSize: 16, fontStyle: "italic", lineHeight: 1.7, color: P.darkText }}>
                 {data.whatAryaNoticed}
               </div>
               {data.oneThatMatters && (
@@ -511,7 +507,7 @@ export default function WeeklyReviewPage() {
                     <div style={{ fontSize: 14, color: P.body }}>
                       {SESSION_LABELS[s.sessionType] || s.sessionType.replace(/_/g, " ")}
                     </div>
-                    <div style={{ fontSize: 12, color: P.muted, flexShrink: 0, fontFamily: "Inter, sans-serif" }}>
+                    <div style={{ fontSize: 12, color: P.muted, flexShrink: 0, fontFamily: "var(--arya-font-sans)" }}>
                       {new Date(s.createdAt).toLocaleDateString("en-IN", { weekday: "short", day: "numeric" })}
                     </div>
                   </div>
@@ -528,14 +524,14 @@ export default function WeeklyReviewPage() {
               <SLabel text={`${t("review_cosmic_section") || "Your Cosmic Week"} — ${data.cosmicWeek.name}`} />
               <div style={{ display: "flex", gap: 2, marginTop: -14 }}>
                 {[1, 2, 3, 4, 5].map(i => (
-                  <span key={i} style={{ fontSize: 13, color: i <= data.cosmicWeek.stars ? P.gold : "rgba(0,0,0,0.12)" }}>★</span>
+                  <span key={i} style={{ fontSize: 13, color: i <= data.cosmicWeek.stars ? P.gold : "color-mix(in srgb, var(--arya-text) 12%, transparent)" }}>★</span>
                 ))}
               </div>
             </div>
-            <div style={{ fontFamily: "'Crimson Pro', serif", fontSize: 15, fontStyle: "italic", lineHeight: 1.74, color: P.body, marginBottom: 12 }}>
+            <div style={{ fontFamily: "var(--arya-font-sans)", fontSize: 15, fontStyle: "italic", lineHeight: 1.74, color: P.body, marginBottom: 12 }}>
               {data.cosmicWeek.summary}
             </div>
-            <div style={{ fontSize: 13, color: P.steel, borderLeft: `2px solid rgba(0,0,0,0.1)`, paddingLeft: 12, lineHeight: 1.65, fontStyle: "italic" }}>
+            <div style={{ fontSize: 13, color: P.steel, borderLeft: `2px solid color-mix(in srgb, var(--arya-text) 10%, transparent)`, paddingLeft: 12, lineHeight: 1.65, fontStyle: "italic" }}>
               {data.cosmicWeek.nextHint}
             </div>
           </section>
@@ -547,10 +543,10 @@ export default function WeeklyReviewPage() {
               <section>
                 <SLabel text={t("review_from_past")} />
                 <div style={{ background: P.surface, borderLeft: `3px solid ${P.gold}`, borderRadius: "0 12px 12px 0", padding: "16px 18px" }}>
-                  <div style={{ fontFamily: "Inter, sans-serif", fontSize: 11, letterSpacing: "0.08em", color: P.muted, textTransform: "uppercase", marginBottom: 8 }}>
+                  <div style={{ fontFamily: "var(--arya-font-sans)", fontSize: 11, letterSpacing: "0.08em", color: P.muted, textTransform: "uppercase", marginBottom: 8 }}>
                     {t("review_weeks_ago").replace("{n}", String(data.voiceFlashback.weeksAgo))}
                   </div>
-                  <div style={{ fontFamily: "'Crimson Pro', serif", fontSize: 16, fontStyle: "italic", lineHeight: 1.65, color: P.body, marginBottom: data.voiceFlashback.aryaText ? 10 : 0 }}>
+                  <div style={{ fontFamily: "var(--arya-font-sans)", fontSize: 16, fontStyle: "italic", lineHeight: 1.65, color: P.body, marginBottom: data.voiceFlashback.aryaText ? 10 : 0 }}>
                     "{data.voiceFlashback.summary}"
                   </div>
                   {data.voiceFlashback.aryaText && (
@@ -568,7 +564,7 @@ export default function WeeklyReviewPage() {
           {/* ── 9. ARYA'S QUESTION ── */}
           <section>
             <SLabel text={t("review_arya_q")} />
-            <div style={{ fontFamily: "'Crimson Pro', serif", fontSize: 22, fontStyle: "italic", lineHeight: 1.5, color: P.text, marginBottom: 18 }}>
+            <div style={{ fontFamily: "var(--arya-font-sans)", fontSize: 22, fontStyle: "italic", lineHeight: 1.5, color: P.text, marginBottom: 18 }}>
               "{data.aryasQuestion}"
             </div>
             <textarea
@@ -579,12 +575,12 @@ export default function WeeklyReviewPage() {
               placeholder="Sit with this. Write what comes…"
               style={{
                 width: "100%", background: P.surface, border: `1px solid ${P.border}`, borderRadius: 12,
-                padding: "14px 16px", color: P.body, fontSize: 15, fontFamily: "'Crimson Pro', serif",
+                padding: "14px 16px", color: P.body, fontSize: 15, fontFamily: "var(--arya-font-sans)",
                 resize: "none", lineHeight: 1.6,
               }}
             />
             {answerSaved ? (
-              <div style={{ marginTop: 10, fontSize: 13, color: P.green, display: "flex", alignItems: "center", gap: 5, fontFamily: "Inter, sans-serif" }}>
+              <div style={{ marginTop: 10, fontSize: 13, color: P.green, display: "flex", alignItems: "center", gap: 5, fontFamily: "var(--arya-font-sans)" }}>
                 <Check size={12} /> {t("review_saved_journal")}
               </div>
             ) : questionAnswer.trim() ? (
@@ -592,7 +588,7 @@ export default function WeeklyReviewPage() {
                 data-testid="button-review-save-answer"
                 onClick={saveAnswer}
                 disabled={savingAnswer}
-                style={{ marginTop: 10, padding: "9px 16px", borderRadius: 8, border: `1px solid ${P.gold}`, background: "transparent", color: P.goldDark, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontFamily: "Inter, sans-serif" }}
+                style={{ marginTop: 10, padding: "9px 16px", borderRadius: 8, border: `1px solid ${P.gold}`, background: "transparent", color: P.goldDark, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontFamily: "var(--arya-font-sans)" }}
               >
                 {savingAnswer && <Loader2 size={12} className="wr-spin" />}
                 {t("review_save_journal")}
@@ -618,7 +614,7 @@ export default function WeeklyReviewPage() {
                     border: `1.5px solid ${selectedChip === chip ? "rgba(74,124,89,0.4)" : P.border}`,
                     background: selectedChip === chip ? P.greenBg : P.surface,
                     color: selectedChip === chip ? P.greenText : P.body,
-                    fontFamily: "'Crimson Pro', serif",
+                    fontFamily: "var(--arya-font-sans)",
                     fontSize: 14,
                     cursor: "pointer",
                     textAlign: "left",
@@ -637,12 +633,12 @@ export default function WeeklyReviewPage() {
               placeholder="Or write your own…"
               style={{
                 width: "100%", background: "transparent", border: `1.5px solid ${P.border}`,
-                borderRadius: 12, padding: "14px 16px", fontFamily: "'Crimson Pro', serif",
+                borderRadius: 12, padding: "14px 16px", fontFamily: "var(--arya-font-sans)",
                 fontSize: 15, color: P.text, marginBottom: 14,
               }}
             />
             {intentionSaved ? (
-              <div style={{ padding: "14px 16px", borderRadius: 12, background: P.greenBg, border: `1px solid ${P.greenBorder}`, fontSize: 14, color: P.green, textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, fontFamily: "Inter, sans-serif" }}>
+              <div style={{ padding: "14px 16px", borderRadius: 12, background: P.greenBg, border: `1px solid ${P.greenBorder}`, fontSize: 14, color: P.green, textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, fontFamily: "var(--arya-font-sans)" }}>
                 <Check size={13} /> {t("review_intention_done")}
               </div>
             ) : (
@@ -656,7 +652,7 @@ export default function WeeklyReviewPage() {
                   borderRadius: 14, border: "none",
                   background: intentionValue ? P.gold : "rgba(0,0,0,0.08)",
                   color: intentionValue ? P.text : P.muted,
-                  fontFamily: "'Cinzel', serif",
+                  fontFamily: "var(--arya-font-sans)",
                   fontSize: 11, letterSpacing: "0.08em",
                   cursor: intentionValue ? "pointer" : "not-allowed",
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
@@ -670,7 +666,7 @@ export default function WeeklyReviewPage() {
 
           {/* ── Footer ── */}
           <div style={{ marginTop: 44, paddingTop: 20, borderTop: `1px solid ${P.divider}`, textAlign: "center" }}>
-            <div style={{ fontFamily: "'Cinzel', serif", fontSize: 10, color: "rgba(0,0,0,0.25)", letterSpacing: "0.2em" }}>
+            <div style={{ fontFamily: "var(--arya-font-sans)", fontSize: 10, color: "color-mix(in srgb, var(--arya-text) 25%, transparent)", letterSpacing: "0.2em" }}>
               {t("review_footer")}
             </div>
           </div>

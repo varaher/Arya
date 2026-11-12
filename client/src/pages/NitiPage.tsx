@@ -9,23 +9,24 @@ import { useUserAuth } from "@/lib/user-auth";
 import { useLanguage } from "@/lib/language-context";
 import BottomNav from "@/components/BottomNav";
 import NitiOpenScreen from "@/components/NitiOpenScreen";
+import { PageHeading } from "@/components/PageHeading";
 
 // ── Palette ──────────────────────────────────────────────────
 const N = {
-  bg: "#0a0d14",
-  surface: "#131926",
-  surface2: "#1a2235",
-  border: "#1e2d45",
-  border2: "#253450",
-  gold: "#d4a853",
-  goldDim: "#7a5c2a",
-  goldFaint: "rgba(212,168,83,0.08)",
-  cream: "#f0e8d5",
-  steel: "#8898b8",
-  muted: "#5a6880",
-  text: "#ddd5c5",
-  green: "#4a9d7a",
-  red: "#c05050",
+  bg: "var(--arya-bg)",
+  surface: "var(--arya-surface)",
+  surface2: "var(--arya-surface-raised)",
+  border: "var(--arya-border)",
+  border2: "var(--arya-border)",
+  gold: "var(--arya-primary)",
+  goldDim: "var(--arya-primary-hover)",
+  goldFaint: "var(--arya-primary-soft)",
+  cream: "var(--arya-text)",
+  steel: "var(--arya-text-muted)",
+  muted: "var(--arya-text-subtle)",
+  text: "var(--arya-text)",
+  green: "var(--arya-success)",
+  red: "var(--arya-danger)",
 };
 
 // ── Types ────────────────────────────────────────────────────
@@ -71,10 +72,10 @@ interface MarketConv {
 
 // ── Static data ──────────────────────────────────────────────
 const PHILOSOPHER_META: Record<string, { emoji: string; domain: string; domainHi: string; color: string }> = {
-  chanakya:      { emoji: "⚔️",  domain: "Strategy & Competition",  domainHi: "रणनीति और प्रतिस्पर्धा",  color: "#d4a853" },
-  vidura:        { emoji: "🏛️",  domain: "Ethics & Trust",           domainHi: "नैतिकता और विश्वास",        color: "#7c6aff" },
-  thiruvalluvar: { emoji: "📜",  domain: "Resilience & Timing",      domainHi: "लचीलापन और समय",            color: "#5ecfb0" },
-  krishna:       { emoji: "🪷",  domain: "Founder Clarity",          domainHi: "संस्थापक स्पष्टता",          color: "#e87070" },
+  chanakya:      { emoji: "⚔️",  domain: "Strategy & Competition",  domainHi: "रणनीति और प्रतिस्पर्धा",  color: "var(--arya-primary)" },
+  vidura:        { emoji: "🏛️",  domain: "Ethics & Trust",           domainHi: "नैतिकता और विश्वास",        color: "var(--arya-secondary)" },
+  thiruvalluvar: { emoji: "📜",  domain: "Resilience & Timing",      domainHi: "लचीलापन और समय",            color: "var(--arya-primary)" },
+  krishna:       { emoji: "🪷",  domain: "Founder Clarity",          domainHi: "संस्थापक स्पष्टता",          color: "var(--arya-danger)" },
   shukra:        { emoji: "💎",  domain: "Finance & Structure",      domainHi: "वित्त और संरचना",            color: "#4a9d7a" },
 };
 
@@ -135,7 +136,7 @@ function ProgDots({ screen }: { screen: NitiScreen }) {
 function GoldBtn({ label, onClick, disabled, loading }: { label: string; onClick: () => void; disabled?: boolean; loading?: boolean }) {
   return (
     <button onClick={onClick} disabled={disabled || loading} data-testid={`btn-niti-${label.replace(/\s+/g, "-").toLowerCase()}`}
-      style={{ width: "100%", padding: "14px 20px", borderRadius: 12, border: "none", background: disabled || loading ? N.muted : `linear-gradient(135deg, ${N.gold}, #b8892a)`, color: "#0a0d14", fontWeight: 700, fontSize: 14, letterSpacing: "0.04em", cursor: disabled || loading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "all 0.2s", fontFamily: "Inter, sans-serif" }}>
+      style={{ width: "100%", padding: "14px 20px", borderRadius: 12, border: "none", background: disabled || loading ? N.muted : N.gold, color: "var(--arya-primary-foreground)", fontWeight: 700, fontSize: 14, letterSpacing: "0.04em", cursor: disabled || loading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "all 0.2s", fontFamily: "var(--arya-font-sans)" }}>
       {loading && <Loader2 size={14} style={{ animation: "spin 0.8s linear infinite" }} />}
       {label}
     </button>
@@ -155,7 +156,7 @@ function ChipSelector({ options, value, onChange }: { options: string[]; value: 
     <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 8 }}>
       {options.map(o => (
         <button key={o} onClick={() => onChange(o)} data-testid={`chip-${o.replace(/\s+/g, "-").toLowerCase()}`}
-          style={{ padding: "8px 14px", borderRadius: 8, border: `1px solid ${value === o ? N.gold : N.border2}`, background: value === o ? N.goldFaint : "transparent", color: value === o ? N.gold : N.steel, fontSize: 13, cursor: "pointer", transition: "all 0.2s", fontFamily: "Inter, sans-serif" }}>
+          style={{ padding: "8px 14px", borderRadius: 8, border: `1px solid ${value === o ? N.gold : N.border2}`, background: value === o ? N.goldFaint : "transparent", color: value === o ? N.gold : N.steel, fontSize: 13, cursor: "pointer", transition: "all 0.2s", fontFamily: "var(--arya-font-sans)" }}>
           {o}
         </button>
       ))}
@@ -491,7 +492,7 @@ export default function NitiPage() {
       style={{ padding: "0 20px 36px", display: "flex", flexDirection: "column", gap: 24 }}>
       <ProgDots screen={screen} />
       <div style={{ textAlign: "center" as const, padding: "4px 0" }}>
-        <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 58, color: N.gold, fontWeight: 700, letterSpacing: "0.04em", lineHeight: 1 }}>Niti</div>
+        <div style={{ fontFamily: "var(--arya-font-sans)", fontSize: 58, color: N.gold, fontWeight: 700, letterSpacing: "0.04em", lineHeight: 1 }}>Niti</div>
         <div style={{ fontSize: 12, letterSpacing: "0.2em", color: N.steel, marginTop: 8, textTransform: "uppercase" as const }}>{t("niti_partner")}</div>
         <div style={{ width: 48, height: 2, background: `linear-gradient(90deg, transparent, ${N.gold}, transparent)`, margin: "14px auto 0" }} />
       </div>
@@ -526,7 +527,7 @@ export default function NitiPage() {
       style={{ padding: "0 20px 36px", display: "flex", flexDirection: "column", gap: 22 }}>
       <ProgDots screen={screen} />
       <div>
-        <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 21, color: N.cream, fontWeight: 700 }}>{t("niti_your_biz")}</div>
+        <div style={{ fontFamily: "var(--arya-font-sans)", fontSize: 21, color: N.cream, fontWeight: 700 }}>{t("niti_your_biz")}</div>
         <div style={{ fontSize: 13, color: N.steel, marginTop: 4, lineHeight: 1.5 }}>{t("niti_context_sub")}</div>
       </div>
       <div><Label text={t("niti_type_label")} /><ChipSelector options={BUSINESS_TYPES}  value={bizType}  onChange={setBizType}  /></div>
@@ -536,7 +537,7 @@ export default function NitiPage() {
         <Label text={t("niti_challenge_q")} />
         <textarea value={bizChallenge} onChange={e => setBizChallenge(e.target.value)} rows={3}
           placeholder={t("niti_challenge_ph")}
-          style={{ width: "100%", background: N.surface2, border: `1px solid ${N.border2}`, borderRadius: 10, padding: "12px 14px", color: N.cream, fontSize: 13, fontFamily: "Inter, sans-serif", resize: "none", outline: "none", lineHeight: 1.6, boxSizing: "border-box" as const }} />
+          style={{ width: "100%", background: N.surface2, border: `1px solid ${N.border2}`, borderRadius: 10, padding: "12px 14px", color: N.cream, fontSize: 13, fontFamily: "var(--arya-font-sans)", resize: "none", outline: "none", lineHeight: 1.6, boxSizing: "border-box" as const }} />
       </div>
       <div style={{ display: "flex", gap: 10 }}>
         <BackBtn onClick={() => setScreen("intro")} />
@@ -551,7 +552,7 @@ export default function NitiPage() {
       style={{ padding: "0 20px 36px", display: "flex", flexDirection: "column", gap: 22 }}>
       <ProgDots screen={screen} />
       <div>
-        <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 21, color: N.cream, fontWeight: 700 }}>{t("niti_focus_h")}</div>
+        <div style={{ fontFamily: "var(--arya-font-sans)", fontSize: 21, color: N.cream, fontWeight: 700 }}>{t("niti_focus_h")}</div>
         <div style={{ fontSize: 13, color: N.steel, marginTop: 4, lineHeight: 1.5 }}>{t("niti_focus_sub")}</div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -584,7 +585,7 @@ export default function NitiPage() {
       <ProgDots screen={screen} />
       <div style={{ padding: "12px 0 4px" }}>
         <div style={{ fontSize: 44, marginBottom: 12, lineHeight: 1 }}>🏛️</div>
-        <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 22, color: N.gold, fontWeight: 700 }}>{t("niti_ready_h")}</div>
+        <div style={{ fontFamily: "var(--arya-font-sans)", fontSize: 22, color: N.gold, fontWeight: 700 }}>{t("niti_ready_h")}</div>
         <div style={{ fontSize: 13, color: N.steel, marginTop: 8, lineHeight: 1.6 }}>{t("niti_ready_sub")}</div>
       </div>
       <div style={{ background: N.surface2, border: `1px solid ${N.border}`, borderRadius: 14, padding: 20, textAlign: "left" as const }}>
@@ -653,7 +654,7 @@ export default function NitiPage() {
       style={{ padding: "0 20px 36px", display: "flex", flexDirection: "column", gap: 24 }}>
 
       <div style={{ paddingTop: 4 }}>
-        <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 22, color: N.cream, fontWeight: 700, lineHeight: 1.3 }}>
+        <div style={{ fontFamily: "var(--arya-font-sans)", fontSize: 22, color: N.cream, fontWeight: 700, lineHeight: 1.3 }}>
           {t("niti_session_q")}
         </div>
         <div style={{ fontSize: 13, color: N.steel, marginTop: 6, lineHeight: 1.5 }}>
@@ -670,7 +671,7 @@ export default function NitiPage() {
             <button key={key} onClick={() => setSelectedSessionKey(key)}
               data-testid={`stype-${key}`}
               style={{
-                background: active ? "rgba(212,168,83,0.10)" : N.surface2,
+                background: active ? "rgba(25,99,79,0.10)" : N.surface2,
                 border: `1px solid ${active ? N.gold : N.border}`,
                 borderTop: `3px solid ${active ? N.gold : phil.color}`,
                 borderRadius: 14, padding: 16, textAlign: "left" as const,
@@ -680,7 +681,7 @@ export default function NitiPage() {
               }}>
               {active && (
                 <div style={{ position: "absolute" as const, top: 9, right: 9, width: 16, height: 16, borderRadius: "50%", background: N.gold, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#0a0d14" }} />
+                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--arya-primary-foreground)" }} />
                 </div>
               )}
               <Icon size={20} color={active ? N.gold : phil.color} />
@@ -706,7 +707,7 @@ export default function NitiPage() {
             style={{
               width: "100%", background: N.surface2, border: `1px solid ${isVoiceMind ? N.gold : N.border2}`,
               borderRadius: 12, padding: "12px 52px 12px 14px", color: N.cream,
-              fontSize: 13, fontFamily: "Inter, sans-serif", resize: "none", outline: "none",
+              fontSize: 13, fontFamily: "var(--arya-font-sans)", resize: "none", outline: "none",
               lineHeight: 1.65, boxSizing: "border-box" as const, transition: "border-color 0.2s",
             }} />
           <button
@@ -879,9 +880,9 @@ export default function NitiPage() {
           <input value={thinkInput} onChange={e => setThinkInput(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter" && thinkInput.trim()) { askMarket(thinkInput); setThinkInput(""); } }}
             placeholder={t("niti_think_arya_ph")} data-testid="think-custom-input"
-            style={{ flex: 1, background: N.surface2, border: `1px solid ${N.border2}`, borderRadius: 10, padding: "10px 14px", color: N.cream, fontSize: 13, outline: "none", fontFamily: "Inter, sans-serif" }} />
+            style={{ flex: 1, background: N.surface2, border: `1px solid ${N.border2}`, borderRadius: 10, padding: "10px 14px", color: N.cream, fontSize: 13, outline: "none", fontFamily: "var(--arya-font-sans)" }} />
           <button onClick={() => { if (thinkInput.trim()) { askMarket(thinkInput); setThinkInput(""); } }} disabled={!thinkInput.trim()}
-            style={{ width: 40, height: 40, borderRadius: 10, border: "none", background: thinkInput.trim() ? `linear-gradient(135deg, ${N.gold}, #b8892a)` : N.surface2, color: thinkInput.trim() ? "#0a0d14" : N.muted, cursor: thinkInput.trim() ? "pointer" : "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.2s" }}>
+            style={{ width: 40, height: 40, borderRadius: 10, border: "none", background: thinkInput.trim() ? N.gold : N.surface2, color: thinkInput.trim() ? "var(--arya-primary-foreground)" : N.muted, cursor: thinkInput.trim() ? "pointer" : "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.2s" }}>
             <Send size={15} />
           </button>
         </div>
@@ -912,7 +913,7 @@ export default function NitiPage() {
                 cursor: "pointer", width: "100%", textAlign: "left",
                 transition: "border-color 0.15s, background 0.15s",
               }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = N.gold; (e.currentTarget as HTMLButtonElement).style.background = "rgba(212,168,83,0.06)"; }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = N.gold; (e.currentTarget as HTMLButtonElement).style.background = "rgba(25,99,79,0.06)"; }}
               onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = N.border; (e.currentTarget as HTMLButtonElement).style.background = N.surface2; }}
             >
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -921,12 +922,12 @@ export default function NitiPage() {
                 </div>
                 <div style={{ fontSize: 11, color: N.steel, marginTop: 3, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" as const }}>
                   <span>{dateStr} · {timeStr}</span>
-                  {isConv && <span style={{ color: "rgba(124,58,237,0.8)" }}>◈ Open thinking</span>}
+                  {isConv && <span style={{ color: "var(--arya-secondary)" }}>◈ Open thinking</span>}
                   {!isConv && phil && <span style={{ color: phil.color }}>{phil.emoji} {phil.domain}</span>}
                 </div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                <div style={{ padding: "3px 8px", borderRadius: 20, background: s.status === "resolved" ? "rgba(74,157,122,0.15)" : "rgba(212,168,83,0.1)", color: s.status === "resolved" ? N.green : N.gold, fontSize: 10 }}>
+                <div style={{ padding: "3px 8px", borderRadius: 20, background: s.status === "resolved" ? "color-mix(in srgb, var(--arya-success) 15%, transparent)" : "var(--arya-primary-soft)", color: s.status === "resolved" ? N.green : N.gold, fontSize: 10 }}>
                   {s.status === "resolved" ? t("niti_resolved") : t("niti_active_label")}
                 </div>
                 <ChevronRight size={14} color={N.steel} />
@@ -968,7 +969,7 @@ export default function NitiPage() {
           <button
             onClick={() => setShowStructuredModes(false)}
             data-testid="niti-back-to-open"
-            style={{ display: "flex", alignItems: "center", gap: 8, background: "transparent", border: "none", color: N.steel, fontSize: 13, cursor: "pointer", padding: "4px 0", fontFamily: "Inter, sans-serif" }}
+            style={{ display: "flex", alignItems: "center", gap: 8, background: "transparent", border: "none", color: N.steel, fontSize: 13, cursor: "pointer", padding: "4px 0", fontFamily: "var(--arya-font-sans)" }}
           >
             <ArrowLeft size={14} />
             Back to open thinking
@@ -977,7 +978,7 @@ export default function NitiPage() {
           {/* Header */}
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
             <div style={{ flex: 1 }}>
-              <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 17, color: N.cream, fontWeight: 700 }}>{t("niti_dealing_with")}</div>
+              <div style={{ fontFamily: "var(--arya-font-sans)", fontSize: 17, color: N.cream, fontWeight: 700 }}>{t("niti_dealing_with")}</div>
               {bizChallenge && (
                 <div style={{ fontSize: 13, color: N.steel, marginTop: 6, lineHeight: 1.5, fontStyle: "italic", borderLeft: `2px solid ${N.goldDim}`, paddingLeft: 10 }}>
                   "{bizChallenge}"
@@ -1025,7 +1026,7 @@ export default function NitiPage() {
   const JournalContent = (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div>
-        <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 19, color: N.cream, fontWeight: 700, marginBottom: 4 }}>{t("niti_thinking_journal")}</div>
+        <div style={{ fontFamily: "var(--arya-font-sans)", fontSize: 19, color: N.cream, fontWeight: 700, marginBottom: 4 }}>{t("niti_thinking_journal")}</div>
         <div style={{ fontSize: 13, color: N.steel, lineHeight: 1.5 }}>
           {t("niti_journal_sub")}
         </div>
@@ -1061,7 +1062,7 @@ export default function NitiPage() {
                     placeholder="Write your decision here…"
                     rows={2}
                     data-testid={`decision-textarea-${s.id}`}
-                    style={{ width: "100%", background: N.surface, border: `1px solid ${N.border2}`, borderRadius: 8, padding: "10px 12px", color: N.cream, fontSize: 13, fontFamily: "Inter, sans-serif", resize: "none", outline: "none", lineHeight: 1.6, boxSizing: "border-box" as const }} />
+                    style={{ width: "100%", background: N.surface, border: `1px solid ${N.border2}`, borderRadius: 8, padding: "10px 12px", color: N.cream, fontSize: 13, fontFamily: "var(--arya-font-sans)", resize: "none", outline: "none", lineHeight: 1.6, boxSizing: "border-box" as const }} />
                 </div>
               </div>
             );
@@ -1075,6 +1076,10 @@ export default function NitiPage() {
     <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       style={{ padding: "0 20px 36px", display: "flex", flexDirection: "column", gap: 20 }}>
 
+      <div style={{ paddingTop: 16, marginBottom: -12 }}>
+        <PageHeading eyebrow={t("page_niti_eyebrow")} title={t("page_niti_t1")} accent={t("page_niti_t2")} />
+      </div>
+
       {/* Tab bar — 3 tabs */}
       <div style={{ display: "flex", background: N.surface2, borderRadius: 10, padding: 3, border: `1px solid ${N.border}` }}>
         {[
@@ -1083,7 +1088,7 @@ export default function NitiPage() {
           { key: "journal",   label: "📋  Journal" },
         ].map(tab => (
           <button key={tab.key} onClick={() => setActiveTab(tab.key as "decisions" | "market" | "journal")} data-testid={`tab-${tab.key}`}
-            style={{ flex: 1, padding: "9px 6px", borderRadius: 8, border: "none", background: activeTab === tab.key ? N.gold : "transparent", color: activeTab === tab.key ? "#0a0d14" : N.steel, fontSize: 12, fontWeight: activeTab === tab.key ? 700 : 400, cursor: "pointer", transition: "all 0.2s", fontFamily: "Inter, sans-serif" }}>
+            style={{ flex: 1, padding: "9px 6px", borderRadius: 8, border: "none", background: activeTab === tab.key ? N.gold : "transparent", color: activeTab === tab.key ? "var(--arya-primary-foreground)" : N.steel, fontSize: 12, fontWeight: activeTab === tab.key ? 700 : 400, cursor: "pointer", transition: "all 0.2s", fontFamily: "var(--arya-font-sans)" }}>
             {tab.label}
           </button>
         ))}
@@ -1118,7 +1123,7 @@ export default function NitiPage() {
               <div style={{ background: N.surface2, border: `1px solid ${N.border}`, borderLeft: `3px solid ${msg.philosopher ? (PHILOSOPHER_META[msg.philosopher]?.color || N.gold) : N.gold}`, borderRadius: "0 12px 12px 12px", padding: 16 }}>
                 <div style={{ fontSize: 14, color: N.text, lineHeight: 1.75 }}>{msg.content}</div>
                 {msg.pushQuestion && (
-                  <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${N.border}`, fontFamily: "Libre Baskerville, serif", fontSize: 14, color: N.gold, fontStyle: "italic", lineHeight: 1.6 }}>
+                  <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${N.border}`, fontFamily: "var(--arya-font-sans)", fontSize: 14, color: N.gold, fontStyle: "italic", lineHeight: 1.6 }}>
                     {msg.pushQuestion}
                   </div>
                 )}
@@ -1136,7 +1141,7 @@ export default function NitiPage() {
               </div>
             ) : (
               <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                <div style={{ background: "#182a1e", border: `1px solid #2a4535`, borderRadius: "12px 12px 0 12px", padding: "10px 14px", maxWidth: "80%", fontSize: 14, color: N.cream, lineHeight: 1.6 }}>
+                <div style={{ background: "var(--arya-primary)", border: "none", borderRadius: "18px 18px 4px 18px", padding: "10px 14px", maxWidth: "80%", fontSize: 14, color: "var(--arya-primary-foreground)", lineHeight: 1.6 }}>
                   {msg.content}
                 </div>
               </div>
@@ -1157,9 +1162,9 @@ export default function NitiPage() {
         <textarea value={inputText} onChange={e => setInputText(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(inputText); } }}
           placeholder="Respond or ask a question…" rows={1} data-testid="niti-session-input"
-          style={{ flex: 1, background: N.surface2, border: `1px solid ${N.border2}`, borderRadius: 10, padding: "10px 14px", color: N.cream, fontSize: 14, fontFamily: "Inter, sans-serif", resize: "none", outline: "none", lineHeight: 1.5, maxHeight: 100, overflowY: "auto", boxSizing: "border-box" as const }} />
+          style={{ flex: 1, background: N.surface2, border: `1px solid ${N.border2}`, borderRadius: 10, padding: "10px 14px", color: N.cream, fontSize: 14, fontFamily: "var(--arya-font-sans)", resize: "none", outline: "none", lineHeight: 1.5, maxHeight: 100, overflowY: "auto", boxSizing: "border-box" as const }} />
         <button onClick={() => sendMessage(inputText)} disabled={!inputText.trim() || isLoading} data-testid="niti-send-btn"
-          style={{ width: 40, height: 40, borderRadius: 10, border: "none", background: inputText.trim() && !isLoading ? `linear-gradient(135deg, ${N.gold}, #b8892a)` : N.surface2, color: inputText.trim() && !isLoading ? "#0a0d14" : N.muted, cursor: inputText.trim() && !isLoading ? "pointer" : "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.2s" }}>
+          style={{ width: 40, height: 40, borderRadius: 10, border: "none", background: inputText.trim() && !isLoading ? N.gold : N.surface2, color: inputText.trim() && !isLoading ? "var(--arya-primary-foreground)" : N.muted, cursor: inputText.trim() && !isLoading ? "pointer" : "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.2s" }}>
           <Send size={16} />
         </button>
       </div>
@@ -1168,7 +1173,7 @@ export default function NitiPage() {
 
   // ── Root ──────────────────────────────────────────────────
   return (
-    <div style={{ minHeight: "100dvh", background: N.bg, color: N.text, display: "flex", flexDirection: "column", fontFamily: "Inter, sans-serif" }}>
+    <div style={{ minHeight: "100dvh", background: N.bg, color: N.text, display: "flex", flexDirection: "column", fontFamily: "var(--arya-font-sans)" }}>
       <style>{`
         @keyframes spin   { to { transform: rotate(360deg); } }
         @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-5px); } }
@@ -1184,7 +1189,7 @@ export default function NitiPage() {
           <ArrowLeft size={16} />
         </button>
         <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 15, color: N.gold, fontWeight: 700, letterSpacing: "0.06em" }}>
+          <div style={{ fontFamily: "var(--arya-font-sans)", fontSize: 15, color: N.gold, fontWeight: 700, letterSpacing: "0.06em" }}>
             {screen === "session" && sessionLabel ? sessionLabel : "NITI"}
           </div>
           <div style={{ fontSize: 10, color: N.steel, letterSpacing: "0.1em", textTransform: "uppercase" as const }}>
@@ -1242,7 +1247,7 @@ export default function NitiPage() {
                   <div style={{ fontSize: 14, color: N.text, lineHeight: 1.78 }}>
                     {marketConv.data.content}
                   </div>
-                  <div style={{ paddingTop: 14, borderTop: `1px solid ${N.border}`, fontFamily: "Libre Baskerville, serif", fontSize: 14, color: N.gold, fontStyle: "italic", lineHeight: 1.65 }}>
+                  <div style={{ paddingTop: 14, borderTop: `1px solid ${N.border}`, fontFamily: "var(--arya-font-sans)", fontSize: 14, color: N.gold, fontStyle: "italic", lineHeight: 1.65 }}>
                     {marketConv.data.pushQuestion}
                   </div>
                   <div style={{ background: N.goldFaint, border: `1px solid ${N.goldDim}`, borderRadius: 9, padding: "10px 14px", fontSize: 12, color: N.cream, lineHeight: 1.55, display: "flex", gap: 8, alignItems: "flex-start" }}>
@@ -1272,7 +1277,7 @@ export default function NitiPage() {
               <div style={{ width: 36, height: 4, borderRadius: 2, background: N.border2, margin: "-4px auto 4px" }} />
 
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <div style={{ fontFamily: "Libre Baskerville, serif", fontSize: 16, color: N.cream, fontWeight: 700 }}>Add to Portfolio Journal</div>
+                <div style={{ fontFamily: "var(--arya-font-sans)", fontSize: 16, color: N.cream, fontWeight: 700 }}>Add to Portfolio Journal</div>
                 <button onClick={() => setShowAddHolding(false)} style={{ padding: 4, border: "none", background: "transparent", color: N.muted, cursor: "pointer" }}>
                   <X size={16} />
                 </button>

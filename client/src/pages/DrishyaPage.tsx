@@ -8,6 +8,7 @@ import { getDrishyaWorldNames } from "@/lib/kaal-niti-language-patch";
 import DrishyaBackground from "@/components/drishya/DrishyaBackground";
 import CinematicReader from "@/components/drishya/CinematicReader";
 import { drishyaAmbient } from "@/components/drishya/DrishyaAmbient";
+import { PageHeading } from "@/components/PageHeading";
 
 type DrishyaWorld = "night" | "film" | "everyday";
 
@@ -21,9 +22,9 @@ interface SavedStory {
 }
 
 const WORLDS: { id: DrishyaWorld; emoji: string; label: string; sub: string; color: string; bg: string; glow: string }[] = [
-  { id: "night",     emoji: "🌙", label: "Night",    sub: "Bedtime · Personal · Warm",    color: "#818cf8", bg: "rgba(99,102,241,0.12)",  glow: "rgba(99,102,241,0.25)" },
-  { id: "film",      emoji: "🎬", label: "Film",     sub: "Scripts · Scenes · Drama",     color: "#f87171", bg: "rgba(239,68,68,0.12)",   glow: "rgba(239,68,68,0.25)" },
-  { id: "everyday",  emoji: "✨", label: "Everyday", sub: "Today · Close · True",         color: "#fbbf24", bg: "rgba(251,191,36,0.12)",  glow: "rgba(251,191,36,0.25)" },
+  { id: "night",     emoji: "🌙", label: "Night",    sub: "Bedtime · Personal · Warm",    color: "#c9b2e6", bg: "rgba(181,150,214,0.14)", glow: "rgba(181,150,214,0.28)" },
+  { id: "film",      emoji: "🎬", label: "Film",     sub: "Scripts · Scenes · Drama",     color: "#f0a58a", bg: "rgba(240,165,138,0.13)", glow: "rgba(240,165,138,0.26)" },
+  { id: "everyday",  emoji: "✨", label: "Everyday", sub: "Today · Close · True",         color: "#9cc7ad", bg: "rgba(156,199,173,0.13)", glow: "rgba(156,199,173,0.26)" },
 ];
 
 
@@ -37,9 +38,9 @@ function toLangCode(short: string): string {
 }
 
 const BG_GRADIENTS: Record<DrishyaWorld, string> = {
-  night:    "radial-gradient(ellipse at 20% 0%, rgba(99,102,241,0.18) 0%, transparent 60%), radial-gradient(ellipse at 80% 100%, rgba(49,46,129,0.25) 0%, transparent 60%)",
-  film:     "radial-gradient(ellipse at 20% 0%, rgba(239,68,68,0.15) 0%, transparent 60%), radial-gradient(ellipse at 80% 100%, rgba(127,29,29,0.22) 0%, transparent 60%)",
-  everyday: "radial-gradient(ellipse at 20% 0%, rgba(251,191,36,0.12) 0%, transparent 60%), radial-gradient(ellipse at 80% 100%, rgba(120,53,15,0.2) 0%, transparent 60%)",
+  night:    "radial-gradient(ellipse at 85% 0%, rgba(181,150,214,0.30) 0%, transparent 55%), linear-gradient(160deg, #243a4a 0%, #1d2f2a 70%)",
+  film:     "radial-gradient(ellipse at 85% 0%, rgba(240,165,138,0.22) 0%, transparent 55%), linear-gradient(160deg, #3a2c33 0%, #1d2f2a 70%)",
+  everyday: "radial-gradient(ellipse at 85% 0%, rgba(156,199,173,0.24) 0%, transparent 55%), linear-gradient(160deg, #22392f 0%, #1a2c25 70%)",
 };
 
 export default function DrishyaPage() {
@@ -211,7 +212,7 @@ export default function DrishyaPage() {
 
   const pageStyle: React.CSSProperties = {
     minHeight: "100dvh",
-    background: "#07040f",
+    background: "#152720",
     color: "#f0ebe0",
     fontFamily: "Inter, sans-serif",
     overflowX: "hidden",
@@ -273,23 +274,9 @@ export default function DrishyaPage() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          style={{ textAlign: "center", padding: "32px 20px 8px" }}
+          style={{ textAlign: "left", padding: "28px 20px 8px", maxWidth: 560, margin: "0 auto" }}
         >
-          <div style={{ fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase", color: "rgba(240,235,224,0.35)", marginBottom: 10, fontWeight: 600 }}>
-            ARYA PRESENTS
-          </div>
-          <div style={{
-            fontSize: 42, fontFamily: "'Space Grotesk', sans-serif",
-            fontWeight: 700, letterSpacing: "-0.02em",
-            background: "linear-gradient(135deg, #f0ebe0 0%, rgba(240,235,224,0.7) 100%)",
-            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-            marginBottom: 8,
-          }}>
-            Drishya
-          </div>
-          <div style={{ fontSize: 14, color: "rgba(240,235,224,0.45)", letterSpacing: "0.04em" }}>
-            {t("drishya_subtitle")}
-          </div>
+          <PageHeading tone="night" eyebrow={t("page_drishya_eyebrow")} title={t("page_drishya_t1")} accent={t("page_drishya_t2")} sub={t("drishya_subtitle")} />
         </motion.div>
 
         {/* ── World Selector ── */}

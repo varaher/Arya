@@ -9,21 +9,21 @@ import { Home } from "lucide-react";
 
 // ── Palette ──────────────────────────────────────────────────────────────────
 const C = {
-  bg: "#0d0b0f", surface: "#16121e", surface2: "#1e1928",
-  border: "#2a2438", border2: "#352d48",
-  indigo: "#7c6aff",
-  saffron: "#f5a623",
-  teal: "#5ecfb0", rose: "#e87070",
-  text: "#ede8f5", textDim: "#b0a8c8", textMuted: "#6a6080",
+  bg: "var(--arya-bg)", surface: "var(--arya-surface)", surface2: "var(--arya-surface-raised)",
+  border: "var(--arya-border)", border2: "var(--arya-border)",
+  indigo: "var(--arya-secondary)",
+  saffron: "var(--arya-warning)",
+  teal: "var(--arya-primary)", rose: "var(--arya-danger)",
+  text: "var(--arya-text)", textDim: "var(--arya-text-muted)", textMuted: "var(--arya-text-subtle)",
 };
-const serif = "'Libre Baskerville', Georgia, serif";
-const sans  = "'Nunito', 'Inter', sans-serif";
+const serif = "var(--arya-font-sans)";
+const sans  = "var(--arya-font-sans)";
 
 // Path accent system
 const ACCENT = {
-  western: { main: "#f5c842", dim: "rgba(245,200,66,0.10)", border: "rgba(245,200,66,0.22)", badge: "⭐ Star Signs" },
-  vedic:   { main: "#f5a623", dim: "rgba(245,166,35,0.10)", border: "rgba(245,166,35,0.22)", badge: "🪔 KAAL" },
-  neutral: { main: "#8fa0b8", dim: "rgba(143,160,184,0.10)", border: "rgba(143,160,184,0.22)", badge: "🌐 Patterns" },
+  western: { main: "var(--arya-warning)", dim: "color-mix(in srgb, var(--arya-warning) 10%, transparent)", border: "color-mix(in srgb, var(--arya-warning) 24%, transparent)", badge: "⭐ Star Signs" },
+  vedic:   { main: "var(--arya-secondary)", dim: "color-mix(in srgb, var(--arya-secondary) 10%, transparent)", border: "color-mix(in srgb, var(--arya-secondary) 24%, transparent)", badge: "🪔 KAAL" },
+  neutral: { main: "var(--arya-primary)", dim: "color-mix(in srgb, var(--arya-primary) 10%, transparent)", border: "color-mix(in srgb, var(--arya-primary) 24%, transparent)", badge: "🌐 Patterns" },
 };
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -107,7 +107,7 @@ function ProgDots({ step, total, color }: { step: number; total: number; color: 
   return (
     <div style={{ display: "flex", gap: 6, justifyContent: "center", padding: "0 0 24px" }}>
       {Array.from({ length: total }).map((_, i) => (
-        <div key={i} style={{ height: 6, width: i === step ? 20 : 6, borderRadius: 3, background: i < step ? `${color}55` : i === step ? color : C.border2, transition: "all 0.3s" }} />
+        <div key={i} style={{ height: 6, width: i === step ? 20 : 6, borderRadius: 3, background: i < step ? `color-mix(in srgb, ${color} 33%, transparent)` : i === step ? color : C.border2, transition: "all 0.3s" }} />
       ))}
     </div>
   );
@@ -145,7 +145,7 @@ function Btn({ children, onClick, color, ghost, disabled, style: s }: {
   );
   return (
     <button onClick={onClick} disabled={disabled}
-      style={{ width: "100%", padding: "16px", borderRadius: 14, border: "none", fontFamily: sans, fontSize: 15, fontWeight: 700, cursor: disabled ? "not-allowed" : "pointer", transition: "all 0.2s", opacity: disabled ? 0.5 : 1, background: `linear-gradient(135deg, ${c}, ${c}cc)`, color: "#0d0b0f", boxShadow: `0 4px 20px ${c}44`, ...s }}>
+      style={{ width: "100%", padding: "16px", borderRadius: 14, border: "none", fontFamily: sans, fontSize: 15, fontWeight: 700, cursor: disabled ? "not-allowed" : "pointer", transition: "all 0.2s", opacity: disabled ? 0.5 : 1, background: c, color: "var(--arya-primary-foreground)", boxShadow: `0 4px 20px color-mix(in srgb, ${c} 27%, transparent)`, ...s }}>
       {children}
     </button>
   );
@@ -186,7 +186,7 @@ function PathSelectionScreen({ onSelect }: { onSelect: (p: VedicPath) => void })
                   <div style={{ fontSize: 15, fontWeight: 600, color: active ? a.main : C.text, marginBottom: 4 }}>{p.title}</div>
                   <div style={{ fontSize: 12, color: C.textDim, lineHeight: 1.6 }}>{p.desc}</div>
                 </div>
-                {active && <div style={{ width: 20, height: 20, borderRadius: "50%", background: a.main, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#0d0b0f", fontWeight: 700, marginTop: 4 }}>✓</div>}
+                {active && <div style={{ width: 20, height: 20, borderRadius: "50%", background: a.main, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "var(--arya-primary-foreground)", fontWeight: 700, marginTop: 4 }}>✓</div>}
               </button>
             );
           })}
@@ -400,7 +400,7 @@ function BirthScreen({ path, birthDate, setBirthDate, birthPlace, setBirthPlace,
           )}
         </div>
 
-        <div style={{ background: "rgba(124,106,255,0.04)", border: `1px solid rgba(124,106,255,0.12)`, borderRadius: 12, padding: "13px 16px", fontSize: 12, color: C.textDim, lineHeight: 1.7, display: "flex", gap: 10, marginBottom: 20 }}>
+        <div style={{ background: "color-mix(in srgb, var(--arya-secondary) 4%, transparent)", border: `1px solid color-mix(in srgb, var(--arya-secondary) 12%, transparent)`, borderRadius: 12, padding: "13px 16px", fontSize: 12, color: C.textDim, lineHeight: 1.7, display: "flex", gap: 10, marginBottom: 20 }}>
           <span style={{ fontSize: 16, flexShrink: 0 }}>🔒</span>
           <span>{t("kaal_privacy_note")}</span>
         </div>
@@ -450,7 +450,7 @@ function ReadyScreen({ path, profile, westernSign, selectedRashi, onBack, onCont
             {westernData && <div style={{ fontSize: 12, color: C.textDim, marginBottom: 20 }}>{westernData.dates}</div>}
             <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 18, width: "100%", maxWidth: 320, textAlign: "left" as const, marginBottom: 20 }}>
               <div style={{ fontSize: 11, color: C.textDim, letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 10 }}>{t("kaal_arya_brings")}</div>
-              <div style={{ fontSize: 13, color: C.textDim, lineHeight: 1.75, fontStyle: "italic", borderLeft: `2px solid ${a.main}44`, paddingLeft: 10 }}>
+              <div style={{ fontSize: 13, color: C.textDim, lineHeight: 1.75, fontStyle: "italic", borderLeft: `2px solid color-mix(in srgb, ${a.main} 27%, transparent)`, paddingLeft: 10 }}>
                 "{t("kaal_for")} {westernSign || "…"} — {t("kaal_west_preview")}"
               </div>
             </div>
@@ -481,7 +481,7 @@ function ReadyScreen({ path, profile, westernSign, selectedRashi, onBack, onCont
         {path === "neutral" && (
           <div style={{ background: C.surface, border: `1px solid ${a.border}`, borderRadius: 14, padding: 18, width: "100%", maxWidth: 320, textAlign: "left" as const, marginBottom: 20 }}>
             <div style={{ fontSize: 11, color: C.textDim, letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 10 }}>{t("kaal_personal_rhythm")}</div>
-            <div style={{ fontSize: 13, color: C.textDim, lineHeight: 1.75, fontStyle: "italic", borderLeft: `2px solid ${a.main}55`, paddingLeft: 10 }}>
+            <div style={{ fontSize: 13, color: C.textDim, lineHeight: 1.75, fontStyle: "italic", borderLeft: `2px solid color-mix(in srgb, ${a.main} 33%, transparent)`, paddingLeft: 10 }}>
               "{t("kaal_neutral_q1")} <strong style={{ color: a.main, fontStyle: "normal" }}>{t("kaal_neutral_q_time")}</strong> {t("kaal_neutral_q2")}"
             </div>
             <div style={{ marginTop: 12, fontSize: 11, color: C.textDim }}>{t("kaal_no_zodiac")}</div>
@@ -563,7 +563,7 @@ function WeekView({ weekDays, path }: { weekDays: VedicBriefing["weekDays"]; pat
                 flexShrink: 0, width: 74, padding: "14px 8px 12px", borderRadius: 14,
                 cursor: "pointer", transition: "all 0.22s", textAlign: "center" as const,
                 background: isSel ? a.dim : C.surface,
-                border: `1.5px solid ${isSel ? a.main : day.isToday ? `${a.main}88` : C.border}`,
+                border: `1.5px solid ${isSel ? a.main : day.isToday ? `color-mix(in srgb, ${a.main} 53%, transparent)` : C.border}`,
               }}>
               <div style={{ fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase" as const, marginBottom: 4, fontWeight: day.isToday ? 700 : 400, color: day.isToday ? a.main : C.textDim }}>
                 {day.isToday ? t("kaal_today_lbl") : day.dayName}
@@ -625,7 +625,7 @@ function ChapterView({ briefing, profile, path }: { briefing: VedicBriefing; pro
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       {/* Current life chapter */}
       {b.dasha?.chapterText && (
-        <div style={{ background: `linear-gradient(135deg, rgba(124,106,255,0.08), rgba(245,166,35,0.05))`, border: `1px solid rgba(124,106,255,0.2)`, borderRadius: 14, padding: 18 }}>
+        <div style={{ background: `linear-gradient(135deg, rgba(120,84,155,0.08), rgba(227,176,75,0.05))`, border: `1px solid rgba(120,84,155,0.2)`, borderRadius: 14, padding: 18 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
             <span style={{ fontSize: 18 }}>🌊</span>
             <div style={{ fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase" as const, color: C.textDim, fontWeight: 600 }}>Your Current Chapter</div>
@@ -634,7 +634,7 @@ function ChapterView({ briefing, profile, path }: { briefing: VedicBriefing; pro
             "{b.dasha.chapterText}"
           </div>
           <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" as const }}>
-            <div style={{ padding: "5px 12px", borderRadius: 20, background: "rgba(124,106,255,0.1)", border: `1px solid rgba(124,106,255,0.22)`, fontSize: 11, color: C.indigo }}>
+            <div style={{ padding: "5px 12px", borderRadius: 20, background: "rgba(120,84,155,0.1)", border: `1px solid rgba(120,84,155,0.22)`, fontSize: 11, color: C.indigo }}>
               {b.dasha.lord} cycle
             </div>
             <div style={{ padding: "5px 12px", borderRadius: 20, background: C.surface2, border: `1px solid ${C.border}`, fontSize: 11, color: C.textDim }}>
@@ -701,9 +701,9 @@ function BriefingScreen({ briefing, loading, error, onHome, onRetry, path, profi
   const a = ACCENT[path];
 
   const toneColors = {
-    good:    { bg: "rgba(94,207,176,0.06)",  border: "rgba(94,207,176,0.15)",  bar: C.teal,    label: C.teal },
-    caution: { bg: "rgba(245,166,35,0.06)",  border: "rgba(245,166,35,0.15)",  bar: C.saffron, label: C.saffron },
-    watch:   { bg: "rgba(232,112,112,0.06)", border: "rgba(232,112,112,0.15)", bar: C.rose,    label: C.rose },
+    good:    { bg: "rgba(25,99,79,0.06)",  border: "rgba(25,99,79,0.15)",  bar: C.teal,    label: C.teal },
+    caution: { bg: "rgba(227,176,75,0.06)",  border: "rgba(227,176,75,0.15)",  bar: C.saffron, label: C.saffron },
+    watch:   { bg: "rgba(181,86,47,0.06)", border: "rgba(181,86,47,0.15)", bar: C.rose,    label: C.rose },
   };
 
   if (loading) return (
@@ -760,8 +760,8 @@ function BriefingScreen({ briefing, loading, error, onHome, onRetry, path, profi
           <div style={{ fontSize: 12, color: C.textDim, letterSpacing: "0.06em" }}>{todayStr()}</div>
           <PathBadge path={path} />
         </div>
-        <div style={{ fontFamily: serif, fontSize: 22, color: C.text, marginBottom: 3 }}>
-          {greetingTime(language)}, <em style={{ color: a.main }}>{b.userName}.</em>
+          <div style={{ fontFamily: serif, fontSize: 32, fontWeight: 500, letterSpacing: "-0.04em", lineHeight: 1.1, color: C.text, marginBottom: 8 }}>
+          {greetingTime(language)},<br /><span style={{ color: a.main }}>{b.userName}.</span>
         </div>
         <div style={{ fontSize: 13, color: C.textDim }}>{t("kaal_today_looks")}</div>
 
@@ -803,7 +803,7 @@ function BriefingScreen({ briefing, loading, error, onHome, onRetry, path, profi
             {/* ARYA insight */}
             <div style={{ background: a.dim, border: `1px solid ${a.border}`, borderRadius: 14, padding: 16, marginBottom: 14 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                <div style={{ width: 28, height: 28, borderRadius: "50%", background: `linear-gradient(135deg, ${a.main}, ${a.main}88)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: "#0d0b0f", fontWeight: 700 }}>A</div>
+                <div style={{ width: 28, height: 28, borderRadius: "50%", background: `linear-gradient(135deg, ${a.main}, color-mix(in srgb, ${a.main} 53%, transparent))`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: "var(--arya-primary-foreground)", fontWeight: 700 }}>A</div>
                 <div style={{ fontSize: 11, color: a.main, letterSpacing: "0.08em" }}>ARYA · {path === "neutral" ? t("kaal_personal_insight") : t("kaal_blended_insight")}</div>
               </div>
               <div style={{ fontSize: 14, color: C.text, lineHeight: 1.75 }}
@@ -811,7 +811,7 @@ function BriefingScreen({ briefing, loading, error, onHome, onRetry, path, profi
             </div>
 
             {/* Timing window */}
-            <div style={{ background: `linear-gradient(135deg, ${a.dim}, rgba(124,106,255,0.06))`, border: `1px solid ${a.border}`, borderRadius: 12, padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+            <div style={{ background: `linear-gradient(135deg, ${a.dim}, rgba(120,84,155,0.06))`, border: `1px solid ${a.border}`, borderRadius: 12, padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <span style={{ fontSize: 22 }}>⏰</span>
                 <div>
@@ -1109,7 +1109,7 @@ export default function VedicLensPage() {
           <div key={s.id} style={{ position: "absolute", borderRadius: "50%", background: "white", left: s.left, top: s.top, width: s.size, height: s.size, animation: `vl-twinkle ${s.dur} ease-in-out infinite`, animationDelay: s.delay, "--min-op": s.minOp, "--max-op": s.maxOp } as any} />
         ))}
       </div>
-      <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(ellipse, rgba(124,106,255,0.05) 0%, transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
+      <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(ellipse, rgba(120,84,155,0.05) 0%, transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
 
       <div style={{ position: "relative", zIndex: 1 }}>
 
