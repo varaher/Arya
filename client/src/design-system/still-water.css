@@ -66,26 +66,26 @@
 .arya-hero-card__cta:active { transform: scale(0.97); }
 .arya-hero-card__cta:focus-visible { outline: 3px solid color-mix(in srgb, var(--arya-primary) 62%, transparent); outline-offset: 3px; }
 
-/* ── Still water symbol (16s cycle) ─────────────────────── */
+/* ── Still water symbol (20s cycle, about 10s of calm) ──── */
 .arya-still-water {
   position: absolute; right: -6px; top: 44px; width: 178px; height: 190px;
   pointer-events: none; z-index: 0;
 }
 .arya-still-water svg { width: 100%; height: 100%; overflow: visible; }
-.arya-still-water .sw-ripple { transform-origin: 90px 128px; transform-box: view-box; animation: sw-ripple 16s ease-out infinite; opacity: 0; }
+.arya-still-water .sw-ripple { transform-origin: 90px 128px; transform-box: view-box; animation: sw-ripple 20s ease-out infinite; opacity: 0; }
 .arya-still-water .sw-r2 { animation-delay: 0.6s; }
 .arya-still-water .sw-r3 { animation-delay: 1.2s; }
-.arya-still-water .sw-drop { animation: sw-drop 16s ease-in infinite; }
-.arya-still-water .sw-calm { animation: sw-calm 16s ease-in-out infinite; opacity: 0; }
+.arya-still-water .sw-drop { animation: sw-drop 20s ease-in infinite; }
+.arya-still-water .sw-calm { animation: sw-calm 20s ease-in-out infinite; opacity: 0; }
 .arya-still-line {
   margin-top: 16px; max-width: 200px;
   font-size: 0.75rem; font-style: italic; line-height: 1.55; color: var(--arya-secondary);
-  animation: sw-line 16s ease-in-out infinite; opacity: 0;
+  animation: sw-line 20s ease-in-out infinite; opacity: 0;
 }
 @keyframes sw-ripple { 0%, 7% { transform: scale(0.15); opacity: 0 } 8% { transform: scale(0.18); opacity: 0.8 } 38%, 100% { transform: scale(1.2); opacity: 0 } }
 @keyframes sw-drop { 0% { transform: translateY(-60px); opacity: 0 } 2% { opacity: 1 } 7.5% { transform: translateY(0); opacity: 1 } 8%, 100% { transform: translateY(0); opacity: 0 } }
-@keyframes sw-calm { 0%, 40% { opacity: 0 } 55%, 92% { opacity: 0.7 } 100% { opacity: 0 } }
-@keyframes sw-line { 0%, 38% { opacity: 0; transform: translateY(4px) } 52%, 92% { opacity: 1; transform: translateY(0) } 100% { opacity: 0 } }
+@keyframes sw-calm { 0%, 42% { opacity: 0 } 48%, 96% { opacity: 0.7 } 100% { opacity: 0 } }
+@keyframes sw-line { 0%, 49% { opacity: 0; transform: translateY(4px) } 58%, 95% { opacity: 1; transform: translateY(0) } 100% { opacity: 0 } }
 
 @media (prefers-reduced-motion: reduce) {
   .arya-still-water .sw-ripple, .arya-still-water .sw-drop { animation: none !important; opacity: 0 !important; }
