@@ -860,7 +860,7 @@ function CreateGoalForm({
           value={description}
           onChange={e => setDescription(e.target.value)}
           placeholder={t("goals_form_context_ph")}
-          className="bg-background/50 border-white/10 text-white text-sm"
+          className="bg-background/50 border-border text-foreground text-sm"
         />
       </div>
 

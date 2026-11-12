@@ -803,7 +803,7 @@ export default function NitiPage() {
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 5, marginBottom: 10 }}>
                   {item.impactChips?.map((chip: string) => (
-                    <div key={chip} style={{ padding: "3px 8px", borderRadius: 20, background: "rgba(112,128,160,0.12)", color: N.steel, fontSize: 11 }}>{chip}</div>
+                    <div key={chip} style={{ padding: "3px 8px", borderRadius: 20, background: "var(--arya-secondary-soft)", color: N.steel, fontSize: 11 }}>{chip}</div>
                   ))}
                 </div>
                 {item.aryaRead && (

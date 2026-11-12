@@ -730,7 +730,7 @@ function BriefingScreen({ briefing, loading, error, onHome, onRetry, path, profi
         </div>
         <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
           {!isLogin && (
-            <button onClick={onRetry} style={{ padding: "11px 24px", borderRadius: 24, border: "none", background: C.indigo, color: "white", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: sans }}>
+            <button onClick={onRetry} style={{ padding: "11px 24px", borderRadius: 24, border: "none", background: C.teal, color: "var(--arya-primary-foreground)", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: sans }}>
               {t("kaal_try_again")}
             </button>
           )}
@@ -933,19 +933,19 @@ function BriefingScreen({ briefing, loading, error, onHome, onRetry, path, profi
                 }}
                 style={{
                   width: "100%", padding: "16px 20px", borderRadius: 16, cursor: "pointer",
-                  background: "linear-gradient(135deg, rgba(26,74,46,0.8) 0%, rgba(15,35,24,0.9) 100%)",
-                  border: `1px solid rgba(74,222,128,0.25)`, display: "flex", alignItems: "center",
-                  gap: 12, fontFamily: sans, boxShadow: "0 4px 20px rgba(26,74,46,0.2)",
+                  background: "var(--arya-primary)",
+                  border: `1px solid rgba(25,99,79,0.25)`, display: "flex", alignItems: "center",
+                  gap: 12, fontFamily: sans, boxShadow: "0 4px 20px rgba(25,99,79,0.2)",
                   transition: "all 0.25s ease",
                 }}
-                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(74,222,128,0.45)"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-2px)"; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(74,222,128,0.25)"; (e.currentTarget as HTMLButtonElement).style.transform = "none"; }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(25,99,79,0.45)"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-2px)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(25,99,79,0.25)"; (e.currentTarget as HTMLButtonElement).style.transform = "none"; }}
               >
                 <span style={{ fontSize: 20, flexShrink: 0 }}>💬</span>
-                <span style={{ fontSize: 15, fontWeight: 600, color: "#4ade80", flex: 1, textAlign: "left" as const }}>Ask ARYA about today</span>
-                <span style={{ fontSize: 18, color: "rgba(74,222,128,0.6)" }}>→</span>
+                <span style={{ fontSize: 15, fontWeight: 600, color: "var(--arya-primary-foreground)", flex: 1, textAlign: "left" as const }}>Ask ARYA about today</span>
+                <span style={{ fontSize: 18, color: "var(--arya-primary-foreground)" }}>→</span>
               </button>
-              <p style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", textAlign: "center" as const, marginTop: 8, fontStyle: "italic" }}>
+              <p style={{ fontSize: 11, color: "var(--arya-text-subtle)", textAlign: "center" as const, marginTop: 8, fontStyle: "italic" }}>
                 ARYA already knows your timing for today
               </p>
             </div>

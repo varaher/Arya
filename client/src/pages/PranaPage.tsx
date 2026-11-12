@@ -169,7 +169,7 @@ function SleepChart({ readings }: { readings: HealthReading[] }) {
     <div style={{ display: "flex", gap: 4, alignItems: "flex-end", height: 80 }}>
       {vals.map((v, i) => {
         const h = v ? Math.round((v / maxVal) * 72) : 4;
-        const color = !v ? C.border : v < 5.5 ? C.amber : v >= 7 ? C.teal : "#8fa0b8";
+        const color = !v ? C.border : v < 5.5 ? C.amber : v >= 7 ? C.teal : "#6b7770";
         return (
           <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column" as const, alignItems: "center", gap: 4 }}>
             <div style={{ width: "100%", height: h, borderRadius: 4, background: color, transition: "height 0.4s" }} />
@@ -252,7 +252,7 @@ function TrendSparkline({ readings, metric }: { readings: HealthReading[]; metri
 
 // ── InsightCard ───────────────────────────────────────────────────────────────
 const insightColors = {
-  positive:    { bg: "rgba(168,224,99,0.08)",  border: "rgba(168,224,99,0.20)",  text: "#a8e063" },
+  positive:    { bg: "rgba(25,99,79,0.08)",  border: "rgba(25,99,79,0.20)",  text: "var(--arya-primary)" },
   caution:     { bg: C.amberDim,               border: C.amberBorder,            text: C.amber   },
   flag:        { bg: C.roseDim,                border: C.roseBorder,             text: C.rose    },
   correlation: { bg: C.tealDim,               border: C.tealBorder,             text: C.teal    },
@@ -317,7 +317,7 @@ function ProfileSetupModal({ onSave, onSkip, token }: { onSave: (p: HealthProfil
               <button onClick={onSkip} style={{ background: "none", border: "none", color: C.textMuted, cursor: "pointer", fontSize: 13, fontFamily: sans }}>Skip for now</button>
             </div>
             <div style={{ textAlign: "center" as const, padding: "20px 0 32px" }}>
-              <div style={{ width: 72, height: 72, borderRadius: "50%", background: `linear-gradient(135deg, ${C.teal}, ${C.violet})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, margin: "0 auto 20px" }}>🫁</div>
+              <div style={{ width: 72, height: 72, borderRadius: "50%", background: C.teal, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, margin: "0 auto 20px" }}>🫁</div>
               <div style={{ fontSize: 26, fontWeight: 800, color: C.text, fontFamily: sans, marginBottom: 10, lineHeight: 1.2 }}>Personal health coaching</div>
               <div style={{ fontSize: 15, color: C.textDim, lineHeight: 1.65, marginBottom: 8 }}>Built with ARYA</div>
               <div style={{ fontSize: 14, color: C.textMuted, lineHeight: 1.7, maxWidth: 300, margin: "0 auto" }}>
@@ -431,7 +431,7 @@ function PersonalizedStatsCard({ profile, onEdit }: { profile: HealthProfile; on
 
   const stats = [
     { label: t("prana_bmi_label"), value: bmi.toFixed(1), sub: bmiSubMap[bmiCat.label] || bmiCat.label, color: bmiCat.color },
-    tdee ? { label: "Cal / day", value: tdee.toLocaleString(), sub: "your goal", color: "#f5c842" } : null,
+    tdee ? { label: "Cal / day", value: tdee.toLocaleString(), sub: "your goal", color: "#b8892a" } : null,
     { label: t("prana_step_goal"), value: steps.toLocaleString(), sub: t("prana_daily_target"), color: C.teal },
   ].filter(Boolean) as { label: string; value: string; sub: string; color: string }[];
 
@@ -546,7 +546,7 @@ function CoachTab({ token, profile }: { token?: string | null; profile: HealthPr
         {messages.length === 0 && (
           <div style={{ paddingTop: 8, paddingBottom: 16 }}>
             <div style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 24 }}>
-              <div style={{ width: 36, height: 36, borderRadius: "50%", background: `linear-gradient(135deg, ${C.teal}, ${C.violet})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>🫁</div>
+              <div style={{ width: 36, height: 36, borderRadius: "50%", background: C.teal, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>🫁</div>
               <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: "4px 16px 16px 16px", padding: "12px 14px", maxWidth: "85%" }}>
                 <div style={{ fontSize: 14, color: C.text, lineHeight: 1.65 }}>
                   {hasProfile(profile)
@@ -571,7 +571,7 @@ function CoachTab({ token, profile }: { token?: string | null; profile: HealthPr
         {messages.map((m, i) => (
           <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 16, justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
             {m.role === "arya" && (
-              <div style={{ width: 32, height: 32, borderRadius: "50%", background: `linear-gradient(135deg, ${C.teal}, ${C.violet})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>🫁</div>
+              <div style={{ width: 32, height: 32, borderRadius: "50%", background: C.teal, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>🫁</div>
             )}
             <div style={{
               background: m.role === "user" ? C.tealDim : C.surface,
@@ -689,11 +689,11 @@ function DailyLogTab({ readings, onLog, onDelete, token, profile, onEditProfile 
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ fontSize: 20 }}>🩸</span>
             {glucoseVal ? (
-              <div style={{ fontSize: 20, fontWeight: 700, color: "#f5c842" }}>{glucoseVal} <span style={{ fontSize: 12, fontWeight: 400 }}>mg/dL</span></div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: "var(--arya-warning)" }}>{glucoseVal} <span style={{ fontSize: 12, fontWeight: 400 }}>mg/dL</span></div>
             ) : <div style={{ fontSize: 13, color: C.textMuted }}>{t("health_no_readings")}</div>}
           </div>
           <button onClick={() => setActive(GLUCOSE_METRIC as any)}
-            style={{ fontSize: 11, color: "#f5c842", background: "rgba(245,200,66,0.10)", border: "1px solid rgba(245,200,66,0.22)", borderRadius: 8, padding: "4px 12px", cursor: "pointer" }}>
+            style={{ fontSize: 11, color: "var(--arya-warning)", background: "rgba(184,137,42,0.10)", border: "1px solid rgba(184,137,42,0.22)", borderRadius: 8, padding: "4px 12px", cursor: "pointer" }}>
             + Log
           </button>
         </div>

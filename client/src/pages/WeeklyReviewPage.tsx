@@ -269,7 +269,7 @@ export default function WeeklyReviewPage() {
         textarea:focus, input:focus { outline: none; }
         .wr-btn-intention { transition: all 0.18s; }
         .wr-btn-intention:hover { opacity: 0.88; }
-        .wr-chip:hover { border-color: rgba(181,160,106,0.5) !important; }
+        .wr-chip:hover { border-color: rgba(120,84,155,0.5) !important; }
       `}</style>
 
       {/* ── Sticky Nav ── */}
@@ -438,7 +438,7 @@ export default function WeeklyReviewPage() {
                     >
                       <div style={{
                         width: 18, height: 18, borderRadius: "50%",
-                        border: `1.5px solid ${g.activeThisWeek ? P.green : "rgba(0,0,0,0.2)"}`,
+                        border: `1.5px solid ${g.activeThisWeek ? P.green : "color-mix(in srgb, var(--arya-text) 20%, transparent)"}`,
                         background: g.activeThisWeek ? P.greenBg : "transparent",
                         display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2,
                       }}>
@@ -475,7 +475,7 @@ export default function WeeklyReviewPage() {
                 {data.whatAryaNoticed}
               </div>
               {data.oneThatMatters && (
-                <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: 14, color: P.darkMuted, fontStyle: "italic", lineHeight: 1.6 }}>
+                <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid color-mix(in srgb, var(--arya-hero-title) 12%, transparent)", fontSize: 14, color: P.darkMuted, fontStyle: "italic", lineHeight: 1.6 }}>
                   {data.oneThatMatters}
                 </div>
               )}
@@ -611,7 +611,7 @@ export default function WeeklyReviewPage() {
                   style={{
                     padding: "14px 12px",
                     borderRadius: 12,
-                    border: `1.5px solid ${selectedChip === chip ? "rgba(74,124,89,0.4)" : P.border}`,
+                    border: `1.5px solid ${selectedChip === chip ? "rgba(25,99,79,0.4)" : P.border}`,
                     background: selectedChip === chip ? P.greenBg : P.surface,
                     color: selectedChip === chip ? P.greenText : P.body,
                     fontFamily: "var(--arya-font-sans)",
@@ -650,7 +650,7 @@ export default function WeeklyReviewPage() {
                 style={{
                   width: "100%", padding: "16px",
                   borderRadius: 14, border: "none",
-                  background: intentionValue ? P.gold : "rgba(0,0,0,0.08)",
+                  background: intentionValue ? P.gold : "color-mix(in srgb, var(--arya-text) 8%, transparent)",
                   color: intentionValue ? P.text : P.muted,
                   fontFamily: "var(--arya-font-sans)",
                   fontSize: 11, letterSpacing: "0.08em",
