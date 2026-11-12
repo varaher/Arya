@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useUserAuth } from "@/lib/user-auth";
 import { useLocation } from "wouter";
-import { SurfaceCard } from "@/design-system/components";
+import { StillWaterHero } from "@/components/StillWater";
 import {
   Send,
   Mic,
@@ -36,6 +36,9 @@ import {
   X,
   Check,
   ChevronRight,
+  Leaf,
+  Play,
+  Pause,
   Sparkles,
   Shield,
   Eye,
