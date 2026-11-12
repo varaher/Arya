@@ -6232,126 +6232,76 @@ export default function AryaChat() {
             className="overflow-y-auto min-h-0 flex flex-col items-center justify-start text-center px-4 pt-6 pb-28"
             style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y", maxHeight: "100%" }}
           >
-            <motion.div
-              data-testid="img-arya-logo"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="mb-1 md:mb-2 flex flex-col items-center gap-1"
-            >
-              <span
-                className="text-2xl md:text-3xl"
-                style={{
-                  fontFamily: "var(--arya-font-display)",
-                  fontWeight: 700,
-                  letterSpacing: "0.14em",
-                  lineHeight: 1,
-                  display: "block",
-                  color: "var(--arya-primary)",
-                }}
-              >
-                ARYA
-              </span>
-              <span className="flex gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-[var(--arya-primary)] opacity-55" />
-                <span className="w-2 h-2 rounded-full bg-[var(--arya-primary)]" />
-                <span className="w-1.5 h-1.5 rounded-full bg-[var(--arya-primary)] opacity-55" />
-              </span>
-            </motion.div>
-            <motion.p
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.2 }}
-              className="text-[13px] font-medium text-[var(--arya-primary)] tracking-wide mb-3"
-            >
-              {t("your_pa")}
-            </motion.p>
-            <div className="w-full max-w-2xl text-left mb-5">
-              <p className="mb-1 text-xs font-medium uppercase tracking-[0.14em] text-[var(--arya-text-subtle)]">
-                {homeDateLabel}
-              </p>
-              <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-[var(--arya-text)]">
-                {homeGreeting}{firstName ? `, ${firstName}` : ""}
-              </h1>
-            </div>
+            {/* ── ARYA skin: greeting + Still water hero + quiet rows (visual only; handlers unchanged) ── */}
+            <div className="w-full max-w-2xl text-left">
+              <div className="arya-home-heading">
+                <p className="arya-home-heading__eyebrow">{homeDateLabel}</p>
+                <h1 className="arya-home-heading__title">
+                  {homeGreeting}{firstName ? "," : "."}
+                  {firstName && (<><br /><span className="arya-home-heading__name">{firstName}.</span></>)}
+                </h1>
+                <p className="arya-home-heading__sub">{t("home_subheading")}</p>
+              </div>
 
-            <SurfaceCard className="w-full max-w-2xl mb-3 bg-gradient-to-br from-[var(--arya-primary-soft)] to-[var(--arya-surface)] p-4 text-left md:p-6">
-              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--arya-primary)]">
-                {t("talk_arya_title")}
-              </p>
-              <h2 className="text-xl font-semibold tracking-tight text-[var(--arya-text)] md:text-2xl">
-                {t("welcome_start_heading")}
-              </h2>
-              <p className="mt-2 max-w-lg text-sm leading-relaxed text-[var(--arya-text-muted)]">
-                {t("talk_arya_sub")}
-              </p>
+              <StillWaterHero
+                overline={t("home_hero_overline")}
+                title={<>{t("home_hero_title_1")}<br />{t("home_hero_title_2")}</>}
+                copy={t("home_hero_copy")}
+                ctaLabel={t("home_hero_cta")}
+                ctaIcon={<ArrowRight className="size-4" aria-hidden="true" />}
+                onCta={() => window.dispatchEvent(new CustomEvent("arya:go-talk"))}
+                ctaTestId="button-home-talk"
+              />
+
               <button
                 type="button"
-                onClick={() => window.dispatchEvent(new CustomEvent("arya:go-talk"))}
-                className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-full bg-[var(--arya-primary)] px-5 text-sm font-semibold text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--arya-primary)] focus-visible:ring-offset-2"
-                data-testid="button-home-talk"
+                onClick={() => setQuietMinuteRemaining(quietMinuteRemaining && quietMinuteRemaining > 0 ? 0 : 60)}
+                className="arya-home-row mt-3.5"
+                aria-label={quietMinuteRemaining !== null && quietMinuteRemaining > 0 ? "End quiet minute" : "Start a one-minute quiet timer"}
+                data-testid="button-home-quiet-minute"
               >
-                {t("talk_arya_start")}
-                <ArrowRight className="size-4" aria-hidden="true" />
+                <span className="arya-home-row__emblem"><Leaf className="size-[22px]" aria-hidden="true" /></span>
+                <span className="arya-home-row__copy">
+                  <strong className="arya-home-row__title">
+                    {quietMinuteRemaining !== null && quietMinuteRemaining > 0
+                      ? `Your quiet minute · ${formatTime(quietMinuteRemaining)}`
+                      : "Take a quiet minute"}
+                  </strong>
+                  <small className="arya-home-row__detail">
+                    {quietMinuteRemaining === null
+                      ? "Pause. Breathe. Begin again."
+                      : quietMinuteRemaining > 0
+                        ? "One breath at a time."
+                        : "Your minute is complete. Take your time."}
+                  </small>
+                </span>
+                <span className="arya-home-row__play" aria-hidden="true">
+                  {quietMinuteRemaining !== null && quietMinuteRemaining > 0
+                    ? <Pause className="size-3.5" />
+                    : <Play className="size-3.5 fill-current" style={{ marginLeft: 2 }} />}
+                </span>
               </button>
-            </SurfaceCard>
 
-            <div className="mb-5 grid w-full max-w-2xl grid-cols-1 gap-3 text-left sm:grid-cols-2">
-              <SurfaceCard className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--arya-primary-soft)] text-[var(--arya-primary)]">
-                    <Moon className="size-5" aria-hidden="true" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-[var(--arya-text)]">Take a quiet minute</h3>
-                    <p className="mt-1 text-sm leading-relaxed text-[var(--arya-text-muted)]">
-                  {quietMinuteRemaining === null
-                    ? "A small pause, just for you."
-                    : quietMinuteRemaining > 0
-                      ? `${formatTime(quietMinuteRemaining)} left in your minute`
-                      : "Your minute is complete. Take your time."}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setQuietMinuteRemaining(quietMinuteRemaining && quietMinuteRemaining > 0 ? 0 : 60)}
-                  className="mt-2 min-h-9 text-sm font-semibold text-[var(--arya-primary)] underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--arya-primary)]"
-                  aria-label={quietMinuteRemaining !== null && quietMinuteRemaining > 0 ? "End quiet minute" : "Start a one-minute quiet timer"}
-                  data-testid="button-home-quiet-minute"
-                >
-                  {quietMinuteRemaining !== null && quietMinuteRemaining > 0 ? "Finish" : quietMinuteRemaining === 0 ? "Start again" : "Begin"}
-                </button>
-                <p className="mt-0.5 text-[10px] text-[var(--arya-text-subtle)]">A simple timer while ARYA is open.</p>
-              </SurfaceCard>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveConversation(null);
+                  setIsTalkView(true);
+                  setInput("Guide me through a gentle reflection. Ask me one question at a time.");
+                  window.setTimeout(() => inputRef.current?.focus(), 100);
+                }}
+                className="arya-home-row arya-home-row--reflect mt-3"
+                data-testid="button-home-reflect"
+              >
+                <span className="arya-home-row__emblem"><Sparkles className="size-[21px]" aria-hidden="true" /></span>
+                <span className="arya-home-row__copy">
+                  <strong className="arya-home-row__title">A moment to reflect</strong>
+                  <small className="arya-home-row__detail">What's stayed with you today?</small>
+                </span>
+                <ChevronRight className="arya-home-row__chevron size-4" aria-hidden="true" />
+              </button>
 
-              <SurfaceCard className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--arya-secondary-soft)] text-[var(--arya-secondary)]">
-                    <Sparkles className="size-5" aria-hidden="true" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-[var(--arya-text)]">A moment to reflect</h3>
-                    <p className="mt-1 text-sm leading-relaxed text-[var(--arya-text-muted)]">
-                      Start with one gentle question. You can edit it before sending.
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveConversation(null);
-                    setIsTalkView(true);
-                    setInput("Guide me through a gentle reflection. Ask me one question at a time.");
-                    window.setTimeout(() => inputRef.current?.focus(), 100);
-                  }}
-                  className="mt-2 min-h-9 text-sm font-semibold text-[var(--arya-secondary)] underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--arya-secondary)]"
-                  data-testid="button-home-reflect"
-                >
-                  {t("guided_reflection")}
-                  <ArrowRight className="ml-1 inline size-4" aria-hidden="true" />
-                </button>
-              </SurfaceCard>
+              <p className="arya-home-closing mb-5">You don't have to make this moment productive.</p>
             </div>
 
               <motion.button
