@@ -28,3 +28,17 @@ mtime_ms = 1794406894339
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:9228cbc9-64ab-41d4-8aa4-89fc651b90ae/36383287-f708-491f-805c-aaec201b62e9/8bffa2de-bfab-4c5e-b6dd-383ed0134f77"
 storage_version_token = "1794406913158617"
 content_type = "text/html"
+
+[[outputs]]
+id = "0DtjNMwv3kMfMQmKKzoqV"
+uri = "file://generated-artifacts/stillwater-home-mockup.jpg"
+type = "image"
+title = "StillWater Home mockup"
+description = "A mobile-size screenshot of the implemented ARYA Home screen, including the StillWater hero and quiet-minute and reflection rows."
+logical_id = "6ef7c1b1-3a94-47ac-92bf-cf1c25c38002"
+content_hash = "sha256:4d7add3cd52916ffc90cc425c8692d4236f1608cdce953b06e66c498c23b29f8"
+size = 37023
+mtime_ms = 1794444407125
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:9228cbc9-64ab-41d4-8aa4-89fc651b90ae/6ef7c1b1-3a94-47ac-92bf-cf1c25c38002/26528b17-e3f8-4b12-b979-23f491728d38"
+storage_version_token = "1794444427315471"
+content_type = "image/jpeg"
