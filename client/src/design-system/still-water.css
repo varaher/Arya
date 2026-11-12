@@ -1,1 +1,129 @@
-/* StillWater visual styles will be added here. */
+/* ARYA home hero — Still water skin. Visual only. Uses tokens from design-tokens.css. */
+
+:root {
+  --arya-hero-a: #e4eee2;
+  --arya-hero-b: #e9efe4;
+  --arya-hero-c: #d9e7dc;
+  --arya-hero-glow: rgb(218 202 236 / 48%);
+  --arya-hero-title: #244232;
+  --arya-hero-copy: #526952;
+  --arya-still-shine: #ffffff;
+}
+:root[data-theme="dark"] {
+  --arya-hero-a: #304b3a;
+  --arya-hero-b: #3b5340;
+  --arya-hero-c: #2c4637;
+  --arya-hero-glow: rgb(109 78 132 / 40%);
+  --arya-hero-title: #edf3e5;
+  --arya-hero-copy: #c3d2bd;
+  --arya-still-shine: #dfeee4;
+}
+
+/* ── Greeting ───────────────────────────────────────────── */
+.arya-home-heading { padding: 0.75rem 0 1.25rem; text-align: left; }
+.arya-home-heading__eyebrow {
+  font-size: 0.6rem; font-weight: 650; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--arya-text-subtle);
+}
+.arya-home-heading__title {
+  margin: 0.625rem 0;
+  font-size: clamp(2.05rem, 8vw, 2.4rem); font-weight: 500;
+  line-height: 1.11; letter-spacing: -0.045em; color: var(--arya-text);
+}
+.arya-home-heading__name { color: var(--arya-primary); }
+.arya-home-heading__sub { font-size: 0.8rem; line-height: 1.6; color: var(--arya-text-muted); }
+
+/* ── Hero card ──────────────────────────────────────────── */
+.arya-hero-card {
+  position: relative; overflow: hidden; isolation: isolate;
+  min-height: 266px; padding: 23px 21px; text-align: left;
+  border-radius: 29px; border: 1px solid rgb(255 255 255 / 70%);
+  background:
+    radial-gradient(ellipse at 100% 0%, var(--arya-hero-glow), transparent 57%),
+    linear-gradient(120deg, var(--arya-hero-a), var(--arya-hero-b) 55%, var(--arya-hero-c));
+  box-shadow: 0 7px 20px rgb(69 93 68 / 4%);
+}
+:root[data-theme="dark"] .arya-hero-card { border-color: rgb(226 239 219 / 12%); }
+.arya-hero-card > :not(.arya-still-water) { position: relative; z-index: 1; }
+.arya-hero-card__overline {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 0.55rem; font-weight: 650; letter-spacing: 0.15em; color: var(--arya-hero-copy);
+}
+.arya-hero-card__star { color: var(--arya-secondary); font-size: 0.9rem; line-height: 1; }
+.arya-hero-card__title {
+  margin: 16px 0 12px; max-width: 190px;
+  font-size: 1.95rem; font-weight: 500; line-height: 1.12; letter-spacing: -0.03em;
+  color: var(--arya-hero-title);
+}
+.arya-hero-card__copy { max-width: 195px; font-size: 0.8125rem; line-height: 1.6; color: var(--arya-hero-copy); }
+.arya-hero-card__cta {
+  margin-top: 18px; display: inline-flex; align-items: center; gap: 14px;
+  min-height: 44px; padding: 12px 17px; border: 0; border-radius: 999px;
+  background: var(--arya-primary); color: var(--arya-primary-foreground);
+  font-size: 0.8125rem; font-weight: 550; box-shadow: 0 5px 10px rgb(29 86 63 / 10%);
+  transition: transform var(--arya-motion-fast) ease, opacity var(--arya-motion-fast) ease;
+}
+.arya-hero-card__cta:active { transform: scale(0.97); }
+.arya-hero-card__cta:focus-visible { outline: 3px solid color-mix(in srgb, var(--arya-primary) 62%, transparent); outline-offset: 3px; }
+
+/* ── Still water symbol (16s cycle) ─────────────────────── */
+.arya-still-water {
+  position: absolute; right: -6px; top: 44px; width: 178px; height: 190px;
+  pointer-events: none; z-index: 0;
+}
+.arya-still-water svg { width: 100%; height: 100%; overflow: visible; }
+.arya-still-water .sw-ripple { transform-origin: 90px 128px; transform-box: view-box; animation: sw-ripple 16s ease-out infinite; opacity: 0; }
+.arya-still-water .sw-r2 { animation-delay: 0.6s; }
+.arya-still-water .sw-r3 { animation-delay: 1.2s; }
+.arya-still-water .sw-drop { animation: sw-drop 16s ease-in infinite; }
+.arya-still-water .sw-calm { animation: sw-calm 16s ease-in-out infinite; opacity: 0; }
+.arya-still-line {
+  margin-top: 16px; max-width: 200px;
+  font-size: 0.75rem; font-style: italic; line-height: 1.55; color: var(--arya-secondary);
+  animation: sw-line 16s ease-in-out infinite; opacity: 0;
+}
+@keyframes sw-ripple { 0%, 7% { transform: scale(0.15); opacity: 0 } 8% { transform: scale(0.18); opacity: 0.8 } 38%, 100% { transform: scale(1.2); opacity: 0 } }
+@keyframes sw-drop { 0% { transform: translateY(-60px); opacity: 0 } 2% { opacity: 1 } 7.5% { transform: translateY(0); opacity: 1 } 8%, 100% { transform: translateY(0); opacity: 0 } }
+@keyframes sw-calm { 0%, 40% { opacity: 0 } 55%, 92% { opacity: 0.7 } 100% { opacity: 0 } }
+@keyframes sw-line { 0%, 38% { opacity: 0; transform: translateY(4px) } 52%, 92% { opacity: 1; transform: translateY(0) } 100% { opacity: 0 } }
+
+@media (prefers-reduced-motion: reduce) {
+  .arya-still-water .sw-ripple, .arya-still-water .sw-drop { animation: none !important; opacity: 0 !important; }
+  .arya-still-water .sw-calm { animation: none !important; opacity: 0.7 !important; }
+  .arya-still-line { animation: none !important; opacity: 1 !important; }
+}
+
+/* ── Home rows (quiet minute, reflect) ──────────────────── */
+.arya-home-row {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  min-height: 83px; padding: 14px; text-align: left;
+  border: 1px solid var(--arya-border); border-radius: 25px;
+  background: var(--arya-surface); color: var(--arya-text);
+  box-shadow: var(--arya-shadow-card);
+  transition: transform var(--arya-motion-fast) ease;
+}
+.arya-home-row:active { transform: scale(0.98); }
+.arya-home-row:focus-visible { outline: 3px solid color-mix(in srgb, var(--arya-primary) 62%, transparent); outline-offset: 3px; }
+.arya-home-row--reflect {
+  min-height: 88px;
+  background: linear-gradient(115deg, var(--arya-surface), var(--arya-secondary-soft));
+  border-color: color-mix(in srgb, var(--arya-secondary) 14%, var(--arya-border));
+}
+.arya-home-row__emblem {
+  display: grid; place-items: center; flex-shrink: 0;
+  width: 45px; height: 45px; border-radius: 16px;
+  background: var(--arya-secondary-soft); color: var(--arya-secondary);
+}
+.arya-home-row__copy { flex: 1; min-width: 0; }
+.arya-home-row__title { display: block; font-size: 0.875rem; font-weight: 550; }
+.arya-home-row__detail { display: block; margin-top: 4px; font-size: 0.75rem; line-height: 1.5; color: var(--arya-text-muted); }
+.arya-home-row__play {
+  display: grid; place-items: center; flex-shrink: 0;
+  width: 31px; height: 31px; border-radius: 50%; border: 1px solid var(--arya-border);
+  color: var(--arya-primary);
+}
+.arya-home-row__chevron { flex-shrink: 0; color: var(--arya-secondary); }
+.arya-home-closing {
+  max-width: 245px; margin: 0 auto; padding-top: 23px;
+  text-align: center; font-size: 0.7rem; font-style: italic; line-height: 1.7; color: var(--arya-text-muted);
+}
