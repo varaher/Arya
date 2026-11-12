@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "./design-system/design-tokens.css";
+@import "./design-system/still-water.css";
 
 @plugin "tailwindcss-animate";
 
