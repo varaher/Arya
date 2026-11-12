@@ -80,6 +80,13 @@ const translations: Record<UiLanguage, Record<string, string>> = {
     starter_overwhelmed: "I feel overwhelmed",
     starter_unknown:   "I don't know — just talk to me",
     guided_reflection: "Start with a guided reflection",
+    // ARYA skin — home hero (other languages fall back to English until translated)
+    home_subheading:    "Let's make a little time for you.",
+    home_hero_overline: "YOUR COMPANION, AT YOUR PACE",
+    home_hero_title_1:  "What's on",
+    home_hero_title_2:  "your mind?",
+    home_hero_copy:     "Your day, a thought, or something you just need to talk through.",
+    home_hero_cta:      "Talk with ARYA",
     goal_change_reassurance: "Saved. You can change this focus anytime — it’s here to support you, not box you in.",
     sign_in_goals:     "Sign in to track goals",
     take_tour:         "Take a Tour",
